@@ -15,12 +15,17 @@ updated: 2026-10-12
 > - v1 split into three stages, each a working app.
 > - One primary user; the user experience is described.
 > - The claim that an in-app AI component is required for the grade is removed. The AI features stay because they add value for the user.
+>
+> **Revision 2026-10-12 (2)**, the student's decision in the same session (`docs/ai-logs/2026-10-12-brief-revision-and-prd.md`):
+> - A new stage 2 answers the follower's real question, whether following skilled wallets pays. It adds a scan of the top wallets into a private watchlist, a hold-up test (does skill found before a cut-off date last after it?) and a paper copy test with delays (what would a follower who arrives 1, 5 or 30 minutes late have made?). New section *Is Skill Worth Following?*
+> - Market domains, bot flags and explanations move to stage 3.
+> - Placing real trades stays out of the project; the copy test is paper only.
 
 ## Executive Summary
 
 Prediction markets like Polymarket publish every trader's positions and PnL in the open, but raw PnL is a terrible proxy for skill. A wallet can look brilliant after one lucky binary bet, and roughly a quarter of all historical Polymarket volume is estimated to be wash trading rather than real conviction. Every existing tool (Polymarket's own leaderboard, Dune dashboards, third-party sites like polywallet.app and polymarketanalytics.com) ranks wallets by raw PnL, ROI or volume. None of them ask the harder question: *is this wallet actually good, or did it just get lucky, run a bot, or fake its numbers?*
 
-LiquidOracle answers that question. It ingests a wallet's Polymarket trades and resolved outcomes. It then runs a statistical test of whether the wallet beat the odds that the market itself offered, more often than luck explains, in the spirit of the 2026 Yale SOM study that found only ~3% of Polymarket accounts show skill beyond chance. Later stages split the verdict by market domain (politics, sports, crypto, macro), flag likely bots and market makers, and use a language model to classify markets and explain each verdict in plain language.
+LiquidOracle answers that question. It ingests a wallet's Polymarket trades and resolved outcomes. It then runs a statistical test of whether the wallet beat the odds that the market itself offered, more often than luck explains, in the spirit of the 2026 Yale SOM study that found only ~3% of Polymarket accounts show skill beyond chance. Stage 2 tests whether skill found this way is worth following. It scans the top wallets, checks whether the "skilled" ones kept winning after a cut-off date, and measures what a follower copying their bets a few minutes late would have made. Stage 3 splits verdicts by market domain (politics, sports, crypto, macro), flags likely bots and market makers, and uses a language model to classify markets and explain each verdict in plain language.
 
 This is built as the deliverable for IBE160 (Programming with AI) at Høgskolen i Molde: a solo, free-choice course project delivered in this repository.
 
@@ -31,6 +36,7 @@ Traders on Polymarket who want to follow "smart money" have no reliable way to f
 - **Raw leaderboards** (Polymarket's own, Dune boards, polywallet.app, polycopy.app) that rank by lifetime PnL or ROI. These can't tell apart a wallet that called ten close elections through real analysis from one that made a single big bet on a coin flip and got lucky.
 - **"Smart money" / "insider" labels** on third-party sites, which turn out to be simple size or PnL thresholds, not statistical inference. A large position isn't evidence of skill, just of size.
 - **No visibility into fake signal.** A 2025 Columbia study found ~25% of Polymarket's historical volume (~$4.5B) is likely wash trading, spiking to ~60% per week during airdrop-farming periods on certain markets. A leaderboard that doesn't account for this is actively misleading: a top-ranked wallet may just be farming rewards, not trading with insight.
+- **No answer to the follower's real question.** Even a genuinely skilled wallet is only worth following if its edge survives being copied. A follower always arrives late, and some wallets' edge is pure speed (buying in the seconds after news, before the price moves), which no follower can copy.
 - **No domain granularity.** A wallet that's genuinely sharp on macro markets but mediocre on sports gets one blended score, hiding exactly what a follower needs to know: where is this wallet's edge real?
 
 The cost is direct: traders copying "top" wallets on faith are as likely to be copying luck, bot activity or farmed volume as real skill.
@@ -45,15 +51,17 @@ LiquidOracle is a web app. The user pastes a Polymarket wallet address and gets 
 2. **The odds in plain words**: "A trader with no edge would do this well about 1 time in 300."
 3. **A chart of luck**: the spread of profits a no-skill trader could have made with the same bets, with the wallet's real result marked on it.
 4. **When there is too little data**: no verdict, just how many resolved bets the wallet has and how many more are needed.
-5. Later stages add a table of verdicts per domain, bot or market-maker flags, and a short AI-written explanation.
+5. Stage 2 adds a **Scan** page: the private watchlist of wallets that pass, how many would pass by luck alone, the hold-up result and the copy-test profit at each delay.
+6. Stage 3 adds a table of verdicts per domain, bot or market-maker flags, and a short AI-written explanation.
 
 **How it works:**
 
 1. **Data ingestion**: pulls trade history, positions and resolved outcomes for the wallet from Polymarket's public Data API / subgraph, and caches them locally.
 2. **Skill test**: compares the wallet's real profit with 10,000 simulated "no-skill" versions of the same bets (see *The Skill Test*).
-3. **Domain-aware scoring** (stage 2): a language model classifies each market question into a domain, and the skill test runs per domain. A wallet can be "skilled in crypto markets, no signal in sports."
-4. **Bot / market-maker filtering** (stage 3): behavioural heuristics (inventory skew, two-sided quoting, holding duration) flag wallets that look like automated market making or arbitrage rather than opinionated trading.
-5. **Plain-language verdicts** (stage 3): a language model turns the statistical output into a short explanation. It may only restate what the test found, and this is checked (see *Success Criteria*).
+3. **Scan, hold-up test and copy test** (stage 2): see *Is Skill Worth Following?*
+4. **Domain-aware scoring** (stage 3): a language model classifies each market question into a domain, and the skill test runs per domain. A wallet can be "skilled in crypto markets, no signal in sports."
+5. **Bot / market-maker filtering** (stage 3): behavioural heuristics (inventory skew, two-sided quoting, holding duration) flag wallets that look like automated market making or arbitrage rather than opinionated trading.
+6. **Plain-language verdicts** (stage 3): a language model turns the statistical output into a short explanation. It may only restate what the test found, and this is checked (see *Success Criteria*).
 
 ## The Skill Test
 
@@ -68,7 +76,7 @@ LiquidOracle is a web app. The user pastes a Polymarket wallet address and gets 
 5. **No-skill world**: for each position, draw a simulated outcome that comes true with probability *p*, then compute the simulated PnL with the same formula. Repeat 10,000 times.
 6. **p-value**: (1 + number of simulations with PnL ≥ the real PnL) / (1 + 10,000). This is the chance that a no-edge trader does at least this well.
 7. **Verdicts**: fewer than 30 resolved positions → *Not enough data*. Otherwise p < 0.01 → *Skilled (high confidence)*, p < 0.05 → *Likely skilled*, else *No evidence of skill*.
-8. **Per domain** (stage 2): the same test on each domain with at least 30 resolved positions. Testing several domains gives luck several chances, so each domain's p-value is multiplied by the number of domains tested (Bonferroni correction) before the verdict is chosen.
+8. **Per domain** (stage 3): the same test on each domain with at least 30 resolved positions. Testing several domains gives luck several chances, so each domain's p-value is multiplied by the number of domains tested (Bonferroni correction) before the verdict is chosen.
 9. **Reproducibility**: the random generator takes a seed. The seed is stored with each result, so the same wallet with the same seed gives the same verdict.
 
 **Why this method rather than shuffling the trade sequence.** The original brief proposed shuffling each wallet's buy/sell sequence. The feedback identified the risk that a shuffle test can look right and still be wrong, for example by shuffling the wrong thing or computing PnL differently for real and shuffled data. The simulation above has one ingredient (the price paid), one formula, and small cases that can be worked out by hand. That makes it possible to prove the implementation correct with tests.
@@ -77,6 +85,16 @@ LiquidOracle is a web app. The user pastes a Polymarket wallet address and gets 
 - Market prices are not perfectly fair. Long shots tend to be overpriced on prediction markets, so a wallet that mostly buys favourites can look slightly skilled.
 - Positions exited before resolution are ignored in v1, so skill at timing exits is not measured.
 - One very large bet can dominate a wallet's PnL. The page shows the share of PnL coming from the largest position.
+
+## Is Skill Worth Following? (stage 2)
+
+Passing the skill test says a wallet's past results are unlikely to be luck. A follower needs two more answers: does the skill last, and can it be copied? Stage 2 measures both on paper.
+
+1. **Scan**: run the skill test on the top ~200 wallets by profit and list those rated *Skilled (high confidence)* in a private, local watchlist. Testing 200 wallets gives luck 200 chances: at p < 0.01, about 2 pure-luck wallets are expected to pass. The page states that number next to the list.
+2. **Hold-up test**: pick a cut-off date. Run the skill test using only positions resolved before it, then pool the positions that the passing wallets opened after it and run the same test on those. If the skill was real, the passing group keeps beating the odds after the cut-off; if it was luck, its later results look like chance. The same is done for a comparison group: the top wallets by profit that failed the test.
+3. **Copy test** (paper only): for each later bet of a passing wallet, look up the market price 1, 5 and 30 minutes after the wallet bought, and compute what a follower buying the same outcome at that price would have made: Σ *s* · (*o* − *p*<sub>delay</sub>). A forecaster's edge survives a delay; a speed trader's disappears within minutes.
+
+**Known limitations:** the copy test uses recorded market prices, not a real order book, so it ignores the spread, fees and the price impact of the follower's own order. It is an upper bound on what a follower could make. Testing with real money is outside the project.
 
 ## How We Know the Test Is Right
 
@@ -89,6 +107,10 @@ The biggest risk in this project is a statistics engine that runs and produces p
 | Favourite-buyer | 100 bets at 90¢, wins 90 | *No evidence of skill* |
 | Sharp trader | 100 bets at 50¢, wins exactly 70 | *Skilled (high confidence)* (exact binomial p ≈ 0.00004) |
 | Thin wallet | 29 resolved bets | *Not enough data* |
+| Steady sharp (stage 2) | 100 bets at 50¢ winning 70 before the cut-off, the same after | Passes before; still *Skilled* on its after-cut-off bets |
+| Lucky streak (stage 2) | The coin-flippers that happen to pass before the cut-off; after it, outcomes drawn at fair odds | Pass before by construction; pooled after-cut-off bets show *No evidence of skill* |
+| Forecaster (stage 2) | Buys at 50¢, wins 70%; the price drifts slowly towards the outcome over hours | Copy-test profit stays positive at a 30-minute delay |
+| Speed trader (stage 2) | Buys at 50¢ seconds before the price jumps to the outcome | Copy-test profit is zero or negative at a 5-minute delay |
 | Market maker (stage 3) | Many small buys and sells on both sides of the same markets, flat inventory | Flagged as likely market maker |
 
 ## Running Without Keys or Live APIs
@@ -111,7 +133,7 @@ The examiner must be able to run the app from the README without our API keys an
 ## Who This Serves
 
 - **Primary user: Polymarket traders deciding whose trades are worth following** (the author is one of them). To trust a verdict they need four things: the verdict itself, how many bets it rests on, the odds in plain words, and an honest statement of what the test can't see.
-- **Not served (deliberately): leaderboard browsers.** This is not a "top 100 wallets" site; the product is the verdict on a wallet the user asks about. No public leaderboard is planned.
+- **Not served (deliberately): leaderboard browsers.** This is not a public "top 100 wallets" site. The stage 2 watchlist is private to the user running the app; no public leaderboard is planned.
 
 ## Success Criteria
 
@@ -126,9 +148,16 @@ The examiner must be able to run the app from the README without our API keys an
 **The app:**
 7. With offline mode and the mock language model on, every saved wallet can be looked up and shows a verdict card, with no network access and no keys.
 8. A lookup of a wallet with up to 1,000 resolved positions returns a verdict within 10 seconds on an ordinary laptop.
-9. **Stage 2**: every saved market has a domain label, and each domain with 30+ resolved positions gets its own verdict with the correction from *The Skill Test*, step 8.
-10. **Stage 3**: the explanation states the same verdict and the same p-value (rounded) as the test. This is checked in code on every explanation; an explanation that disagrees is replaced by the template text.
-11. **Stage 3**: the synthetic market-maker wallet is flagged, and the coin-flipper and sharp-trader wallets are not.
+
+**Stage 2:**
+9. A scan of the sample dataset in offline mode lists the sharp-trader, steady-sharp and forecaster wallets, and shows the expected number of luck passes for the number of wallets tested.
+10. In the hold-up test, the steady-sharp wallets are still rated *Skilled* on their after-cut-off bets, and the lucky-streak wallets show *No evidence of skill* on theirs.
+11. In the copy test, the speed trader's profit at a 5-minute delay is zero or negative, and the forecaster's stays positive at 30 minutes.
+
+**Stage 3:**
+12. Every saved market has a domain label, and each domain with 30+ resolved positions gets its own verdict with the correction from *The Skill Test*, step 8.
+13. The explanation states the same verdict and the same p-value (rounded) as the test. This is checked in code on every explanation; an explanation that disagrees is replaced by the template text.
+14. The synthetic market-maker wallet is flagged, and the coin-flipper and sharp-trader wallets are not.
 
 **Course deliverable:** the README lets the examiner install and run the app with the saved data, and the repository shows the path from this brief through PRD, architecture and stories to the code.
 
@@ -137,15 +166,15 @@ The examiner must be able to run the app from the README without our API keys an
 **v1, built in three stages. Each stage ends with a working, tested app.**
 
 - **Stage 1 (minimum version)**: wallet ingestion with local caching; the skill test on the whole wallet; synthetic test wallets and tests; offline mode; a web page with the verdict card and the luck chart.
-- **Stage 2**: domain classification of markets by language model, with the mock mode and stored labels; verdict per domain.
-- **Stage 3**: bot and market-maker heuristics; plain-language explanations with the consistency check.
+- **Stage 2**: the scan and private watchlist, the hold-up test and the paper copy test, with their synthetic test wallets.
+- **Stage 3**: domain classification of markets by language model (with the mock mode and stored labels) and verdicts per domain; bot and market-maker heuristics; plain-language explanations with the consistency check. If time runs short, this stage is trimmed first.
 
 **Explicitly out of v1 (deferred to v2):**
 - **Sybil-cluster detection**: identifying groups of wallets controlled by one actor (common funding sources, timing clusters). Named out loud so it doesn't creep back in: this is the feature most likely to blow the timeline.
 - Positions exited before resolution in the skill test.
 - Public leaderboard and social features (following, sharing, notifications).
 - Prediction markets other than Polymarket (Kalshi, Manifold).
-- Any live trading, copy-trading or financial advice. This is an analytics tool, not a trading agent.
+- Any live trading, automated copy-trading or financial advice. The copy test is a paper calculation; this is an analytics tool, not a trading agent.
 
 ## Vision
 
