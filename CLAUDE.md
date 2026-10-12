@@ -29,4 +29,5 @@ Part 1 criteria, from the teacher's grading guide:
 - **Everything in the code must trace back to the brief or PRD.** Code with no basis in the plan is a serious fault. If the plan has to change, change the plan first.
 - **Secrets** live in `.env`, which is never committed; keep `.env.example` up to date.
 - **The app is read-only toward Polymarket.** It analyses public data and never places orders, holds keys or touches a wallet's funds.
+- **A database is required** (teacher, 17 Sept 2026): every difficulty level in the course has one, and an app without one counts as too simple. A free tier or a local SQLite file is enough. Hosting and publishing are not required and don't affect the grade. The PRD draft (2026-10-12) doesn't name a database yet: add it when the PRD is reviewed.
 - **Stack**: Python for the analysis and backend. The frontend is chosen in the architecture step; the course recommends JavaScript.
