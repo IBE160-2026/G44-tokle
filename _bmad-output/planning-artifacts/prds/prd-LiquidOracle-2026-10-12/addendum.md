@@ -1,0 +1,20 @@
+# Addendum: LiquidOracle PRD
+
+Material that belongs to architecture rather than the PRD itself. All of it is a proposal to confirm in `bmad-architecture`.
+
+## Proposed technology `[ASSUMPTION]`
+
+- **Language**: Python, with numpy for the Simulations. 10,000 Simulations × 1,000 Positions is one vectorised array operation, well within the 10-second target (SM-3).
+- **Web page**: a small local web app (e.g. FastAPI or Flask with server-rendered pages, or Streamlit). Chosen in architecture; the course feedback asks for the simplest stack that does the job.
+- **Storage**: local files or SQLite for cached Polymarket data and Domain labels.
+- **Tests**: pytest. The Skill Test module is pure functions (Positions in, result out), tested without network.
+- **Language model**: a small, cheap model (e.g. Claude Haiku) for Domain labels and Explanations, behind one interface that Mock LLM Mode also implements.
+
+## Polymarket data `[ASSUMPTION, to verify in a data spike]`
+
+- Public, keyless APIs: the Data API (trades, positions and activity per user address) and the Gamma API (Market questions, outcomes, resolution).
+- Questions for the spike: how closed and redeemed positions appear, whether average entry price is given or must be computed from trades, and how negative-risk (multi-outcome) markets are represented.
+
+## Why the Skill Test simulates outcomes instead of shuffling trades
+
+Recorded in the brief's revision (2026-10-12): simulating each Outcome at its Entry Price has one formula and hand-checkable small cases, so the tests can prove the implementation right. Shuffling the buy/sell sequence was the original plan; the course feedback named the risk that a shuffle test can look right and still be wrong.
