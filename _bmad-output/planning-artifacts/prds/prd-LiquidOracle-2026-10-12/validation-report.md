@@ -1,0 +1,108 @@
+# Validation Report — PRD: LiquidOracle
+
+- **PRD:** `_bmad-output/planning-artifacts/prds/prd-LiquidOracle-2026-10-12/prd.md`
+- **Rubric:** `.claude/skills/bmad-prd/assets/prd-validation-checklist.md`
+- **Run at:** 2026-10-12T06:26:49+02:00
+- **Grade:** Fair
+- **Status:** a snapshot of the PRD as it was when the review ran. Since then the three high findings and the low finding on §6.2 versus FR-3 have been fixed (see `.memlog.md`). Still open: 7 medium, 5 low.
+
+## Overall verdict
+Good bones for a solo course PRD: a sharp thesis, a glossary that mostly holds, nearly every requirement tied to a number or a named test wallet, and honest counter-metrics. The risks sit exactly where the product's own promise (telling skill from luck) is least protected: the Hold-up Test is ambiguous about which wallets it tests and can leak, the Skill Test only sees bets held to resolution and can flatter wallets that cut their losers, and the Copy Test reports profit without a luck check. Separately, the teacher's database requirement is still missing. None of this is a rewrite; most items are a sentence or a glossary line each.
+
+## Dimension verdicts
+- Decision-readiness — adequate
+- Substance over theater — adequate
+- Strategic coherence — adequate
+- Done-ness clarity — adequate
+- Scope honesty — strong
+- Downstream usability — adequate
+- Shape fit — adequate
+
+## Findings by severity
+
+### Critical (0)
+
+### High (3)
+
+**[Decision-readiness]** — No database requirement; the addendum leaves 'local files' open (§8; addendum, Proposed technology)
+CLAUDE.md records the teacher's rule (17 Sept 2026): a database is required, and the PRD draft 'doesn't name a database yet: add it when the PRD is reviewed'. FR-2 and FR-16 only say 'stored locally'; the addendum says 'local files or SQLite'. Local files alone would not satisfy the rule, and stories written from this PRD would have nothing to trace a database task to.
+Fix: Add a line to §8: 'Cached Polymarket data, Domain labels, Scans and Watchlists are kept in a database (a local SQLite file is enough). Reason: course requirement.' Change the addendum's Storage bullet to SQLite. Log the decision with memlog.py.
+
+**[Decision-readiness]** — Leaving out sold positions can flatter a wallet, not only understate it (§4.1 FR-3, §4.3 FR-11, §6.2)
+The PRD (and the brief) say 'skill at timing exits is not measured', which reads as a limit that can only make a wallet look worse. It can also make it look better. Whether a position is still held at resolution is the trader's choice, and the choice can depend on how the price moved after the buy. A trader who sells when the price falls and keeps what is rising ends up with a held-to-resolution sample that wins more often than the Entry Prices imply, with no forecasting skill at all, because the losers have left the sample. FR-11 only shows how many positions were left out, not whether they were the losers. Partly sold positions (FR-3, third bullet) have the same problem.
+Fix: Decide on purpose and log it. Minimum: word the Verdict as 'among bets held to resolution', show the held share (N of M positions) and the realised PnL of the left-out positions on the card, and add a [NOTE FOR PM] at FR-3. Better: add a stop-loss Synthetic Wallet (no edge, sells losers early) whose expected result is the warning, so the limitation is demonstrated by a test.
+
+**[Done-ness clarity]** — The Hold-up Test is defined on two different groups of wallets (§3 Watchlist / Hold-up Test / Cut-off Date; §4.5 FR-17, FR-18; UJ-4)
+The Glossary defines the Watchlist as Wallets rated Skilled (high confidence) by a Scan, which uses the whole history. It defines the Hold-up Test on 'Wallets that passed on their before-cut-off positions'. FR-17, FR-18 and UJ-4 then say 'the Hold-up Test for the Watchlist' and 'the Watchlist wallets kept beating the odds after June'. Read literally, the wallets were picked using the very bets they are then tested on, so the result is guaranteed to look good and proves nothing. Second gap: the brief says the after-set is positions the wallet 'opened after' the Cut-off Date and the before-set is positions 'resolved before' it; the PRD only says 'after-cut-off', so a position opened before and resolved after is undefined (and a follower could not have copied a buy made before the Cut-off Date).
+Fix: Add a Glossary term for the group (for example Before-Cut-off Passers: Wallets rated Skilled (high confidence) using only Resolved Positions that resolved before the Cut-off Date). Use it in FR-17, FR-18 and UJ-4. Define the after-set as positions opened on or after the Cut-off Date, as in the brief. Add to FR-17: 'a Wallet that passes only when positions after the Cut-off Date are included is not in the group'.
+
+### Medium (7)
+
+**[Substance over theater]** — Cross-cutting requirements are adjectives, and the platform claim can't be checked (§8)
+'a few documented commands', 'as few requests as possible' and 'Windows, macOS and Linux' have no bound a test could check. A solo project on one PC cannot verify three operating systems.
+Fix: Give bounds: 'start in at most 3 commands after installing Python and the dependencies'; 'a lookup of a cached Wallet makes 0 network calls (FR-2); a first lookup makes at most N requests (N set after the data spike)'; 'tested on Windows 11; macOS and Linux expected to work, not verified'.
+
+**[Strategic coherence]** — The Copy Test reports profit without a luck check (§4.5 FR-18, UJ-4)
+'Would still have made money on 5 of the 7' is the raw sign of a sum over a handful of bets. That is the leaderboard problem the product exists to remove: a follower's positive PnL over a few dozen bets can be luck too. The PRD already owns the right instrument.
+Fix: Run the Skill Test on the follower's prices (replace Entry Price with p_delay) and show a Follower p-value and Verdict per delay, pooled across the group if single wallets are too thin. The synthetic checks in FR-18 still apply.
+
+**[Strategic coherence]** — 'About 2 of 200 would pass by luck alone' is a floor, not an estimate (§3 Expected Luck Passes, §4.5 FR-16, UJ-4; also FR-11 and UJ-1)
+Number tested × 0.01 holds for wallets picked at random. The Scan picks the wallets with the largest profit, and among no-skill wallets those are the ones whose luck looked best, so more than 1% will pass. The same applies to a single lookup when the user picked the wallet because it looked good (UJ-1). The Hold-up Test is the real answer to this, but the card states the 2 as if it were calibrated.
+Fix: Word it as a minimum ('at least about 2 of 200, probably more, because the wallets were chosen for high profit') and add one line to the FR-11 note about selection. Optional: run the same top-by-profit selection on a population of Synthetic coin-flippers and report that pass rate.
+
+**[Strategic coherence]** — Mock LLM Mode is built in stage 1 but first used in stage 3 (§4.4 FR-15, §6.1, SM-2)
+The language model appears only in FR-19 and FR-23. If stage 3 is trimmed first (§6.1), the MVP carries a switch with nothing behind it, which is the 'code with no basis in the plan' the course penalises.
+Fix: Move FR-15 to §4.6 (stage 3), change SM-2 to 'Validates FR-12 to FR-14', and drop the mock-model mention from UJ-3 (or say it applies once stage 3 exists).
+
+**[Done-ness clarity]** — The Sample Dataset doesn't say it holds price history or after-cut-off bets (§3 Sample Dataset, §4.4 FR-12/FR-13, §4.5 FR-16 to FR-18, §9 Q3)
+Sample Dataset is 'Wallet histories and Market data'. The Copy Test needs a price recorded 1, 5 and 30 minutes after each buy, for each Watchlist position, with no network. FR-13 says the script generates 'the Synthetic Wallets' but a forecaster's slow drift and a speed trader's jump are price paths, not just bets. FR-16's first bullet lists three wallets, while FR-18 needs the speed trader to appear too. The files for about 10 real wallets with minute-level prices may also be large for the repository.
+Fix: Add 'recorded price history around each Position's buy time' to the Sample Dataset term and FR-12. Say in FR-13 that the script also generates price paths. Change FR-16 to 'at least the sharp-trader, steady-sharp, forecaster and speed-trader Synthetic Wallets'. Note the file-size decision in the addendum.
+
+**[Done-ness clarity]** — Stage 3 requirements are looser than stage 1 and 2 (§4.6 FR-20; §4.7 FR-22 to FR-24; UJ-5)
+FR-20: 'the number of Domains tested' is not clear (only Domains with at least 30 positions, or all five? is 'other' one of them?). FR-22: 'very short holding times' has no bound, and it doesn't say what a Flag does to the Verdict (nothing? a warning on the card?). FR-23: 'short' has no length. No journey shows a Flag or an Explanation, and no FR says where on the page they appear (FR-21 only places the domain table).
+Fix: One sentence each: Domains tested = those with at least 30 Resolved Positions; each Flag heuristic with a threshold (it can be a starting value, tagged [ASSUMPTION]); 'a Flag is shown beside the Verdict and does not change it'; Explanation at most 60 words; add the Flag and Explanation to UJ-5 or to FR-21's page layout.
+
+**[Downstream usability]** — The Synthetic Wallets are only defined in the brief (§4.4 FR-13; FR-5, FR-17, FR-18, FR-20, FR-22; UJ-3; SM-4)
+FR-13 says 'the brief's table'. The names steady-sharp, lucky-streak, forecaster, speed trader, hand-check, favourite-buyer and thin wallet are used in six places and are not in the Glossary. The architecture and story steps read the PRD, so the test fixtures would be built from names no document next to them defines.
+Fix: Copy the brief's 10-row table into §4.4 (or the addendum), with a column for the FR that uses each wallet, and add the one-line Glossary pointer 'Synthetic Wallet types: see table'.
+
+### Low (6)
+
+**[Decision-readiness]** — Open Question 4 answers itself (§9 Q4)
+'Which language model for stage 3? addendum.md proposes one' is a decision to confirm in architecture, not an open question.
+Fix: Move it to the addendum as 'to confirm', or turn it into a real question (is the app acceptable to run with Mock LLM Mode as the examiner's default?).
+
+**[Substance over theater]** — SM-7 is true by construction (§7 SM-7, §4.7 FR-24)
+FR-24 replaces any failing Explanation with the template, so 'every shown Explanation passes the check' can never be false. It measures nothing.
+Fix: Measure how often the model's text fails the check (the replacement rate) and report it; a rate near 0 in Mock LLM Mode and a real number with the real model is the informative result.
+
+**[Done-ness clarity]** — The luck chart has no checkable consequence (§4.3 FR-9)
+'A histogram with the Wallet's Real PnL marked on it' leaves out the case that matters most: a very skilled Wallet's Real PnL lies far to the right of all 10,000 Simulations.
+Fix: Add: 'the chart's range always includes the Real PnL; axis in dollars; if Real PnL is above every Simulation the marker is labelled as such'.
+
+**[Done-ness clarity]** — 'About 1 time in N' has no rounding rule or floor (§4.3 FR-8)
+0.0033 → 300 is the only example. What does 0.0099 or 0.25 show? With 10,000 Simulations the smallest p-value is 1/10,001, so 'about 1 time in 10,000' would overstate how rare a result is.
+Fix: State the rounding (to 2 significant figures, for example) and 'fewer than 1 time in 10,000' when no Simulation reached the Real PnL.
+
+**[Scope honesty]** — §6.2 says sold positions are not tested; FR-3 tests partly sold ones (§6.2 first bullet, §4.1 FR-3)
+'Positions sold before resolution in the Skill Test (shown, not tested)' contradicts FR-3, where a partly sold Position enters the test with the shares still held.
+Fix: Change §6.2 to 'Positions fully sold before resolution'.
+
+**[Downstream usability]** — Pages, navigation and accessibility are not mentioned (§4.3, §8)
+Users move between a start page, a result page, Scan, Watchlist, Hold-up and Copy results, but no FR lists the pages or how you get between them. Nothing says the Verdict can't depend on colour alone or that the chart needs a text alternative; Design and UX (including accessibility) is a graded criterion.
+Fix: Add one cross-cutting line: 'Pages, navigation and accessibility are specified in the UX step; the Verdict is always shown as text, never by colour alone.' Then make sure the UX step picks it up.
+
+## Mechanical notes
+- IDs: FR-1 to FR-24, UJ-1 to UJ-5, SM-1 to SM-7 and SM-C1 to SM-C3 are contiguous and unique. Every 'Realizes' and 'Validates' reference resolves.
+- Assumptions Index roundtrip fails twice. (1) 'FR-16: 200 Wallets is a sensible default' is indexed but has no inline [ASSUMPTION] tag in FR-16. (2) The entry '§1, §6: the app runs locally as a web page' points at two sections that never say it (Vision and §6 do not mention a local web page); the statement lives only in the memlog and the Glossary's 'Private: stored only on the machine running the app'. The inline tags in FR-2, FR-3 and FR-19 are all indexed; the FR-3 tag is bare, without the text the other two carry.
+- Glossary drift: Verdict is defined as *Skilled (high confidence)*, but FR-17 and SM-C1 say 'rated Skilled'. The brief's table does the same. 'Bets' (UJs, Vision) and 'Positions' (FRs) are the same thing; the Glossary says so, so this is deliberate.
+- Terms used but not in the Glossary: the Synthetic Wallet names (see the finding above), 'top Wallets by profit' (over what period? all-time? § 9 Q2 only asks about the endpoint), and the Domain 'other'.
+- 'Wallet' is 'identified by its public address'. On Polymarket the address on a profile page is usually a proxy wallet, not the signing account. Worth one line in the data spike (§9 Q1) so FR-1's address check and the Data API lookups agree.
+- SM-C1 cites 'the Yale SOM study … ~3% of accounts' with no title or link, here or in the brief. This review did not verify the figure. Add a source line to the addendum so the examiner can check it.
+- .memlog.md is current except that its 'draft written' entry still says '4 [ASSUMPTION] tags and 4 open questions' (now 3 inline tags, 5 indexed assumptions and 6 open questions). It is append-only, so a new line is the right fix when the Update is logged.
+- Required sections for the agreed stakes (graded solo project) are all present.
+
+## Reviewer files
+- `review-rubric.md`
+
+Only the rubric walker ran (no adversarial or ad-hoc reviewers), on the user's request. It was run directly by the parent session, not as a subagent.
