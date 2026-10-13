@@ -49,3 +49,14 @@
 - Files changed: `prd.md`, `addendum.md`, the PRD memlog, `brief.md` and the brief memlog. Every change has a memlog line with the reason.
 - Still open from the review: 7 medium and 5 low findings (the report said 6 low; one of them, §6.2 versus FR-3, was fixed along the way, which the student checked). Next up (student's call): a luck check on the Copy Test.
 - Housekeeping the student asked for: the FR-11 stop-loss check was moved out of the list of things the card shows into its own "Checks" list; the generated HTML report is kept out of git because the `.md` has the same content.
+
+## 5. Wrap-up (2026-10-13)
+
+- **Git**: four commits on the branch `prd-validering` (validation report, PRD changes, brief revision 3, this log), pushed. The student creates the pull request on github.com.
+- **What the student steered**: the review only found the problems; the student turned three of the fixes into stricter rules than the AI had proposed:
+  - the Comparison Group must be picked and tested exactly like the Passers;
+  - both groups need the same minimum number of bets after the date;
+  - a visible warning when many more wallets drop out of one group, because wallets that stop betting may be the ones that lost.
+- **What the student checked**: the open-finding count (6 low in the report versus 5 still open), which turned out to be correct and is now explained in the report's status line.
+- **Not done**: the Copy Test luck check (Medium finding) and the other 6 medium findings. The AI's two statistical arguments (early exits can flatter a wallet; "2 of 200" is a floor) have not been checked by simulation.
+- **Transcript**: the full chat is saved as `transcripts/2026-10-12-prd-validation-transcript.md`, with tool output shortened.
