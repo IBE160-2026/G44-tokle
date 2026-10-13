@@ -20,6 +20,10 @@ updated: 2026-10-12
 > - A new stage 2 answers the follower's real question, whether following skilled wallets pays. It adds a scan of the top wallets into a private watchlist, a hold-up test (does skill found before a cut-off date last after it?) and a paper copy test with delays (what would a follower who arrives 1, 5 or 30 minutes late have made?). New section *Is Skill Worth Following?*
 > - Market domains, bot flags and explanations move to stage 3.
 > - Placing real trades stays out of the project; the copy test is paper only.
+>
+> **Revision 2026-10-12 (3)**, after the PRD validation (`prds/prd-LiquidOracle-2026-10-12/validation-report.md`):
+> - The comparison group in the hold-up test is picked the same way as the passing group, from positions resolved before the cut-off only.
+> - New synthetic wallet, the stop-loss trader, and a warning on the verdict card when positions sold before resolution lost money in total.
 
 ## Executive Summary
 
@@ -83,7 +87,7 @@ LiquidOracle is a web app. The user pastes a Polymarket wallet address and gets 
 
 **Known limitations, stated in the app:**
 - Market prices are not perfectly fair. Long shots tend to be overpriced on prediction markets, so a wallet that mostly buys favourites can look slightly skilled.
-- Positions exited before resolution are ignored in v1, so skill at timing exits is not measured.
+- Positions exited before resolution are ignored in v1, so skill at timing exits is not measured. This can also flatter a wallet that sells its losers early, so the page shows how many bets were held to resolution and the realised PnL of the exited ones, and warns when that PnL is negative.
 - One very large bet can dominate a wallet's PnL. The page shows the share of PnL coming from the largest position.
 
 ## Is Skill Worth Following? (stage 2)
@@ -91,7 +95,7 @@ LiquidOracle is a web app. The user pastes a Polymarket wallet address and gets 
 Passing the skill test says a wallet's past results are unlikely to be luck. A follower needs two more answers: does the skill last, and can it be copied? Stage 2 measures both on paper.
 
 1. **Scan**: run the skill test on the top ~200 wallets by profit and list those rated *Skilled (high confidence)* in a private, local watchlist. Testing 200 wallets gives luck 200 chances: at p < 0.01, about 2 pure-luck wallets are expected to pass. The page states that number next to the list.
-2. **Hold-up test**: pick a cut-off date. Run the skill test using only positions resolved before it, then pool the positions that the passing wallets opened after it and run the same test on those. If the skill was real, the passing group keeps beating the odds after the cut-off; if it was luck, its later results look like chance. The same is done for a comparison group: the top wallets by profit that failed the test.
+2. **Hold-up test**: pick a cut-off date. Run the skill test using only positions resolved before it, then pool the positions that the passing wallets opened after it and run the same test on those. If the skill was real, the passing group keeps beating the odds after the cut-off; if it was luck, its later results look like chance. The same is done for a comparison group: the other scanned wallets, picked the same way (rated on positions resolved before the cut-off only, and not passing), tested on the same kind of later positions. Nothing from after the cut-off decides who is in either group.
 3. **Copy test** (paper only): for each later bet of a passing wallet, look up the market price 1, 5 and 30 minutes after the wallet bought, and compute what a follower buying the same outcome at that price would have made: Σ *s* · (*o* − *p*<sub>delay</sub>). A forecaster's edge survives a delay; a speed trader's disappears within minutes.
 
 **Known limitations:** the copy test uses recorded market prices, not a real order book, so it ignores the spread, fees and the price impact of the follower's own order. It is an upper bound on what a follower could make. Testing with real money is outside the project.
@@ -111,6 +115,7 @@ The biggest risk in this project is a statistics engine that runs and produces p
 | Lucky streak (stage 2) | The coin-flippers that happen to pass before the cut-off; after it, outcomes drawn at fair odds | Pass before by construction; pooled after-cut-off bets show *No evidence of skill* |
 | Forecaster (stage 2) | Buys at 50¢, wins 70%; the price drifts slowly towards the outcome over hours | Copy-test profit stays positive at a 30-minute delay |
 | Speed trader (stage 2) | Buys at 50¢ seconds before the price jumps to the outcome | Copy-test profit is zero or negative at a 5-minute delay |
+| Stop-loss trader (stage 1) | 100 bets at 50¢ with no edge; bets whose price has fallen are sold before resolution, the rest are held to resolution | The card shows how many bets were held, the negative realised PnL of the sold ones, and a visible warning next to the verdict. The verdict itself may read skilled: that is the known limit |
 | Market maker (stage 3) | Many small buys and sells on both sides of the same markets, flat inventory | Flagged as likely market maker |
 
 ## Running Without Keys or Live APIs
