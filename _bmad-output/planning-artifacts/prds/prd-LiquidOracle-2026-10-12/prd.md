@@ -46,7 +46,7 @@ v1 is built in three stages, each a working app: (1) a verdict for the whole wal
   The examiner clones the repository, follows the README, and starts the app in offline mode with the mock language model. With no network and no keys, they pick wallets from the sample dataset, including the synthetic ones, and see the verdicts the tests expect (the sharp trader is *Skilled (high confidence)*, the coin-flipper *No evidence of skill*). They run the test suite and it passes.
 
 - **UJ-4. Jonas looks for wallets worth following** (stage 2).
-  Jonas opens the Scan page and starts a scan of the top 200 wallets by profit. When it finishes, the Watchlist shows 7 wallets rated *Skilled (high confidence)*, with the note "about 2 of 200 would pass by luck alone". He sets the Cut-off Date to 1 June: the Hold-up Test shows that the Watchlist wallets kept beating the odds after June (*Skilled (high confidence)* on 640 later bets) while the Comparison Group did not. The Copy Test shows that a follower copying 5 minutes late would still have made money on 5 of the 7, but on 2 of them the profit vanishes after a 1-minute delay: speed traders. He keeps the 5 forecasters on his list.
+  Jonas opens the Scan page and starts a scan of the top 200 wallets by profit. When it finishes, the Watchlist shows 7 wallets rated *Skilled (high confidence)*, with the note "about 2 of 200 would pass by luck alone". He sets the Cut-off Date to 1 June. The app re-rates every scanned wallet using only the bets that resolved before June, and all 7 still pass (the Before-Cut-off Passers). The other scanned wallets that were rated on the same bets and did not pass form the Comparison Group. The Hold-up Test shows that on the bets opened after June the Passers kept beating the odds (*Skilled (high confidence)* on 640 later bets) while the Comparison Group did not. The Copy Test shows that a follower copying 5 minutes late would still have made money on 5 of the 7, but on 2 of them the profit vanishes after a 1-minute delay: speed traders. He keeps the 5 forecasters on his list.
 
 - **UJ-5. Jonas sees where the edge is** (stage 3).
   For a wallet with 400 resolved bets, the page adds a domain table: crypto *Skilled (high confidence)* on 180 bets, sports *No evidence of skill* on 150, politics *Not enough data* on 22.
@@ -61,6 +61,7 @@ v1 is built in three stages, each a working app: (1) a verdict for the whole wal
 - **Shares** (*s*): the number of shares held in a Position at resolution.
 - **Outcome** (*o*): 1 if the Position's outcome happened, 0 if not.
 - **Real PnL**: Σ *s* · (*o* − *p*) over a Wallet's Resolved Positions.
+- **Exit PnL**: the PnL realised on shares a Wallet sold before resolution: Σ (shares sold) · (sell price − *p*). Shown, never part of the Skill Test.
 - **Simulation**: one replay of a Wallet's Resolved Positions in which each Outcome is drawn at random, coming true with probability equal to its Entry Price.
 - **Luck Distribution**: the Real PnL formula applied to 10,000 Simulations.
 - **p-value**: (1 + number of Simulations with PnL ≥ Real PnL) / (1 + 10,000). The chance that a trader with no edge does at least this well.
@@ -70,12 +71,14 @@ v1 is built in three stages, each a working app: (1) a verdict for the whole wal
 - **Scan**: running the Skill Test on the top Wallets by profit (default 200) in one go.
 - **Watchlist**: the Wallets from a Scan rated *Skilled (high confidence)*. Private: stored only on the machine running the app.
 - **Expected Luck Passes**: the number of Wallets expected to pass a Scan by luck alone: number of Wallets tested × 0.01.
-- **Cut-off Date**: the date that splits a Wallet's history into a *before* part (used to judge skill) and an *after* part (used to check it).
-- **Hold-up Test**: the Skill Test run on the pooled after-cut-off Resolved Positions of the Wallets that passed on their before-cut-off positions.
-- **Comparison Group**: Wallets from the same Scan that failed the before-cut-off Skill Test; their after-cut-off positions are tested the same way.
+- **Cut-off Date**: the date that splits a Wallet's history into a *before* part (used to judge skill) and an *after* part (used to check it). The before part is the Positions that resolved before the date; the after part is the Positions opened on or after it. A Position opened before the date and resolved after it is in neither part.
+- **Before-Cut-off Passers**: the Wallets from a Scan rated *Skilled (high confidence)* when the Skill Test uses only the before part. Unlike the Watchlist (whole history), nothing after the Cut-off Date decides who is in this group.
+- **Hold-up Test**: the Skill Test run on the pooled after part, as Resolved Positions, of the Before-Cut-off Passers.
+- **Minimum After-bets**: the fewest Resolved Positions in its after part that a Wallet needs to be counted in the Hold-up Test: 10. `[ASSUMPTION]` The same number applies to the Before-Cut-off Passers and the Comparison Group. Why 10: a round starting value, high enough that one lucky bet is not a Wallet's whole after part and low enough that Wallets that kept betting still count. It is not measured; revisit with real data (§9 Q6).
+- **Comparison Group**: the other Wallets from the same Scan, picked the same way (same Cut-off Date, only the before part): those rated *Likely skilled* or *No evidence of skill*. Wallets with *Not enough data* in the before part are in neither group. The Comparison Group's after part is tested the same way as the Passers', with the same Minimum After-bets.
 - **Copy Delay**: how long after a Wallet's buy a follower buys: 1, 5 or 30 minutes.
 - **Follower PnL**: Σ *s* · (*o* − *p*<sub>delay</sub>), where *p*<sub>delay</sub> is the market price of the same outcome one Copy Delay after the Wallet bought.
-- **Copy Test**: computing Follower PnL for each Copy Delay over a Wallet's after-cut-off Resolved Positions. Paper only.
+- **Copy Test**: computing Follower PnL for each Copy Delay over the Resolved Positions in a Wallet's after part. Paper only.
 - **Domain**: the category of a Market: politics, sports, crypto, macro or other.
 - **Domain Verdict**: a Verdict from the Skill Test on only one Domain's Resolved Positions, with the Bonferroni correction (FR-20).
 - **Sample Dataset**: Wallet histories and Market data saved in the repository, so the app can run without the network.
@@ -89,7 +92,7 @@ v1 is built in three stages, each a working app: (1) a verdict for the whole wal
 
 ### 4.1 Wallet Lookup and Data (stage 1)
 
-**Description:** The user enters a Wallet address. The app fetches the Wallet's trades and positions plus the Markets they belong to, stores them locally, and builds the Wallet's Positions. Realizes UJ-1, UJ-2.
+**Description:** The user enters a Wallet address. The app fetches the Wallet's trades and positions plus the Markets they belong to, stores them in the database, and builds the Wallet's Positions. Realizes UJ-1, UJ-2.
 
 #### FR-1: Look up a Wallet
 The user can enter a Wallet address on the start page and get its result page. Realizes UJ-1.
@@ -97,7 +100,7 @@ The user can enter a Wallet address on the start page and get its result page. R
 - A valid address with no Polymarket history shows "No Polymarket history found for this address".
 
 #### FR-2: Fetch and cache data
-The system fetches a Wallet's trades, positions and the related Markets from Polymarket's public APIs and stores them locally.
+The system fetches a Wallet's trades, positions and the related Markets from Polymarket's public APIs and stores them in the database.
 - A second lookup of the same Wallet within 24 hours uses stored data and makes no network call. `[ASSUMPTION: 24 hours is fresh enough]`
 - If Polymarket does not answer, the page says so and offers the stored data if any exists.
 - Requests are paced so the app never exceeds Polymarket's published rate limits.
@@ -106,7 +109,8 @@ The system fetches a Wallet's trades, positions and the related Markets from Pol
 The system combines a Wallet's fills into Positions and marks which are Resolved Positions.
 - Several buys of the same outcome in the same Market become one Position, with Entry Price = the share-weighted average price.
 - A Position fully sold before resolution is not a Resolved Position. It is counted and shown, but left out of the Skill Test.
-- A Position partly sold before resolution enters the Skill Test with the shares still held at resolution, at the original Entry Price. `[ASSUMPTION]`
+- A Position partly sold before resolution enters the Skill Test with the shares still held at resolution, at the original Entry Price. `[ASSUMPTION]` The shares sold count toward Exit PnL.
+- `[NOTE FOR PM]` Which Positions reach resolution is the trader's choice and can depend on how the price moved after the buy. A trader who sells losers early and keeps the rest looks better in the Skill Test than they are. v1 accepts this and makes it visible (FR-11); handling it in the test is deferred to v2 (§6.2).
 
 ### 4.2 Skill Test (stage 1)
 
@@ -148,8 +152,12 @@ For *Not enough data*, the page shows the number of Resolved Positions and how m
 #### FR-11: Honesty notes
 Every Verdict card shows:
 - the share of Real PnL coming from the single largest Position;
-- the number of Positions left out because they were sold before resolution;
-- a short fixed note on the test's limits (long shots tend to be overpriced; early exits not measured) and that this is not financial advice.
+- how many Positions were held to resolution out of all Positions (N of M), and the Exit PnL;
+- a visible warning next to the Verdict when Exit PnL is below zero: "Positions this Wallet sold before resolution lost money in total. This Verdict covers only bets held to resolution.";
+- a short fixed note on the test's limits (long shots tend to be overpriced; the Verdict covers only bets held to resolution, so early exits are not measured and can make a Wallet look better or worse than it is) and that this is not financial advice.
+
+Checks:
+- The stop-loss Synthetic Wallet (FR-13) shows the warning. A Wallet with Exit PnL ≥ 0, or with no early sales, shows none.
 
 ### 4.4 Offline Running and Test Data (stage 1)
 
@@ -159,7 +167,7 @@ Every Verdict card shows:
 The repository contains stored data for about 10 real Wallets (a mix of Verdicts, including at least one *Not enough data*) and all Synthetic Wallets.
 
 #### FR-13: Synthetic Wallets
-A script generates the Synthetic Wallets in the brief's table from a fixed Seed. Running it twice gives identical files.
+A script generates the Synthetic Wallets in the brief's table from a fixed Seed, plus one the brief does not list: a stop-loss trader with no edge, who sells Positions whose price has fallen and holds the rest to resolution (added after the PRD validation, see FR-11). Running it twice gives identical files.
 
 #### FR-14: Offline Mode
 One setting makes the app use only the Sample Dataset.
@@ -178,16 +186,22 @@ The user can start a Scan of the top Wallets by profit (default 200) and see the
 - A Scan of the Sample Dataset in Offline Mode puts the sharp-trader, steady-sharp and forecaster Synthetic Wallets on the Watchlist.
 - A Scan of 200 Wallets shows "about 2 of 200 would pass by luck alone".
 - The page shows progress during a Scan; an interrupted Scan resumes without re-fetching finished Wallets.
-- The Watchlist is stored locally with the Scan date and is never sent anywhere.
+- The Watchlist is stored in the database with the Scan date and is never sent anywhere.
 
 #### FR-17: Hold-up Test
-The user can choose a Cut-off Date and see the Hold-up Test result for the Watchlist and for the Comparison Group: Resolved Positions after the Cut-off Date, Real PnL, p-value and Verdict for each group.
-- The steady-sharp Synthetic Wallets are rated *Skilled* on their after-cut-off positions.
-- The lucky-streak Synthetic Wallets (coin-flippers that passed before the Cut-off Date) are rated *No evidence of skill* on their after-cut-off positions.
-- A group with fewer than 30 after-cut-off Resolved Positions shows *Not enough data*.
+The user can choose a Cut-off Date and see the Hold-up Test result for the Before-Cut-off Passers and for the Comparison Group: Resolved Positions in the after part, Real PnL, p-value and Verdict for each group.
+- Both groups are picked from the same Scan by the same rule, using only the before part, and both are tested on the after part. No Position from after the Cut-off Date decides who is in either group.
+- A Wallet that passes only when Positions from after the Cut-off Date are included is not in the Before-Cut-off Passers.
+- Each Wallet is in at most one of the two groups.
+- A Wallet counts in its group's result only if it has at least the Minimum After-bets Resolved Positions in the after part. The same minimum applies to both groups.
+- Wallets that stop betting after the Cut-off Date (none, or fewer than the minimum) are dropped by that same rule in both groups, never kept in one and dropped in the other. Each group's result shows Wallets in the group, Wallets dropped for too few after bets, and Resolved Positions counted.
+- If the share of Wallets dropped differs by more than 20 percentage points between the two groups, the page says so next to the results: "More Wallets were dropped in one group than in the other. Wallets that stop betting may be the ones that lost, so the group with more dropped Wallets may look better than it is." `[ASSUMPTION: 20 percentage points is "way more"]` A planted example (60% dropped in one group, 10% in the other) shows the message; equal shares show none.
+- The steady-sharp Synthetic Wallets are rated *Skilled (high confidence)* on their after part.
+- The lucky-streak Synthetic Wallets (coin-flippers that passed before the Cut-off Date) are rated *No evidence of skill* on their after part.
+- A group with fewer than 30 Resolved Positions in the after part shows *Not enough data*.
 
 #### FR-18: Copy Test
-For each Watchlist Wallet, the system shows Follower PnL at each Copy Delay next to the Wallet's own Real PnL over the same positions, using Polymarket's recorded price history.
+For each of the Before-Cut-off Passers, over the Positions in its after part, the system shows Follower PnL at each Copy Delay next to the Wallet's own Real PnL over the same positions, using Polymarket's recorded price history.
 - The speed-trader Synthetic Wallet has Follower PnL ≤ 0 at a 5-minute Copy Delay.
 - The forecaster Synthetic Wallet has Follower PnL > 0 at a 30-minute Copy Delay.
 - A position with no recorded price at a Copy Delay is left out of that delay's sum, and the count of left-out positions is shown.
@@ -245,7 +259,7 @@ Each stage ends with all its tests passing and the README updated, so the projec
 
 ### 6.2 Out of Scope for v1
 
-- Positions sold before resolution in the Skill Test (shown, not tested). Deferred to v2.
+- Positions fully sold before resolution in the Skill Test (shown with their Exit PnL, not tested). Deferred to v2.
 - Sybil-cluster detection. Deferred to v2: the feature most likely to blow the timeline.
 - Kalshi, Manifold and other venues. Deferred to v2.
 
@@ -270,6 +284,7 @@ Each stage ends with all its tests passing and the README updated, so the projec
 ## 8. Cross-Cutting Requirements
 
 - **Runnable from the README**: install and start with a few documented commands on Windows, macOS and Linux.
+- **Database**: cached Polymarket data, Domain labels, Scans and Watchlists are kept in a database (a local SQLite file is enough, nothing to install or host). Reason: course requirement (teacher, 17 Sept 2026).
 - **Secrets**: the language-model key is read from `.env`, which is never committed; the repository contains `.env.example`.
 - **Polite to Polymarket**: pacing and local storage so a lookup makes as few requests as possible.
 - **Testable core**: the Skill Test module has no network, web or language-model code, and every FR with consequences has at least one automated test.
@@ -277,17 +292,19 @@ Each stage ends with all its tests passing and the README updated, so the projec
 
 ## 9. Open Questions
 
-1. Which Polymarket endpoints give resolved and closed positions per Wallet with Entry Price, and how are fees, splits, merges and redemptions represented? To be settled by a short data spike before architecture. (Owner: Edvard, before architecture.)
+1. Which Polymarket endpoints give resolved and closed positions per Wallet with Entry Price, and how are fees, splits, merges and redemptions represented? Do sell fills give the Exit PnL (FR-11)? To be settled by a short data spike before architecture. (Owner: Edvard, before architecture.)
 2. Which public endpoint lists the top Wallets by profit for a Scan, and how far back does it go? (Data spike, before architecture.)
 3. Does Polymarket's price history have minute-level prices for resolved Markets, far enough back for the Copy Test? If only coarser data exists, the Copy Delays change. (Data spike, before architecture.)
 4. Which language model for stage 3? `addendum.md` proposes one; cost is small because each Market is classified once.
 5. Which 10 real Wallets go into the Sample Dataset? They should cover each Verdict.
-6. Which Cut-off Date for the real-data Hold-up Test? It must leave enough after-cut-off bets.
+6. Which Cut-off Date for the real-data Hold-up Test? It must leave enough bets in the after part and enough in the before part, and the Minimum After-bets should not drop most of the Passers.
 
 ## 10. Assumptions Index
 
 - §4.1 FR-2: stored data counts as fresh for 24 hours.
 - §4.1 FR-3: partly sold Positions enter the Skill Test with the shares held at resolution, at the original Entry Price.
 - §4.6 FR-19: 80% agreement with hand labels is a sensible bar for Domain classification.
+- §3, §4.5 FR-17: a Wallet needs at least 10 Resolved Positions in the after part to count in the Hold-up Test (Minimum After-bets).
+- §4.5 FR-17: a difference of more than 20 percentage points in the share of Wallets dropped between the two groups is "way more" and gets a message.
 - §4.5 FR-16: 200 Wallets is a sensible default Scan size (fetch time and Polymarket's rate limits not yet measured).
 - §1, §6: the app runs locally on the user's or examiner's laptop as a web page; it is not hosted publicly.
