@@ -2,7 +2,7 @@
 title: "PRD: LiquidOracle"
 status: draft
 created: 2026-10-12
-updated: 2026-10-12
+updated: 2026-10-14
 ---
 
 # PRD: LiquidOracle
@@ -46,7 +46,7 @@ v1 is built in three stages, each a working app: (1) a verdict for the whole wal
   The examiner clones the repository, follows the README, and starts the app in offline mode with the mock language model. With no network and no keys, they pick wallets from the sample dataset, including the synthetic ones, and see the verdicts the tests expect (the sharp trader is *Skilled (high confidence)*, the coin-flipper *No evidence of skill*). They run the test suite and it passes.
 
 - **UJ-4. Jonas looks for wallets worth following** (stage 2).
-  Jonas opens the Scan page and starts a scan of the top 200 wallets by profit. When it finishes, the Watchlist shows 7 wallets rated *Skilled (high confidence)*, with the note "about 2 of 200 would pass by luck alone". He sets the Cut-off Date to 1 June. The app re-rates every scanned wallet using only the bets that resolved before June, and all 7 still pass (the Before-Cut-off Passers). The other scanned wallets that were rated on the same bets and did not pass form the Comparison Group. The Hold-up Test shows that on the bets opened after June the Passers kept beating the odds (*Skilled (high confidence)* on 640 later bets) while the Comparison Group did not. The Copy Test shows that a follower copying 5 minutes late would still have made money on 5 of the 7, but on 2 of them the profit vanishes after a 1-minute delay: speed traders. He keeps the 5 forecasters on his list.
+  Jonas opens the Scan page and starts a scan of the top 200 wallets by profit. When it finishes, the Watchlist shows 7 wallets rated *Skilled (high confidence)*, with the note "about 2 of 200 would pass by luck alone". He sets the Cut-off Date to 1 June. The app re-rates every scanned wallet using only the bets that resolved before June, and all 7 still pass (the Before-Cut-off Passers). The other scanned wallets that were rated on the same bets and did not pass form the Comparison Group. The Hold-up Test shows that on the bets opened after June the Passers kept beating the odds (*Skilled (high confidence)* on 640 later bets) while the Comparison Group did not. The Copy Test shows that a follower copying the Passers 5 minutes late, after fees, would have earned an average return that only 0.4% of 10,000 random groups of 7 Wallets from the same Scan matched (*Beat random picks*). Per Wallet, 5 of the 7 still make money at 5 minutes; on the other 2 the profit vanishes already at a 1-minute delay: speed traders. The page notes that these single-Wallet numbers are not luck-checked. He keeps the 5 forecasters on his list.
 
 - **UJ-5. Jonas sees where the edge is** (stage 3).
   For a wallet with 400 resolved bets, the page adds a domain table: crypto *Skilled (high confidence)* on 180 bets, sports *No evidence of skill* on 150, politics *Not enough data* on 22.
@@ -77,8 +77,13 @@ v1 is built in three stages, each a working app: (1) a verdict for the whole wal
 - **Minimum After-bets**: the fewest Resolved Positions in its after part that a Wallet needs to be counted in the Hold-up Test: 10. `[ASSUMPTION]` The same number applies to the Before-Cut-off Passers and the Comparison Group. Why 10: a round starting value, high enough that one lucky bet is not a Wallet's whole after part and low enough that Wallets that kept betting still count. It is not measured; revisit with real data (§9 Q6).
 - **Comparison Group**: the other Wallets from the same Scan, picked the same way (same Cut-off Date, only the before part): those rated *Likely skilled* or *No evidence of skill*. Wallets with *Not enough data* in the before part are in neither group. The Comparison Group's after part is tested the same way as the Passers', with the same Minimum After-bets.
 - **Copy Delay**: how long after a Wallet's buy a follower buys: 1, 5 or 30 minutes.
-- **Follower PnL**: Σ *s* · (*o* − *p*<sub>delay</sub>), where *p*<sub>delay</sub> is the market price of the same outcome one Copy Delay after the Wallet bought.
-- **Copy Test**: computing Follower PnL for each Copy Delay over the Resolved Positions in a Wallet's after part. Paper only.
+- **Main Copy Delay**: 5 minutes, fixed before any data is looked at. Only the Random Group Check at this delay decides the Copy Test's result; the 1- and 30-minute numbers are extra information. Reason: testing three delays would give luck three chances to pass.
+- **Follower Fee**: the fee Polymarket would charge the follower for buying *s* shares at *p*<sub>delay</sub> in that Market; 0 in Markets that charge no fee. How fees are recorded is §9 Q1.
+- **Follower PnL**: Σ (*s* · (*o* − *p*<sub>delay</sub>) − Follower Fee), where *p*<sub>delay</sub> is the market price of the same outcome one Copy Delay after the Wallet bought.
+- **Follower Return**: a Wallet's Follower PnL at one Copy Delay ÷ the money the follower spent on the same Positions, Σ (*s* · *p*<sub>delay</sub> + Follower Fee). Profit per dollar, so Wallets of very different sizes can be compared.
+- **Copy Pool**: every Wallet from the Scan with at least the Minimum After-bets Resolved Positions in its after part that have a recorded price at the Main Copy Delay. The Before-Cut-off Passers who meet this rule are in it too.
+- **Random Group Check**: the luck check on the Copy Test. The Passers' score is the average Follower Return of the Passers in the Copy Pool, at the Main Copy Delay, each Wallet counting equally. The system draws 10,000 random groups of the same size from the Copy Pool (no Wallet twice in one group) and scores each the same way. Copy p-value = (1 + number of random groups scoring ≥ the Passers) / (1 + 10,000). Copy Verdict: *Beat random picks* (Copy p-value < 0.05), *No better than random picks*, or *Not enough data* when no Passer is in the Copy Pool or fewer than 1,000 different groups of that size can be drawn from it. `[ASSUMPTION: 1,000]` Runs with a Seed, like the Skill Test.
+- **Copy Test**: computing Follower PnL and Follower Return for each Copy Delay over the Resolved Positions in the after part of each Before-Cut-off Passer, plus the Random Group Check. Paper only.
 - **Domain**: the category of a Market: politics, sports, crypto, macro or other.
 - **Domain Verdict**: a Verdict from the Skill Test on only one Domain's Resolved Positions, with the Bonferroni correction (FR-20).
 - **Sample Dataset**: Wallet histories and Market data saved in the repository, so the app can run without the network.
@@ -201,11 +206,18 @@ The user can choose a Cut-off Date and see the Hold-up Test result for the Befor
 - A group with fewer than 30 Resolved Positions in the after part shows *Not enough data*.
 
 #### FR-18: Copy Test
-For each of the Before-Cut-off Passers, over the Positions in its after part, the system shows Follower PnL at each Copy Delay next to the Wallet's own Real PnL over the same positions, using Polymarket's recorded price history.
+For each of the Before-Cut-off Passers, over the Positions in its after part, the system shows Follower PnL and Follower Return at each Copy Delay next to the Wallet's own Real PnL over the same positions, using Polymarket's recorded price history. Above them it shows the Random Group Check at the Main Copy Delay: the Copy p-value as "random groups did as well in X% of draws", and the Copy Verdict.
 - The speed-trader Synthetic Wallet has Follower PnL ≤ 0 at a 5-minute Copy Delay.
 - The forecaster Synthetic Wallet has Follower PnL > 0 at a 30-minute Copy Delay.
+- For a hand-made set of three Positions in a Market with a fee, Follower PnL and Follower Return equal a hand calculation stored with the tests (to the cent).
+- A planted Scan of 10 forecaster Passers and 100 coin-flipper Wallets (copy prices give the coin-flippers no edge) gets a Copy p-value < 0.01 at the Main Copy Delay.
+- Across 1,000 planted Scans of 110 coin-flipper Wallets, each with 10 of them picked at random as the Passers, the Copy p-value is < 0.05 in at most 7%.
+- A Copy Pool of 6 Wallets with 3 Passers (20 possible groups) shows *Not enough data*.
+- The same data with the same Seed gives the identical Copy p-value.
+- The Copy Verdict comes only from the Main Copy Delay. The 1- and 30-minute results show Follower PnL and Follower Return only, marked as extra information, with no Copy Verdict.
+- The per-Wallet numbers are marked as not luck-checked; only the Random Group Check is.
 - A position with no recorded price at a Copy Delay is left out of that delay's sum, and the count of left-out positions is shown.
-- The page states that Follower PnL ignores spread, fees and the follower's own price impact, so it is an upper bound.
+- The page states that Follower PnL ignores the spread and the follower's own price impact, so it is an upper bound.
 
 ### 4.6 Domains (stage 3)
 
@@ -271,7 +283,7 @@ Each stage ends with all its tests passing and the README updated, so the projec
 
 **Secondary**
 - **SM-3**: A lookup of a Wallet with up to 1,000 Resolved Positions returns a Verdict within 10 seconds on an ordinary laptop (stored data). Validates FR-5.
-- **SM-4**: The Hold-up Test and Copy Test synthetic checks pass (steady sharp vs lucky streak; forecaster vs speed trader). Validates FR-17, FR-18.
+- **SM-4**: The Hold-up Test and Copy Test synthetic checks pass (steady sharp vs lucky streak; forecaster vs speed trader; Random Group Check on planted Scans). Validates FR-17, FR-18.
 - **SM-5**: A Hold-up Test and a Copy Test have been run on real data, and the result is reported in the README and the reflection report, whichever way it comes out. Validates FR-16 to FR-18.
 - **SM-6**: Stage 3 Domain labels agree with hand labels on at least 80% of 50 Markets. Validates FR-19.
 - **SM-7**: Every shown Explanation passes the Explanation check. Validates FR-24.
@@ -292,9 +304,9 @@ Each stage ends with all its tests passing and the README updated, so the projec
 
 ## 9. Open Questions
 
-1. Which Polymarket endpoints give resolved and closed positions per Wallet with Entry Price, and how are fees, splits, merges and redemptions represented? Do sell fills give the Exit PnL (FR-11)? To be settled by a short data spike before architecture. (Owner: Edvard, before architecture.)
+1. Which Polymarket endpoints give resolved and closed positions per Wallet with Entry Price, and how are fees, splits, merges and redemptions represented? Which Markets charge a taker fee, at what rate, and how is it computed (needed for the Follower Fee, FR-18)? Do sell fills give the Exit PnL (FR-11)? To be settled by a short data spike before architecture. (Owner: Edvard, before architecture.)
 2. Which public endpoint lists the top Wallets by profit for a Scan, and how far back does it go? (Data spike, before architecture.)
-3. Does Polymarket's price history have minute-level prices for resolved Markets, far enough back for the Copy Test? If only coarser data exists, the Copy Delays change. (Data spike, before architecture.)
+3. Does Polymarket's price history have minute-level prices for resolved Markets, far enough back for the Copy Test? The Random Group Check needs these prices for the after part of every Wallet in the Copy Pool (up to the whole Scan, about 200 Wallets), not just the Passers, so expect many more requests and a larger Sample Dataset. If only coarser data exists, the Copy Delays and the Main Copy Delay change, and the new Main Copy Delay is fixed before any data is looked at. (Data spike, before architecture.)
 4. Which language model for stage 3? `addendum.md` proposes one; cost is small because each Market is classified once.
 5. Which 10 real Wallets go into the Sample Dataset? They should cover each Verdict.
 6. Which Cut-off Date for the real-data Hold-up Test? It must leave enough bets in the after part and enough in the before part, and the Minimum After-bets should not drop most of the Passers.
@@ -306,5 +318,6 @@ Each stage ends with all its tests passing and the README updated, so the projec
 - §4.6 FR-19: 80% agreement with hand labels is a sensible bar for Domain classification.
 - §3, §4.5 FR-17: a Wallet needs at least 10 Resolved Positions in the after part to count in the Hold-up Test (Minimum After-bets).
 - §4.5 FR-17: a difference of more than 20 percentage points in the share of Wallets dropped between the two groups is "way more" and gets a message.
+- §3, §4.5 FR-18: the Random Group Check needs at least 1,000 different possible groups to give a Copy Verdict.
 - §4.5 FR-16: 200 Wallets is a sensible default Scan size (fetch time and Polymarket's rate limits not yet measured).
 - §1, §6: the app runs locally on the user's or examiner's laptop as a web page; it is not hosted publicly.
