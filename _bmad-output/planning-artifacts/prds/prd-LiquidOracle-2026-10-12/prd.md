@@ -2,7 +2,7 @@
 title: "PRD: LiquidOracle"
 status: draft
 created: 2026-10-12
-updated: 2026-10-14
+updated: 2026-10-15
 ---
 
 # PRD: LiquidOracle
@@ -43,13 +43,13 @@ v1 is built in three stages, each a working app: (1) a verdict for the whole wal
   The wallet has 12 resolved bets. The app shows *Not enough data*: "12 resolved bets; at least 30 are needed for a verdict", with no p-value and no chart.
 
 - **UJ-3. The examiner runs the app offline.**
-  The examiner clones the repository, follows the README, and starts the app in offline mode with the mock language model. With no network and no keys, they pick wallets from the sample dataset, including the synthetic ones, and see the verdicts the tests expect (the sharp trader is *Skilled (high confidence)*, the coin-flipper *No evidence of skill*). They run the test suite and it passes.
+  The examiner clones the repository, follows the README, and starts the app in Offline Mode. With no network and no keys, they pick wallets from the sample dataset, including the synthetic ones, and see the verdicts the tests expect (the sharp trader is *Skilled (high confidence)*, the coin-flipper *No evidence of skill*). They run the test suite and it passes.
 
 - **UJ-4. Jonas looks for wallets worth following** (stage 2).
-  Jonas opens the Scan page and starts a scan of the top 200 wallets by profit. When it finishes, the Watchlist shows 7 wallets rated *Skilled (high confidence)*, with the note "about 2 of 200 would pass by luck alone". He sets the Cut-off Date to 1 June. The app re-rates every scanned wallet using only the bets that resolved before June, and all 7 still pass (the Before-Cut-off Passers). The other scanned wallets that were rated on the same bets and did not pass form the Comparison Group. The Hold-up Test shows that on the bets opened after June the Passers kept beating the odds (*Skilled (high confidence)* on 640 later bets) while the Comparison Group did not. The Copy Test shows that a follower copying the Passers 5 minutes late, after fees, would have earned an average return that only 0.4% of 10,000 random groups of 7 Wallets from the same Scan matched (*Beat random picks*). Per Wallet, 5 of the 7 still make money at 5 minutes; on the other 2 the profit vanishes already at a 1-minute delay: speed traders. The page notes that these single-Wallet numbers are not luck-checked. He keeps the 5 forecasters on his list.
+  Jonas opens the Scan page and starts a scan of the top 200 wallets by profit. When it finishes, the Watchlist shows 7 wallets rated *Skilled (high confidence)*, with the note "at least about 2 of 200 would pass by luck alone, probably more, because these Wallets were picked for high profit". He sets the Cut-off Date to 1 June. The app re-rates every scanned wallet using only the bets that resolved before June, and all 7 still pass (the Before-Cut-off Passers). The other scanned wallets that were rated on the same bets and did not pass form the Comparison Group. The Hold-up Test shows that on the bets opened after June the Passers kept beating the odds (*Skilled (high confidence)* on 640 later bets) while the Comparison Group did not. The Copy Test shows that a follower copying the Passers 5 minutes late, after fees, would have earned an average return that only 0.4% of 10,000 random groups of 7 Wallets from the same Scan matched (*Beat random picks*). Per Wallet, 5 of the 7 still make money at 5 minutes; on the other 2 the profit vanishes already at a 1-minute delay: speed traders. The page notes that these single-Wallet numbers are not luck-checked. He keeps the 5 forecasters on his list.
 
 - **UJ-5. Jonas sees where the edge is** (stage 3).
-  For a wallet with 400 resolved bets, the page adds a domain table: crypto *Skilled (high confidence)* on 180 bets, sports *No evidence of skill* on 150, politics *Not enough data* on 22.
+  For a wallet with 352 resolved bets, the page adds a domain table: crypto *Skilled (high confidence)* on 180 bets, sports *No evidence of skill* on 150, politics *Not enough data* on 22. Under the Verdict card sits a 45-word Explanation. Another wallet shows "Likely market maker (heuristic, may be wrong)" beside its Verdict, which stays unchanged.
 
 ## 3. Glossary
 
@@ -70,7 +70,7 @@ v1 is built in three stages, each a working app: (1) a verdict for the whole wal
 - **Seed**: the number that fixes the random draws, so a Skill Test can be repeated exactly.
 - **Scan**: running the Skill Test on the top Wallets by profit (default 200) in one go.
 - **Watchlist**: the Wallets from a Scan rated *Skilled (high confidence)*. Private: stored only on the machine running the app.
-- **Expected Luck Passes**: the number of Wallets expected to pass a Scan by luck alone: number of Wallets tested × 0.01.
+- **Minimum Luck Passes**: the fewest Wallets expected to pass a Scan by luck alone: number of Wallets tested × 0.01. A floor, not an estimate: the Scan picks Wallets for high profit, so more than this pass by luck.
 - **Cut-off Date**: the date that splits a Wallet's history into a *before* part (used to judge skill) and an *after* part (used to check it). The before part is the Positions that resolved before the date; the after part is the Positions opened on or after it. A Position opened before the date and resolved after it is in neither part.
 - **Before-Cut-off Passers**: the Wallets from a Scan rated *Skilled (high confidence)* when the Skill Test uses only the before part. Unlike the Watchlist (whole history), nothing after the Cut-off Date decides who is in this group.
 - **Hold-up Test**: the Skill Test run on the pooled after part, as Resolved Positions, of the Before-Cut-off Passers.
@@ -86,10 +86,10 @@ v1 is built in three stages, each a working app: (1) a verdict for the whole wal
 - **Copy Test**: computing Follower PnL and Follower Return for each Copy Delay over the Resolved Positions in the after part of each Before-Cut-off Passer, plus the Random Group Check. Paper only.
 - **Domain**: the category of a Market: politics, sports, crypto, macro or other.
 - **Domain Verdict**: a Verdict from the Skill Test on only one Domain's Resolved Positions, with the Bonferroni correction (FR-20).
-- **Sample Dataset**: Wallet histories and Market data saved in the repository, so the app can run without the network.
-- **Synthetic Wallet**: a made-up Wallet with a known correct Verdict, generated by script with a fixed Seed.
+- **Sample Dataset**: Wallet histories (Positions from before and after the Cut-off Date), Market data, and the recorded price history around each Position's buy time (enough to find the price at each Copy Delay), saved in the repository so the app can run without the network.
+- **Synthetic Wallet**: a made-up Wallet with a known correct Verdict, generated by script with a fixed Seed. Types: see the table under FR-13.
 - **Offline Mode**: the app reads only the Sample Dataset and makes no network calls.
-- **Mock LLM Mode**: the language model is replaced by keyword rules and text templates, so no key is needed.
+- **Mock LLM Mode** (stage 3): the language model is replaced by keyword rules and text templates, so no key is needed.
 - **Flag**: a label marking a Wallet as a likely bot or market maker (stage 3).
 - **Explanation**: a short plain-language text describing a Wallet's Verdict (stage 3).
 
@@ -159,7 +159,7 @@ Every Verdict card shows:
 - the share of Real PnL coming from the single largest Position;
 - how many Positions were held to resolution out of all Positions (N of M), and the Exit PnL;
 - a visible warning next to the Verdict when Exit PnL is below zero: "Positions this Wallet sold before resolution lost money in total. This Verdict covers only bets held to resolution.";
-- a short fixed note on the test's limits (long shots tend to be overpriced; the Verdict covers only bets held to resolution, so early exits are not measured and can make a Wallet look better or worse than it is) and that this is not financial advice.
+- a short fixed note on the test's limits (long shots tend to be overpriced; the Verdict covers only bets held to resolution, so early exits are not measured and can make a Wallet look better or worse than it is; Wallets are often looked up because they already looked good, and picking by results makes luck look more like skill) and that this is not financial advice.
 
 Checks:
 - The stop-loss Synthetic Wallet (FR-13) shows the warning. A Wallet with Exit PnL ≥ 0, or with no early sales, shows none.
@@ -169,27 +169,40 @@ Checks:
 **Description:** Lets the examiner run and check the app without our keys or a working Polymarket API. Realizes UJ-3.
 
 #### FR-12: Sample Dataset
-The repository contains stored data for about 10 real Wallets (a mix of Verdicts, including at least one *Not enough data*) and all Synthetic Wallets.
+The repository contains stored data for about 10 real Wallets (a mix of Verdicts, including at least one *Not enough data*) and all Synthetic Wallets, each with its Positions and the recorded price history around each Position's buy time.
+- The real Wallets have Positions both before and after the Cut-off Date, so the Hold-up Test and Copy Test run offline.
 
 #### FR-13: Synthetic Wallets
-A script generates the Synthetic Wallets in the brief's table from a fixed Seed, plus one the brief does not list: a stop-loss trader with no edge, who sells Positions whose price has fallen and holds the rest to resolution (added after the PRD validation, see FR-11). Running it twice gives identical files.
+A script generates the Synthetic Wallets in the table below from a fixed Seed. It also generates the price paths: forecaster, slow drift towards the Outcome over hours; speed trader, a jump to the Outcome seconds after the buy; coin-flippers, no edge. Running it twice gives identical files.
+
+| Synthetic Wallet | How it is built | Expected result | Used by |
+|---|---|---|---|
+| Hand-check | 10 bets at 50¢, all won | Only "all 10 won" beats or ties it, so the exact answer is 1/1024 ≈ 0.001; the simulated p must land between 0.0003 and 0.002. Engine-level test, bypassing the 30-bet minimum | FR-5 |
+| Coin-flipper | 1,000 wallets of 100 bets each, random prices between 10¢ and 90¢, outcomes drawn at those prices | *Likely skilled* or better for at most 7% of wallets (5% expected by design), *Skilled (high confidence)* for at most 2% | FR-5, FR-17, FR-18, FR-22, UJ-3 |
+| Favourite-buyer | 100 bets at 90¢, wins 90 | *No evidence of skill* | FR-5 |
+| Sharp trader | 100 bets at 50¢, wins exactly 70 | *Skilled (high confidence)* (exact binomial p ≈ 0.00004) | FR-5, FR-16, FR-22, UJ-3 |
+| Thin wallet | 29 resolved bets | *Not enough data* | FR-6, FR-10 |
+| Steady sharp (stage 2) | 100 bets at 50¢ winning 70 before the cut-off, the same after | Passes before; still *Skilled (high confidence)* on its after-cut-off bets | FR-16, FR-17 |
+| Lucky streak (stage 2) | The coin-flippers that happen to pass before the cut-off; after it, outcomes drawn at fair odds | Pass before by construction; pooled after-cut-off bets show *No evidence of skill* | FR-17 |
+| Forecaster (stage 2) | Buys at 50¢, wins 70%; the price drifts slowly towards the outcome over hours | Copy-test profit stays positive at a 30-minute delay | FR-16, FR-18 |
+| Speed trader (stage 2) | Buys at 50¢ seconds before the price jumps to the outcome | Copy-test profit is zero or negative at a 5-minute delay | FR-16, FR-18 |
+| Stop-loss trader (stage 1) | 100 bets at 50¢ with no edge; bets whose price has fallen are sold before resolution, the rest are held to resolution | The card shows how many bets were held, the negative realised PnL of the sold ones, and a visible warning next to the verdict. The verdict itself may read skilled: that is the known limit | FR-11 |
+| Market maker (stage 3) | Many small buys and sells on both sides of the same markets, flat inventory | Flagged as likely market maker | FR-22 |
+| Split-domain trader (stage 3) | 60 bets at 50¢ in crypto, exactly 42 won; 60 bets at 50¢ in sports, exactly 30 won | Crypto *Skilled (high confidence)*, sports *No evidence of skill* | FR-20 |
 
 #### FR-14: Offline Mode
 One setting makes the app use only the Sample Dataset.
 - In Offline Mode, every Wallet in the Sample Dataset can be looked up with the network disconnected.
 - Looking up a Wallet outside the Sample Dataset in Offline Mode shows "Not available offline".
 
-#### FR-15: Mock LLM Mode
-One setting replaces the language model with keyword rules (Domain) and templates (Explanation). It is on by default when no key is set.
-
 ### 4.5 Is Skill Worth Following? (stage 2)
 
 **Description:** Answers the follower's question: which wallets are worth following, does their skill last, and does it survive being copied late. Everything here is computed on recorded data; nothing places orders. Realizes UJ-4.
 
 #### FR-16: Scan and Watchlist
-The user can start a Scan of the top Wallets by profit (default 200) and see the Watchlist, sorted by p-value, with the Expected Luck Passes shown next to it.
-- A Scan of the Sample Dataset in Offline Mode puts the sharp-trader, steady-sharp and forecaster Synthetic Wallets on the Watchlist.
-- A Scan of 200 Wallets shows "about 2 of 200 would pass by luck alone".
+The user can start a Scan of the top Wallets by profit (default 200) and see the Watchlist, sorted by p-value, with the Minimum Luck Passes shown next to it.
+- A Scan of the Sample Dataset in Offline Mode puts at least the sharp-trader, steady-sharp, forecaster and speed-trader Synthetic Wallets on the Watchlist.
+- A Scan of 200 Wallets shows "at least about 2 of 200 would pass by luck alone, probably more, because these Wallets were picked for high profit".
 - The page shows progress during a Scan; an interrupted Scan resumes without re-fetching finished Wallets.
 - The Watchlist is stored in the database with the Scan date and is never sent anywhere.
 
@@ -219,9 +232,13 @@ For each of the Before-Cut-off Passers, over the Positions in its after part, th
 - A position with no recorded price at a Copy Delay is left out of that delay's sum, and the count of left-out positions is shown.
 - The page states that Follower PnL ignores the spread and the follower's own price impact, so it is an upper bound.
 
-### 4.6 Domains (stage 3)
+### 4.6 Language Model and Domains (stage 3)
 
-**Description:** Splits the Skill Test by Domain so the user sees where the edge is. Realizes UJ-5.
+**Description:** Splits the Skill Test by Domain so the user sees where the edge is. The language model behind it can be replaced by Mock LLM Mode, so stage 3 also runs with no key. Realizes UJ-5.
+
+#### FR-15: Mock LLM Mode
+One setting replaces the language model with keyword rules (Domain) and templates (Explanation). It is on by default when no key is set. The ID is kept from when this requirement sat in stage 1.
+- With no key set, FR-19 and FR-23 run in Mock LLM Mode and their tests pass.
 
 #### FR-19: Classify Markets
 The system assigns each Market a Domain using the language model (or Mock LLM Mode).
@@ -230,6 +247,7 @@ The system assigns each Market a Domain using the language model (or Mock LLM Mo
 
 #### FR-20: Domain Verdicts
 The system runs the Skill Test per Domain with at least 30 Resolved Positions, multiplying each p-value by the number of Domains tested (Bonferroni correction, capped at 1) before choosing the Verdict.
+- Domains tested means the Domains with at least 30 Resolved Positions. A Domain with fewer is shown as *Not enough data* and does not count toward the multiplier. *Other* is a Domain like the rest.
 - A Synthetic Wallet that is sharp in one Domain and a coin-flipper in another gets *Skilled (high confidence)* in the first and *No evidence of skill* in the second.
 
 #### FR-21: Domain table
@@ -240,14 +258,19 @@ The Verdict page shows one row per Domain: Domain, Resolved Positions, Domain Ve
 **Description:** Marks wallets whose profit comes from bots or market making rather than opinions, and explains the Verdict in plain language.
 
 #### FR-22: Bot and market-maker Flag
-The system Flags Wallets whose behaviour matches heuristics for market making or automated trading (e.g. buying both sides of the same Markets, flat inventory, very short holding times). The Flag is shown as "heuristic, may be wrong", never as a fact.
+The system Flags a Wallet when at least 2 of these 3 rules hold: `[ASSUMPTION: starting values, to tune on the synthetic market maker]`
+- it bought both outcomes in at least 30% of the Markets it traded;
+- it sold at least 80% of the shares it bought (flat inventory);
+- the median time from buy to sell, over the shares it sold, is under 1 hour.
+
+The Flag is shown beside the Verdict as "Likely market maker (heuristic, may be wrong)", never as a fact, and does not change the Verdict.
 - The synthetic market-maker Wallet is Flagged; the coin-flipper and sharp-trader Synthetic Wallets are not.
 
 #### FR-23: Explanation
-The system generates a short Explanation of the Verdict (and Domain Verdicts) with the language model, or from a template in Mock LLM Mode.
+The system generates an Explanation of the Verdict (and Domain Verdicts) of at most 60 words with the language model, or from a template in Mock LLM Mode. It is shown under the Verdict card. `[ASSUMPTION: 60 words]`
 
 #### FR-24: Explanation check
-Before an Explanation is shown, code checks that it states the same Verdict and the same p-value (rounded) as the Skill Test, and makes no claim the test doesn't support (e.g. "will", "guaranteed"). An Explanation that fails is replaced by the template text.
+Before an Explanation is shown, code checks that it names the same Verdict and the same "about 1 time in N" as the card (FR-8), and contains none of the words banned in §8 Wording. An Explanation that fails is replaced by the template text.
 - A planted Explanation with a wrong Verdict is replaced by the template.
 
 ## 5. Non-Goals
@@ -263,9 +286,9 @@ Before an Explanation is shown, code checks that it states the same Verdict and 
 
 ### 6.1 In Scope
 
-- **Stage 1 (MVP, must be finished first):** FR-1 to FR-15. A complete, tested app that gives a whole-wallet Verdict and runs offline.
+- **Stage 1 (MVP, must be finished first):** FR-1 to FR-14. A complete, tested app that gives a whole-wallet Verdict and runs offline.
 - **Stage 2:** FR-16 to FR-18 (Scan, Hold-up Test, Copy Test).
-- **Stage 3:** FR-19 to FR-24 (Domains, Flags, Explanations). Trimmed first if time runs short.
+- **Stage 3:** FR-15 and FR-19 to FR-24 (Mock LLM Mode, Domains, Flags, Explanations). Trimmed first if time runs short.
 
 Each stage ends with all its tests passing and the README updated, so the project is deliverable after any stage.
 
@@ -279,7 +302,7 @@ Each stage ends with all its tests passing and the README updated, so the projec
 
 **Primary**
 - **SM-1**: All Skill Test correctness tests pass (hand-check, coin-flipper, sharp trader, favourite-buyer, thin wallet, reproducibility, hand-calculated Real PnL). Validates FR-4 to FR-7.
-- **SM-2**: The examiner can run the app and the tests from the README with no network and no keys. Validates FR-12 to FR-15.
+- **SM-2**: The examiner can run the app and the tests from the README with no network and no keys. Validates FR-12 to FR-14.
 
 **Secondary**
 - **SM-3**: A lookup of a Wallet with up to 1,000 Resolved Positions returns a Verdict within 10 seconds on an ordinary laptop (stored data). Validates FR-5.
@@ -295,10 +318,11 @@ Each stage ends with all its tests passing and the README updated, so the projec
 
 ## 8. Cross-Cutting Requirements
 
-- **Runnable from the README**: install and start with a few documented commands on Windows, macOS and Linux.
+- **Runnable from the README**: from a fresh clone with Python installed, the app starts in at most 3 documented commands (install dependencies, load the Sample Dataset, start the app). The README lists the prerequisites (Python version), the exact commands, and how keys are set in `.env`.
+- **Runs on Windows, macOS and Linux**: a GitHub Actions workflow installs the dependencies and runs the test suite on all three systems on every push. A failing run on any of them counts as a failing build.
 - **Database**: cached Polymarket data, Domain labels, Scans and Watchlists are kept in a database (a local SQLite file is enough, nothing to install or host). Reason: course requirement (teacher, 17 Sept 2026).
 - **Secrets**: the language-model key is read from `.env`, which is never committed; the repository contains `.env.example`.
-- **Polite to Polymarket**: pacing and local storage so a lookup makes as few requests as possible.
+- **Polite to Polymarket**: a lookup of a Wallet already stored makes 0 network calls (FR-2). A first lookup makes at most N requests; N is set after the data spike (§9 Q1), not guessed now.
 - **Testable core**: the Skill Test module has no network, web or language-model code, and every FR with consequences has at least one automated test.
 - **Wording**: the app never uses words like "guaranteed", "insider" or "will win" about a Wallet.
 
@@ -310,12 +334,15 @@ Each stage ends with all its tests passing and the README updated, so the projec
 4. Which language model for stage 3? `addendum.md` proposes one; cost is small because each Market is classified once.
 5. Which 10 real Wallets go into the Sample Dataset? They should cover each Verdict.
 6. Which Cut-off Date for the real-data Hold-up Test? It must leave enough bets in the after part and enough in the before part, and the Minimum After-bets should not drop most of the Passers.
+7. Maybe later: should the app report a measured luck-pass rate for top-by-profit picks? Run the same top-by-profit selection on a population of coin-flipper Synthetic Wallets and show the share that pass, next to the Minimum Luck Passes. Not in v1 scope; revisit if time allows after stage 2.
 
 ## 10. Assumptions Index
 
 - §4.1 FR-2: stored data counts as fresh for 24 hours.
 - §4.1 FR-3: partly sold Positions enter the Skill Test with the shares held at resolution, at the original Entry Price.
 - §4.6 FR-19: 80% agreement with hand labels is a sensible bar for Domain classification.
+- §4.7 FR-22: Flag rules (at least 2 of 3: both outcomes in at least 30% of Markets; sold at least 80% of shares bought; median buy-to-sell time under 1 hour) are starting values, to tune on the synthetic market maker.
+- §4.7 FR-23: an Explanation of at most 60 words is enough.
 - §3, §4.5 FR-17: a Wallet needs at least 10 Resolved Positions in the after part to count in the Hold-up Test (Minimum After-bets).
 - §4.5 FR-17: a difference of more than 20 percentage points in the share of Wallets dropped between the two groups is "way more" and gets a message.
 - §3, §4.5 FR-18: the Random Group Check needs at least 1,000 different possible groups to give a Copy Verdict.
