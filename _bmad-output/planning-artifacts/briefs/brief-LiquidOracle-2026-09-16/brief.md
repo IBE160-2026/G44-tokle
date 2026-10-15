@@ -2,7 +2,7 @@
 title: "Product Brief: LiquidOracle"
 status: final
 created: 2026-09-16
-updated: 2026-10-14
+updated: 2026-10-15
 ---
 
 # Product Brief: LiquidOracle
@@ -29,6 +29,11 @@ updated: 2026-10-14
 > - The copy test gets a luck check: the passing wallets are compared with random groups of the same size from the same scan, on profit after fees.
 > - The 5-minute delay is fixed in advance as the one that decides the result; 1 and 30 minutes are shown as extra information.
 > - The copy test now includes Polymarket's fees.
+>
+> **Revision 2026-10-15 (5)**, after the PRD's remaining medium findings (`docs/ai-logs/2026-10-15-prd-medium-findings.md`):
+> - The scan states a minimum number of luck passes, not an expected number: the scan picks wallets for high profit, so more than 1% pass by luck.
+> - The mock language model is a stage 3 feature, so success criterion 7 no longer mentions it.
+> - New synthetic wallet, the split-domain trader, for the per-domain verdicts.
 
 ## Executive Summary
 
@@ -113,16 +118,17 @@ The biggest risk in this project is a statistics engine that runs and produces p
 | Synthetic wallet | How it is built | Expected result |
 |---|---|---|
 | Hand-check | 10 bets at 50¢, all won | Only "all 10 won" beats or ties it, so the exact answer is 1/1024 ≈ 0.001; the simulated p must land between 0.0003 and 0.002. Engine-level test, bypassing the 30-bet minimum |
-| Coin-flipper | 1,000 wallets of 100 bets each, random prices between 10¢ and 90¢, outcomes drawn at those prices | *Skilled* or *Likely skilled* for at most 7% of wallets (5% expected by design), *Skilled (high confidence)* for at most 2% |
+| Coin-flipper | 1,000 wallets of 100 bets each, random prices between 10¢ and 90¢, outcomes drawn at those prices | *Likely skilled* or better for at most 7% of wallets (5% expected by design), *Skilled (high confidence)* for at most 2% |
 | Favourite-buyer | 100 bets at 90¢, wins 90 | *No evidence of skill* |
 | Sharp trader | 100 bets at 50¢, wins exactly 70 | *Skilled (high confidence)* (exact binomial p ≈ 0.00004) |
 | Thin wallet | 29 resolved bets | *Not enough data* |
-| Steady sharp (stage 2) | 100 bets at 50¢ winning 70 before the cut-off, the same after | Passes before; still *Skilled* on its after-cut-off bets |
+| Steady sharp (stage 2) | 100 bets at 50¢ winning 70 before the cut-off, the same after | Passes before; still *Skilled (high confidence)* on its after-cut-off bets |
 | Lucky streak (stage 2) | The coin-flippers that happen to pass before the cut-off; after it, outcomes drawn at fair odds | Pass before by construction; pooled after-cut-off bets show *No evidence of skill* |
 | Forecaster (stage 2) | Buys at 50¢, wins 70%; the price drifts slowly towards the outcome over hours | Copy-test profit stays positive at a 30-minute delay |
 | Speed trader (stage 2) | Buys at 50¢ seconds before the price jumps to the outcome | Copy-test profit is zero or negative at a 5-minute delay |
 | Stop-loss trader (stage 1) | 100 bets at 50¢ with no edge; bets whose price has fallen are sold before resolution, the rest are held to resolution | The card shows how many bets were held, the negative realised PnL of the sold ones, and a visible warning next to the verdict. The verdict itself may read skilled: that is the known limit |
 | Market maker (stage 3) | Many small buys and sells on both sides of the same markets, flat inventory | Flagged as likely market maker |
+| Split-domain trader (stage 3) | 60 bets at 50¢ in crypto, exactly 42 won; 60 bets at 50¢ in sports, exactly 30 won | Crypto *Skilled (high confidence)*, sports *No evidence of skill* |
 
 ## Running Without Keys or Live APIs
 
@@ -157,11 +163,11 @@ The examiner must be able to run the app from the README without our API keys an
 6. Real PnL computed by the engine matches PnL computed by hand for three saved real wallets.
 
 **The app:**
-7. With offline mode and the mock language model on, every saved wallet can be looked up and shows a verdict card, with no network access and no keys.
+7. With offline mode on, every saved wallet can be looked up and shows a verdict card, with no network access and no keys.
 8. A lookup of a wallet with up to 1,000 resolved positions returns a verdict within 10 seconds on an ordinary laptop.
 
 **Stage 2:**
-9. A scan of the sample dataset in offline mode lists the sharp-trader, steady-sharp and forecaster wallets, and shows the expected number of luck passes for the number of wallets tested.
+9. A scan of the sample dataset in offline mode lists the sharp-trader, steady-sharp and forecaster wallets, and shows the minimum number of luck passes (wallets tested × 1%; a floor, because the scan picks wallets for high profit) for the number of wallets tested.
 10. In the hold-up test, the steady-sharp wallets are still rated *Skilled* on their after-cut-off bets, and the lucky-streak wallets show *No evidence of skill* on theirs.
 11. In the copy test, the speed trader's profit at a 5-minute delay is zero or negative, and the forecaster's stays positive at 30 minutes. A planted scan where the passing group are forecasters and the rest are coin-flippers beats random groups (p < 0.01); planted scans of coin-flippers only beat random groups (p < 0.05) at most 7% of the time.
 
