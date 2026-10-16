@@ -18,7 +18,10 @@ Material that belongs to architecture rather than the PRD itself. All of it exce
 
 ## Sources
 
-- **Yale SOM study** (cited in SM-C1 and the brief: about 3% of Polymarket accounts show skill). Gomez-Cram, Guo, Kung and Jensen, *Prediction Market Accuracy: Crowd Wisdom or Informed Minority?*, SSRN working paper, April 2026. Title, authors and date as given by Edvard (2026-10-16). The data (Polymarket trades 2023 to 2025) and the figure (about 3.14% of accounts are "skilled winners") match the press coverage ([Yale Insights](https://insights.som.yale.edu/insights/wisdom-of-the-few-prediction-markets-are-driven-by-small-number-of-skilled-traders), [The Block](https://www.theblock.co/post/398902/skilled-polymarket-traders-are-a-3-minority-and-everyone-else-funds-their-gains-study)). **To do before the PRD is final:** add the SSRN link, and check the ~3% figure against the paper itself.
+- **Yale SOM study** (cited in SM-C1 and the brief: around 3% of Polymarket accounts show skill). Gomez-Cram, Guo, Kung and Jensen, *Prediction Market Accuracy: Crowd Wisdom or Informed Minority?*, SSRN working paper: <https://papers.ssrn.com/sol3/papers.cfm?abstract_id=6617059>. Version used: 25 June 2026 (the first version is from April 2026). Read by Edvard on 2026-10-16; the figures below are as he reported them from that version.
+  - **Share skilled:** around 3% of accounts in the abstract, 3.2% in the introduction. The "about 3%" in SM-C1 and the brief matches the abstract.
+  - **Persistence:** 46% of the skilled accounts stay skilled out of sample, against 10% for mutual funds (the paper's comparison). Context for the Hold-up Test (SM-5); not a target, see SM-C2.
+  - **Older figure, not used here:** 3.14% is from the April version, which The Block covered ([The Block](https://www.theblock.co/post/398902/skilled-polymarket-traders-are-a-3-minority-and-everyone-else-funds-their-gains-study)). The Yale SOM write-up ([Yale Insights](https://insights.som.yale.edu/insights/wisdom-of-the-few-prediction-markets-are-driven-by-small-number-of-skilled-traders)) says "just 3%".
 
 ## Why the Skill Test simulates outcomes instead of shuffling trades
 

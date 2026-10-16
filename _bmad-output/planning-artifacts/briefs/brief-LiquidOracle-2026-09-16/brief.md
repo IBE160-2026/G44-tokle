@@ -37,6 +37,12 @@ updated: 2026-10-16
 >
 > **Revision 2026-10-16 (6)**, after the PRD's low findings (`docs/ai-logs/2026-10-16-prd-low-findings.md`):
 > - Wording only: the success criteria use the verdict's full name, *Skilled (high confidence)*, as the PRD glossary does.
+>
+> **Revision 2026-10-16 (7)**, to match the PRD after the student's decision on the scan's ranking (`prds/prd-LiquidOracle-2026-10-12/prd.md`, FR-16, FR-17, Open Question 2):
+> - The cut-off date is chosen when the scan starts, and the scan ranks wallets only on profit from positions resolved before it. Otherwise results after the date would decide who is tested, and the hold-up test would be rigged. A different date means a new scan.
+> - The number of luck passes is stated as "at least about 2, probably more" in the scan description too (revision 5 changed only the success criterion).
+> - The comparison group leaves out wallets with too few positions before the cut-off, as in the PRD glossary.
+> - Success criterion 9 also lists the speed-trader wallet, as FR-16 does.
 
 ## Executive Summary
 
@@ -68,7 +74,7 @@ LiquidOracle is a web app. The user pastes a Polymarket wallet address and gets 
 2. **The odds in plain words**: "A trader with no edge would do this well about 1 time in 300."
 3. **A chart of luck**: the spread of profits a no-skill trader could have made with the same bets, with the wallet's real result marked on it.
 4. **When there is too little data**: no verdict, just how many resolved bets the wallet has and how many more are needed.
-5. Stage 2 adds a **Scan** page: the private watchlist of wallets that pass, how many would pass by luck alone, the hold-up result and the copy-test profit at each delay.
+5. Stage 2 adds a **Scan** page: the private watchlist of wallets that pass, the fewest that would pass by luck alone, the hold-up result and the copy-test profit at each delay.
 6. Stage 3 adds a table of verdicts per domain, bot or market-maker flags, and a short AI-written explanation.
 
 **How it works:**
@@ -107,8 +113,8 @@ LiquidOracle is a web app. The user pastes a Polymarket wallet address and gets 
 
 Passing the skill test says a wallet's past results are unlikely to be luck. A follower needs two more answers: does the skill last, and can it be copied? Stage 2 measures both on paper.
 
-1. **Scan**: run the skill test on the top ~200 wallets by profit and list those rated *Skilled (high confidence)* in a private, local watchlist. Testing 200 wallets gives luck 200 chances: at p < 0.01, about 2 pure-luck wallets are expected to pass. The page states that number next to the list.
-2. **Hold-up test**: pick a cut-off date. Run the skill test using only positions resolved before it, then pool the positions that the passing wallets opened after it and run the same test on those. If the skill was real, the passing group keeps beating the odds after the cut-off; if it was luck, its later results look like chance. The same is done for a comparison group: the other scanned wallets, picked the same way (rated on positions resolved before the cut-off only, and not passing), tested on the same kind of later positions. Nothing from after the cut-off decides who is in either group.
+1. **Scan**: the user first picks a cut-off date. The scan takes the top ~200 wallets by profit made before that date, runs the skill test on each and lists those rated *Skilled (high confidence)* in a private, local watchlist. Testing 200 wallets gives luck 200 chances: at p < 0.01, at least about 2 pure-luck wallets will pass, and probably more, because the scan picks wallets for high profit. The page states that minimum next to the list. A different cut-off date means a new scan.
+2. **Hold-up test**: uses the cut-off date the scan started with. Run the skill test using only positions resolved before it, then pool the positions that the passing wallets opened after it and run the same test on those. If the skill was real, the passing group keeps beating the odds after the cut-off; if it was luck, its later results look like chance. The same is done for a comparison group: the other scanned wallets, picked the same way (rated on positions resolved before the cut-off only, and not passing; wallets with too few positions before the cut-off are in neither group), tested on the same kind of later positions. Nothing from after the cut-off decides who is in either group, or which wallets were scanned.
 3. **Copy test** (paper only): for each later bet of a passing wallet, look up the market price 1, 5 and 30 minutes after the wallet bought, and compute what a follower buying the same outcome at that price would have made after Polymarket's fees: Σ *s* · (*o* − *p*<sub>delay</sub>) minus the fees. A forecaster's edge survives a delay; a speed trader's disappears within minutes.
 4. **Luck check on the copy test**: a profit over a few dozen copied bets can be luck too. So the passing group is compared with random groups of the same size, drawn 10,000 times from the scanned wallets. Each group is scored on its average return after fees (profit divided by money spent, so one very large wallet cannot decide the result; win rate is not used, because it can look good while a wallet loses money). The share of random groups that do as well or better is the p-value. Only the 5-minute delay decides the result. It was chosen before looking at any data, because testing three delays would give luck three chances. The 1- and 30-minute results are shown as extra information.
 
@@ -170,7 +176,7 @@ The examiner must be able to run the app from the README without our API keys an
 8. A lookup of a wallet with up to 1,000 resolved positions returns a verdict within 10 seconds on an ordinary laptop.
 
 **Stage 2:**
-9. A scan of the sample dataset in offline mode lists the sharp-trader, steady-sharp and forecaster wallets, and shows the minimum number of luck passes (wallets tested × 1%; a floor, because the scan picks wallets for high profit) for the number of wallets tested.
+9. A scan of the sample dataset in offline mode lists the sharp-trader, steady-sharp, forecaster and speed-trader wallets, and shows the minimum number of luck passes (wallets tested × 1%; a floor, because the scan picks wallets for high profit) for the number of wallets tested.
 10. In the hold-up test, the steady-sharp wallets are still rated *Skilled (high confidence)* on their after-cut-off bets, and the lucky-streak wallets show *No evidence of skill* on theirs.
 11. In the copy test, the speed trader's profit at a 5-minute delay is zero or negative, and the forecaster's stays positive at 30 minutes. A planted scan where the passing group are forecasters and the rest are coin-flippers beats random groups (p < 0.01); planted scans of coin-flippers only beat random groups (p < 0.05) at most 7% of the time.
 
