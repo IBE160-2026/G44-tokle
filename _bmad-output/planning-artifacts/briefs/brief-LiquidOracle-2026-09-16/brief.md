@@ -2,7 +2,7 @@
 title: "Product Brief: LiquidOracle"
 status: final
 created: 2026-09-16
-updated: 2026-10-15
+updated: 2026-10-16
 ---
 
 # Product Brief: LiquidOracle
@@ -34,6 +34,9 @@ updated: 2026-10-15
 > - The scan states a minimum number of luck passes, not an expected number: the scan picks wallets for high profit, so more than 1% pass by luck.
 > - The mock language model is a stage 3 feature, so success criterion 7 no longer mentions it.
 > - New synthetic wallet, the split-domain trader, for the per-domain verdicts.
+>
+> **Revision 2026-10-16 (6)**, after the PRD's low findings (`docs/ai-logs/2026-10-16-prd-low-findings.md`):
+> - Wording only: the success criteria use the verdict's full name, *Skilled (high confidence)*, as the PRD glossary does.
 
 ## Executive Summary
 
@@ -156,7 +159,7 @@ The examiner must be able to run the app from the README without our API keys an
 
 **Correctness of the skill test** (each one is an automated test against the synthetic wallets above):
 1. The hand-check wallet gives a p-value between 0.0003 and 0.002 (exact answer 1/1024 ≈ 0.001).
-2. Across 1,000 coin-flipper wallets, a *Skilled* or *Likely skilled* verdict appears for at most 7%, and *Skilled (high confidence)* for at most 2%.
+2. Across 1,000 coin-flipper wallets, a verdict of *Likely skilled* or better appears for at most 7%, and *Skilled (high confidence)* for at most 2%.
 3. The sharp-trader wallet is rated *Skilled (high confidence)*; the favourite-buyer wallet is rated *No evidence of skill*.
 4. A wallet with fewer than 30 resolved positions shows *Not enough data* and no verdict.
 5. The same wallet with the same seed gives an identical p-value and verdict.
@@ -168,7 +171,7 @@ The examiner must be able to run the app from the README without our API keys an
 
 **Stage 2:**
 9. A scan of the sample dataset in offline mode lists the sharp-trader, steady-sharp and forecaster wallets, and shows the minimum number of luck passes (wallets tested × 1%; a floor, because the scan picks wallets for high profit) for the number of wallets tested.
-10. In the hold-up test, the steady-sharp wallets are still rated *Skilled* on their after-cut-off bets, and the lucky-streak wallets show *No evidence of skill* on theirs.
+10. In the hold-up test, the steady-sharp wallets are still rated *Skilled (high confidence)* on their after-cut-off bets, and the lucky-streak wallets show *No evidence of skill* on theirs.
 11. In the copy test, the speed trader's profit at a 5-minute delay is zero or negative, and the forecaster's stays positive at 30 minutes. A planted scan where the passing group are forecasters and the rest are coin-flippers beats random groups (p < 0.01); planted scans of coin-flippers only beat random groups (p < 0.05) at most 7% of the time.
 
 **Stage 3:**
