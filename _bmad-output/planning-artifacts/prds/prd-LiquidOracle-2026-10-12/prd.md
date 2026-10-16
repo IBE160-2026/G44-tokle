@@ -2,7 +2,7 @@
 title: "PRD: LiquidOracle"
 status: draft
 created: 2026-10-12
-updated: 2026-10-15
+updated: 2026-10-16
 ---
 
 # PRD: LiquidOracle
@@ -68,13 +68,13 @@ v1 is built in three stages, each a working app: (1) a verdict for the whole wal
 - **Verdict**: one of *Skilled (high confidence)* (p < 0.01), *Likely skilled* (p < 0.05), *No evidence of skill*, or *Not enough data* (fewer than 30 Resolved Positions).
 - **Skill Test**: the procedure that produces the Luck Distribution, p-value and Verdict for a set of Resolved Positions.
 - **Seed**: the number that fixes the random draws, so a Skill Test can be repeated exactly.
-- **Scan**: running the Skill Test on the top Wallets by profit (default 200) in one go.
+- **Scan**: running the Skill Test on the top Wallets by profit (default 200) in one go. Profit counts only from Positions resolved before the Cut-off Date, so the ranking cannot lean on the results the Hold-up Test is meant to check (§9 Q2).
 - **Watchlist**: the Wallets from a Scan rated *Skilled (high confidence)*. Private: stored only on the machine running the app.
 - **Minimum Luck Passes**: the fewest Wallets expected to pass a Scan by luck alone: number of Wallets tested × 0.01. A floor, not an estimate: the Scan picks Wallets for high profit, so more than this pass by luck.
 - **Cut-off Date**: the date that splits a Wallet's history into a *before* part (used to judge skill) and an *after* part (used to check it). The before part is the Positions that resolved before the date; the after part is the Positions opened on or after it. A Position opened before the date and resolved after it is in neither part.
 - **Before-Cut-off Passers**: the Wallets from a Scan rated *Skilled (high confidence)* when the Skill Test uses only the before part. Unlike the Watchlist (whole history), nothing after the Cut-off Date decides who is in this group.
 - **Hold-up Test**: the Skill Test run on the pooled after part, as Resolved Positions, of the Before-Cut-off Passers.
-- **Minimum After-bets**: the fewest Resolved Positions in its after part that a Wallet needs to be counted in the Hold-up Test: 10. `[ASSUMPTION]` The same number applies to the Before-Cut-off Passers and the Comparison Group. Why 10: a round starting value, high enough that one lucky bet is not a Wallet's whole after part and low enough that Wallets that kept betting still count. It is not measured; revisit with real data (§9 Q6).
+- **Minimum After-bets**: the fewest Resolved Positions in its after part that a Wallet needs to be counted in the Hold-up Test: 10. `[ASSUMPTION: 10]` The same number applies to the Before-Cut-off Passers and the Comparison Group. Why 10: a round starting value, high enough that one lucky bet is not a Wallet's whole after part and low enough that Wallets that kept betting still count. It is not measured; revisit with real data (§9 Q6).
 - **Comparison Group**: the other Wallets from the same Scan, picked the same way (same Cut-off Date, only the before part): those rated *Likely skilled* or *No evidence of skill*. Wallets with *Not enough data* in the before part are in neither group. The Comparison Group's after part is tested the same way as the Passers', with the same Minimum After-bets.
 - **Copy Delay**: how long after a Wallet's buy a follower buys: 1, 5 or 30 minutes.
 - **Main Copy Delay**: 5 minutes, fixed before any data is looked at. Only the Random Group Check at this delay decides the Copy Test's result; the 1- and 30-minute numbers are extra information. Reason: testing three delays would give luck three chances to pass.
@@ -114,7 +114,7 @@ The system fetches a Wallet's trades, positions and the related Markets from Pol
 The system combines a Wallet's fills into Positions and marks which are Resolved Positions.
 - Several buys of the same outcome in the same Market become one Position, with Entry Price = the share-weighted average price.
 - A Position fully sold before resolution is not a Resolved Position. It is counted and shown, but left out of the Skill Test.
-- A Position partly sold before resolution enters the Skill Test with the shares still held at resolution, at the original Entry Price. `[ASSUMPTION]` The shares sold count toward Exit PnL.
+- A Position partly sold before resolution enters the Skill Test with the shares still held at resolution, at the original Entry Price. `[ASSUMPTION: testing the shares still held, at the original Entry Price, is a fair way to treat a partly sold Position]` The shares sold count toward Exit PnL.
 - `[NOTE FOR PM]` Which Positions reach resolution is the trader's choice and can depend on how the price moved after the buy. A trader who sells losers early and keeps the rest looks better in the Skill Test than they are. v1 accepts this and makes it visible (FR-11); handling it in the test is deferred to v2 (§6.2).
 
 ### 4.2 Skill Test (stage 1)
@@ -146,7 +146,10 @@ Each Skill Test runs with a Seed that is stored with the result.
 
 #### FR-8: Verdict card
 The page shows the Verdict, the number of Resolved Positions, Real PnL, and the p-value in plain words ("about 1 time in N").
-- A p-value of 0.0033 is shown as "about 1 time in 300".
+- N is 1 divided by the p-value, rounded to 2 significant figures: 0.0033 is shown as "about 1 time in 300", 0.0099 as "about 1 time in 100", 0.25 as "about 1 time in 4".
+- When no Simulation reached the Real PnL, the card says "fewer than 1 time in 10,000", never "about 1 time in 10,000": 10,000 Simulations cannot show a smaller chance than that.
+- When the p-value is above 0.5, the card says "more than half the time".
+- A p-value of 1/10,001 is shown as "fewer than 1 time in 10,000", and 0.0099 as "about 1 time in 100".
 
 #### FR-9: Luck chart
 The page shows the Luck Distribution as a histogram with the Wallet's Real PnL marked on it.
@@ -200,7 +203,7 @@ One setting makes the app use only the Sample Dataset.
 **Description:** Answers the follower's question: which wallets are worth following, does their skill last, and does it survive being copied late. Everything here is computed on recorded data; nothing places orders. Realizes UJ-4.
 
 #### FR-16: Scan and Watchlist
-The user can start a Scan of the top Wallets by profit (default 200) and see the Watchlist, sorted by p-value, with the Minimum Luck Passes shown next to it.
+The user can start a Scan of the top Wallets by profit (default 200) and see the Watchlist, sorted by p-value, with the Minimum Luck Passes shown next to it. `[ASSUMPTION: 200 Wallets is a sensible default Scan size; fetch time and Polymarket's rate limits are not yet measured]`
 - A Scan of the Sample Dataset in Offline Mode puts at least the sharp-trader, steady-sharp, forecaster and speed-trader Synthetic Wallets on the Watchlist.
 - A Scan of 200 Wallets shows "at least about 2 of 200 would pass by luck alone, probably more, because these Wallets were picked for high profit".
 - The page shows progress during a Scan; an interrupted Scan resumes without re-fetching finished Wallets.
@@ -270,8 +273,9 @@ The Flag is shown beside the Verdict as "Likely market maker (heuristic, may be 
 The system generates an Explanation of the Verdict (and Domain Verdicts) of at most 60 words with the language model, or from a template in Mock LLM Mode. It is shown under the Verdict card. `[ASSUMPTION: 60 words]`
 
 #### FR-24: Explanation check
-Before an Explanation is shown, code checks that it names the same Verdict and the same "about 1 time in N" as the card (FR-8), and contains none of the words banned in §8 Wording. An Explanation that fails is replaced by the template text.
+Before an Explanation is shown, code checks that it names the same Verdict and the same odds phrase as the card (FR-8), and contains none of the words banned in §8 Wording. An Explanation that fails is replaced by the template text.
 - A planted Explanation with a wrong Verdict is replaced by the template.
+- Each replacement is counted, so the replacement rate (SM-7) can be reported.
 
 ## 5. Non-Goals
 
@@ -309,10 +313,10 @@ Each stage ends with all its tests passing and the README updated, so the projec
 - **SM-4**: The Hold-up Test and Copy Test synthetic checks pass (steady sharp vs lucky streak; forecaster vs speed trader; Random Group Check on planted Scans). Validates FR-17, FR-18.
 - **SM-5**: A Hold-up Test and a Copy Test have been run on real data, and the result is reported in the README and the reflection report, whichever way it comes out. Validates FR-16 to FR-18.
 - **SM-6**: Stage 3 Domain labels agree with hand labels on at least 80% of 50 Markets. Validates FR-19.
-- **SM-7**: Every shown Explanation passes the Explanation check. Validates FR-24.
+- **SM-7**: The replacement rate: the share of Explanations that fail the Explanation check and are replaced by the template, counted over the Sample Dataset's Wallets and Domain Verdicts and reported in the README. In Mock LLM Mode it should be 0 (a template that fails the check is a bug). With a real model it is expected to be above 0, and the number is reported whichever way it comes out. No target. Validates FR-24.
 
 **Counter-metrics (do not optimise)**
-- **SM-C1**: The share of real Wallets rated *Skilled*. A test that calls more wallets skilled is not better; the Yale SOM study found only ~3% of accounts show skill. Counterbalances SM-1.
+- **SM-C1**: The share of real Wallets rated *Skilled (high confidence)*. A test that calls more wallets skilled is not better; the Yale SOM study found only ~3% of accounts show skill (source: `addendum.md`). Counterbalances SM-1.
 - **SM-C2**: The size of the Watchlist and how good the Hold-up and Copy results look. A real result showing that skill does not last, or cannot be copied, is a valid outcome, not a failure. Counterbalances SM-5.
 - **SM-C3**: How confident or persuasive Explanations sound. They must never claim more than the test shows. Counterbalances SM-7.
 
@@ -320,18 +324,20 @@ Each stage ends with all its tests passing and the README updated, so the projec
 
 - **Runnable from the README**: from a fresh clone with Python installed, the app starts in at most 3 documented commands (install dependencies, load the Sample Dataset, start the app). The README lists the prerequisites (Python version), the exact commands, and how keys are set in `.env`.
 - **Runs on Windows, macOS and Linux**: a GitHub Actions workflow installs the dependencies and runs the test suite on all three systems on every push. A failing run on any of them counts as a failing build.
+- **Runs locally**: the app runs on the user's or examiner's laptop as a web page opened in a browser; it is not hosted publicly. `[ASSUMPTION: local only is enough; the course does not require hosting]`
 - **Database**: cached Polymarket data, Domain labels, Scans and Watchlists are kept in a database (a local SQLite file is enough, nothing to install or host). Reason: course requirement (teacher, 17 Sept 2026).
 - **Secrets**: the language-model key is read from `.env`, which is never committed; the repository contains `.env.example`.
 - **Polite to Polymarket**: a lookup of a Wallet already stored makes 0 network calls (FR-2). A first lookup makes at most N requests; N is set after the data spike (§9 Q1), not guessed now.
 - **Testable core**: the Skill Test module has no network, web or language-model code, and every FR with consequences has at least one automated test.
 - **Wording**: the app never uses words like "guaranteed", "insider" or "will win" about a Wallet.
+- **Pages, navigation and accessibility**: which pages exist and how the user moves between them is specified in the UX step (`bmad-ux`), not here. It has to cover at least: lookup, Verdict result, Scan, Watchlist, Hold-up Test and Copy Test. Two rules hold from now on: the Verdict is always shown as text, never by colour alone; and the luck chart (FR-9) has a text alternative that states the Real PnL and the odds phrase from FR-8.
 
 ## 9. Open Questions
 
-1. Which Polymarket endpoints give resolved and closed positions per Wallet with Entry Price, and how are fees, splits, merges and redemptions represented? Which Markets charge a taker fee, at what rate, and how is it computed (needed for the Follower Fee, FR-18)? Do sell fills give the Exit PnL (FR-11)? To be settled by a short data spike before architecture. (Owner: Edvard, before architecture.)
-2. Which public endpoint lists the top Wallets by profit for a Scan, and how far back does it go? (Data spike, before architecture.)
+1. Which Polymarket endpoints give resolved and closed positions per Wallet with Entry Price, and how are fees, splits, merges and redemptions represented? Which Markets charge a taker fee, at what rate, and how is it computed (needed for the Follower Fee, FR-18)? Do sell fills give the Exit PnL (FR-11)? Also: the address on a Polymarket profile page is usually a proxy wallet, not the signing account; check that FR-1's address check and the Data API lookups use the same address. To be settled by a short data spike before architecture. (Owner: Edvard, before architecture.)
+2. Which public endpoint lists the top Wallets by profit for a Scan, and how far back does it go? **Decided (Edvard, 2026-10-16): a Scan ranks Wallets only on profit from Positions resolved before the Cut-off Date.** Ranking on all-time profit would let results after the Cut-off Date decide which Wallets are tested, and the Hold-up Test would be rigged. **Still open for the data spike:** (a) today's leaderboard shows only survivors, the Wallets that are still active and profitable, so a list taken from it is a survivor sample; the spike must also find an older list of Wallets, or another way to list Wallets as they were before the Cut-off Date; (b) whether an endpoint can rank by profit up to a date at all, or the app must compute that profit itself from each Wallet's Positions. **Knock-on, not yet applied:** the Scan now depends on the Cut-off Date, but FR-16, FR-17 and UJ-4 have the Scan first and the Cut-off Date after; they are changed in the next step. (Data spike, before architecture.)
 3. Does Polymarket's price history have minute-level prices for resolved Markets, far enough back for the Copy Test? The Random Group Check needs these prices for the after part of every Wallet in the Copy Pool (up to the whole Scan, about 200 Wallets), not just the Passers, so expect many more requests and a larger Sample Dataset. If only coarser data exists, the Copy Delays and the Main Copy Delay change, and the new Main Copy Delay is fixed before any data is looked at. (Data spike, before architecture.)
-4. Which language model for stage 3? `addendum.md` proposes one; cost is small because each Market is classified once.
+4. ~~Is the app acceptable to examine in Mock LLM Mode, which is what runs when no key is set (FR-15)?~~ **Closed (decided by Edvard, 2026-10-16): yes.** Domain labels then come from keyword rules and Explanations from templates, so stage 3 shows the structure but not the model's quality. That is acceptable as long as the README says exactly how to set a key (§8). The choice of language model is a proposal in `addendum.md`, to confirm in architecture.
 5. Which 10 real Wallets go into the Sample Dataset? They should cover each Verdict.
 6. Which Cut-off Date for the real-data Hold-up Test? It must leave enough bets in the after part and enough in the before part, and the Minimum After-bets should not drop most of the Passers.
 7. Maybe later: should the app report a measured luck-pass rate for top-by-profit picks? Run the same top-by-profit selection on a population of coin-flipper Synthetic Wallets and show the share that pass, next to the Minimum Luck Passes. Not in v1 scope; revisit if time allows after stage 2.
@@ -347,4 +353,4 @@ Each stage ends with all its tests passing and the README updated, so the projec
 - §4.5 FR-17: a difference of more than 20 percentage points in the share of Wallets dropped between the two groups is "way more" and gets a message.
 - §3, §4.5 FR-18: the Random Group Check needs at least 1,000 different possible groups to give a Copy Verdict.
 - §4.5 FR-16: 200 Wallets is a sensible default Scan size (fetch time and Polymarket's rate limits not yet measured).
-- §1, §6: the app runs locally on the user's or examiner's laptop as a web page; it is not hosted publicly.
+- §8: the app runs locally on the user's or examiner's laptop as a web page; it is not hosted publicly.
