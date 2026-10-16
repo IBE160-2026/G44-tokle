@@ -1,0 +1,309 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<title>Check a wallet · LiquidOracle</title>
+<link rel="icon" type="image/svg+xml" href="logo/favicon.svg">
+<script>
+  (function () {
+    var t = null;
+    try { t = localStorage.getItem("lo-theme"); } catch (e) {}
+    if (t === "light" || t === "dark") document.documentElement.setAttribute("data-theme", t);
+  })();
+</script>
+<style>
+/*
+  LiquidOracle: Lookup page mockup (stage 1), written from scratch. Offline Mode is on, so the Sample Wallets list shows.
+  Governed by: DESIGN.md (Layout & Spacing › Lookup page; Components: Address field, Sample Wallets list, Error message,
+  Info tag, Interaction states) and EXPERIENCE.md (Component Patterns: Address field, Sample Wallets list; State Patterns:
+  Empty address, Wrong address format, Not available offline; Accessibility Floor › Forms). The spines win on any conflict.
+  Sample Wallets: about 10 real Wallets and all Synthetic Wallets (PRD FR-12, FR-13); the real addresses here are made up.
+*/
+:root {
+  --surface: #F7F7F5; --raised: #FFFFFF; --ink: #141922; --muted: #5A616B;
+  --border: #E3E5E8; --border-strong: #868D97; --accent: #1D5BA6; --accent-hover: #1C5396; --on-accent: #FFFFFF;
+  --tint: #E8F0FA; --tint-soft: #F1F5FB; --neutral: #F1F2F4; --error: #B42318;
+  --pill: #1A2029; --on-pill: #FFFFFF; --pill-edge: transparent;
+  --card-shadow: 0 1px 2px rgba(20, 25, 34, .04); --lift-shadow: 0 3px 8px rgba(20, 25, 34, .10);
+  --serif: "Iowan Old Style", "Palatino Linotype", Palatino, "Book Antiqua", Georgia, serif;
+  --sans: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --mono: ui-monospace, "Cascadia Mono", "SF Mono", Menlo, Consolas, monospace;
+  --quick: 120ms ease-out;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --surface: #0E1116; --raised: #151A21; --ink: #E7EAEE; --muted: #A2AAB5;
+    --border: #272E38; --border-strong: #6C7582; --accent: #6EA8EE; --accent-hover: #7DB0EE; --on-accent: #0E1116;
+    --tint: #17304F; --tint-soft: #132235; --neutral: #1B222C; --error: #F28B82;
+    --pill: #0E1116; --on-pill: #E7EAEE; --pill-edge: #6C7582;
+    --card-shadow: none; --lift-shadow: 0 3px 10px rgba(0, 0, 0, .45);
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --surface: #0E1116; --raised: #151A21; --ink: #E7EAEE; --muted: #A2AAB5;
+  --border: #272E38; --border-strong: #6C7582; --accent: #6EA8EE; --accent-hover: #7DB0EE; --on-accent: #0E1116;
+  --tint: #17304F; --tint-soft: #132235; --neutral: #1B222C; --error: #F28B82;
+  --pill: #0E1116; --on-pill: #E7EAEE; --pill-edge: #6C7582;
+  --card-shadow: none; --lift-shadow: 0 3px 10px rgba(0, 0, 0, .45);
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--surface); color: var(--ink); font: 16px/1.55 var(--sans); }
+a { color: var(--accent); }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; border-radius: 4px; }
+.visually-hidden { position: absolute !important; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+.skip-link { position: absolute; left: 16px; top: -48px; z-index: 10; padding: 8px 14px; background: var(--raised); color: var(--ink); border: 2px solid var(--accent); border-radius: 6px; }
+.skip-link:focus { top: 12px; }
+.wrap { max-width: 1200px; margin: 0 auto; padding: 0 24px; }
+.narrow { max-width: 720px; margin: 0 auto; }
+
+/* Top bar (same as the Verdict page) */
+.topbar { background: var(--raised); border-bottom: 1px solid var(--border); box-shadow: var(--card-shadow); }
+.topbar .wrap { min-height: 64px; display: flex; align-items: center; gap: 12px 40px; flex-wrap: wrap; }
+.brand { display: inline-flex; align-items: center; gap: 10px; padding: 10px 0; font: 700 26px/1.1 var(--serif); letter-spacing: -.01em; color: var(--ink); text-decoration: none; transition: color var(--quick); }
+.brand-mark { width: 32px; height: 32px; flex: none; color: var(--accent); }
+.mainnav { display: flex; gap: 8px 32px; flex-wrap: wrap; }
+.mainnav a { color: var(--muted); text-decoration: none; padding: 6px 0; border-bottom: 2px solid transparent; transition: color var(--quick), border-color var(--quick); }
+.mainnav a[aria-current="page"] { color: var(--accent); font-weight: 600; border-bottom-color: var(--accent); }
+.bar-tools { margin-left: auto; display: flex; align-items: center; gap: 12px; }
+.theme-toggle { flex: none; width: 40px; height: 40px; display: inline-grid; place-items: center; padding: 0; cursor: pointer; border: 1px solid var(--border); border-radius: 50%; background: var(--raised); color: var(--ink); transition: background-color var(--quick), border-color var(--quick), transform var(--quick), box-shadow var(--quick); }
+.theme-toggle svg { width: 18px; height: 18px; }
+.theme-toggle .icon-sun { display: none; }
+[data-dark="true"] .theme-toggle .icon-sun { display: block; }
+[data-dark="true"] .theme-toggle .icon-moon { display: none; }
+.offline-pill { display: inline-block; padding: 7px 16px; border-radius: 999px; font-size: 13px; line-height: 1.35; background: var(--pill); color: var(--on-pill); border: 1px solid var(--pill-edge); }
+.offline-pill strong { font-weight: 650; }
+
+/* Page */
+main { padding: 56px 0 72px; }
+.eyebrow { margin: 0 0 6px; font-size: 13px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+h1 { margin: 0; font: 700 52px/1.08 var(--serif); letter-spacing: -.02em; }
+.lede { margin: 12px 0 0; font: 400 21px/1.4 var(--serif); color: var(--muted); }
+.card { background: var(--raised); border: 1px solid var(--border); border-radius: 14px; box-shadow: var(--card-shadow); padding: 24px 28px; margin-top: 28px; }
+.card h2 { margin: 0 0 4px; font: 600 24px/1.25 var(--serif); }
+.card .sub { margin: 0 0 16px; color: var(--muted); font-size: 15px; }
+
+/* Address field */
+.field-label { display: block; margin: 0 0 6px; font-size: 13px; font-weight: 600; }
+.field-row { display: flex; gap: 12px; }
+.text-input {
+  flex: 1; min-width: 0; height: 48px; padding: 0 14px; border: 1px solid var(--border-strong); border-radius: 6px;
+  background: var(--raised); color: var(--ink); font: 16px var(--mono);
+}
+.text-input[aria-invalid="true"] { border: 2px solid var(--error); padding: 0 13px; }
+.text-input:focus-visible { outline-offset: 2px; }
+.btn-primary {
+  flex: none; height: 48px; padding: 0 22px; border-radius: 6px; cursor: pointer;
+  border: 1px solid var(--accent); background: var(--accent); color: var(--on-accent); font: 600 15px var(--sans);
+  transition: transform var(--quick), box-shadow var(--quick), background-color var(--quick);
+}
+.hint { margin: 8px 0 0; font-size: 14px; color: var(--muted); }
+.error-message { display: flex; gap: 8px; align-items: flex-start; margin: 8px 0 0; font-size: 14px; color: var(--error); }
+.error-message svg { flex: none; width: 16px; height: 16px; margin-top: 3px; }
+.error-message[hidden] { display: none; }
+
+/* Sample Wallets list */
+.group-label { margin: 18px 0 8px; font-size: 13px; font-weight: 600; letter-spacing: .04em; color: var(--muted); }
+.wallet-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.wallet-link {
+  display: flex; align-items: center; gap: 12px; min-height: 48px; padding: 8px 14px; border-radius: 10px;
+  border: 1px solid var(--border); color: var(--ink); text-decoration: none; transition: background-color var(--quick), border-color var(--quick);
+}
+.wallet-link .name { flex: 1; min-width: 0; }
+.wallet-link .mono { font: 15px var(--mono); }
+.wallet-link .chev { color: var(--muted); }
+.info-tag { display: inline-block; padding: 1px 9px; border: 1px solid var(--border-strong); border-radius: 999px; font-size: 13px; font-weight: 600; color: var(--muted); }
+.list-note { margin: 10px 0 0; font-size: 14px; color: var(--muted); }
+
+/* Prototype strip */
+.proto { margin-top: 56px; padding-top: 24px; border-top: 1px dashed var(--border-strong); }
+.proto h2 { margin: 0 0 4px; font: 600 13px var(--sans); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+.proto > p { margin: 0 0 16px; color: var(--muted); font-size: 14px; }
+.proto-grid { display: grid; gap: 16px; }
+.proto-item { background: var(--raised); border: 1px solid var(--border); border-radius: 10px; padding: 16px 18px; }
+.proto-item h3 { margin: 0 0 10px; font: 600 15px var(--sans); }
+.fetching { display: flex; align-items: center; gap: 10px; color: var(--muted); font-size: 14px; }
+.fetching .dots { display: inline-flex; gap: 5px; }
+.fetching .dots span { width: 7px; height: 7px; border-radius: 50%; background: var(--accent); animation: pulse 1.2s ease-in-out infinite; }
+.fetching .dots span:nth-child(2) { animation-delay: .2s; }
+.fetching .dots span:nth-child(3) { animation-delay: .4s; }
+@keyframes pulse { 0%, 80%, 100% { opacity: .25; } 40% { opacity: 1; } }
+.checking { margin: 0 0 8px; font: 600 24px/1.25 var(--serif); }
+
+/* Interaction states: only clickable things react; hover and keyboard focus look the same */
+@media (hover: hover) {
+  .brand:hover { color: var(--accent); }
+  .mainnav a:hover { color: var(--ink); border-bottom-color: var(--border-strong); }
+  .mainnav a[aria-current="page"]:hover { color: var(--accent); border-bottom-color: var(--accent); }
+  .theme-toggle:hover { background: var(--neutral); border-color: var(--border-strong); transform: translateY(-1px); box-shadow: var(--lift-shadow); }
+  .btn-primary:hover { transform: translateY(-1px); box-shadow: var(--lift-shadow); background: var(--accent-hover); }
+  .wallet-link:hover { background: var(--tint-soft); border-color: var(--tint); }
+}
+.brand:focus-visible { color: var(--accent); }
+.mainnav a:focus-visible { color: var(--ink); border-bottom-color: var(--border-strong); }
+.mainnav a[aria-current="page"]:focus-visible { color: var(--accent); border-bottom-color: var(--accent); }
+.theme-toggle:focus-visible { background: var(--neutral); border-color: var(--border-strong); transform: translateY(-1px); box-shadow: var(--lift-shadow); }
+.btn-primary:focus-visible { transform: translateY(-1px); box-shadow: var(--lift-shadow); background: var(--accent-hover); }
+.wallet-link:focus-visible { background: var(--tint-soft); border-color: var(--tint); outline-offset: 2px; }
+.theme-toggle:active, .btn-primary:active { transform: none; box-shadow: none; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { transition-duration: 0s !important; transition-delay: 0s !important; animation: none !important; }
+  .theme-toggle:hover, .theme-toggle:focus-visible, .btn-primary:hover, .btn-primary:focus-visible { transform: none; }
+  .fetching .dots span { opacity: 1; }
+}
+@media (max-width: 640px) {
+  .wrap { padding: 0 16px; }
+  main { padding: 32px 0 48px; }
+  h1 { font-size: 36px; }
+  .lede { font-size: 19px; }
+  .card { padding: 20px 18px; border-radius: 12px; }
+  .field-row { flex-direction: column; }
+  .btn-primary { width: 100%; }
+  .bar-tools { margin-left: 0; width: 100%; justify-content: flex-end; }
+}
+</style>
+</head>
+<body>
+<a class="skip-link" href="#content">Skip to content</a>
+
+<header class="topbar">
+  <div class="wrap">
+    <a class="brand" href="lookup.html"><svg class="brand-mark" viewBox="0 0 64 64" aria-hidden="true" focusable="false">
+      <defs><mask id="lo-cut-bar" maskUnits="userSpaceOnUse" x="0" y="0" width="64" height="64">
+    <rect width="64" height="64" fill="#fff"/>
+    <rect x="34.43" y="0" width="6.2" height="64" fill="#000"/>
+  </mask></defs>
+  <circle class="lo-ring" cx="32" cy="32" r="27.5" fill="none" stroke="currentColor" stroke-width="4.5"/>
+  <path d="M10.35 44.17 L11.03 43.97 L11.71 43.74 L12.38 43.46 L13.06 43.13 L13.74 42.74 L14.41 42.29 L15.09 41.78 L15.77 41.20 L16.44 40.54 L17.12 39.80 L17.79 38.98 L18.47 38.08 L19.15 37.09 L19.82 36.03 L20.50 34.90 L21.18 33.70 L21.85 32.44 L22.53 31.14 L23.21 29.81 L23.88 28.46 L24.56 27.11 L25.24 25.79 L25.91 24.50 L26.59 23.28 L27.26 22.15 L27.94 21.11 L28.62 20.20 L29.29 19.43 L29.97 18.81 L30.65 18.36 L31.32 18.09 L32.00 18.00 L32.68 18.09 L33.35 18.36 L34.03 18.81 L34.71 19.43 L35.38 20.20 L36.06 21.11 L36.74 22.15 L37.41 23.28 L38.09 24.50 L38.76 25.79 L39.44 27.11 L40.12 28.46 L40.79 29.81 L41.47 31.14 L42.15 32.44 L42.82 33.70 L43.50 34.90 L44.18 36.03 L44.85 37.09 L45.53 38.08 L46.21 38.98 L46.88 39.80 L47.56 40.54 L48.23 41.20 L48.91 41.78 L49.59 42.29 L50.26 42.74 L50.94 43.13 L51.62 43.46 L52.29 43.74 L52.97 43.97 L53.65 44.17 L53.65 45 L10.35 45 Z" fill="currentColor" mask="url(#lo-cut-bar)"/>
+  <rect x="35.93" y="12" width="3.2" height="33" rx="1.6" fill="currentColor"/>
+  <rect x="35.93" y="41.8" width="3.2" height="3.2" fill="currentColor"/>
+    </svg>LiquidOracle</a>
+    <nav class="mainnav" aria-label="Main">
+      <a href="lookup.html" aria-current="page">Check a wallet</a>
+      <a href="#">Scan wallets</a>
+    </nav>
+    <div class="bar-tools">
+      <button class="theme-toggle" type="button" id="theme-toggle" aria-label="Dark theme" aria-pressed="false">
+        <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>
+        <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="4.5"/><path d="M12 1.5v2.5M12 20v2.5M4.6 4.6l1.8 1.8M17.6 17.6l1.8 1.8M1.5 12H4M20 12h2.5M4.6 19.4l1.8-1.8M17.6 6.4l1.8-1.8"/></svg>
+      </button>
+      <span class="offline-pill"><strong>Offline Mode</strong> · sample data only</span>
+    </div>
+  </div>
+</header>
+
+<main id="content">
+  <div class="wrap"><div class="narrow">
+    <p class="eyebrow">Skill or luck</p>
+    <h1>Check a wallet</h1>
+    <p class="lede">Paste a Polymarket Wallet address. LiquidOracle replays its resolved bets 10,000 times to see how often luck alone would do as well.</p>
+
+    <form class="card" id="lookup-form" novalidate>
+      <label class="field-label" for="address">Wallet address</label>
+      <div class="field-row">
+        <input class="text-input" id="address" name="address" type="text" inputmode="text" autocomplete="off" spellcheck="false"
+               placeholder="0x…" aria-describedby="address-hint" autofocus>
+        <button class="btn-primary" type="submit">Check wallet</button>
+      </div>
+      <p class="hint" id="address-hint">A Wallet address starts with 0x and has 42 characters.</p>
+      <p class="error-message" id="address-error" hidden>
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 4l8 8M12 4l-8 8"/></svg>
+        <span><span class="visually-hidden">Error: </span><span id="address-error-text"></span></span>
+      </p>
+    </form>
+
+    <section class="card" aria-labelledby="samples-title">
+      <h2 id="samples-title">Sample Wallets</h2>
+      <p class="sub">Offline Mode uses only the stored sample data. Pick one to see its Verdict.</p>
+
+      <h3 class="group-label" id="real-label">Real Wallets</h3>
+      <ul class="wallet-list" aria-labelledby="real-label">
+        <li><a class="wallet-link" href="verdict.html"><span class="name mono">0x7c3a…d3f5</span><span class="chev" aria-hidden="true">›</span></a></li>
+        <li><a class="wallet-link" href="#"><span class="name mono">0x1a2b…9f0e</span><span class="chev" aria-hidden="true">›</span></a></li>
+        <li><a class="wallet-link" href="#"><span class="name mono">0x88c1…04aa</span><span class="chev" aria-hidden="true">›</span></a></li>
+        <li><a class="wallet-link" href="#"><span class="name mono">0x3f07…b21c</span><span class="chev" aria-hidden="true">›</span></a></li>
+      </ul>
+      <p class="list-note">and 6 more real Wallets</p>
+
+      <h3 class="group-label" id="synthetic-label">Synthetic Wallets</h3>
+      <ul class="wallet-list" aria-labelledby="synthetic-label">
+        <li><a class="wallet-link" href="#"><span class="name">Sharp trader</span><span class="info-tag">synthetic</span><span class="chev" aria-hidden="true">›</span></a></li>
+        <li><a class="wallet-link" href="#"><span class="name">Coin-flipper</span><span class="info-tag">synthetic</span><span class="chev" aria-hidden="true">›</span></a></li>
+        <li><a class="wallet-link" href="#"><span class="name">Favourite-buyer</span><span class="info-tag">synthetic</span><span class="chev" aria-hidden="true">›</span></a></li>
+        <li><a class="wallet-link" href="#"><span class="name">Thin wallet</span><span class="info-tag">synthetic</span><span class="chev" aria-hidden="true">›</span></a></li>
+        <li><a class="wallet-link" href="#"><span class="name">Stop-loss trader</span><span class="info-tag">synthetic</span><span class="chev" aria-hidden="true">›</span></a></li>
+      </ul>
+      <p class="list-note">and the stage 2 and 3 Synthetic Wallets (Steady sharp, Forecaster, Speed trader, Market maker …)</p>
+    </section>
+
+    <aside class="proto" aria-labelledby="proto-title">
+      <h2 id="proto-title">Prototype only: other states</h2>
+      <p>Not part of this page. Try the field above with nothing, with "abc", or with a full address that is not in the sample. The fetching state lives on the Verdict page.</p>
+      <div class="proto-grid">
+        <div class="proto-item">
+          <h3>Fetching (Verdict page, while data loads)</h3>
+          <p class="checking">Checking 0x7c3a…d3f5</p>
+          <p class="fetching"><span class="dots" aria-hidden="true"><span></span><span></span><span></span></span>Fetching trades from Polymarket…</p>
+        </div>
+      </div>
+    </aside>
+  </div></div>
+</main>
+
+<script>
+  // Theme toggle (same as the Verdict page).
+  (function () {
+    var root = document.documentElement, btn = document.getElementById("theme-toggle");
+    var media = window.matchMedia("(prefers-color-scheme: dark)");
+    function isDark() { var t = root.getAttribute("data-theme"); return t ? t === "dark" : media.matches; }
+    function sync() { var d = isDark(); root.setAttribute("data-dark", d ? "true" : "false"); btn.setAttribute("aria-pressed", d ? "true" : "false"); }
+    btn.addEventListener("click", function () {
+      var next = isDark() ? "light" : "dark";
+      root.setAttribute("data-theme", next);
+      try { localStorage.setItem("lo-theme", next); } catch (e) {}
+      sync();
+    });
+    media.addEventListener("change", sync);
+    sync();
+  })();
+
+  // Address field: the three Lookup states from EXPERIENCE.md; a valid sample address opens its Verdict page.
+  (function () {
+    var SAMPLE = { "0x7c3a9e2b41d05f6a8c1e93b7d2f4a6c8e0b1d3f5": "verdict.html" };
+    var form = document.getElementById("lookup-form");
+    var input = document.getElementById("address");
+    var error = document.getElementById("address-error");
+    var errorText = document.getElementById("address-error-text");
+    function showError(msg) {
+      errorText.textContent = msg;
+      error.hidden = false;
+      input.setAttribute("aria-invalid", "true");
+      input.setAttribute("aria-describedby", "address-error address-hint");
+      input.focus();
+    }
+    function clearError() {
+      error.hidden = true;
+      input.removeAttribute("aria-invalid");
+      input.setAttribute("aria-describedby", "address-hint");
+    }
+    form.addEventListener("submit", function (e) {
+      e.preventDefault();
+      var v = input.value.trim();
+      input.value = v;
+      if (!v) return showError("Enter a wallet address.");
+      if (!/^0x[0-9a-fA-F]{40}$/.test(v)) return showError("This is not a valid wallet address. It should start with 0x and have 42 characters.");
+      var page = SAMPLE[v.toLowerCase()];
+      if (!page) return showError("Not available offline. In Offline Mode only the Sample Wallets below can be checked.");
+      clearError();
+      window.location.href = page;
+    });
+    input.addEventListener("input", function () { if (!error.hidden) clearError(); });
+  })();
+</script>
+</body>
+</html>

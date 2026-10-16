@@ -1,0 +1,460 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light dark">
+  <title>LiquidOracle — Version B: Dense dashboard</title>
+  <style>
+
+:root {
+  color-scheme: light;
+  --page: #F7F7F5;
+  --card: #FFFFFF;
+  --text: #1C1E21;
+  --muted: #585E66;
+  --border: #DADDE1;
+  --strong: #848B94;
+  --accent: #1D5BA6;
+  --button-text: #FFFFFF;
+  --skilled-bg: #DCE8F7;
+  --likely-bg: #EEF3FA;
+  --none-bg: #ECEDEF;
+  --warning-bg: #FFF4D6;
+  --warning-stripe: #A87400;
+  --warning-text: #5A3E00;
+  --error: #B42318;
+  --pill-bg: #1C1E21;
+  --pill-text: #E8EAED;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    color-scheme: dark;
+    --page: #16181B;
+    --card: #202328;
+    --text: #E8EAED;
+    --muted: #A3A9B1;
+    --border: #33373D;
+    --strong: #6E757E;
+    --accent: #7FB0EE;
+    --button-text: #16181B;
+    --skilled-bg: #1E3A5F;
+    --likely-bg: #1C2A3C;
+    --none-bg: #2A2D32;
+    --warning-bg: #3A2E0F;
+    --warning-stripe: #D9A520;
+    --warning-text: #F5D78A;
+    --error: #F28B82;
+    --pill-bg: #0E1012;
+    --pill-text: #E8EAED;
+  }
+}
+* { box-sizing: border-box; }
+html { scroll-behavior: auto; }
+body {
+  margin: 0;
+  color: var(--text);
+  background: var(--page);
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  font-size: 15px;
+  line-height: 1.55;
+}
+a { color: var(--accent); text-underline-offset: 3px; }
+a:hover { text-decoration-thickness: 2px; }
+button, input { font: inherit; }
+button, a, input { -webkit-tap-highlight-color: transparent; }
+:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
+.skip-link {
+  position: absolute; left: 12px; top: 10px; z-index: 20;
+  transform: translateY(-160%); background: var(--card); color: var(--text);
+  padding: 8px 12px; border: 2px solid var(--accent); border-radius: 4px;
+}
+.skip-link:focus { transform: translateY(0); }
+.prototype-page { border-bottom: 1px solid var(--border); padding-bottom: 26px; }
+.page-label, .header-inner, .page-content { width: 100%; max-width: 1008px; margin-left: auto; margin-right: auto; padding-left: 24px; padding-right: 24px; }
+.page-label { padding-top: 14px; padding-bottom: 3px; font-size: 12px; letter-spacing: .015em; color: var(--muted); }
+.site-header { border-bottom: 1px solid var(--border); }
+.header-inner { min-height: 56px; padding-top: 10px; padding-bottom: 10px; display: flex; flex-wrap: wrap; align-items: center; gap: 14px 22px; }
+.brand { color: var(--text); font-size: 17px; line-height: 1.2; font-weight: 720; letter-spacing: -.035em; text-decoration: none; white-space: nowrap; }
+.top-nav { display: flex; flex: 1 1 350px; align-items: center; flex-wrap: wrap; gap: 8px 22px; }
+.top-nav a { color: var(--text); text-decoration: none; padding: 5px 0; }
+.top-nav a[aria-current="page"] { color: var(--accent); text-decoration: underline; text-decoration-thickness: 2px; text-underline-offset: 7px; }
+.mode-pill { flex: 0 0 auto; margin-left: auto; padding: 5px 10px; border-radius: 999px; background: var(--pill-bg); color: var(--pill-text); font-size: 11px; font-weight: 550; letter-spacing: .01em; white-space: nowrap; }
+.page-content { padding-top: 23px; padding-bottom: 44px; }
+h1, h2, h3, p { margin-top: 0; }
+h1 { font-size: clamp(1.55rem, 2.4vw, 1.9rem); line-height: 1.22; letter-spacing: -.025em; margin-bottom: 10px; font-weight: 680; }
+h2 { font-size: 1.08rem; line-height: 1.3; letter-spacing: -.01em; margin-bottom: 12px; font-weight: 680; }
+h3 { font-size: .98rem; margin-bottom: 8px; }
+.page-heading { margin-bottom: 17px; }
+.panel { background: var(--card); border: 1px solid var(--border); border-radius: 5px; padding: 21px; min-width: 0; }
+.panel p:last-child { margin-bottom: 0; }
+.mono, code, .num, .wallet-address, .odds-value, .table-numeric {
+  font-family: ui-monospace, "Cascadia Mono", Menlo, Consolas, monospace;
+  font-variant-numeric: tabular-nums;
+}
+code { color: inherit; }
+.field-label { display: block; color: var(--muted); font-size: 12px; font-weight: 650; letter-spacing: .035em; text-transform: uppercase; margin-bottom: 4px; }
+.wallet-address { display: block; overflow-wrap: anywhere; word-break: break-word; font-size: 13px; line-height: 1.65; }
+.verdict-row { margin-top: 12px; }
+.verdict-badge { display: inline-flex; align-items: center; gap: 7px; padding: 5px 9px; border: 1px solid var(--border); border-radius: 5px; line-height: 1.4; font-size: 13px; font-weight: 650; max-width: 100%; }
+.verdict-badge .dots { font-family: ui-monospace, "Cascadia Mono", Menlo, Consolas, monospace; letter-spacing: .015em; white-space: nowrap; }
+.verdict-skilled { background: var(--skilled-bg); border-color: var(--skilled-bg); }
+.verdict-likely { background: var(--likely-bg); border-color: var(--likely-bg); }
+.verdict-none { background: var(--none-bg); border-color: var(--none-bg); }
+.verdict-insufficient { background: transparent; color: var(--muted); border: 1px dashed var(--strong); }
+.warning-box { display: flex; align-items: flex-start; gap: 9px; margin-top: 10px; padding: 10px 12px; background: var(--warning-bg); color: var(--warning-text); border-left: 4px solid var(--warning-stripe); border-radius: 4px; font-size: 13px; }
+.warning-box .warning-symbol { flex: 0 0 auto; font-size: 15px; line-height: 1.4; }
+.odds-line { margin: 17px 0 9px; }
+.odds-line .field-label { margin-bottom: 3px; }
+.stat-line { font-size: 14px; margin: 0 0 8px; }
+.stored-line { color: var(--muted); font-size: 12px; margin: 0; }
+.chart-wrap { width: 100%; min-width: 0; }
+.chart-svg { display: block; width: 100%; height: auto; overflow: visible; }
+.chart-svg .bar { fill: var(--strong); }
+.chart-svg .axis, .chart-svg .tick { stroke: var(--border); stroke-width: 1; }
+.chart-svg .marker { stroke: var(--accent); stroke-width: 2; }
+.chart-svg .marker-label { fill: var(--accent); font-family: ui-monospace, "Cascadia Mono", Menlo, Consolas, monospace; font-size: 11px; font-weight: 700; text-anchor: end; }
+.chart-svg .axis-label { fill: var(--muted); font-family: ui-monospace, "Cascadia Mono", Menlo, Consolas, monospace; font-size: 10px; }
+.chart-alt { margin-top: 7px; color: var(--muted); font-size: 13px; }
+.evidence-list { padding-left: 19px; margin: 0 0 14px; }
+.evidence-list li { margin: 0 0 7px; padding-left: 2px; }
+.fixed-note { font-size: 13px; line-height: 1.65; }
+.disclaimer { font-size: 12px; color: var(--muted); margin-top: 12px; }
+.scan-meta { margin: 0; color: var(--muted); font-size: 13px; }
+.subnav { display: flex; flex-wrap: wrap; gap: 8px 20px; padding: 12px 0 14px; border-bottom: 1px solid var(--border); margin-bottom: 16px; }
+.subnav a { color: var(--muted); text-decoration: none; padding: 2px 0; }
+.subnav a[aria-current="page"] { color: var(--text); font-weight: 700; border-bottom: 2px solid var(--accent); }
+.selection-note { color: var(--muted); padding-left: 12px; border-left: 3px solid var(--strong); margin: 0 0 15px; font-size: 13px; }
+.table-panel { padding: 0; overflow: hidden; }
+.table-scroll { max-width: 100%; overflow-x: auto; overscroll-behavior-inline: contain; }
+table { width: 100%; border-collapse: collapse; text-align: left; font-size: 13px; }
+caption { caption-side: top; text-align: left; color: var(--muted); padding: 14px 17px 9px; font-size: 12px; }
+th, td { padding: 11px 12px; border-bottom: 1px solid var(--border); vertical-align: top; }
+th { color: var(--muted); font-weight: 650; font-size: 11px; letter-spacing: .025em; }
+tbody tr:last-child td { border-bottom: 0; }
+.table-numeric { text-align: right; white-space: nowrap; }
+.table-wallet { white-space: nowrap; }
+.table-verdict { min-width: 170px; }
+.table-verdict .verdict-badge { font-size: 11px; padding: 4px 6px; gap: 5px; white-space: nowrap; }
+.watchlist-table { min-width: 800px; }
+.scans-table { min-width: 730px; }
+.table-note { display: block; font-size: 11px; color: var(--muted); line-height: 1.45; margin-top: 5px; max-width: 220px; }
+.small-link { font-size: 12px; white-space: nowrap; }
+button { border-radius: 5px; border: 1px solid var(--strong); background: transparent; color: var(--text); cursor: pointer; padding: 7px 11px; font-size: 13px; }
+button:hover { border-color: var(--accent); }
+button.primary-button { background: var(--accent); color: var(--button-text); border-color: var(--accent); font-weight: 650; padding: 9px 14px; }
+.form-grid { display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(0, .85fr); gap: 14px; align-items: end; }
+.form-field { min-width: 0; }
+.form-field label { display: block; margin-bottom: 6px; font-size: 13px; font-weight: 650; }
+.form-field input { display: block; width: 100%; min-width: 0; min-height: 40px; border: 1px solid var(--strong); border-radius: 4px; background: var(--page); color: var(--text); padding: 8px 10px; font-family: ui-monospace, "Cascadia Mono", Menlo, Consolas, monospace; font-variant-numeric: tabular-nums; }
+.form-field input[readonly] { cursor: default; }
+.form-note { color: var(--muted); font-size: 12px; margin-top: 10px; }
+.form-actions { margin-top: 16px; }
+.progress-text { margin: 0 0 9px; font-size: 14px; }
+progress { display: block; width: 100%; height: 12px; border: 1px solid var(--border); border-radius: 2px; overflow: hidden; appearance: none; -webkit-appearance: none; background: var(--page); }
+progress::-webkit-progress-bar { background: var(--page); }
+progress::-webkit-progress-value { background: var(--strong); }
+progress::-moz-progress-bar { background: var(--strong); }
+.scan-history-heading { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; margin-bottom: 12px; }
+.scan-history-heading h2 { margin-bottom: 0; }
+.status-stack { display: flex; align-items: center; flex-wrap: wrap; gap: 7px 10px; }
+.plain-status { display: inline-block; }
+/* Layout-specific composition follows. */
+
+
+.page-content.layout-b { display: flex; flex-direction: column; gap: 12px; padding-top: 18px; }
+.layout-b .page-heading { margin-bottom: 0; }
+.layout-b .panel { padding: 15px; border-radius: 4px; }
+.layout-b .verdict-panel { padding: 16px; }
+.layout-b .overview-grid { display: grid; grid-template-columns: minmax(0, .9fr) minmax(0, 1.1fr); gap: 12px; align-items: stretch; }
+.layout-b .overview-grid .chart-panel { min-width: 0; }
+.layout-b .overview-grid .panel { height: 100%; }
+.layout-b .evidence-panel { padding: 16px; }
+.layout-b .scan-header { margin-bottom: 0; }
+.layout-b .scan-meta { margin-top: 3px; }
+.layout-b .subnav { padding: 8px 0 10px; margin-bottom: 10px; }
+.layout-b .selection-note { margin-bottom: 10px; }
+.layout-b .table-panel { padding: 0; }
+.layout-b th, .layout-b td { padding: 8px 10px; }
+.layout-b .scan-dashboard { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 12px; align-items: stretch; }
+.layout-b .history-panel { grid-column: 1 / -1; }
+.layout-b .form-grid { grid-template-columns: minmax(0, 1fr) minmax(0, .8fr); gap: 10px; }
+
+
+@media (max-width: 760px) {
+  .layout-b .overview-grid, .layout-b .scan-dashboard,
+  .layout-d .d-verdict-layout, .layout-d .d-watch-layout, .layout-d .d-scans-grid { grid-template-columns: minmax(0, 1fr); }
+  .layout-b .history-panel { grid-column: auto; }
+  .layout-d .watch-intro .subnav { flex-direction: row; }
+  .layout-d .d-watch-table { min-width: 0; }
+  .layout-d .d-rail, .layout-d .d-main, .layout-d .d-scan-rail, .layout-d .d-scan-main { gap: 12px; }
+}
+@media (max-width: 480px) {
+  .page-label, .header-inner, .page-content { padding-left: 16px; padding-right: 16px; }
+  .header-inner { gap: 11px 15px; }
+  .top-nav { flex-basis: 100%; gap: 7px 17px; order: 3; }
+  .mode-pill { margin-left: auto; font-size: 10px; }
+  .page-content { padding-top: 17px; padding-bottom: 28px; }
+  .panel, .layout-a .panel, .layout-a .verdict-panel, .layout-b .panel, .layout-d .panel { padding: 15px; }
+  .layout-a .table-panel, .layout-b .table-panel, .layout-d .table-panel { padding: 0; }
+  .form-grid { grid-template-columns: minmax(0,1fr); }
+  .verdict-badge { font-size: 12px; }
+  .chart-alt { font-size: 12px; }
+}
+
+  </style>
+</head>
+<body>
+<a class="skip-link" href="#main">Skip to content</a>
+<main id="main" class="main-content">
+<section class="prototype-page" id="verdict-page">
+  <div class="page-label">Page <span class="mono">1</span>: Verdict page</div>
+  <header class="site-header">
+  <div class="header-inner">
+    <a class="brand" href="#verdict-page">LiquidOracle</a>
+    <nav class="top-nav" aria-label="Main navigation">
+      <a href="#verdict-page" aria-current="page">Check a wallet</a>
+      <a href="#watchlist-page">Find wallets to follow</a>
+    </nav>
+    <span class="mode-pill">Offline Mode · sample data only</span>
+  </div>
+</header>
+
+  <div class="page-content layout-b">
+    <div class="overview-grid"><section class="panel verdict-panel" aria-labelledby="verdict-heading">
+  <h1 id="verdict-heading">Verdict</h1>
+  <div class="wallet-line">
+    <span class="field-label">Wallet</span>
+    <code class="wallet-address">0x7c3a9e2b41d05f6a8c1e93b7d2f4a6c8e0b1d3f5</code>
+  </div>
+  <div class="verdict-row">
+    <span class="verdict-badge verdict-none"><span class="dots" aria-hidden="true">○○○</span><span>No evidence of skill</span></span>
+  </div>
+  <div class="warning-box" role="note"><span class="warning-symbol" aria-hidden="true">⚠</span><span>Positions this Wallet sold before resolution lost money in total. This Verdict covers only bets held to resolution.</span></div>
+  <p class="odds-line"><span class="field-label">Odds</span>a trader with no edge would do this well about <span class="mono">1 time in 4</span></p>
+  <p class="stat-line"><span class="mono">212</span> resolved bets · Real PnL <span class="mono">$40,180</span></p>
+  <p class="stored-line">Data stored <span class="mono">15 Oct 2026, 14:02</span></p>
+</section><section class="panel chart-panel" aria-labelledby="luck-chart-heading">
+  <h2 id="luck-chart-heading">Luck chart</h2>
+  <div class="chart-wrap"><svg class="chart-svg" viewBox="0 0 720 220" role="img" aria-labelledby="luck-chart-title luck-chart-desc" xmlns="http://www.w3.org/2000/svg">
+  <title id="luck-chart-title">Luck chart: 10,000 simulated results</title>
+  <desc id="luck-chart-desc">A bell-shaped histogram of simulated results from minus 60,000 dollars to plus 80,000 dollars. A blue vertical marker shows this wallet at 40,180 dollars.</desc>
+  <rect class="bar" x="49.55" y="162.23" width="14.23" height="3.77" rx="0.5"/>
+  <rect class="bar" x="66.88" y="160.44" width="14.23" height="5.56" rx="0.5"/>
+  <rect class="bar" x="84.22" y="157.97" width="14.23" height="8.03" rx="0.5"/>
+  <rect class="bar" x="101.55" y="155.01" width="14.23" height="10.99" rx="0.5"/>
+  <rect class="bar" x="118.88" y="150.84" width="14.23" height="15.16" rx="0.5"/>
+  <rect class="bar" x="136.22" y="146.56" width="14.23" height="19.44" rx="0.5"/>
+  <rect class="bar" x="153.55" y="141.13" width="14.23" height="24.87" rx="0.5"/>
+  <rect class="bar" x="170.88" y="133.89" width="14.23" height="32.11" rx="0.5"/>
+  <rect class="bar" x="188.22" y="125.48" width="14.23" height="40.52" rx="0.5"/>
+  <rect class="bar" x="205.55" y="117.50" width="14.23" height="48.50" rx="0.5"/>
+  <rect class="bar" x="222.88" y="110.41" width="14.23" height="55.59" rx="0.5"/>
+  <rect class="bar" x="240.22" y="100.38" width="14.23" height="65.62" rx="0.5"/>
+  <rect class="bar" x="257.55" y="92.58" width="14.23" height="73.42" rx="0.5"/>
+  <rect class="bar" x="274.88" y="83.13" width="14.23" height="82.87" rx="0.5"/>
+  <rect class="bar" x="292.22" y="74.59" width="14.23" height="91.41" rx="0.5"/>
+  <rect class="bar" x="309.55" y="75.16" width="14.23" height="90.84" rx="0.5"/>
+  <rect class="bar" x="326.88" y="70.09" width="14.23" height="95.91" rx="0.5"/>
+  <rect class="bar" x="344.22" y="67.02" width="14.23" height="98.98" rx="0.5"/>
+  <rect class="bar" x="361.55" y="69.15" width="14.23" height="96.85" rx="0.5"/>
+  <rect class="bar" x="378.88" y="70.45" width="14.23" height="95.55" rx="0.5"/>
+  <rect class="bar" x="396.22" y="78.41" width="14.23" height="87.59" rx="0.5"/>
+  <rect class="bar" x="413.55" y="85.88" width="14.23" height="80.12" rx="0.5"/>
+  <rect class="bar" x="430.88" y="92.05" width="14.23" height="73.95" rx="0.5"/>
+  <rect class="bar" x="448.22" y="99.28" width="14.23" height="66.72" rx="0.5"/>
+  <rect class="bar" x="465.55" y="108.91" width="14.23" height="57.09" rx="0.5"/>
+  <rect class="bar" x="482.88" y="119.22" width="14.23" height="46.78" rx="0.5"/>
+  <rect class="bar" x="500.22" y="126.52" width="14.23" height="39.48" rx="0.5"/>
+  <rect class="bar" x="517.55" y="134.42" width="14.23" height="31.58" rx="0.5"/>
+  <rect class="bar" x="534.88" y="140.52" width="14.23" height="25.48" rx="0.5"/>
+  <rect class="bar" x="552.22" y="145.90" width="14.23" height="20.10" rx="0.5"/>
+  <rect class="bar" x="569.55" y="151.72" width="14.23" height="14.28" rx="0.5"/>
+  <rect class="bar" x="586.88" y="155.22" width="14.23" height="10.78" rx="0.5"/>
+  <rect class="bar" x="604.22" y="158.05" width="14.23" height="7.95" rx="0.5"/>
+  <rect class="bar" x="621.55" y="160.44" width="14.23" height="5.56" rx="0.5"/>
+  <rect class="bar" x="638.88" y="162.08" width="14.23" height="3.92" rx="0.5"/>
+  <rect class="bar" x="656.22" y="162.50" width="14.23" height="3.50" rx="0.5"/>
+  <line class="axis" x1="48.0" y1="166.0" x2="672.0" y2="166.0"/>
+  <line class="tick" x1="48.00" y1="166.0" x2="48.00" y2="171.0"/>
+  <text class="axis-label" x="48.00" y="186.0" text-anchor="start">−$60,000</text>
+  <line class="tick" x1="137.14" y1="166.0" x2="137.14" y2="171.0"/>
+  <text class="axis-label" x="137.14" y="186.0" text-anchor="middle">−$40,000</text>
+  <line class="tick" x1="226.29" y1="166.0" x2="226.29" y2="171.0"/>
+  <text class="axis-label" x="226.29" y="186.0" text-anchor="middle">−$20,000</text>
+  <line class="tick" x1="315.43" y1="166.0" x2="315.43" y2="171.0"/>
+  <text class="axis-label" x="315.43" y="186.0" text-anchor="middle">$0</text>
+  <line class="tick" x1="404.57" y1="166.0" x2="404.57" y2="171.0"/>
+  <text class="axis-label" x="404.57" y="186.0" text-anchor="middle">$20,000</text>
+  <line class="tick" x1="493.71" y1="166.0" x2="493.71" y2="171.0"/>
+  <text class="axis-label" x="493.71" y="186.0" text-anchor="middle">$40,000</text>
+  <line class="tick" x1="582.86" y1="166.0" x2="582.86" y2="171.0"/>
+  <text class="axis-label" x="582.86" y="186.0" text-anchor="middle">$60,000</text>
+  <line class="tick" x1="672.00" y1="166.0" x2="672.00" y2="171.0"/>
+  <text class="axis-label" x="672.00" y="186.0" text-anchor="end">$80,000</text>
+  <line class="marker" x1="494.52" y1="43" x2="494.52" y2="166.0"/>
+  <text class="marker-label" x="487.52" y="34">This wallet: $40,180</text>
+</svg></div>
+  <p class="chart-alt">This wallet made <span class="mono">$40,180</span> on <span class="mono">212</span> resolved bets. In <span class="mono">10,000</span> replays with no edge, a result this good came up about <span class="mono">1 time in 4</span>.</p>
+</section></div>
+    <section class="panel evidence-panel" aria-labelledby="limits-heading">
+  <h2 id="limits-heading">What this test can't see</h2>
+  <ul class="evidence-list">
+    <li><span class="mono">70%</span> of the profit came from the single largest bet.</li>
+    <li><span class="mono">212</span> of <span class="mono">260</span> positions held to resolution. Positions sold early: <span class="mono">−$3,150</span> (Exit PnL).</li>
+  </ul>
+  <p class="fixed-note">Long shots tend to be overpriced. The Verdict covers only bets held to resolution, so early exits are not measured and can make a Wallet look better or worse than it is. Wallets are often looked up because they already looked good, and picking by results makes luck look more like skill.</p>
+  <p class="disclaimer">This is not financial advice.</p>
+</section>
+  </div>
+</section>
+<section class="prototype-page" id="watchlist-page">
+  <div class="page-label">Page <span class="mono">2</span>: Watchlist</div>
+  <header class="site-header">
+  <div class="header-inner">
+    <a class="brand" href="#verdict-page">LiquidOracle</a>
+    <nav class="top-nav" aria-label="Main navigation">
+      <a href="#verdict-page">Check a wallet</a>
+      <a href="#watchlist-page" aria-current="page">Find wallets to follow</a>
+    </nav>
+    <span class="mode-pill">Offline Mode · sample data only</span>
+  </div>
+</header>
+
+  <div class="page-content layout-b">
+    <div class="page-heading scan-header">
+  <h1>Find wallets to follow</h1>
+  <p class="scan-meta">Scan of <span class="mono">200</span> Wallets · Cut-off Date <span class="mono">1 June 2026</span> · run <span class="mono">14 Oct 2026</span></p>
+</div>
+<nav class="subnav" aria-label="Scan sections">
+  <a href="#watchlist-page" aria-current="page">Watchlist</a>
+  <a href="#scans-page">Hold-up Test</a>
+  <a href="#scans-page">Copy Test</a>
+</nav>
+<p class="selection-note">At least about <span class="mono">2</span> of <span class="mono">200</span> would pass by luck alone, probably more, because these Wallets were picked for high profit.</p>
+    <section class="panel table-panel" aria-label="Watchlist table">
+  <div class="table-scroll" tabindex="0" role="region" aria-label="Watchlist table; scroll horizontally to see all columns">
+  <table class="watchlist-table">
+    <caption>Sorted by p-value (smallest first).</caption>
+    <thead><tr><th scope="col">Wallet</th><th scope="col">Verdict</th><th scope="col">Odds</th><th scope="col" class="table-numeric">Resolved bets</th><th scope="col" class="table-numeric">Real PnL</th></tr></thead>
+    <tbody><tr>
+  <td class="table-wallet"><a class="mono" href="#verdict-page" aria-label="Open verdict for wallet 0x1a2b…9f0e">0x1a2b…9f0e</a></td>
+  <td class="table-verdict"><span class="verdict-badge verdict-skilled"><span class="dots" aria-hidden="true">●●●</span><span>Skilled (high confidence)</span></span></td>
+  <td><span class="odds-value">fewer than 1 time in 10,000</span></td>
+  <td class="table-numeric">640</td>
+  <td class="table-numeric">$212,400</td>
+</tr>
+<tr>
+  <td class="table-wallet"><a class="mono" href="#verdict-page" aria-label="Open verdict for wallet 0x88c1…04aa">0x88c1…04aa</a></td>
+  <td class="table-verdict"><span class="verdict-badge verdict-skilled"><span class="dots" aria-hidden="true">●●●</span><span>Skilled (high confidence)</span></span></td>
+  <td><span class="odds-value">about 1 time in 2,500</span></td>
+  <td class="table-numeric">418</td>
+  <td class="table-numeric">$96,050</td>
+</tr>
+<tr>
+  <td class="table-wallet"><a class="mono" href="#verdict-page" aria-label="Open verdict for wallet 0x3f07…b21c">0x3f07…b21c</a></td>
+  <td class="table-verdict"><span class="verdict-badge verdict-skilled"><span class="dots" aria-hidden="true">●●●</span><span>Skilled (high confidence)</span></span></td>
+  <td><span class="odds-value">about 1 time in 1,100</span></td>
+  <td class="table-numeric">305</td>
+  <td class="table-numeric">$58,900</td>
+</tr>
+<tr>
+  <td class="table-wallet"><a class="mono" href="#verdict-page" aria-label="Open verdict for wallet 0xd4e9…7713">0xd4e9…7713</a></td>
+  <td class="table-verdict"><span class="verdict-badge verdict-skilled"><span class="dots" aria-hidden="true">●●●</span><span>Skilled (high confidence)</span></span></td>
+  <td><span class="odds-value">about 1 time in 600</span></td>
+  <td class="table-numeric">1,020</td>
+  <td class="table-numeric">$141,300</td>
+</tr>
+<tr>
+  <td class="table-wallet"><a class="mono" href="#verdict-page" aria-label="Open verdict for wallet 0x5b60…c8e2">0x5b60…c8e2</a></td>
+  <td class="table-verdict"><span class="verdict-badge verdict-skilled"><span class="dots" aria-hidden="true">●●●</span><span>Skilled (high confidence)</span></span></td>
+  <td><span class="odds-value">about 1 time in 350</span></td>
+  <td class="table-numeric">188</td>
+  <td class="table-numeric">$22,750</td>
+</tr>
+<tr>
+  <td class="table-wallet"><a class="mono" href="#verdict-page" aria-label="Open verdict for wallet 0x9a12…3d4f">0x9a12…3d4f</a></td>
+  <td class="table-verdict"><span class="verdict-badge verdict-skilled"><span class="dots" aria-hidden="true">●●●</span><span>Skilled (high confidence)</span></span></td>
+  <td><span class="odds-value">about 1 time in 210</span></td>
+  <td class="table-numeric">256</td>
+  <td class="table-numeric">$31,480</td>
+</tr>
+<tr>
+  <td class="table-wallet"><a class="mono" href="#verdict-page" aria-label="Open verdict for wallet 0x0c7e…e690">0x0c7e…e690</a></td>
+  <td class="table-verdict"><span class="verdict-badge verdict-skilled"><span class="dots" aria-hidden="true">●●●</span><span>Skilled (high confidence)</span></span></td>
+  <td><span class="odds-value">about 1 time in 130</span></td>
+  <td class="table-numeric">97</td>
+  <td class="table-numeric">$12,020</td>
+</tr></tbody>
+  </table>
+  </div>
+</section>
+  </div>
+</section>
+<section class="prototype-page" id="scans-page">
+  <div class="page-label">Page <span class="mono">3</span>: Scans</div>
+  <header class="site-header">
+  <div class="header-inner">
+    <a class="brand" href="#verdict-page">LiquidOracle</a>
+    <nav class="top-nav" aria-label="Main navigation">
+      <a href="#verdict-page">Check a wallet</a>
+      <a href="#watchlist-page" aria-current="page">Find wallets to follow</a>
+    </nav>
+    <span class="mode-pill">Offline Mode · sample data only</span>
+  </div>
+</header>
+
+  <div class="page-content layout-b">
+    <div class="page-heading"><h1>Scans</h1></div>
+    <div class="scan-dashboard"><section class="panel form-panel" aria-labelledby="new-scan-heading">
+  <h2 id="new-scan-heading">New Scan</h2>
+  <form>
+    <div class="form-grid">
+      <div class="form-field">
+        <label for="cutoff-date">Cut-off Date</label>
+        <input id="cutoff-date" name="cutoff-date" type="date" value="2026-06-01" readonly aria-describedby="offline-date-note">
+      </div>
+      <div class="form-field">
+        <label for="wallet-count">Number of Wallets</label>
+        <input id="wallet-count" name="wallet-count" type="number" value="200">
+      </div>
+    </div>
+    <p class="form-note" id="offline-date-note">In Offline Mode, the Cut-off Date is fixed to 1 June 2026.</p>
+    <div class="form-actions"><button class="primary-button" type="button">Start Scan</button></div>
+  </form>
+</section><section class="panel running-panel" aria-labelledby="running-heading">
+  <h2 id="running-heading">Running Scan</h2>
+  <p class="progress-text"><span class="mono">84 of 200</span> Wallets checked</p>
+  <progress value="84" max="200" aria-label="84 of 200 Wallets checked">84 of 200 Wallets checked</progress>
+</section><section class="panel history-panel" aria-labelledby="earlier-scans-heading">
+  <div class="scan-history-heading"><h2 id="earlier-scans-heading">Earlier Scans</h2></div>
+  <div class="table-panel">
+    <div class="table-scroll" tabindex="0" role="region" aria-label="Earlier Scans table; scroll horizontally to see all columns">
+    <table class="scans-table">
+      <caption>Earlier Scans, newest first.</caption>
+      <thead><tr>
+        <th scope="col">Run date</th><th scope="col">Cut-off Date</th><th scope="col" class="table-numeric">Wallets</th><th scope="col" class="table-numeric">Watchlist</th><th scope="col">Status</th>
+      </tr></thead>
+      <tbody>
+        <tr>
+          <td class="mono">14 Oct 2026</td><td class="mono">1 June 2026</td><td class="table-numeric">200</td><td class="table-numeric">7</td>
+          <td><div class="status-stack"><span class="plain-status">Finished</span><a class="small-link" href="#watchlist-page">Open Watchlist</a></div></td>
+        </tr>
+        <tr>
+          <td class="mono">12 Oct 2026</td><td class="mono">1 May 2026</td><td class="table-numeric">200</td><td class="table-numeric">—</td>
+          <td><div class="status-stack"><span>Interrupted at <span class="mono">120 of 200</span></span><button type="button">Resume</button></div></td>
+        </tr>
+        <tr>
+          <td class="mono">10 Oct 2026</td><td class="mono">1 Apr 2026</td><td class="table-numeric">100</td><td class="table-numeric">0</td>
+          <td><span class="plain-status">Finished</span><span class="table-note">No Wallet was rated Skilled (high confidence)</span></td>
+        </tr>
+      </tbody>
+    </table>
+    </div>
+  </div>
+</section></div>
+  </div>
+</section>
+</main>
+</body>
+</html>

@@ -236,6 +236,7 @@ For each of the Before-Cut-off Passers, over the Positions in its after part, th
 - Across 1,000 planted Scans of 110 coin-flipper Wallets, each with 10 of them picked at random as the Passers, the Copy p-value is < 0.05 in at most 7%.
 - A Copy Pool of 6 Wallets with 3 Passers (20 possible groups) shows *Not enough data*.
 - The same data with the same Seed gives the identical Copy p-value.
+- When no random group scores as well as the Passers, the page says "no random group did as well in 10,000 draws", never a percentage: the Copy p-value's floor of 1/10,001 would otherwise read as "0.01% of draws", which is false.
 - The Copy Verdict comes only from the Main Copy Delay. The 1- and 30-minute results show Follower PnL and Follower Return only, marked as extra information, with no Copy Verdict.
 - The per-Wallet numbers are marked as not luck-checked; only the Random Group Check is.
 - A position with no recorded price at a Copy Delay is left out of that delay's sum, and the count of left-out positions is shown.
