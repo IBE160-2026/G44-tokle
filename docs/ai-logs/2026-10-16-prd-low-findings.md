@@ -45,7 +45,7 @@ All done in one pass, then shown to the student:
 
 - **PRD** (`prd.md`, `.memlog.md`, `addendum.md`): FR-8, FR-9, FR-16, FR-24, SM-7, SM-C1, §3 (Scan, Minimum After-bets), FR-3, §8 (two new bullets), §9 (Q1, Q2, Q4), §10; addendum language-model line and Sources.
 - **Brief** (`brief.md`, `.memlog.md`): revision 6 note, criteria 2 and 10.
-- **Still open**: change FR-16, FR-17 and UJ-4 to match the Q2 decision (section 6), then finalise the PRD (Finalize steps, `status: final`) after the data spike answers Q1 to Q3 and the SSRN link is added; then `bmad-ux`, `bmad-architecture`, `bmad-create-epics-and-stories`.
+- **Still open**: decide whether the brief gets revision 7 for the Scan/cut-off order (section 6), then finalise the PRD (Finalize steps, `status: final`) after the data spike answers Q1 to Q3 and the SSRN link is added; then `bmad-ux`, `bmad-architecture`, `bmad-create-epics-and-stories`.
 
 ## 6. After the diff review
 
@@ -53,5 +53,5 @@ The student read the summary of changes and answered:
 
 - **Open Question 2, decided by the student**: "the scan ranks only on profit from before the cut-off, otherwise the hold-up test is rigged." Recorded in Q2 and in the Scan glossary entry. The AI had raised the leak but had not proposed which way to resolve it.
 - **Added by the student, not raised by the AI**: today's leaderboard shows only survivors (Wallets still active and profitable), so the data spike needs an older list of Wallets too. Written into Q2 as part of what the spike must find.
-- **Knock-on the AI flagged and did not apply**: with the ranking tied to the Cut-off Date, the Scan has to know the date before it runs. FR-16, FR-17 and UJ-4 have the Scan first and the date after. Q2 says so; the change to those three is proposed to the student as the next step, not made silently.
+- **Knock-on the AI flagged and did not apply at once**: with the ranking tied to the Cut-off Date, the Scan has to know the date before it runs. FR-16, FR-17 and UJ-4 had the Scan first and the date after. The AI proposed: the Scan takes the date when it starts, and a new date means a new Scan. The student agreed ("yes do it ur way") and asked to see all three rewordings in one go before anything was edited. The AI showed the exact old and new sentences, the student approved, and the three were changed in a separate commit. The AI also found that the brief (sections on the Scan and the Hold-up Test) still describes the Scan first and the date after; it did not edit the brief and proposed a revision 7 instead.
 - **Yale paper, supplied by the student**: Gomez-Cram, Guo, Kung and Jensen, *Prediction Market Accuracy: Crowd Wisdom or Informed Minority?*, SSRN, April 2026. The AI put it in the addendum and checked it against press coverage (authors, data period and the 3.14% figure match). It did not find the SSRN page, so the link and a check of the figure against the paper are still to do.
