@@ -1,0 +1,831 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<title>Verdict · 0x7c3a…d3f5 · LiquidOracle</title>
+<link rel="icon" type="image/svg+xml" href="logo/favicon.svg">
+<script>
+  // Theme before first paint: stored pick, else the system setting (EXPERIENCE.md, Theme toggle).
+  (function () {
+    var t = null;
+    try { t = localStorage.getItem("lo-theme"); } catch (e) {}
+    if (t === "light" || t === "dark") document.documentElement.setAttribute("data-theme", t);
+  })();
+</script>
+<style>
+/*
+  LiquidOracle: Verdict page mockup (stage 1), written from scratch.
+  Visual reference: imports/round-2-images/verdict-light.webp and verdict-dark.webp (pictures only; no code reused).
+  Governed by: DESIGN.md (tokens, Logo, Elevation & Depth, Components: top bar, theme toggle, Offline pill,
+  Verdict hero, address card, stats line, warning box, chart card, luck chart, honesty card, interaction states)
+  and EXPERIENCE.md (Component Patterns: Verdict header, Copy address, Luck chart, Chart explore, Wallet marker,
+  About this chart, Chart text alternative, Honesty notes; State Patterns: Exit PnL below zero;
+  Interaction Primitives; Accessibility Floor). The spines win on any conflict with this file.
+  Sample data: UJ-1 (212 resolved bets, odds 1 in 4). The replays are centred on $0 and a quarter
+  of them lie at or beyond $40,180, as the odds require.
+*/
+:root {
+  --surface: #F7F7F5; --raised: #FFFFFF; --ink: #141922; --muted: #5A616B;
+  --border: #E3E5E8; --border-strong: #868D97; --accent: #1D5BA6; --on-accent: #FFFFFF;
+  --tint: #E8F0FA; --tint-soft: #F1F5FB; --neutral: #F1F2F4; --dot-empty: #C5CAD1;
+  --warn-bg: #FFF3D1; --warn-border: #A87400; --warn-ink: #4F3700; --error: #B42318;
+  --pill: #1A2029; --on-pill: #FFFFFF; --pill-edge: transparent; --bar: #8E959F;
+  --tail: #3F74B3; --active: #43474E; --accent-hover: #1C5396;
+  --card-shadow: 0 1px 2px rgba(20, 25, 34, .04);
+  --lift-shadow: 0 3px 8px rgba(20, 25, 34, .10);
+  --serif: "Iowan Old Style", "Palatino Linotype", Palatino, "Book Antiqua", Georgia, serif;
+  --sans: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --mono: ui-monospace, "Cascadia Mono", "SF Mono", Menlo, Consolas, monospace;
+  --quick: 120ms ease-out;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --surface: #0E1116; --raised: #151A21; --ink: #E7EAEE; --muted: #A2AAB5;
+    --border: #272E38; --border-strong: #6C7582; --accent: #6EA8EE; --on-accent: #0E1116;
+    --tint: #17304F; --tint-soft: #132235; --neutral: #1B222C; --dot-empty: #4A535F;
+    --warn-bg: #33270A; --warn-border: #D9A21B; --warn-ink: #F4D58A; --error: #F28B82;
+    --pill: #0E1116; --on-pill: #E7EAEE; --pill-edge: #6C7582; --bar: #5E6774;
+    --tail: #6193CF; --active: #BDC0C5; --accent-hover: #7DB0EE;
+    --card-shadow: none; --lift-shadow: 0 3px 10px rgba(0, 0, 0, .45);
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --surface: #0E1116; --raised: #151A21; --ink: #E7EAEE; --muted: #A2AAB5;
+  --border: #272E38; --border-strong: #6C7582; --accent: #6EA8EE; --on-accent: #0E1116;
+  --tint: #17304F; --tint-soft: #132235; --neutral: #1B222C; --dot-empty: #4A535F;
+  --warn-bg: #33270A; --warn-border: #D9A21B; --warn-ink: #F4D58A; --error: #F28B82;
+  --pill: #0E1116; --on-pill: #E7EAEE; --pill-edge: #6C7582; --bar: #5E6774;
+    --tail: #6193CF; --active: #BDC0C5; --accent-hover: #7DB0EE;
+  --card-shadow: none; --lift-shadow: 0 3px 10px rgba(0, 0, 0, .45);
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body { margin: 0; background: var(--surface); color: var(--ink); font: 16px/1.55 var(--sans); }
+a { color: var(--accent); }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; border-radius: 4px; }
+.visually-hidden {
+  position: absolute !important; width: 1px; height: 1px; margin: -1px; padding: 0;
+  overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0;
+}
+.skip-link {
+  position: absolute; left: 16px; top: -48px; z-index: 10; padding: 8px 14px;
+  background: var(--raised); color: var(--ink); border: 2px solid var(--accent); border-radius: 6px;
+}
+.skip-link:focus { top: 12px; }
+.wrap { max-width: 1200px; margin: 0 auto; padding: 0 24px; }
+
+/* ---- Top bar ---- */
+.topbar { background: var(--raised); border-bottom: 1px solid var(--border); box-shadow: var(--card-shadow); }
+.topbar .wrap { min-height: 64px; display: flex; align-items: center; gap: 12px 40px; flex-wrap: wrap; }
+.brand {
+  display: inline-flex; align-items: center; gap: 10px; padding: 10px 0;
+  font: 700 26px/1.1 var(--serif); letter-spacing: -.01em; color: var(--ink); text-decoration: none;
+  transition: color var(--quick);
+}
+.brand-mark { width: 32px; height: 32px; flex: none; color: var(--accent); }
+.mainnav { display: flex; gap: 8px 32px; flex-wrap: wrap; }
+.mainnav a {
+  color: var(--muted); text-decoration: none; padding: 6px 0; border-bottom: 2px solid transparent;
+  transition: color var(--quick), border-color var(--quick);
+}
+.mainnav a[aria-current="page"] { color: var(--accent); font-weight: 600; border-bottom-color: var(--accent); }
+.bar-tools { margin-left: auto; display: flex; align-items: center; gap: 12px; }
+.theme-toggle {
+  flex: none; width: 40px; height: 40px; display: inline-grid; place-items: center; padding: 0; cursor: pointer;
+  border: 1px solid var(--border); border-radius: 50%; background: var(--raised); color: var(--ink);
+  transition: background-color var(--quick), border-color var(--quick), transform var(--quick), box-shadow var(--quick);
+}
+.theme-toggle svg { width: 18px; height: 18px; }
+.theme-toggle .icon-sun { display: none; }
+[data-dark="true"] .theme-toggle .icon-sun { display: block; }
+[data-dark="true"] .theme-toggle .icon-moon { display: none; }
+.offline-pill {
+  display: inline-block; padding: 7px 16px; border-radius: 999px; font-size: 13px; line-height: 1.35;
+  background: var(--pill); color: var(--on-pill); border: 1px solid var(--pill-edge);
+}
+.offline-pill strong { font-weight: 650; }
+
+/* ---- Verdict header ---- */
+main { padding: 48px 0 64px; }
+.verdict-head { display: grid; grid-template-columns: minmax(0, 1fr) minmax(300px, 460px); gap: 24px 48px; align-items: start; }
+.eyebrow { margin: 0 0 6px; font-size: 13px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+.verdict {
+  margin: 0; display: flex; align-items: center; gap: 28px; flex-wrap: wrap;
+  font: 600 56px/1.08 var(--serif); letter-spacing: -.02em;
+}
+.dots { display: inline-flex; gap: 10px; flex: none; }
+.dot { width: 30px; height: 30px; border-radius: 50%; border: 6px solid var(--dot-empty); }
+.dot.is-filled { background: var(--accent); border-color: var(--accent); }
+.odds { margin: 10px 0 0; font: 400 26px/1.3 var(--serif); color: var(--muted); text-wrap: balance; }
+.address-card {
+  background: var(--raised); border: 1px solid var(--border); border-radius: 10px;
+  padding: 16px 20px; box-shadow: var(--card-shadow);
+}
+.address-card .label { margin: 0 0 6px; font-size: 14px; color: var(--muted); }
+.address-row { display: flex; align-items: center; gap: 12px; }
+.address { font: 14px/1.5 var(--mono); overflow-wrap: anywhere; flex: 1; min-width: 0; }
+.icon-button {
+  flex: none; display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  height: 36px; min-width: 36px; padding: 0 8px; cursor: pointer;
+  border: 1px solid transparent; border-radius: 6px; background: transparent; color: var(--muted);
+  font: 600 13px var(--sans);
+  transition: color var(--quick), background-color var(--quick), border-color var(--quick), transform var(--quick), box-shadow var(--quick);
+}
+.icon-button svg { width: 18px; height: 18px; }
+.icon-button.is-copied { color: var(--accent); background: var(--tint); border-color: var(--tint); }
+.copy-error { margin: 8px 0 0; font-size: 14px; color: var(--error); }
+
+.rule { border: 0; border-top: 1px solid var(--border); margin: 28px 0 20px; }
+.stats-row { display: grid; grid-template-columns: minmax(0, 1fr) minmax(300px, 620px); gap: 20px 48px; align-items: start; }
+.stats .label { margin: 0; color: var(--muted); }
+.stats .line { margin: 2px 0; font-size: 20px; line-height: 1.35; }
+.stats .line strong { font-weight: 650; }
+.stats .sep { margin: 0 12px; color: var(--muted); }
+.stats .stored { margin: 0; font-size: 14px; color: var(--muted); }
+.warning {
+  display: flex; gap: 12px; align-items: flex-start; padding: 14px 18px;
+  background: var(--warn-bg); color: var(--warn-ink); border-radius: 6px;
+  border: 1px solid color-mix(in srgb, var(--warn-border) 35%, transparent); border-left: 6px solid var(--warn-border);
+}
+.warning svg { flex: none; width: 18px; height: 18px; margin-top: 3px; }
+.warning p { margin: 0; }
+.warning strong { font-weight: 650; }
+.num { font-variant-numeric: tabular-nums; }
+
+/* ---- Cards ---- */
+.card {
+  background: var(--raised); border: 1px solid var(--border); border-radius: 14px;
+  box-shadow: var(--card-shadow); padding: 24px 28px; margin-top: 24px;
+}
+.card-title { margin: 0; font: 600 24px/1.25 var(--serif); }
+.card-title small { font: 400 15px var(--sans); color: var(--ink); margin-left: 6px; letter-spacing: 0; }
+
+/* ---- Chart card ---- */
+.chart-head { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 8px 24px; }
+.about summary {
+  cursor: pointer; color: var(--accent); list-style: none; padding: 4px 6px; margin: 0 -6px; text-align: right;
+  border-radius: 6px; text-decoration: underline transparent; text-underline-offset: 4px;
+  transition: text-decoration-color var(--quick), background-color var(--quick);
+}
+.about summary::-webkit-details-marker { display: none; }
+.about summary::after { content: " ▾" / ""; font-size: 13px; }
+.about[open] summary::after { content: " ▴" / ""; }
+.about[open] { flex-basis: 100%; order: 3; }
+.about-text { margin: 4px 0 0; padding: 14px 18px; background: var(--tint-soft); border: 1px solid var(--tint); border-radius: 6px; }
+.about-text p { margin: 0 0 6px; }
+.about-text p:last-child { margin: 0; }
+
+.chart { margin: 28px 0 0; }
+.chart-y-title { margin: 0 0 18px; font-size: 13px; line-height: 1.2; color: var(--muted); }
+.plot-wrap { position: relative; margin-left: 44px; }
+.plot { position: relative; height: 240px; border-bottom: 1px solid var(--border-strong); }
+.y-line { position: absolute; left: 0; right: 0; border-top: 1px solid var(--border); }
+.y-label {
+  position: absolute; right: calc(100% + 10px); top: -.75em;
+  font: 13px/1.5 var(--sans); font-variant-numeric: tabular-nums; color: var(--muted);
+}
+.bars { position: absolute; inset: 0; display: flex; align-items: flex-end; gap: 1px; }
+.bar {
+  flex: 1; background: var(--bar); border-radius: 1px 1px 0 0; min-height: 0;
+  transform-origin: bottom;
+  transition: transform 420ms cubic-bezier(.2, .7, .2, 1) calc(var(--i) * 4ms), background-color var(--quick);
+}
+.bar.is-active { background: var(--active); }
+.bar.is-tail { background: var(--tail); }
+.plot.pre-build .bar { transform: scaleY(0); }
+.plot.is-built .bar { transition-delay: 0s, 0s; }
+
+.marker {
+  position: absolute; bottom: 0; top: 34px; width: 0; border-left: 3px solid var(--accent);
+  transform: translateX(-1.5px); pointer-events: none;
+  transition: opacity 260ms ease-out 560ms, translate 260ms cubic-bezier(.2, .7, .2, 1) 560ms;
+}
+.marker::before {
+  content: ""; position: absolute; top: -6px; left: -7.5px; width: 12px; height: 12px; border-radius: 50%; background: var(--accent);
+}
+.marker-label {
+  position: absolute; top: -4px; transform: translateX(-50%); white-space: nowrap; pointer-events: none;
+  font-weight: 650; color: var(--accent);
+  transition: opacity 260ms ease-out 620ms, translate 260ms cubic-bezier(.2, .7, .2, 1) 620ms;
+}
+.plot.pre-build .marker, .plot.pre-build .marker-label { opacity: 0; translate: 0 -14px; }
+.plot.is-built .marker, .plot.is-built .marker-label { transition-delay: 0s; }
+
+/* Chart exploring: a slider over the bars, and the wallet marker as a button. */
+.explore { position: absolute; inset: 30px 0 0 0; cursor: crosshair; border-radius: 4px; }
+.explore:focus-visible { outline-offset: 4px; }
+.marker-hit {
+  position: absolute; top: 24px; bottom: 0; width: 28px; transform: translateX(-50%); z-index: 2;
+  padding: 0; border: 0; border-radius: 6px; background: transparent; cursor: pointer;
+}
+.marker-hit:focus-visible { outline-offset: 2px; }
+.chart-tip {
+  position: absolute; z-index: 3; white-space: nowrap; visibility: hidden;
+  padding: 6px 10px; border-radius: 6px; background: var(--ink); color: var(--raised);
+  font-size: 13px; line-height: 1.35; font-variant-numeric: tabular-nums; box-shadow: var(--lift-shadow);
+  opacity: 0; transition: opacity var(--quick);
+}
+.chart-tip.is-shown { opacity: 1; visibility: visible; }
+.chart-tip strong { font-weight: 650; }
+.tail-label {
+  position: absolute; z-index: 3; top: 44px; max-width: 34%; visibility: hidden;
+  padding: 6px 10px; border-radius: 6px; background: var(--tint); color: var(--ink);
+  font-size: 13px; line-height: 1.35; font-weight: 600; font-variant-numeric: tabular-nums;
+  opacity: 0; transition: opacity var(--quick), visibility 0s linear 120ms;
+}
+.plot.show-tail .tail-label { opacity: 1; visibility: visible; transition-delay: 0s; }
+.tail-label { pointer-events: auto; }
+
+.x-axis { position: relative; height: 34px; }
+.x-tick { position: absolute; top: 8px; transform: translateX(-50%); font: 13px/1.4 var(--sans); font-variant-numeric: tabular-nums; color: var(--muted); white-space: nowrap; }
+.x-tick:first-child { transform: none; }
+.x-tick:last-child { transform: translateX(-100%); }
+.x-tick .t-short { display: none; }
+.chart-hint { margin: 4px 0 0; font-size: 13px; color: var(--muted); }
+.chart-alt { margin: 12px 0 0; padding: 12px 18px; background: var(--neutral); border-radius: 6px; }
+.chart-alt strong { font-weight: 650; }
+
+/* ---- Honesty card ---- */
+.limits-grid { display: grid; grid-template-columns: 1fr 1fr 1.6fr; margin-top: 8px; }
+.limits-grid > div { padding: 8px 28px; }
+.limits-grid > div:first-child { padding-left: 0; }
+.limits-grid > div + div { border-left: 1px solid var(--border); }
+.figure { margin: 0; font: 600 30px/1.15 var(--serif); }
+.limits-grid p { margin: 4px 0 0; }
+.limits-text { color: var(--muted); }
+.limits-text p:first-child { margin-top: 0; }
+.not-advice { color: var(--ink); }
+
+/* ---- Prototype-only strip (not part of the page) ---- */
+.proto { margin-top: 56px; padding-top: 24px; border-top: 1px dashed var(--border-strong); }
+.proto h2 { margin: 0 0 4px; font: 600 13px var(--sans); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+.proto h3 { margin: 28px 0 10px; font: 600 15px var(--sans); }
+.proto > p { margin: 0 0 16px; color: var(--muted); font-size: 14px; }
+.proto-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; }
+.proto-item { background: var(--raised); border: 1px solid var(--border); border-radius: 10px; padding: 16px 18px; }
+.proto-item .mini { display: flex; flex-direction: column; align-items: flex-start; gap: 10px; font: 600 24px/1.2 var(--serif); }
+.proto-item .mini .dot { width: 18px; height: 18px; border-width: 4px; }
+.proto-item .mini .dots { gap: 6px; }
+.proto-item .insufficient { display: inline-block; padding: 4px 12px; border: 1.5px dashed var(--border-strong); border-radius: 6px; color: var(--muted); }
+.pill { display: inline-flex; align-items: center; gap: 8px; margin-top: 12px; padding: 4px 10px; border-radius: 6px; background: var(--tint); font-size: 14px; font-weight: 600; }
+.pill.neutral { background: var(--neutral); }
+.pill.dashed { background: transparent; border: 1px dashed var(--border-strong); color: var(--muted); }
+.pill .dots { gap: 4px; }
+.pill .dot { width: 12px; height: 12px; border-width: 2.5px; }
+.pill.in-table { margin-top: 0; }
+.table-card { background: var(--raised); border: 1px solid var(--border); border-radius: 14px; overflow-x: auto; }
+.data-table { width: 100%; border-collapse: collapse; font-size: 15px; min-width: 640px; }
+.data-table caption { caption-side: top; text-align: left; padding: 12px 14px 8px; font-size: 14px; color: var(--muted); }
+.table-card:focus-visible { outline-offset: 2px; }
+.data-table th { text-align: left; padding: 10px 14px; background: var(--neutral); color: var(--muted); font-weight: 600; font-size: 14px; }
+.data-table td { padding: 12px 14px; border-top: 1px solid var(--border); }
+.data-table .r { text-align: right; }
+.data-table .mono { font-family: var(--mono); font-size: 14px; }
+.row-link { position: relative; transition: background-color var(--quick); }
+.row-link a { text-decoration: underline; text-underline-offset: 3px; }
+.row-link a::after { content: ""; position: absolute; inset: 0; }
+.row-link a:focus-visible { outline: none; }
+.btn-primary {
+  font: 600 15px var(--sans); padding: 10px 18px; border-radius: 6px; cursor: pointer;
+  border: 1px solid var(--accent); background: var(--accent); color: var(--on-accent);
+  transition: transform var(--quick), box-shadow var(--quick), background-color var(--quick);
+}
+
+/* ---- Interaction states: only clickable things react; hover and keyboard focus look the same ---- */
+@media (hover: hover) {
+  .brand:hover { color: var(--accent); }
+  .mainnav a:hover { color: var(--ink); border-bottom-color: var(--border-strong); }
+  .mainnav a[aria-current="page"]:hover { color: var(--accent); border-bottom-color: var(--accent); }
+  .theme-toggle:hover { background: var(--neutral); border-color: var(--border-strong); transform: translateY(-1px); box-shadow: var(--lift-shadow); }
+  .icon-button:hover { color: var(--ink); background: var(--neutral); border-color: var(--border); transform: translateY(-1px); }
+  .icon-button.is-copied:hover { color: var(--accent); background: var(--tint); }
+  .about summary:hover { text-decoration-color: currentColor; background: var(--tint-soft); }
+  .row-link:hover { background: var(--tint-soft); }
+  .btn-primary:hover { transform: translateY(-1px); box-shadow: var(--lift-shadow); background: var(--accent-hover); }
+}
+.brand:focus-visible { color: var(--accent); }
+.mainnav a:focus-visible { color: var(--ink); border-bottom-color: var(--border-strong); }
+.mainnav a[aria-current="page"]:focus-visible { color: var(--accent); border-bottom-color: var(--accent); }
+.theme-toggle:focus-visible { background: var(--neutral); border-color: var(--border-strong); transform: translateY(-1px); box-shadow: var(--lift-shadow); }
+.icon-button:focus-visible { color: var(--ink); background: var(--neutral); border-color: var(--border); transform: translateY(-1px); }
+.icon-button.is-copied:focus-visible { color: var(--accent); background: var(--tint); }
+.about summary:focus-visible { text-decoration-color: currentColor; background: var(--tint-soft); }
+.row-link:focus-within { background: var(--tint-soft); outline: 2px solid var(--accent); outline-offset: -2px; }
+.btn-primary:focus-visible { transform: translateY(-1px); box-shadow: var(--lift-shadow); }
+.theme-toggle:active, .icon-button:active, .btn-primary:active { transform: none; box-shadow: none; }
+
+/* ---- Reduced motion: no movement, no build-up; colour changes stay ---- */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { transition-duration: 0s !important; transition-delay: 0s !important; animation: none !important; }
+  .theme-toggle:hover, .theme-toggle:focus-visible, .icon-button:hover, .icon-button:focus-visible,
+  .btn-primary:hover, .btn-primary:focus-visible { transform: none; }
+}
+
+/* ---- Windows High Contrast: keep bars, dots and the marker visible ---- */
+@media (forced-colors: active) {
+  .bar, .dot.is-filled, .marker::before { forced-color-adjust: none; background: CanvasText; }
+  .bar.is-tail, .bar.is-active { background: Highlight; }
+  .marker { border-left-color: Highlight; }
+}
+
+/* ---- Responsive ---- */
+@media (max-width: 900px) {
+  .verdict-head, .stats-row { grid-template-columns: minmax(0, 1fr); }
+  .limits-grid { grid-template-columns: minmax(0, 1fr); }
+  .limits-grid > div { padding: 16px 0; }
+  .limits-grid > div + div { border-left: 0; border-top: 1px solid var(--border); }
+}
+@media (max-width: 640px) {
+  .wrap { padding: 0 16px; }
+  main { padding: 28px 0 48px; }
+  .verdict { font-size: 40px; gap: 18px; }
+  .dot { width: 24px; height: 24px; border-width: 5px; }
+  .odds { font-size: 21px; }
+  .card { padding: 20px 18px; border-radius: 12px; }
+  .stats .line { font-size: 18px; }
+  .plot { height: 200px; }
+  .plot-wrap { margin-left: 36px; }
+  .x-minor { display: none; }
+  .x-tick .t-full { display: none; }
+  .x-tick .t-short { display: inline; }
+  .bars { gap: 0; }
+  .tail-label { max-width: 46%; top: 36px; }
+  .offline-pill { padding: 6px 12px; }
+  .bar-tools { margin-left: 0; width: 100%; justify-content: flex-end; }
+}
+@media (max-width: 400px) {
+  .verdict { font-size: 34px; }
+  .marker-label { font-size: 14px; }
+  .x-end { display: none; }
+}
+</style>
+</head>
+<body>
+<a class="skip-link" href="#content">Skip to content</a>
+
+<header class="topbar">
+  <div class="wrap">
+    <a class="brand" href="#"><svg class="brand-mark" viewBox="0 0 64 64" aria-hidden="true" focusable="false">
+      <defs><mask id="lo-cut-bar" maskUnits="userSpaceOnUse" x="0" y="0" width="64" height="64">
+    <rect width="64" height="64" fill="#fff"/>
+    <rect x="34.43" y="0" width="6.2" height="64" fill="#000"/>
+  </mask></defs>
+  <circle class="lo-ring" cx="32" cy="32" r="27.5" fill="none" stroke="currentColor" stroke-width="4.5"/>
+  <path d="M10.35 44.17 L11.03 43.97 L11.71 43.74 L12.38 43.46 L13.06 43.13 L13.74 42.74 L14.41 42.29 L15.09 41.78 L15.77 41.20 L16.44 40.54 L17.12 39.80 L17.79 38.98 L18.47 38.08 L19.15 37.09 L19.82 36.03 L20.50 34.90 L21.18 33.70 L21.85 32.44 L22.53 31.14 L23.21 29.81 L23.88 28.46 L24.56 27.11 L25.24 25.79 L25.91 24.50 L26.59 23.28 L27.26 22.15 L27.94 21.11 L28.62 20.20 L29.29 19.43 L29.97 18.81 L30.65 18.36 L31.32 18.09 L32.00 18.00 L32.68 18.09 L33.35 18.36 L34.03 18.81 L34.71 19.43 L35.38 20.20 L36.06 21.11 L36.74 22.15 L37.41 23.28 L38.09 24.50 L38.76 25.79 L39.44 27.11 L40.12 28.46 L40.79 29.81 L41.47 31.14 L42.15 32.44 L42.82 33.70 L43.50 34.90 L44.18 36.03 L44.85 37.09 L45.53 38.08 L46.21 38.98 L46.88 39.80 L47.56 40.54 L48.23 41.20 L48.91 41.78 L49.59 42.29 L50.26 42.74 L50.94 43.13 L51.62 43.46 L52.29 43.74 L52.97 43.97 L53.65 44.17 L53.65 45 L10.35 45 Z" fill="currentColor" mask="url(#lo-cut-bar)"/>
+  <rect x="35.93" y="12" width="3.2" height="33" rx="1.6" fill="currentColor"/>
+  <rect x="35.93" y="41.8" width="3.2" height="3.2" fill="currentColor"/>
+    </svg>LiquidOracle</a>
+    <nav class="mainnav" aria-label="Main">
+      <a href="#" aria-current="page">Check a wallet</a>
+      <a href="#">Scan wallets</a>
+    </nav>
+    <div class="bar-tools">
+      <button class="theme-toggle" type="button" id="theme-toggle" aria-label="Dark theme" aria-pressed="false">
+        <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>
+        <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="4.5"/><path d="M12 1.5v2.5M12 20v2.5M4.6 4.6l1.8 1.8M17.6 17.6l1.8 1.8M1.5 12H4M20 12h2.5M4.6 19.4l1.8-1.8M17.6 6.4l1.8-1.8"/></svg>
+      </button>
+      <span class="offline-pill"><strong>Offline Mode</strong> · sample data only</span>
+    </div>
+  </div>
+</header>
+
+<main id="content">
+  <div class="wrap">
+
+    <section class="verdict-card" aria-labelledby="verdict-heading">
+    <div class="verdict-head">
+      <div>
+        <p class="eyebrow">Wallet analysis</p>
+        <h1 class="verdict" id="verdict-heading">
+          <span class="dots" aria-hidden="true"><span class="dot"></span><span class="dot"></span><span class="dot"></span></span>
+          <span><span class="visually-hidden">Verdict: </span>No evidence of skill</span>
+        </h1>
+        <p class="odds">a trader with no edge would do this well about 1 time in 4.</p>
+      </div>
+      <div class="address-card">
+        <p class="label" id="address-label">Wallet address</p>
+        <div class="address-row">
+          <code class="address" id="wallet-address">0x7c3a9e2b41d05f6a8c1e93b7d2f4a6c8e0b1d3f5</code>
+          <button class="icon-button" type="button" id="copy-address" aria-label="Copy wallet address">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" aria-hidden="true"><rect x="8.5" y="8.5" width="12" height="12" rx="2"/><path d="M15.5 8.5V5.5a2 2 0 0 0-2-2h-8a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h3"/></svg>
+            <span id="copy-label" aria-hidden="true"></span>
+          </button>
+        </div>
+        <p class="copy-error" id="copy-error" hidden><span class="visually-hidden">Error: </span><span id="copy-error-text">Copy failed. Select the address and press Ctrl+C.</span></p>
+        <p class="visually-hidden" id="copy-status" aria-live="polite"></p>
+      </div>
+    </div>
+
+    <hr class="rule">
+
+    <div class="stats-row">
+      <div class="stats">
+        <p class="label">Stats</p>
+        <p class="line"><strong class="num">212</strong> resolved bets<span class="sep" aria-hidden="true">•</span><span class="visually-hidden">, </span>Real PnL <strong class="num">$40,180</strong></p>
+        <p class="stored">Data stored 15 Oct 2026, 14:02</p>
+      </div>
+      <div class="warning" role="note">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3 2 20.5h20L12 3z"/><path d="M12 9.5v5M12 17.6v.01"/></svg>
+        <p><span class="visually-hidden">Warning: </span><strong>Positions this Wallet sold before resolution lost money in total.</strong><br>This Verdict covers only bets held to resolution.</p>
+      </div>
+    </div>
+    </section>
+
+    <section class="card" aria-labelledby="chart-title">
+      <div class="chart-head">
+        <h2 class="card-title" id="chart-title">Simulated results <small>(10,000 replays with no edge)</small></h2>
+        <details class="about">
+          <summary>About this chart</summary>
+          <div class="about-text">
+            <p>Each replay (a Simulation) keeps this Wallet's 212 resolved bets, prices and stakes, but lets every bet win or lose by chance, at the odds its price implied. That is one way a trader with no edge could have done.</p>
+            <p>The bars count how many of the 10,000 replays ended at each result. On average, luck alone lands at $0.</p>
+            <p>The blue line labelled "This Wallet" is this Wallet's Real PnL: what it made on the 212 bets it held to resolution. The more of the curve lies to its left, the harder the result is to explain by luck. Point at a bar or at the line, or use the arrow keys, to see the numbers.</p>
+          </div>
+        </details>
+      </div>
+
+      <div class="chart">
+        <p class="chart-y-title" aria-hidden="true">Number<br>of replays</p>
+        <div class="plot-wrap">
+          <div class="plot" id="plot">
+            <div aria-hidden="true">
+              <span class="y-line" style="bottom:0.000%"><span class="y-label">0</span></span>
+              <span class="y-line" style="bottom:25.000%"><span class="y-label">100</span></span>
+              <span class="y-line" style="bottom:50.000%"><span class="y-label">200</span></span>
+              <span class="y-line" style="bottom:75.000%"><span class="y-label">300</span></span>
+              <span class="y-line" style="bottom:100.000%"><span class="y-label">400</span></span>
+            </div>
+            <div class="bars" aria-hidden="true">
+              <span class="bar" style="height:1.25%;--i:0"></span>
+              <span class="bar" style="height:0.50%;--i:1"></span>
+              <span class="bar" style="height:0.50%;--i:2"></span>
+              <span class="bar" style="height:0.75%;--i:3"></span>
+              <span class="bar" style="height:1.00%;--i:4"></span>
+              <span class="bar" style="height:1.25%;--i:5"></span>
+              <span class="bar" style="height:1.50%;--i:6"></span>
+              <span class="bar" style="height:2.00%;--i:7"></span>
+              <span class="bar" style="height:2.50%;--i:8"></span>
+              <span class="bar" style="height:3.25%;--i:9"></span>
+              <span class="bar" style="height:4.00%;--i:10"></span>
+              <span class="bar" style="height:4.75%;--i:11"></span>
+              <span class="bar" style="height:5.75%;--i:12"></span>
+              <span class="bar" style="height:7.00%;--i:13"></span>
+              <span class="bar" style="height:8.50%;--i:14"></span>
+              <span class="bar" style="height:10.00%;--i:15"></span>
+              <span class="bar" style="height:12.00%;--i:16"></span>
+              <span class="bar" style="height:14.00%;--i:17"></span>
+              <span class="bar" style="height:16.50%;--i:18"></span>
+              <span class="bar" style="height:19.00%;--i:19"></span>
+              <span class="bar" style="height:22.00%;--i:20"></span>
+              <span class="bar" style="height:25.00%;--i:21"></span>
+              <span class="bar" style="height:28.50%;--i:22"></span>
+              <span class="bar" style="height:32.00%;--i:23"></span>
+              <span class="bar" style="height:36.00%;--i:24"></span>
+              <span class="bar" style="height:40.00%;--i:25"></span>
+              <span class="bar" style="height:44.00%;--i:26"></span>
+              <span class="bar" style="height:48.25%;--i:27"></span>
+              <span class="bar" style="height:52.50%;--i:28"></span>
+              <span class="bar" style="height:56.75%;--i:29"></span>
+              <span class="bar" style="height:61.00%;--i:30"></span>
+              <span class="bar" style="height:65.00%;--i:31"></span>
+              <span class="bar" style="height:68.75%;--i:32"></span>
+              <span class="bar" style="height:72.25%;--i:33"></span>
+              <span class="bar" style="height:75.25%;--i:34"></span>
+              <span class="bar" style="height:78.00%;--i:35"></span>
+              <span class="bar" style="height:80.25%;--i:36"></span>
+              <span class="bar" style="height:82.00%;--i:37"></span>
+              <span class="bar" style="height:83.00%;--i:38"></span>
+              <span class="bar" style="height:83.50%;--i:39"></span>
+              <span class="bar" style="height:83.50%;--i:40"></span>
+              <span class="bar" style="height:83.00%;--i:41"></span>
+              <span class="bar" style="height:82.00%;--i:42"></span>
+              <span class="bar" style="height:80.25%;--i:43"></span>
+              <span class="bar" style="height:78.00%;--i:44"></span>
+              <span class="bar" style="height:75.25%;--i:45"></span>
+              <span class="bar" style="height:72.25%;--i:46"></span>
+              <span class="bar" style="height:68.75%;--i:47"></span>
+              <span class="bar" style="height:65.00%;--i:48"></span>
+              <span class="bar" style="height:61.00%;--i:49"></span>
+              <span class="bar" style="height:56.75%;--i:50"></span>
+              <span class="bar" style="height:52.50%;--i:51"></span>
+              <span class="bar" style="height:48.25%;--i:52"></span>
+              <span class="bar" style="height:44.00%;--i:53"></span>
+              <span class="bar" style="height:40.00%;--i:54"></span>
+              <span class="bar" style="height:36.00%;--i:55"></span>
+              <span class="bar" style="height:32.00%;--i:56"></span>
+              <span class="bar" style="height:28.50%;--i:57"></span>
+              <span class="bar" style="height:25.00%;--i:58"></span>
+              <span class="bar" style="height:22.00%;--i:59"></span>
+              <span class="bar" style="height:19.00%;--i:60"></span>
+              <span class="bar" style="height:16.50%;--i:61"></span>
+              <span class="bar" style="height:14.00%;--i:62"></span>
+              <span class="bar" style="height:12.00%;--i:63"></span>
+              <span class="bar" style="height:10.00%;--i:64"></span>
+              <span class="bar" style="height:8.50%;--i:65"></span>
+              <span class="bar" style="height:7.00%;--i:66"></span>
+              <span class="bar" style="height:5.75%;--i:67"></span>
+              <span class="bar" style="height:4.75%;--i:68"></span>
+              <span class="bar" style="height:4.00%;--i:69"></span>
+              <span class="bar" style="height:3.25%;--i:70"></span>
+              <span class="bar" style="height:2.50%;--i:71"></span>
+              <span class="bar" style="height:2.00%;--i:72"></span>
+              <span class="bar" style="height:1.50%;--i:73"></span>
+              <span class="bar" style="height:1.25%;--i:74"></span>
+              <span class="bar" style="height:1.00%;--i:75"></span>
+              <span class="bar" style="height:0.75%;--i:76"></span>
+              <span class="bar" style="height:0.50%;--i:77"></span>
+              <span class="bar" style="height:0.50%;--i:78"></span>
+              <span class="bar" style="height:1.25%;--i:79"></span>
+            </div>
+            <div class="marker" style="left:60.045%" aria-hidden="true"></div>
+            <span class="marker-label" style="left:60.045%" aria-hidden="true">This Wallet: $40,180</span>
+            <div class="tail-label" id="tail-label" style="left:calc(60.045% + 14px)" aria-hidden="true">2,500 of 10,000 replays did this well or better</div>
+            <div class="chart-tip" id="chart-tip" aria-hidden="true"></div>
+            <div class="explore" id="explore" role="slider" tabindex="0"
+                 aria-label="Replays by result" aria-describedby="chart-hint"
+                 aria-valuemin="1" aria-valuemax="80" aria-valuenow="49" aria-valuetext=""></div>
+            <button class="marker-hit" id="marker-hit" type="button" style="left:60.045%"
+                    aria-pressed="false" aria-label="This Wallet: $40,180. Highlight the replays that did this well or better" aria-describedby="tail-desc"></button>
+          </div>
+          <div class="x-axis" aria-hidden="true">
+            <span class="x-tick x-end" style="left:0.000%"><span class="t-full">−$200,000</span><span class="t-short">−$200k</span></span>
+            <span class="x-tick x-minor" style="left:12.500%"><span class="t-full">−$150,000</span><span class="t-short">−$150k</span></span>
+            <span class="x-tick" style="left:25.000%"><span class="t-full">−$100,000</span><span class="t-short">−$100k</span></span>
+            <span class="x-tick x-minor" style="left:37.500%"><span class="t-full">−$50,000</span><span class="t-short">−$50k</span></span>
+            <span class="x-tick" style="left:50.000%"><span class="t-full">$0</span><span class="t-short">$0</span></span>
+            <span class="x-tick x-minor" style="left:62.500%"><span class="t-full">$50,000</span><span class="t-short">$50k</span></span>
+            <span class="x-tick" style="left:75.000%"><span class="t-full">$100,000</span><span class="t-short">$100k</span></span>
+            <span class="x-tick x-minor" style="left:87.500%"><span class="t-full">$150,000</span><span class="t-short">$150k</span></span>
+            <span class="x-tick x-end" style="left:100.000%"><span class="t-full">$200,000</span><span class="t-short">$200k</span></span>
+          </div>
+        </div>
+        <p class="chart-hint" id="chart-hint">Point at a bar, or use the arrow keys, to see how many replays landed there.</p>
+        <p class="visually-hidden" id="tail-desc">2,500 of 10,000 replays did this well or better.</p>
+        <p class="visually-hidden" id="chart-live" aria-live="polite"></p>
+      </div>
+
+      <p class="chart-alt">This Wallet made <strong class="num">$40,180</strong> on <strong class="num">212</strong> resolved bets. In 10,000 replays with no edge, a result this good came up about 1 time in 4.</p>
+    </section>
+
+    <section class="card" aria-labelledby="limits-title">
+      <h2 class="card-title" id="limits-title">What this test can’t see</h2>
+      <div class="limits-grid">
+        <div>
+          <p class="figure">70%</p>
+          <p>of the Real PnL came from the single largest bet.</p>
+        </div>
+        <div>
+          <p class="figure">212 of 260</p>
+          <p>positions held to resolution. Shares sold before resolution: <strong class="num">−$3,150</strong> (Exit PnL).</p>
+        </div>
+        <div class="limits-text">
+          <p>Long shots tend to be overpriced, so a Wallet that mostly buys favourites can beat the odds from that known pattern alone. The Verdict covers only bets held to resolution, so early exits are not measured and can make a Wallet look better or worse than it is. Wallets are often looked up because they already looked good, and picking by results makes luck look more like skill.</p>
+          <p class="not-advice">This is not financial advice.</p>
+        </div>
+      </div>
+    </section>
+
+    <aside class="proto" aria-labelledby="proto-title">
+      <h2 id="proto-title">Prototype only: other states and parts</h2>
+      <p>Not part of this page. Shows each Verdict as a headline and as a table pill (DESIGN.md › Verdict hero, Verdict pill), and the hover and focus look of a primary button and of clickable table rows (DESIGN.md › Interaction states).</p>
+      <div class="proto-grid">
+        <div class="proto-item">
+          <div class="mini"><span class="dots" aria-hidden="true"><span class="dot is-filled"></span><span class="dot is-filled"></span><span class="dot is-filled"></span></span>Skilled (high confidence)</div>
+          <span class="pill"><span class="dots" aria-hidden="true"><span class="dot is-filled"></span><span class="dot is-filled"></span><span class="dot is-filled"></span></span>Skilled (high confidence)</span>
+        </div>
+        <div class="proto-item">
+          <div class="mini"><span class="dots" aria-hidden="true"><span class="dot is-filled"></span><span class="dot is-filled"></span><span class="dot"></span></span>Likely skilled</div>
+          <span class="pill"><span class="dots" aria-hidden="true"><span class="dot is-filled"></span><span class="dot is-filled"></span><span class="dot"></span></span>Likely skilled</span>
+        </div>
+        <div class="proto-item">
+          <div class="mini"><span class="dots" aria-hidden="true"><span class="dot"></span><span class="dot"></span><span class="dot"></span></span>No evidence of skill</div>
+          <span class="pill neutral"><span class="dots" aria-hidden="true"><span class="dot"></span><span class="dot"></span><span class="dot"></span></span>No evidence of skill</span>
+        </div>
+        <div class="proto-item">
+          <div class="mini"><span class="insufficient">Not enough data</span></div>
+          <span class="pill dashed">Not enough data</span>
+        </div>
+      </div>
+
+      <h3>Primary button</h3>
+      <button class="btn-primary" type="button">Check wallet</button>
+
+      <h3>Clickable table rows (Watchlist)</h3>
+      <div class="table-card" tabindex="0" role="region" aria-label="Sample Watchlist rows">
+        <table class="data-table">
+          <caption>Sorted by p-value, smallest first. A smaller p-value means stronger evidence of skill, not a bigger edge.</caption>
+          <thead><tr><th scope="col">Wallet</th><th scope="col">Verdict</th><th scope="col">Odds (with no edge)</th><th scope="col" class="r">Resolved bets</th><th scope="col" class="r">Real PnL</th></tr></thead>
+          <tbody>
+            <tr class="row-link"><td class="mono"><a href="#" aria-label="Open Verdict for Wallet 0x1a2b…9f0e">0x1a2b…9f0e</a></td><td><span class="pill in-table"><span class="dots" aria-hidden="true"><span class="dot is-filled"></span><span class="dot is-filled"></span><span class="dot is-filled"></span></span>Skilled (high confidence)</span></td><td>fewer than 1 time in 10,000</td><td class="r mono">640</td><td class="r mono">$212,400</td></tr>
+            <tr class="row-link"><td class="mono"><a href="#" aria-label="Open Verdict for Wallet 0x88c1…04aa">0x88c1…04aa</a></td><td><span class="pill in-table"><span class="dots" aria-hidden="true"><span class="dot is-filled"></span><span class="dot is-filled"></span><span class="dot is-filled"></span></span>Skilled (high confidence)</span></td><td>about 1 time in 2,500</td><td class="r mono">418</td><td class="r mono">$96,050</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </aside>
+
+  </div>
+</main>
+
+<script>
+  var REDUCED = window.matchMedia("(prefers-reduced-motion: reduce)");
+
+  // Theme toggle: follows the system until the user picks; the pick is remembered (EXPERIENCE.md).
+  (function () {
+    var root = document.documentElement;
+    var btn = document.getElementById("theme-toggle");
+    var media = window.matchMedia("(prefers-color-scheme: dark)");
+    function isDark() {
+      var t = root.getAttribute("data-theme");
+      return t ? t === "dark" : media.matches;
+    }
+    function sync() {
+      var dark = isDark();
+      root.setAttribute("data-dark", dark ? "true" : "false");
+      btn.setAttribute("aria-pressed", dark ? "true" : "false");
+    }
+    btn.addEventListener("click", function () {
+      var next = isDark() ? "light" : "dark";
+      root.setAttribute("data-theme", next);
+      try { localStorage.setItem("lo-theme", next); } catch (e) {}
+      sync();
+    });
+    media.addEventListener("change", sync);
+    sync();
+  })();
+
+  // Copy address: "Copied" for 2 seconds; if copying is blocked, the address stays selectable.
+  (function () {
+    var btn = document.getElementById("copy-address");
+    var label = document.getElementById("copy-label");
+    var status = document.getElementById("copy-status");
+    var error = document.getElementById("copy-error");
+    var errorText = document.getElementById("copy-error-text");
+    var addr = document.getElementById("wallet-address");
+    var timer;
+    if (/Mac|iPhone|iPad/.test(navigator.platform)) errorText.textContent = "Copy failed. Select the address and press \u2318C.";
+    function failed() {
+      error.hidden = false;
+      status.textContent = errorText.textContent;
+      var range = document.createRange(); range.selectNodeContents(addr);
+      var sel = window.getSelection(); sel.removeAllRanges(); sel.addRange(range);
+    }
+    btn.addEventListener("click", function () {
+      error.hidden = true; status.textContent = "";
+      if (!navigator.clipboard) { failed(); return; }
+      navigator.clipboard.writeText(addr.textContent).then(function () {
+        label.textContent = "Copied";
+        status.textContent = "Address copied";
+        btn.classList.add("is-copied");
+        clearTimeout(timer);
+        timer = setTimeout(function () { label.textContent = ""; btn.classList.remove("is-copied"); }, 2000);
+      }, failed);
+    });
+  })();
+
+  // Luck chart: build-up when it comes into view, then explore by pointer or keyboard.
+  (function () {
+    var BINS = [[-200000,-195000,5],[-195000,-190000,2],[-190000,-185000,2],[-185000,-180000,3],[-180000,-175000,4],[-175000,-170000,5],[-170000,-165000,6],[-165000,-160000,8],[-160000,-155000,10],[-155000,-150000,13],[-150000,-145000,16],[-145000,-140000,19],[-140000,-135000,23],[-135000,-130000,28],[-130000,-125000,34],[-125000,-120000,40],[-120000,-115000,48],[-115000,-110000,56],[-110000,-105000,66],[-105000,-100000,76],[-100000,-95000,88],[-95000,-90000,100],[-90000,-85000,114],[-85000,-80000,128],[-80000,-75000,144],[-75000,-70000,160],[-70000,-65000,176],[-65000,-60000,193],[-60000,-55000,210],[-55000,-50000,227],[-50000,-45000,244],[-45000,-40000,260],[-40000,-35000,275],[-35000,-30000,289],[-30000,-25000,301],[-25000,-20000,312],[-20000,-15000,321],[-15000,-10000,328],[-10000,-5000,332],[-5000,0,334],[0,5000,334],[5000,10000,332],[10000,15000,328],[15000,20000,321],[20000,25000,312],[25000,30000,301],[30000,35000,289],[35000,40000,275],[40000,45000,260],[45000,50000,244],[50000,55000,227],[55000,60000,210],[60000,65000,193],[65000,70000,176],[70000,75000,160],[75000,80000,144],[80000,85000,128],[85000,90000,114],[90000,95000,100],[95000,100000,88],[100000,105000,76],[105000,110000,66],[110000,115000,56],[115000,120000,48],[120000,125000,40],[125000,130000,34],[130000,135000,28],[135000,140000,23],[140000,145000,19],[145000,150000,16],[150000,155000,13],[155000,160000,10],[160000,165000,8],[165000,170000,6],[170000,175000,5],[175000,180000,4],[180000,185000,3],[185000,190000,2],[190000,195000,2],[195000,200000,5]];          // [low, high, replays] per bar; the end bars also hold everything beyond the axis
+    var MARKER_BIN = 48;   // the bar that holds the wallet's result
+    var AT_OR_ABOVE = 2500;            // Simulations with PnL >= Real PnL, as stored by the Skill Test (not summed from bars)
+    var N = 10000;
+    var TAIL_TEXT = AT_OR_ABOVE === 0 ? "No replay did this well or better"
+      : AT_OR_ABOVE === N ? "All 10,000 replays did this well or better"
+      : AT_OR_ABOVE.toLocaleString("en-US") + " of 10,000 replays did this well or better";
+    var plot = document.getElementById("plot");
+    var bars = plot.querySelectorAll(".bar");
+    var tip = document.getElementById("chart-tip");
+    var tailLabel = document.getElementById("tail-label");
+    var explore = document.getElementById("explore");
+    var markerBtn = document.getElementById("marker-hit");
+    var live = document.getElementById("chart-live");
+    var active = -1, pinned = false, tailHover = false, hideTip = null, hideTail = null;
+
+    tailLabel.textContent = TAIL_TEXT;
+    document.getElementById("tail-desc").textContent = TAIL_TEXT + ".";
+
+    // Build-up: bars rise into the curve, then the marker drops in. Only with JavaScript, never with reduced motion.
+    if (!REDUCED.matches && "IntersectionObserver" in window) {
+      plot.classList.add("pre-build");
+      var io = new IntersectionObserver(function (entries) {
+        if (!entries[0].isIntersecting) return;
+        io.disconnect();
+        requestAnimationFrame(function () {
+          plot.classList.remove("pre-build");
+          setTimeout(function () { plot.classList.add("is-built"); }, 1000);
+        });
+      }, { threshold: 0.35 });
+      io.observe(plot);
+    } else {
+      plot.classList.add("is-built");
+    }
+
+    function money(v) {
+      if (v === 0) return "$0";
+      return (v < 0 ? "−" : "") + "$" + Math.abs(v).toLocaleString("en-US");
+    }
+    function range(i) {
+      var b = BINS[i];
+      if (i === 0) return money(b[1]) + " or less";
+      if (i === BINS.length - 1) return money(b[0]) + " or more";
+      return money(b[0]) + " to " + money(b[1]);
+    }
+    function count(i) { var n = BINS[i][2]; return n.toLocaleString("en-US") + (n === 1 ? " replay" : " replays"); }
+
+    function setActive(i) {
+      clearTimeout(hideTip);
+      if (active >= 0) bars[active].classList.remove("is-active");
+      active = i;
+      if (i < 0) { tip.classList.remove("is-shown"); return; }
+      bars[i].classList.add("is-active");
+      tip.innerHTML = range(i) + "<br><strong>" + count(i) + "</strong>";
+      var x = (i + 0.5) / BINS.length * 100;
+      var h = parseFloat(bars[i].style.height);
+      var near = Math.abs(i - MARKER_BIN) <= 3;          // keep clear of the marker's dot and label
+      tip.style.left = x + "%";
+      if (near) {
+        tip.style.bottom = (h / 2) + "%";
+        tip.style.transform = i <= MARKER_BIN ? "translateX(calc(-100% - 14px))" : "translateX(14px)";
+      } else {
+        tip.style.bottom = "calc(" + h + "% + 10px)";
+        tip.style.transform = i < 8 ? "translateX(-12%)" : i > BINS.length - 9 ? "translateX(-88%)" : "translateX(-50%)";
+      }
+      tip.classList.add("is-shown");
+      explore.setAttribute("aria-valuenow", i + 1);
+      explore.setAttribute("aria-valuetext", range(i) + ": " + count(i));
+    }
+    function hideTipSoon() { clearTimeout(hideTip); hideTip = setTimeout(function () { setActive(-1); }, 300); }
+
+    function showTail(on) {
+      plot.classList.toggle("show-tail", on);
+      var from = AT_OR_ABOVE === 0 ? bars.length : AT_OR_ABOVE === N ? 0 : MARKER_BIN;
+      for (var i = 0; i < bars.length; i++) bars[i].classList.toggle("is-tail", on && i >= from);
+      if (on) setActive(-1);
+    }
+    function unpin(announce) {
+      if (!pinned) return;
+      pinned = false;
+      markerBtn.setAttribute("aria-pressed", "false");
+      if (announce) live.textContent = "Highlight off";
+    }
+
+    // Pointer over the bars. The tooltip stays while the pointer is on it, and for 300 ms after it leaves (WCAG 1.4.13).
+    explore.addEventListener("pointermove", function (e) {
+      if (pinned) return;
+      var r = explore.getBoundingClientRect();
+      var i = Math.max(0, Math.min(BINS.length - 1, Math.floor((e.clientX - r.left) / r.width * BINS.length)));
+      if (i !== active) setActive(i); else clearTimeout(hideTip);
+    });
+    explore.addEventListener("pointerleave", function () { if (document.activeElement !== explore) hideTipSoon(); });
+    tip.addEventListener("pointerenter", function () { clearTimeout(hideTip); });
+    tip.addEventListener("pointerleave", function () { if (document.activeElement !== explore) hideTipSoon(); });
+
+    // Keyboard over the bars: a slider, one bar per step.
+    explore.addEventListener("focus", function () { if (!pinned) setActive(active >= 0 ? active : MARKER_BIN); });
+    explore.addEventListener("blur", function () { setActive(-1); });
+    explore.addEventListener("keydown", function (e) {
+      var i = active < 0 ? MARKER_BIN : active, n = BINS.length;
+      var next = { ArrowLeft: i - 1, ArrowDown: i - 1, ArrowRight: i + 1, ArrowUp: i + 1,
+                   PageDown: i - 10, PageUp: i + 10, Home: 0, End: n - 1 }[e.key];
+      if (next === undefined) return;
+      e.preventDefault();
+      if (pinned) { unpin(true); showTail(false); }
+      setActive(Math.max(0, Math.min(n - 1, next)));
+    });
+
+    // The wallet marker and its tail label are one hover area; focus shows the tail; a click (or tap) pins it.
+    function tailEnter() { clearTimeout(hideTail); tailHover = true; showTail(true); }
+    function tailLeave() {
+      tailHover = false; clearTimeout(hideTail);
+      hideTail = setTimeout(function () {
+        if (!pinned && !tailHover && document.activeElement !== markerBtn) showTail(false);
+      }, 300);
+    }
+    markerBtn.addEventListener("pointerenter", tailEnter);
+    markerBtn.addEventListener("pointerleave", tailLeave);
+    tailLabel.addEventListener("pointerenter", tailEnter);
+    tailLabel.addEventListener("pointerleave", tailLeave);
+    markerBtn.addEventListener("focus", function () { showTail(true); });
+    markerBtn.addEventListener("blur", function () { if (!pinned && !tailHover) showTail(false); });
+    markerBtn.addEventListener("click", function () {
+      if (pinned) { unpin(true); showTail(tailHover || document.activeElement === markerBtn); return; }
+      pinned = true;
+      markerBtn.setAttribute("aria-pressed", "true");
+      showTail(true);
+      live.textContent = "Highlight on: " + TAIL_TEXT;
+    });
+    document.addEventListener("keydown", function (e) {
+      if (e.key !== "Escape") return;
+      if (pinned || plot.classList.contains("show-tail")) { unpin(true); showTail(false); }
+      if (active >= 0) setActive(-1);
+    });
+    explore.setAttribute("aria-valuetext", range(MARKER_BIN) + ": " + count(MARKER_BIN));
+  })();
+</script>
+</body>
+</html>
