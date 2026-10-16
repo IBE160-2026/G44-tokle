@@ -1,0 +1,215 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<title>Logo and tab · LiquidOracle</title>
+<link rel="icon" type="image/svg+xml" href="logo/favicon.svg" id="favicon">
+<style>
+/*
+  LiquidOracle: logo, tab titles and scan progress in the tab. Written from scratch.
+  Logo reference: imports/round-3-logo/logo-reference.webp (picture only).
+  Governed by: DESIGN.md (Logo) and EXPERIENCE.md (Page titles; Scan progress in the tab).
+  The spines win on any conflict with this file.
+*/
+:root {
+  --surface: #F7F7F5; --raised: #FFFFFF; --ink: #141922; --muted: #5A616B; --border: #E3E5E8;
+  --accent: #1D5BA6; --on-accent: #FFFFFF; --neutral: #F1F2F4;
+  --serif: "Iowan Old Style", "Palatino Linotype", Palatino, "Book Antiqua", Georgia, serif;
+  --sans: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --mono: ui-monospace, "Cascadia Mono", "SF Mono", Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root { --surface: #0E1116; --raised: #151A21; --ink: #E7EAEE; --muted: #A2AAB5; --border: #272E38;
+          --accent: #6EA8EE; --on-accent: #0E1116; --neutral: #1B222C; }
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--surface); color: var(--ink); font: 16px/1.55 var(--sans); }
+.wrap { max-width: 1000px; margin: 0 auto; padding: 40px 24px 64px; }
+h1 { font: 700 40px/1.1 var(--serif); margin: 0 0 8px; }
+h2 { font: 600 24px/1.25 var(--serif); margin: 0 0 12px; }
+.lede { color: var(--muted); margin: 0 0 32px; }
+.card { background: var(--raised); border: 1px solid var(--border); border-radius: 14px; padding: 24px 28px; margin-top: 24px; }
+.sizes { display: flex; flex-wrap: wrap; gap: 28px; align-items: flex-end; }
+.sizes figure { margin: 0; text-align: center; }
+.sizes figcaption { margin-top: 8px; font-size: 13px; color: var(--muted); }
+.mark { color: var(--accent); display: block; }
+.swatches { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; }
+.swatch { border-radius: 10px; padding: 20px; display: flex; align-items: center; gap: 12px; font: 700 24px var(--serif); }
+.swatch.light { background: #FFFFFF; color: #141922; border: 1px solid #E3E5E8; }
+.swatch.light .mark { color: #1D5BA6; }
+.swatch.dark { background: #151A21; color: #E7EAEE; }
+.swatch.dark .mark { color: #6EA8EE; }
+.tab-demo { display: inline-flex; align-items: center; gap: 8px; padding: 8px 14px; border-radius: 8px 8px 0 0;
+  background: var(--neutral); border: 1px solid var(--border); border-bottom: 0; font-size: 13px; max-width: 100%; }
+.tab-demo img { width: 16px; height: 16px; }
+.rings { display: flex; flex-wrap: wrap; gap: 24px; margin: 8px 0 20px; }
+.ring-step { margin: 0; display: flex; flex-direction: column; align-items: flex-start; gap: 10px; }
+table { border-collapse: collapse; width: 100%; font-size: 15px; }
+th, td { text-align: left; padding: 10px 12px; border-bottom: 1px solid var(--border); vertical-align: top; }
+th { background: var(--neutral); color: var(--muted); font-weight: 600; font-size: 14px; }
+td:last-child { font-family: var(--mono); font-size: 14px; }
+button[aria-disabled="true"] { opacity: .6; cursor: default; }
+button { font: 600 15px var(--sans); padding: 10px 18px; border-radius: 6px; border: 1px solid var(--accent);
+  background: var(--accent); color: var(--on-accent); cursor: pointer; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+.status { margin: 12px 0 0; color: var(--muted); }
+.note { font-size: 14px; color: var(--muted); }
+.visually-hidden { position: absolute !important; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+</style>
+</head>
+<body>
+<main class="wrap">
+  <h1>Logo and tab</h1>
+  <p class="lede">Prototype only. The LiquidOracle mark, the tab titles, and how a running Scan shows its progress in the browser tab.</p>
+
+  <section class="card" aria-labelledby="mark-title">
+    <h2 id="mark-title">The mark</h2>
+    <p class="note">A ring, the luck curve, and a marker where the wallet sits on the chart (two thirds of a spread right of the middle, as at odds of about 1 in 4). Redrawn from scratch from ChatGPT's reference; strokes sized to read at 16 px.</p>
+    <div class="sizes">
+      <figure><svg class="mark" width="16" height="16" viewBox="0 0 64 64" aria-hidden="true"><defs><mask id="lo-cut-s16" maskUnits="userSpaceOnUse" x="0" y="0" width="64" height="64">
+    <rect width="64" height="64" fill="#fff"/>
+    <rect x="34.43" y="0" width="6.2" height="64" fill="#000"/>
+  </mask></defs>
+  <circle class="lo-ring" cx="32" cy="32" r="27.5" fill="none" stroke="currentColor" stroke-width="4.5"/>
+  <path d="M10.35 44.17 L11.03 43.97 L11.71 43.74 L12.38 43.46 L13.06 43.13 L13.74 42.74 L14.41 42.29 L15.09 41.78 L15.77 41.20 L16.44 40.54 L17.12 39.80 L17.79 38.98 L18.47 38.08 L19.15 37.09 L19.82 36.03 L20.50 34.90 L21.18 33.70 L21.85 32.44 L22.53 31.14 L23.21 29.81 L23.88 28.46 L24.56 27.11 L25.24 25.79 L25.91 24.50 L26.59 23.28 L27.26 22.15 L27.94 21.11 L28.62 20.20 L29.29 19.43 L29.97 18.81 L30.65 18.36 L31.32 18.09 L32.00 18.00 L32.68 18.09 L33.35 18.36 L34.03 18.81 L34.71 19.43 L35.38 20.20 L36.06 21.11 L36.74 22.15 L37.41 23.28 L38.09 24.50 L38.76 25.79 L39.44 27.11 L40.12 28.46 L40.79 29.81 L41.47 31.14 L42.15 32.44 L42.82 33.70 L43.50 34.90 L44.18 36.03 L44.85 37.09 L45.53 38.08 L46.21 38.98 L46.88 39.80 L47.56 40.54 L48.23 41.20 L48.91 41.78 L49.59 42.29 L50.26 42.74 L50.94 43.13 L51.62 43.46 L52.29 43.74 L52.97 43.97 L53.65 44.17 L53.65 45 L10.35 45 Z" fill="currentColor" mask="url(#lo-cut-s16)"/>
+  <rect x="35.93" y="12" width="3.2" height="33" rx="1.6" fill="currentColor"/>
+  <rect x="35.93" y="41.8" width="3.2" height="3.2" fill="currentColor"/></svg><figcaption>16 px</figcaption></figure>
+      <figure><svg class="mark" width="24" height="24" viewBox="0 0 64 64" aria-hidden="true"><defs><mask id="lo-cut-s24" maskUnits="userSpaceOnUse" x="0" y="0" width="64" height="64">
+    <rect width="64" height="64" fill="#fff"/>
+    <rect x="34.43" y="0" width="6.2" height="64" fill="#000"/>
+  </mask></defs>
+  <circle class="lo-ring" cx="32" cy="32" r="27.5" fill="none" stroke="currentColor" stroke-width="4.5"/>
+  <path d="M10.35 44.17 L11.03 43.97 L11.71 43.74 L12.38 43.46 L13.06 43.13 L13.74 42.74 L14.41 42.29 L15.09 41.78 L15.77 41.20 L16.44 40.54 L17.12 39.80 L17.79 38.98 L18.47 38.08 L19.15 37.09 L19.82 36.03 L20.50 34.90 L21.18 33.70 L21.85 32.44 L22.53 31.14 L23.21 29.81 L23.88 28.46 L24.56 27.11 L25.24 25.79 L25.91 24.50 L26.59 23.28 L27.26 22.15 L27.94 21.11 L28.62 20.20 L29.29 19.43 L29.97 18.81 L30.65 18.36 L31.32 18.09 L32.00 18.00 L32.68 18.09 L33.35 18.36 L34.03 18.81 L34.71 19.43 L35.38 20.20 L36.06 21.11 L36.74 22.15 L37.41 23.28 L38.09 24.50 L38.76 25.79 L39.44 27.11 L40.12 28.46 L40.79 29.81 L41.47 31.14 L42.15 32.44 L42.82 33.70 L43.50 34.90 L44.18 36.03 L44.85 37.09 L45.53 38.08 L46.21 38.98 L46.88 39.80 L47.56 40.54 L48.23 41.20 L48.91 41.78 L49.59 42.29 L50.26 42.74 L50.94 43.13 L51.62 43.46 L52.29 43.74 L52.97 43.97 L53.65 44.17 L53.65 45 L10.35 45 Z" fill="currentColor" mask="url(#lo-cut-s24)"/>
+  <rect x="35.93" y="12" width="3.2" height="33" rx="1.6" fill="currentColor"/>
+  <rect x="35.93" y="41.8" width="3.2" height="3.2" fill="currentColor"/></svg><figcaption>24 px</figcaption></figure>
+      <figure><svg class="mark" width="32" height="32" viewBox="0 0 64 64" aria-hidden="true"><defs><mask id="lo-cut-s32" maskUnits="userSpaceOnUse" x="0" y="0" width="64" height="64">
+    <rect width="64" height="64" fill="#fff"/>
+    <rect x="34.43" y="0" width="6.2" height="64" fill="#000"/>
+  </mask></defs>
+  <circle class="lo-ring" cx="32" cy="32" r="27.5" fill="none" stroke="currentColor" stroke-width="4.5"/>
+  <path d="M10.35 44.17 L11.03 43.97 L11.71 43.74 L12.38 43.46 L13.06 43.13 L13.74 42.74 L14.41 42.29 L15.09 41.78 L15.77 41.20 L16.44 40.54 L17.12 39.80 L17.79 38.98 L18.47 38.08 L19.15 37.09 L19.82 36.03 L20.50 34.90 L21.18 33.70 L21.85 32.44 L22.53 31.14 L23.21 29.81 L23.88 28.46 L24.56 27.11 L25.24 25.79 L25.91 24.50 L26.59 23.28 L27.26 22.15 L27.94 21.11 L28.62 20.20 L29.29 19.43 L29.97 18.81 L30.65 18.36 L31.32 18.09 L32.00 18.00 L32.68 18.09 L33.35 18.36 L34.03 18.81 L34.71 19.43 L35.38 20.20 L36.06 21.11 L36.74 22.15 L37.41 23.28 L38.09 24.50 L38.76 25.79 L39.44 27.11 L40.12 28.46 L40.79 29.81 L41.47 31.14 L42.15 32.44 L42.82 33.70 L43.50 34.90 L44.18 36.03 L44.85 37.09 L45.53 38.08 L46.21 38.98 L46.88 39.80 L47.56 40.54 L48.23 41.20 L48.91 41.78 L49.59 42.29 L50.26 42.74 L50.94 43.13 L51.62 43.46 L52.29 43.74 L52.97 43.97 L53.65 44.17 L53.65 45 L10.35 45 Z" fill="currentColor" mask="url(#lo-cut-s32)"/>
+  <rect x="35.93" y="12" width="3.2" height="33" rx="1.6" fill="currentColor"/>
+  <rect x="35.93" y="41.8" width="3.2" height="3.2" fill="currentColor"/></svg><figcaption>32 px (top bar)</figcaption></figure>
+      <figure><svg class="mark" width="64" height="64" viewBox="0 0 64 64" aria-hidden="true"><defs><mask id="lo-cut-s64" maskUnits="userSpaceOnUse" x="0" y="0" width="64" height="64">
+    <rect width="64" height="64" fill="#fff"/>
+    <rect x="34.43" y="0" width="6.2" height="64" fill="#000"/>
+  </mask></defs>
+  <circle class="lo-ring" cx="32" cy="32" r="27.5" fill="none" stroke="currentColor" stroke-width="4.5"/>
+  <path d="M10.35 44.17 L11.03 43.97 L11.71 43.74 L12.38 43.46 L13.06 43.13 L13.74 42.74 L14.41 42.29 L15.09 41.78 L15.77 41.20 L16.44 40.54 L17.12 39.80 L17.79 38.98 L18.47 38.08 L19.15 37.09 L19.82 36.03 L20.50 34.90 L21.18 33.70 L21.85 32.44 L22.53 31.14 L23.21 29.81 L23.88 28.46 L24.56 27.11 L25.24 25.79 L25.91 24.50 L26.59 23.28 L27.26 22.15 L27.94 21.11 L28.62 20.20 L29.29 19.43 L29.97 18.81 L30.65 18.36 L31.32 18.09 L32.00 18.00 L32.68 18.09 L33.35 18.36 L34.03 18.81 L34.71 19.43 L35.38 20.20 L36.06 21.11 L36.74 22.15 L37.41 23.28 L38.09 24.50 L38.76 25.79 L39.44 27.11 L40.12 28.46 L40.79 29.81 L41.47 31.14 L42.15 32.44 L42.82 33.70 L43.50 34.90 L44.18 36.03 L44.85 37.09 L45.53 38.08 L46.21 38.98 L46.88 39.80 L47.56 40.54 L48.23 41.20 L48.91 41.78 L49.59 42.29 L50.26 42.74 L50.94 43.13 L51.62 43.46 L52.29 43.74 L52.97 43.97 L53.65 44.17 L53.65 45 L10.35 45 Z" fill="currentColor" mask="url(#lo-cut-s64)"/>
+  <rect x="35.93" y="12" width="3.2" height="33" rx="1.6" fill="currentColor"/>
+  <rect x="35.93" y="41.8" width="3.2" height="3.2" fill="currentColor"/></svg><figcaption>64 px</figcaption></figure>
+      <figure><svg class="mark" width="160" height="160" viewBox="0 0 64 64" aria-hidden="true"><defs><mask id="lo-cut-s160" maskUnits="userSpaceOnUse" x="0" y="0" width="64" height="64">
+    <rect width="64" height="64" fill="#fff"/>
+    <rect x="34.43" y="0" width="6.2" height="64" fill="#000"/>
+  </mask></defs>
+  <circle class="lo-ring" cx="32" cy="32" r="27.5" fill="none" stroke="currentColor" stroke-width="4.5"/>
+  <path d="M10.35 44.17 L11.03 43.97 L11.71 43.74 L12.38 43.46 L13.06 43.13 L13.74 42.74 L14.41 42.29 L15.09 41.78 L15.77 41.20 L16.44 40.54 L17.12 39.80 L17.79 38.98 L18.47 38.08 L19.15 37.09 L19.82 36.03 L20.50 34.90 L21.18 33.70 L21.85 32.44 L22.53 31.14 L23.21 29.81 L23.88 28.46 L24.56 27.11 L25.24 25.79 L25.91 24.50 L26.59 23.28 L27.26 22.15 L27.94 21.11 L28.62 20.20 L29.29 19.43 L29.97 18.81 L30.65 18.36 L31.32 18.09 L32.00 18.00 L32.68 18.09 L33.35 18.36 L34.03 18.81 L34.71 19.43 L35.38 20.20 L36.06 21.11 L36.74 22.15 L37.41 23.28 L38.09 24.50 L38.76 25.79 L39.44 27.11 L40.12 28.46 L40.79 29.81 L41.47 31.14 L42.15 32.44 L42.82 33.70 L43.50 34.90 L44.18 36.03 L44.85 37.09 L45.53 38.08 L46.21 38.98 L46.88 39.80 L47.56 40.54 L48.23 41.20 L48.91 41.78 L49.59 42.29 L50.26 42.74 L50.94 43.13 L51.62 43.46 L52.29 43.74 L52.97 43.97 L53.65 44.17 L53.65 45 L10.35 45 Z" fill="currentColor" mask="url(#lo-cut-s160)"/>
+  <rect x="35.93" y="12" width="3.2" height="33" rx="1.6" fill="currentColor"/>
+  <rect x="35.93" y="41.8" width="3.2" height="3.2" fill="currentColor"/></svg><figcaption>160 px</figcaption></figure>
+    </div>
+    <div class="swatches" style="margin-top:24px">
+      <div class="swatch light"><svg class="mark" width="32" height="32" viewBox="0 0 64 64" aria-hidden="true"><defs><mask id="lo-cut-lt" maskUnits="userSpaceOnUse" x="0" y="0" width="64" height="64">
+    <rect width="64" height="64" fill="#fff"/>
+    <rect x="34.43" y="0" width="6.2" height="64" fill="#000"/>
+  </mask></defs>
+  <circle class="lo-ring" cx="32" cy="32" r="27.5" fill="none" stroke="currentColor" stroke-width="4.5"/>
+  <path d="M10.35 44.17 L11.03 43.97 L11.71 43.74 L12.38 43.46 L13.06 43.13 L13.74 42.74 L14.41 42.29 L15.09 41.78 L15.77 41.20 L16.44 40.54 L17.12 39.80 L17.79 38.98 L18.47 38.08 L19.15 37.09 L19.82 36.03 L20.50 34.90 L21.18 33.70 L21.85 32.44 L22.53 31.14 L23.21 29.81 L23.88 28.46 L24.56 27.11 L25.24 25.79 L25.91 24.50 L26.59 23.28 L27.26 22.15 L27.94 21.11 L28.62 20.20 L29.29 19.43 L29.97 18.81 L30.65 18.36 L31.32 18.09 L32.00 18.00 L32.68 18.09 L33.35 18.36 L34.03 18.81 L34.71 19.43 L35.38 20.20 L36.06 21.11 L36.74 22.15 L37.41 23.28 L38.09 24.50 L38.76 25.79 L39.44 27.11 L40.12 28.46 L40.79 29.81 L41.47 31.14 L42.15 32.44 L42.82 33.70 L43.50 34.90 L44.18 36.03 L44.85 37.09 L45.53 38.08 L46.21 38.98 L46.88 39.80 L47.56 40.54 L48.23 41.20 L48.91 41.78 L49.59 42.29 L50.26 42.74 L50.94 43.13 L51.62 43.46 L52.29 43.74 L52.97 43.97 L53.65 44.17 L53.65 45 L10.35 45 Z" fill="currentColor" mask="url(#lo-cut-lt)"/>
+  <rect x="35.93" y="12" width="3.2" height="33" rx="1.6" fill="currentColor"/>
+  <rect x="35.93" y="41.8" width="3.2" height="3.2" fill="currentColor"/></svg>LiquidOracle</div>
+      <div class="swatch dark"><svg class="mark" width="32" height="32" viewBox="0 0 64 64" aria-hidden="true"><defs><mask id="lo-cut-dk" maskUnits="userSpaceOnUse" x="0" y="0" width="64" height="64">
+    <rect width="64" height="64" fill="#fff"/>
+    <rect x="34.43" y="0" width="6.2" height="64" fill="#000"/>
+  </mask></defs>
+  <circle class="lo-ring" cx="32" cy="32" r="27.5" fill="none" stroke="currentColor" stroke-width="4.5"/>
+  <path d="M10.35 44.17 L11.03 43.97 L11.71 43.74 L12.38 43.46 L13.06 43.13 L13.74 42.74 L14.41 42.29 L15.09 41.78 L15.77 41.20 L16.44 40.54 L17.12 39.80 L17.79 38.98 L18.47 38.08 L19.15 37.09 L19.82 36.03 L20.50 34.90 L21.18 33.70 L21.85 32.44 L22.53 31.14 L23.21 29.81 L23.88 28.46 L24.56 27.11 L25.24 25.79 L25.91 24.50 L26.59 23.28 L27.26 22.15 L27.94 21.11 L28.62 20.20 L29.29 19.43 L29.97 18.81 L30.65 18.36 L31.32 18.09 L32.00 18.00 L32.68 18.09 L33.35 18.36 L34.03 18.81 L34.71 19.43 L35.38 20.20 L36.06 21.11 L36.74 22.15 L37.41 23.28 L38.09 24.50 L38.76 25.79 L39.44 27.11 L40.12 28.46 L40.79 29.81 L41.47 31.14 L42.15 32.44 L42.82 33.70 L43.50 34.90 L44.18 36.03 L44.85 37.09 L45.53 38.08 L46.21 38.98 L46.88 39.80 L47.56 40.54 L48.23 41.20 L48.91 41.78 L49.59 42.29 L50.26 42.74 L50.94 43.13 L51.62 43.46 L52.29 43.74 L52.97 43.97 L53.65 44.17 L53.65 45 L10.35 45 Z" fill="currentColor" mask="url(#lo-cut-dk)"/>
+  <rect x="35.93" y="12" width="3.2" height="33" rx="1.6" fill="currentColor"/>
+  <rect x="35.93" y="41.8" width="3.2" height="3.2" fill="currentColor"/></svg>LiquidOracle</div>
+    </div>
+  </section>
+
+  <section class="card" aria-labelledby="titles-title">
+    <h2 id="titles-title">Tab titles</h2>
+    <table>
+      <caption class="visually-hidden">Tab title for each page</caption>
+      <thead><tr><th scope="col">Page</th><th scope="col">Tab title</th></tr></thead>
+      <tbody>
+        <tr><td>Check a wallet (lookup)</td><td>Check a wallet · LiquidOracle</td></tr>
+        <tr><td>Verdict page</td><td>Verdict · 0x7c3a…d3f5 · LiquidOracle</td></tr>
+        <tr><td>Scans</td><td>Scans · LiquidOracle</td></tr>
+        <tr><td>Scans, while a Scan runs</td><td>84/200 · Scan · LiquidOracle</td></tr>
+        <tr><td>Watchlist</td><td>Watchlist · 1 Jun 2026 · LiquidOracle</td></tr>
+        <tr><td>Hold-up Test</td><td>Hold-up Test · 1 Jun 2026 · LiquidOracle</td></tr>
+        <tr><td>Copy Test</td><td>Copy Test · 1 Jun 2026 · LiquidOracle</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <section class="card" aria-labelledby="progress-title">
+    <h2 id="progress-title">Scan progress in the tab</h2>
+    <p class="note">While a Scan runs, the ring of the favicon fills clockwise from the top, and the title counts Wallets. When the Scan finishes or stops, both go back to normal.</p>
+    <div class="rings" id="rings"></div>
+    <button type="button" id="demo">Simulate a Scan of 200 Wallets</button>
+    <p class="status" id="demo-status" aria-live="polite">Watch this browser tab while it runs (about 10 seconds).</p>
+  </section>
+</main>
+
+<script>
+  // Mark geometry, same as logo/favicon.svg. The ring is drawn separately so it can become a progress ring.
+  var BELL = "<defs><mask id=\"lo-cut\" maskUnits=\"userSpaceOnUse\" x=\"0\" y=\"0\" width=\"64\" height=\"64\">     <rect width=\"64\" height=\"64\" fill=\"#fff\"/>     <rect x=\"34.43\" y=\"0\" width=\"6.2\" height=\"64\" fill=\"#000\"/>   </mask></defs>   <path d=\"M10.35 44.17 L11.03 43.97 L11.71 43.74 L12.38 43.46 L13.06 43.13 L13.74 42.74 L14.41 42.29 L15.09 41.78 L15.77 41.20 L16.44 40.54 L17.12 39.80 L17.79 38.98 L18.47 38.08 L19.15 37.09 L19.82 36.03 L20.50 34.90 L21.18 33.70 L21.85 32.44 L22.53 31.14 L23.21 29.81 L23.88 28.46 L24.56 27.11 L25.24 25.79 L25.91 24.50 L26.59 23.28 L27.26 22.15 L27.94 21.11 L28.62 20.20 L29.29 19.43 L29.97 18.81 L30.65 18.36 L31.32 18.09 L32.00 18.00 L32.68 18.09 L33.35 18.36 L34.03 18.81 L34.71 19.43 L35.38 20.20 L36.06 21.11 L36.74 22.15 L37.41 23.28 L38.09 24.50 L38.76 25.79 L39.44 27.11 L40.12 28.46 L40.79 29.81 L41.47 31.14 L42.15 32.44 L42.82 33.70 L43.50 34.90 L44.18 36.03 L44.85 37.09 L45.53 38.08 L46.21 38.98 L46.88 39.80 L47.56 40.54 L48.23 41.20 L48.91 41.78 L49.59 42.29 L50.26 42.74 L50.94 43.13 L51.62 43.46 L52.29 43.74 L52.97 43.97 L53.65 44.17 L53.65 45 L10.35 45 Z\" fill=\"currentColor\" mask=\"url(#lo-cut)\"/>   <rect x=\"35.93\" y=\"12\" width=\"3.2\" height=\"33\" rx=\"1.6\" fill=\"currentColor\"/>   <rect x=\"35.93\" y=\"41.8\" width=\"3.2\" height=\"3.2\" fill=\"currentColor\"/>";
+  var C = 2 * Math.PI * 27.5;
+
+  function faviconSvg(fraction) {
+    var ring = fraction == null
+      ? '<circle cx="32" cy="32" r="27.5" fill="none" stroke="currentColor" stroke-width="4.5"/>'
+      : '<circle cx="32" cy="32" r="27.5" fill="none" stroke="currentColor" stroke-opacity=".2" stroke-width="6.5"/>' +
+        '<circle cx="32" cy="32" r="27.5" fill="none" stroke="currentColor" stroke-width="6.5" stroke-linecap="butt"' +
+        ' stroke-dasharray="' + (C * fraction).toFixed(2) + ' ' + C.toFixed(2) + '" transform="rotate(-90 32 32)"/>';
+    return '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">' +
+      '<style>:root{color:#1D5BA6}@media (prefers-color-scheme: dark){:root{color:#6EA8EE}}</style>' +
+      ring + BELL + '</svg>';
+  }
+  function dataUrl(svg) { return "data:image/svg+xml," + encodeURIComponent(svg); }
+
+  // Static examples: 0%, 42% (84 of 200), 75%, 100%.
+  var rings = document.getElementById("rings");
+  [[0, "0 of 200"], [0.42, "84 of 200"], [0.75, "150 of 200"], [1, "200 of 200"]].forEach(function (r) {
+    var tab = document.createElement("span");
+    tab.className = "tab-demo";
+    tab.innerHTML = '<img alt="" src="' + dataUrl(faviconSvg(r[0])) + '">' +
+      Math.round(r[0] * 200) + '/200 · Scan · LiquidOracle';
+    var fig = document.createElement("figure");
+    fig.className = "ring-step";
+    fig.innerHTML = '<img alt="" width="56" height="56" src="' + dataUrl(faviconSvg(r[0])) + '">';
+    fig.appendChild(tab);
+    rings.appendChild(fig);
+  });
+
+  // Live demo on this tab.
+  var favicon = document.getElementById("favicon");
+  var normalIcon = favicon.getAttribute("href");
+  var normalTitle = document.title;
+  var btn = document.getElementById("demo");
+  var status = document.getElementById("demo-status");
+  btn.addEventListener("click", function () {
+    if (btn.getAttribute("aria-disabled") === "true") return;   // stays focusable while the demo runs
+    btn.setAttribute("aria-disabled", "true");
+    var done = 0, total = 200;
+    var timer = setInterval(function () {
+      done = Math.min(total, done + 4);
+      document.title = done + "/" + total + " · Scan · LiquidOracle";
+      favicon.setAttribute("href", dataUrl(faviconSvg(done / total)));
+      if (done % 50 === 0 && done < total) status.textContent = done + " of " + total + " Wallets checked";
+      if (done === total) {
+        clearInterval(timer);
+        document.title = normalTitle;
+        favicon.setAttribute("href", normalIcon);
+        status.textContent = "Scan finished. The tab is back to normal.";
+        btn.removeAttribute("aria-disabled");
+      }
+    }, 200);
+  });
+</script>
+</body>
+</html>
