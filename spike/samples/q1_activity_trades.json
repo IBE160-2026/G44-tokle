@@ -1,0 +1,38 @@
+[
+ {
+  "proxyWallet": "0x7d2299a379eb0b1c6077c7c419a383da6fb7f0cf",
+  "conditionId": "0x05297f854d3b757d5e51a1a29c7f225a80b14b2a161d6b7f9a61677da7a80ced",
+  "asset": "7565921021555775006041943394390068423142281108752994121417017072842379450830",
+  "type": "TRADE",
+  "side": "BUY",
+  "size": 500,
+  "usdcSize": 499,
+  "price": 0.998,
+  "timestamp": 1791144520,
+  "transactionHash": "0x91884416e66f932d85c7b171c38057b14133d222ac9e06833b81b10de9a0bb0f"
+ },
+ {
+  "proxyWallet": "0x7d2299a379eb0b1c6077c7c419a383da6fb7f0cf",
+  "conditionId": "0x05297f854d3b757d5e51a1a29c7f225a80b14b2a161d6b7f9a61677da7a80ced",
+  "asset": "7565921021555775006041943394390068423142281108752994121417017072842379450830",
+  "type": "TRADE",
+  "side": "BUY",
+  "size": 3602.82,
+  "usdcSize": 3568.21851,
+  "price": 0.99,
+  "timestamp": 1789731720,
+  "transactionHash": "0x57cbb1aa975d35d8aeba22ea204db0fd77b9aaf448470a8401f959cf2150dba1"
+ },
+ {
+  "proxyWallet": "0x7d2299a379eb0b1c6077c7c419a383da6fb7f0cf",
+  "conditionId": "0xd4a3de1964b1f3fa1edeca40dbc3ef6663a56fda84e804066c23096b615904f9",
+  "asset": "17336913662936411353227123556466342187939829338475965039559527756381614175446",
+  "type": "TRADE",
+  "side": "SELL",
+  "size": 16653.77,
+  "usdcSize": 16428.72361,
+  "price": 0.987,
+  "timestamp": 1787079349,
+  "transactionHash": "0xa6b027696af5149d3c560993b4bf5197e0cc516f49e129d51d5c48fda5243d5e"
+ }
+]

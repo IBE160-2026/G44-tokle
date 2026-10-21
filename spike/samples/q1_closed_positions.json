@@ -1,0 +1,38 @@
+[
+ {
+  "proxyWallet": "0x7d2299a379eb0b1c6077c7c419a383da6fb7f0cf",
+  "conditionId": "0x05297f854d3b757d5e51a1a29c7f225a80b14b2a161d6b7f9a61677da7a80ced",
+  "asset": "7565921021555775006041943394390068423142281108752994121417017072842379450830",
+  "outcome": "No",
+  "avgPrice": 0.9851,
+  "totalBought": 67125.6422,
+  "realizedPnl": 993.7951,
+  "curPrice": 1,
+  "timestamp": 1791206827,
+  "endDate": "2026-10-05"
+ },
+ {
+  "proxyWallet": "0x7d2299a379eb0b1c6077c7c419a383da6fb7f0cf",
+  "conditionId": "0x4c5701bcde0b8fb7d7f48c8e9d20245a6caa58c61a77f981fad98f2bfa0b1bc7",
+  "asset": "55194745453074297560900438908357749978780021444937743754846798173575377021411",
+  "outcome": "No",
+  "avgPrice": 0.9002,
+  "totalBought": 30073.989,
+  "realizedPnl": -25591.2809,
+  "curPrice": 0,
+  "timestamp": 1775867319,
+  "endDate": "2026-04-07"
+ },
+ {
+  "proxyWallet": "0x7d2299a379eb0b1c6077c7c419a383da6fb7f0cf",
+  "conditionId": "0xf232b565995e4b3a3e7fa6cef775eeff1cecd20ad7c013cb9fc8dadabfe279a9",
+  "asset": "8113830512143065501177519557124858581375945005490796772950589720955457782465",
+  "outcome": "Yes",
+  "avgPrice": 0.5,
+  "totalBought": 90000,
+  "realizedPnl": 0,
+  "curPrice": 0.1295,
+  "timestamp": 1786023177,
+  "endDate": "2028-11-08"
+ }
+]

@@ -1,0 +1,13 @@
+{
+ "conditionId": "0xffff6c984d7adab19e799c46d1a478d5ab6483479b41f9639d04617f07a8bab0",
+ "question": "Will Trump visit China by March 31?",
+ "closedTime": "2026-04-01 08:17:59+00",
+ "feesEnabled": true,
+ "feeType": "politics_fees",
+ "feeSchedule": {
+  "exponent": 1,
+  "rate": 0.04,
+  "takerOnly": true,
+  "rebateRate": 0.25
+ }
+}
