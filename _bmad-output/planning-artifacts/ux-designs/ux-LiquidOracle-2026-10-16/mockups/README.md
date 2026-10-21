@@ -1,0 +1,1 @@
+These mockups predate the changes of 2026-10-21 (architecture: "Left out of the test" line, Seed, Scan population, "Not fully read" tag, label-source tag, new Scan statuses); where they differ, the written spec in `EXPERIENCE.md` and `DESIGN.md` wins.

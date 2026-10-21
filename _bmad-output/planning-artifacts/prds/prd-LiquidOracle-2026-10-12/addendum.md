@@ -1,26 +1,30 @@
 # Addendum: LiquidOracle PRD
 
-Material that belongs to architecture rather than the PRD itself. All of it except Storage is a proposal to confirm in `bmad-architecture`.
+Material that belongs to architecture rather than the PRD itself. It was a proposal until `bmad-architecture`, which settled it on 2026-10-21. The binding version is the architecture spine, `../../architecture/architecture-LiquidOracle-2026-10-21/ARCHITECTURE-SPINE.md` (rules AD-1 to AD-25, pinned versions); its memlog holds the reasons. This page is the short summary.
 
-## Proposed technology `[ASSUMPTION]`
+## Technology (settled in architecture, 2026-10-21)
 
-- **Language**: Python, with numpy for the Simulations. 10,000 Simulations × 1,000 Positions is one vectorised array operation, well within the 10-second target (SM-3).
-- **Web page**: a small local web app (e.g. FastAPI or Flask with server-rendered pages, or Streamlit). Chosen in architecture; the course feedback asks for the simplest stack that does the job.
-- **Storage** (decided, not an assumption): SQLite, through Python's built-in `sqlite3`, for cached Polymarket data, Domain labels, Scans and Watchlists. The Sample Dataset stays as plain files in the repository (FR-12) and is loaded into the same database in Offline Mode.
-- **Sample Dataset size**: store only the price points near each buy (a window around the buy time, not the whole price history), so the repository stays small. The data spike (2026-10-21) found one-minute price points for resolved Markets, so a window of a few minutes around each buy is enough; the exact window is set in architecture (PRD §9 Q3).
-- **Tests**: pytest. The Skill Test module is pure functions (Positions in, result out), tested without network.
-- **Language model**: a small, cheap model (e.g. Claude Haiku) for Domain labels and Explanations, behind one interface that Mock LLM Mode also implements. To confirm in architecture; cost is small because each Market is classified once.
+- **Language**: Python 3.12 or newer (numpy 2.5 needs 3.12), with numpy for the Simulations. 10,000 Simulations × 1,000 Positions is one vectorised array operation, well within the 10-second target (SM-3).
+- **Web page**: Flask with server-rendered Jinja2 pages, the luck chart as server-drawn SVG, and a few small plain JavaScript files that only enhance a page that works without them. No Node and no build step. FastAPI, Streamlit and a JavaScript single-page app were weighed and not chosen.
+- **Code shape**: one program in layers, a pure core (Skill Test, Hold-up and Copy Test maths) with no network, database, web or model code, enforced by a test.
+- **Storage**: SQLite through Python's built-in `sqlite3`, for cached Polymarket data, Domain labels, Scans, Watchlists and results. Online runs and Offline Mode use separate database files. The Sample Dataset stays as plain files in the repository (FR-12) and is loaded into the offline database by `load-sample`.
+- **Long work**: one background worker thread inside the app, one thing at a time, lookups first; Scans can be left running and resumed.
+- **Sample Dataset size**: only the price points near each buy fill are stored: one window from 2 minutes before to 32 minutes after each fill, merged where they overlap. Fetching packs a token's windows into requests of up to 14 days (measured on the typical Wallet: 1.06 requests per outcome, about 1.1 MB for its whole history). The 1,000 coin-flippers are regenerated, not committed. The committed Sample Dataset stays under 25 MB, with no Git LFS.
+- **Install and tests**: uv with a committed lockfile; three README commands on every system. pytest with the whole suite run network-blocked (pytest-socket); GitHub Actions on Windows, macOS and Linux with Python 3.12 and 3.14.
+- **Language model**: Claude Haiku 5.5 (`claude-haiku-5-5`) as a setting, with structured outputs for Domain labels, behind one interface that Mock LLM Mode also implements. FR-19's 80% check on hand labels decides; if Haiku misses it, a larger model is tried. Cost is small because each Market is classified once and the label is stored.
+- **Font**: IBM Plex Serif (SIL Open Font License), bundled and served locally (DESIGN.md).
 
-## Polymarket data (checked in the data spike, 2026-10-21)
+## Polymarket data (data spike 2026-10-21, re-checked on Data API v2 in architecture the same day)
 
-Details, limits and evidence: `spike/FINDINGS.md`; the scripts and small samples are in `spike/`. All keyless and read-only.
+Details, limits and evidence: `spike/FINDINGS.md`; the scripts and small samples are in `spike/` (`arch_probe*.py` for the v2 checks). All keyless and read-only.
 
-- **Data API** (`data-api.polymarket.com`): closed positions (50 per request, entry price, size, realized PnL, resolution time), open positions (500 per request, includes unredeemed losing ones), activity and trades (a newer cursor-paged v2 exists), a leaderboard with no date setting, and trades per Market with an end-time filter.
-- **Gamma API** (`gamma-api.polymarket.com`): Markets with resolution time, outcomes, token ids and the fee schedule; closed Markets must be asked for explicitly; 20 Markets per request.
-- **CLOB API** (`clob.polymarket.com`): price history per outcome token, one-minute points, up to 14 days per request, from mid-2023.
-- **Rate limits** (published): from 150 requests per 10 seconds upward, depending on the endpoint; requests are slowed, not refused.
-- Keep all API access in one module: the activity endpoint has a newer version, and the documentation and the live behaviour differed on one limit.
-- Not checked: how negative-risk (multi-outcome) Markets are represented; the architecture or first build story should look at it.
+- **Data API v2** (`data-api.polymarket.com/v2`): Data API v1 is retired on 2026-10-24, so the app uses v2 only. `/v2/positions` serves a Wallet's or a Market's positions by status (CLOSED, OPEN, which includes settled but unredeemed ones), 1,000 rows per page, cursor-paged, with time filters on the row's last event. `/v2/activity` serves a Wallet's trades, splits, merges, conversions and redemptions with time filters. The Scan's candidates come from Market-anchored position lists, not from trades: a Market's trades ignore the end-time filter on v2. The leaderboard has no date setting.
+- **Gamma API** (`gamma-api.polymarket.com`): Markets with resolution time, outcomes, token ids and the fee schedule (rate and exponent); closed Markets must be asked for explicitly; 20 Markets per request. The resolution time always comes from here: v2's position timestamp is the Wallet's last event, up to days after resolution.
+- **Price history**: the CLOB route (`clob.polymarket.com/prices-history`) gives one-minute points for resolved Markets from mid-2023, up to 14 days per request. On 2026-09-04 Polymarket named `/v2/prices-history` its replacement, which keeps one-minute points for at least 7 days only (5-minute for 60, 30-minute for 90; 3-hour and 12-hour for good). The old route still answers, with no end date announced, so the Sample Dataset's price history is fetched early and kept.
+- **Rate limits** (published, per 10 seconds): 800 for all of Data API v2, 200 each for `/v2/positions`, `/v2/activity` and `/v2/prices-history`, 300 for Gamma `/markets`, 1,000 for CLOB `/prices-history`. Requests over the limit are slowed or queued; under heavy load v2 answers 429 with `Retry-After`. The app paces itself at 5 per second, as a setting.
+- **Fees**: a Wallet's own fee is the cash paid minus shares × price on its activity rows; v2 gives the same fee as v1 on all 25 fee fills checked. The positions list's own fee field is not used (it disagreed in 3 of 7 checks).
+- Keep all API access in one module (AD-2): v1 was retired at short notice, the price-history route is being replaced, and the documentation and the live behaviour differed on one limit.
+- Negative-risk Markets: positions created by conversion are left out of the Skill Test and counted; the linked Markets of one negative-risk event share one random draw in the Simulations (AD-20).
 
 ## Sources
 
