@@ -3,6 +3,7 @@
 - **Tool**: Claude Code (model Claude Sonnet 5.5) in the VS Code extension.
 - **Student**: Edvard Tokle (G44).
 - **What this covers**: the "what data can we actually get" step before architecture: read-only probes of Polymarket's public APIs (Data, Gamma, CLOB), the findings, and the changes to the PRD that follow from them.
+- **Transcript**: the full chat is saved as `transcripts/2026-10-21-data-spike-transcript.md`, with tool output shortened.
 - **Result**: `spike/` (probe scripts, trimmed samples, `FINDINGS.md`); PRD and addendum updated through the memlog (19 new entries); branch `data-spike`.
 
 ## 1. The prompt and the plan
