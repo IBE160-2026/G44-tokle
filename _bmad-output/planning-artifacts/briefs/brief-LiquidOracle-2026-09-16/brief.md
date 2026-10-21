@@ -2,7 +2,7 @@
 title: "Product Brief: LiquidOracle"
 status: final
 created: 2026-09-16
-updated: 2026-10-16
+updated: 2026-10-21
 ---
 
 # Product Brief: LiquidOracle
@@ -43,6 +43,9 @@ updated: 2026-10-16
 > - The number of luck passes is stated as "at least about 2, probably more" in the scan description too (revision 5 changed only the success criterion).
 > - The comparison group leaves out wallets with too few positions before the cut-off, as in the PRD glossary.
 > - Success criterion 9 also lists the speed-trader wallet, as FR-16 does.
+>
+> **Revision 2026-10-21 (8)**, after the architecture review (`architecture/architecture-LiquidOracle-2026-10-21/`, AD-20):
+> - Method step 5: bets that depend on the same result now share one random draw. Drawing each position on its own counted linked bets as separate evidence: 7 wallets betting the same side of the same 40 markets were treated as 280 coin flips, which turned a p-value of about 0.04 into one below 0.0001. Each position still comes true with probability *p*, so the hand-checkable cases are unchanged.
 
 ## Executive Summary
 
@@ -96,7 +99,7 @@ LiquidOracle is a web app. The user pastes a Polymarket wallet address and gets 
 2. **Which positions count**: positions held until the market resolved. Positions sold before resolution are shown on the page but left out of the test in v1 (a known limitation; see below).
 3. **The data per position**: number of shares *s*, average price paid *p* (between 0 and 1), and outcome *o* (1 if the outcome happened, 0 if not).
 4. **Real profit**: PnL = Σ *s* · (*o* − *p*).
-5. **No-skill world**: for each position, draw a simulated outcome that comes true with probability *p*, then compute the simulated PnL with the same formula. Repeat 10,000 times.
+5. **No-skill world**: for each position, draw a simulated outcome that comes true with probability *p*, then compute the simulated PnL with the same formula. Repeat 10,000 times. Bets that depend on the same result (positions in the same market, also across wallets, and markets that can only resolve together) share one random draw, so they win and lose together as they do in reality instead of counting as separate evidence.
 6. **p-value**: (1 + number of simulations with PnL ≥ the real PnL) / (1 + 10,000). This is the chance that a no-edge trader does at least this well.
 7. **Verdicts**: fewer than 30 resolved positions → *Not enough data*. Otherwise p < 0.01 → *Skilled (high confidence)*, p < 0.05 → *Likely skilled*, else *No evidence of skill*.
 8. **Per domain** (stage 3): the same test on each domain with at least 30 resolved positions. Testing several domains gives luck several chances, so each domain's p-value is multiplied by the number of domains tested (Bonferroni correction) before the verdict is chosen.
