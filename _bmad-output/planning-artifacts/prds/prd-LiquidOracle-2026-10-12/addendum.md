@@ -7,14 +7,20 @@ Material that belongs to architecture rather than the PRD itself. All of it exce
 - **Language**: Python, with numpy for the Simulations. 10,000 Simulations × 1,000 Positions is one vectorised array operation, well within the 10-second target (SM-3).
 - **Web page**: a small local web app (e.g. FastAPI or Flask with server-rendered pages, or Streamlit). Chosen in architecture; the course feedback asks for the simplest stack that does the job.
 - **Storage** (decided, not an assumption): SQLite, through Python's built-in `sqlite3`, for cached Polymarket data, Domain labels, Scans and Watchlists. The Sample Dataset stays as plain files in the repository (FR-12) and is loaded into the same database in Offline Mode.
-- **Sample Dataset size**: store only the price points near each buy (a window around the buy time, not the whole price history), so the repository stays small. The limit is decided after the data spike (PRD Open Question 3).
+- **Sample Dataset size**: store only the price points near each buy (a window around the buy time, not the whole price history), so the repository stays small. The data spike (2026-10-21) found one-minute price points for resolved Markets, so a window of a few minutes around each buy is enough; the exact window is set in architecture (PRD §9 Q3).
 - **Tests**: pytest. The Skill Test module is pure functions (Positions in, result out), tested without network.
 - **Language model**: a small, cheap model (e.g. Claude Haiku) for Domain labels and Explanations, behind one interface that Mock LLM Mode also implements. To confirm in architecture; cost is small because each Market is classified once.
 
-## Polymarket data `[ASSUMPTION, to verify in a data spike]`
+## Polymarket data (checked in the data spike, 2026-10-21)
 
-- Public, keyless APIs: the Data API (trades, positions and activity per user address) and the Gamma API (Market questions, outcomes, resolution).
-- Questions for the spike: how closed and redeemed positions appear, whether average entry price is given or must be computed from trades, and how negative-risk (multi-outcome) markets are represented.
+Details, limits and evidence: `spike/FINDINGS.md`; the scripts and small samples are in `spike/`. All keyless and read-only.
+
+- **Data API** (`data-api.polymarket.com`): closed positions (50 per request, entry price, size, realized PnL, resolution time), open positions (500 per request, includes unredeemed losing ones), activity and trades (a newer cursor-paged v2 exists), a leaderboard with no date setting, and trades per Market with an end-time filter.
+- **Gamma API** (`gamma-api.polymarket.com`): Markets with resolution time, outcomes, token ids and the fee schedule; closed Markets must be asked for explicitly; 20 Markets per request.
+- **CLOB API** (`clob.polymarket.com`): price history per outcome token, one-minute points, up to 14 days per request, from mid-2023.
+- **Rate limits** (published): from 150 requests per 10 seconds upward, depending on the endpoint; requests are slowed, not refused.
+- Keep all API access in one module: the activity endpoint has a newer version, and the documentation and the live behaviour differed on one limit.
+- Not checked: how negative-risk (multi-outcome) Markets are represented; the architecture or first build story should look at it.
 
 ## Sources
 
