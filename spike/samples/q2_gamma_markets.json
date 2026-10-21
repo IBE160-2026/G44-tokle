@@ -1,0 +1,28 @@
+[
+ {
+  "conditionId": "0x763cc84a3cde36b9ce12a8afe6d3e1e3e46e50692e8ec47636c7803c1033cfab",
+  "question": "Will the Sacramento Kings win the 2025 NBA Finals?",
+  "closed": true,
+  "closedTime": "2025-04-17 08:51:19+00",
+  "endDate": "2025-06-23T12:00:00Z",
+  "volumeNum": 378011506.511399,
+  "feesEnabled": false,
+  "feeType": null,
+  "clobTokenIds": "[\"41257670817876317355997233596113195194194608207987371129645019730826567930842\", \"6337766885333966690546293438662675059330486971861645192801950206137287554438\"]",
+  "outcomes": "[\"Yes\", \"No\"]",
+  "outcomePrices": "[\"0\", \"1\"]"
+ },
+ {
+  "conditionId": "0x37963e2b3194455fe768cd470571640c758c049b7cda6967449a43a8bd5c835f",
+  "question": "Will the Toronto Raptors win the 2025 NBA Finals?",
+  "closed": true,
+  "closedTime": "2025-04-02 06:13:03+00",
+  "endDate": "2025-06-23T12:00:00Z",
+  "volumeNum": 154220299.964432,
+  "feesEnabled": false,
+  "feeType": null,
+  "clobTokenIds": "[\"8615283304849028269259042680787343769500144068672958710059180099366119214927\", \"23538341502367016460214883076280471618080465904528266058055509584419858222978\"]",
+  "outcomes": "[\"Yes\", \"No\"]",
+  "outcomePrices": "[\"0\", \"1\"]"
+ }
+]

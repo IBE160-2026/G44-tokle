@@ -1,0 +1,32 @@
+[
+ {
+  "proxyWallet": "0x3d30f39fedc62f804acd7a70227bf3ae1508f002",
+  "side": "BUY",
+  "size": 1050,
+  "price": 0.001,
+  "timestamp": 1744870173,
+  "outcome": "Yes",
+  "conditionId": "0x763cc84a3cde36b9ce12a8afe6d3e1e3e46e50692e8ec47636c7803c1033cfab",
+  "transactionHash": "0xdf6fb4939ebc3f78f70bb1a6dd3dcdbe354eaa8df9f6e5ac8fb4b0687f4f98f6"
+ },
+ {
+  "proxyWallet": "0xd706b1e5ae41d26f9844a5efc566985084f56b5f",
+  "side": "BUY",
+  "size": 1050,
+  "price": 0.001,
+  "timestamp": 1744862487,
+  "outcome": "Yes",
+  "conditionId": "0x763cc84a3cde36b9ce12a8afe6d3e1e3e46e50692e8ec47636c7803c1033cfab",
+  "transactionHash": "0x80a10cf8190b37ca1c91e30f081d9324b8859fd0b74586b9f930592fbb4b950d"
+ },
+ {
+  "proxyWallet": "0x5af831897331b0a6380e3c76923b58e27b7b85d3",
+  "side": "BUY",
+  "size": 1290,
+  "price": 0.001,
+  "timestamp": 1744846609,
+  "outcome": "Yes",
+  "conditionId": "0x763cc84a3cde36b9ce12a8afe6d3e1e3e46e50692e8ec47636c7803c1033cfab",
+  "transactionHash": "0x274f7c29ec8831dbc2ce7820196f57c260dc4b173e26f5fb88b3814b91f5eca1"
+ }
+]
