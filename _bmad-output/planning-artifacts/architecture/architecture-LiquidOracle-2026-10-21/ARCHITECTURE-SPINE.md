@@ -115,7 +115,7 @@ Arrows are the only allowed imports. `core` imports only `records`, the standard
 - **Rule:**
   - **Resolved.** A Market is resolved when Gamma says it is closed, its outcome prices are exactly {0, 1}, and it has a `closedTime`. Anything else is left out as "unclear resolution" (AD-11).
   - **The Cut-off Date** means 00:00 UTC on that date, converted in one place.
-  - **Before part:** Positions whose Market resolved before the cut-off. **After part:** Positions whose first buy (activity rows) is on or after it.
+  - **Before part:** Positions whose Market resolved before the cut-off. **After part:** Positions whose first buy (activity rows) is on or after it, and whose `first_entry_at` in the positions list is not before it. Both are checked because an activity read that starts at the cut-off cannot see older buys (found in the Sample Dataset capture, 2026-10-23: 165, 46 and 20 tokens of three capped Wallets looked new but were first bought before the date).
   - **The window's unit** is "Positions in resolved Markets", countable at fetch time. A fully sold Position is an exclusion inside the window (AD-11), not outside it.
   - **Fetching the before part.** Read the OPEN list in full. Read CLOSED newest-first by `TIMESTAMP` with no `end` bound, and stop when a page's oldest `last_event_at` is earlier than the 2,000th-latest resolution time collected.
   - **Fetching the after part.** Read activity oldest-first from the cut-off until 2,000 Positions in resolved Markets have their first buy.
@@ -208,6 +208,7 @@ Arrows are the only allowed imports. `core` imports only `records`, the standard
   - `liquidoracle load-sample` always writes `instance/offline.db`, whatever the flags, and runs the normal fetch pipeline with `OfflineClient`. A round-trip test checks that generator → `OfflineClient` → pipeline → offline Scan gives the intended bets, Verdicts and FR-16 Watchlist.
   - Price history is stored as one short window per buy fill, [t − 2 min, t + 32 min], merged where they overlap. Fetching packs the windows of one token into requests of at most 14 days, storing only the points inside the short windows (measured: 1.06 requests per token, the same as the spike's per-outcome estimate; one request per window would be 3.9).
   - A test fails if the committed Sample Dataset exceeds 25 MB `[ASSUMPTION]`. No Git LFS.
+  - The committed Sample Dataset is rebuilt by one script from the raw capture (kept outside the repository, `spike/FINDINGS.md`), never trimmed by hand, so the trim is repeatable and reviewable. (Edvard, 2026-10-23.)
 
 ### AD-15 — Randomness comes from an explicit Seed, independent of order [ADOPTED]
 
