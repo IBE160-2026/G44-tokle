@@ -101,3 +101,57 @@ Why: Polymarket's migration guide says Data API v1 is retired on 2026-10-24, and
 | Rate limits (docs, checked 2026-10-21) | Per 10 s: 800 for all of v2; 200 each for `/v2/positions`, `/v2/activity`, `/v2/prices-history`; 300 for Gamma `/markets`; 1,000 for CLOB `/prices-history`. Over the limit, requests are slowed or queued; under heavy load v2 answers 429 or 503 with `Retry-After`. Gamma once answered 403 (CloudFront) during the probes and worked earlier the same day. | docs.polymarket.com rate-limits page; `arch_probe4.py` |
 
 Reading: v2 is better for this app than v1 was: lost unredeemed bets have their own status, pages are 20 times larger, and a Market's own position list gives every wallet that held a position, losers included, instead of a sample of trades. Three things changed the plan: the Scan's candidate method (now Market-anchored position lists), the source of the resolution time (now always Gamma), and the price-history risk (fetch the Sample Dataset's windows early). All three are in the architecture spine (`_bmad-output/planning-artifacts/architecture/architecture-LiquidOracle-2026-10-21/`) and the PRD memlog.
+
+## Sample Dataset pick and price capture (2026-10-21 to 2026-10-23)
+
+Why: PRD §9 Q5 (which 10 real Wallets) and Q6 (default Cut-off Date), then the price-window capture while the old CLOB `/prices-history` route still answers (spine AD-24, AD-14). Decided by Edvard: Cut-off Date **1 July 2025**, the AI's suggested 10, plus spares as insurance (PRD memlog, 2026-10-23). Read-only, no keys, 4 requests per second. Scripts `sample_pick.py`, `sample_sold.py`, `sample_table.py`, `sample_capture.py`; raw output in `spike/raw/sample/` (git-ignored, about 1 GB). About 8,900 requests in all.
+
+**How the Wallets were picked (no after-the-date results used).** Same funnel as a Scan (FR-16, AD-21): Markets resolved in the 90 days before the date, top 100 by volume (Gamma). Candidates from each Market's CLOSED and OPEN position lists; 77 of 100 Markets read in full (23 had more than 15,000 rows and were left out, as AD-9). 189,085 candidates. A seeded draw of 100 (top 15 and ranks 16-55 by profit on those Markets, active, losers, mid-size, random, heavy), 98 profiled on the before part: latest 2,000 Positions in Markets resolved before the date, outcomes read only for those Markets. Today's leaderboard was not used (it ranks on after-the-date results). Only after-the-date data used: activity counts (bets opened, any fee paid) to check FR-12 and FR-4. Addresses only, no names.
+
+**Picked** (estimate on the before part, Positions held to resolution, rough: independent draws, no fees):
+
+| Wallet | Estimated before-part Verdict | Covers |
+|---|---|---|
+| 0xcf0d7f69cf162918b33fc1ea7449583fa537132d | Likely skilled | Before-date Passer dropped by Minimum After-bets (7 after bets) |
+| 0x73648309111de9f9d4e2a58a50f803fa7d30d44e | Likely skilled | Skill with tiny profit, favourite buyer; reaches the Hold-up Test |
+| 0xd218e474776403a330142299f7796e8ba32eb5c9 | No evidence | Big profit, no evidence of skill; 2,000 cap; fees |
+| 0xd3a6e523c440f94f9259398fbcf7b5cc5ccffd55 | No evidence | Profit from selling early (Exit PnL) |
+| 0x63d43bbb87f85af03b8f2f9e2fad7b54334fa2f1 | No evidence | Big loser on near-certainties; 2,000 cap; fees |
+| 0x94884db79666a1a34c46d03fb4f8e9cbcaf6b5a6 | No evidence | Longshot buyer with 776 unredeemed losers (OPEN list) |
+| 0x7298060b1844a4c4ca0578146ab3f5e76aa1fcfc | No evidence | Many split and merge Positions (exclusions) |
+| 0x0f4b0a6b7f82108924ac9c8320ed91028f504183 | No evidence | Hand calculation with fees |
+| 0x0915962b4c6bc4505e7434a0de815a596a6667c3 | Not enough data | Hand calculation with large fees ($1,138); longshot buyer (swapped in for 0x8861f0) |
+| 0x29306ddc4724e24a23bf1c8679aa034376ea9dcb | Not enough data | Hand calculation, small and clean (swapped in for 0xeb214d) |
+
+Spares, captured as insurance only: 0xdc5378f70875715c333a3e4c4bf37183fe1f8a11, 0x8861f0bb5e0c19474ba73beeadc13ed8915beed6, 0xeb214d487c4f531ef7a3398631d56d3de5e08145. Swaps, both for the hand calculation (FR-4) and both logged in the PRD memlog: 0x29306d in for 0xeb214d (crypto already covered by 0x736483, 0x63d43b and 0x94884d, with 164, 287 and 87 crypto bets before the date), and 0x091596 in for 0x8861f0 (10,132 trade rows, too many to calculate by hand). Both used counts only (positions, trades, fees, splits), never an after-the-date result. No real Wallet was estimated *Skilled (high confidence)*; the Synthetic Wallets cover it.
+
+**Capture result.** Per Wallet: positions (v2 CLOSED, OPEN), activity read in two parts (before the date newest-first, from the date oldest-first, each capped at 150,000 rows), and one-minute price windows [t − 2 min, t + 32 min] per buy fill for the after part (first 2,000 tokens in resolved Markets by first buy), packed into requests of at most 14 days.
+
+| Wallet | After tokens | Buy fills | Price requests | Failed | Not 1-minute | Caps hit |
+|---|---|---|---|---|---|---|
+| 0xcf0d7f | 7 | 31 | 7 | 0 | 0 | none |
+| 0x736483 | 13 | 19 | 13 | 0 | 0 | none |
+| 0xd218e4 | 2,000 | 59,448 | 2,300 | 0 | 0 | activity both sides, positions |
+| 0xd3a6e5 | 412 | 11,600 | 452 | 0 | 0 | none |
+| 0x63d43b | 2,000 | 42,135 | 2,392 | 0 | 0 | activity both sides |
+| 0x94884d | 16 | 129 | 16 | 0 | 0 | none |
+| 0x729806 | 21 | 128 | 23 | 0 | 0 | activity before |
+| 0x0f4b0a | 116 | 131 | 118 | 0 | 0 | none |
+| 0x091596 | 22 | 54 | 24 | 0 | 0 | none |
+| 0x29306d | 12 | 12 | 12 | 0 | 0 | none |
+| spare 0xdc5378 | 27 | 29 | 27 | 0 | 0 | none |
+| spare 0x8861f0 | 3 | 14 | 4 | 0 | 0 | none |
+| spare 0xeb214d | 56 | 126 | 58 | 0 | 0 | none |
+
+Every token got one-minute points; no request failed.
+
+**Found on the way (for the epics):**
+- A Market's position list includes Polymarket's own contracts; `/v2/positions?user=` refuses them (400, "protocol contract address"). The Scan must drop them.
+- Gamma was down for about 2 minutes (2026-10-21, 15:35-15:37 UTC): every route answered an empty 404 from CloudFront. The client should retry this like a 503.
+- A p-value bug in the AI's own estimate: Python's `sum()` and `+=` round floats differently, so a simulation equal to the real result never counted as a tie (p 0.74 came out as 0.0002). The Skill Test must compare in whole cents.
+- Selling early is common: in the median profiled Wallet about half the before-part Positions were not held to resolution, and treating them as held gave PnL off by millions. The PRD's rules (fully sold left out, partly sold tested on shares held, Exit PnL shown) are needed.
+- **First buy after the date needs the positions list too.** On the three Wallets whose before-read hit the cap, 165, 46 and 20 tokens looked first-bought after the date but the positions list's `first_entry_at` is before it: their earlier buys were beyond the cap. AD-7 reads the after part from the date forward, so the app has the same blind spot unless it checks `first_entry_at`. The capture now checks it and refills the window; spine AD-7 now requires both checks (Edvard, 2026-10-23).
+- **One-way door.** On the two biggest Wallets, 150,000 activity rows after the date reached only 12 and 20 August 2025, so 808 and 418 kept tokens may miss later fills. AD-11's cap rule leaves those Positions out. Completing them is possible with `/v2/activity?condition=` (tested with a control) but costs thousands of requests, and Edvard declined it (2026-10-23). If the cap rule ever changes, these two Wallets cannot be fixed: the old one-minute price route will be gone by then. Stated as a limitation in PRD FR-12.
+- `/v2/activity` filters by Market with `condition` (`market` is refused with 400), and `end` with `sort_direction=DESC` works (tested with a control).
+- Size: the raw capture is about 1 GB, 0xd218e4 and 0x63d43b about 370 MB each. The committed Sample Dataset (25 MB, FR-12) must be a trimmed subset, for example each Wallet's Copy Sample; it is rebuilt by one script from the raw capture, never trimmed by hand (spine AD-14, Edvard, 2026-10-23); which subset is a decision for the Sample Dataset story.
+- Backup: the raw capture is zipped (176 MB, 271 files, SHA-256 file alongside) outside the repository in `../G44-tokle-data/`. A second copy on another disk is pending.
