@@ -23,6 +23,7 @@ Read-only, public endpoints, no keys, 4 requests per second (PRD s8 allows up to
 Outputs in spike/raw/sample/ (git-ignored). Re-runs reuse saved responses.
 """
 import json
+import os
 import random
 import statistics
 import sys
@@ -60,12 +61,19 @@ def fetch(base, path, params, tries=5):
     raise RuntimeError(f"gave up {path}")
 
 
+def atomic_write(path, text):
+    """Write to a temp file, then rename over the target, so a crash never leaves half a file (2026-10-24)."""
+    tmp = path.with_name(path.name + ".tmp")
+    tmp.write_text(text, encoding="utf8")
+    os.replace(tmp, path)
+
+
 def cached(name, fn):
     p = OUT / name
     if p.exists():
         return json.loads(p.read_text(encoding="utf8"))
     data = fn()
-    p.write_text(json.dumps(data), encoding="utf8")
+    atomic_write(p, json.dumps(data))
     return data
 
 
@@ -141,7 +149,7 @@ def gamma_lookup(conds):
                 "closed": ts(m["closedTime"]), "yes_won": float(json.loads(m["outcomePrices"])[0]) == 1.0,
                 "neg": m.get("negRiskMarketID"), "q": (m.get("question") or "")[:90],
                 "slug": ((m.get("events") or [{}])[0].get("slug") or "")}
-    GAMMA_CACHE_P.write_text(json.dumps(gamma_cache), encoding="utf8")
+    atomic_write(GAMMA_CACHE_P, json.dumps(gamma_cache))
 
 
 def wallet_rows(w):

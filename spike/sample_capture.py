@@ -23,7 +23,7 @@ from collections import defaultdict
 
 import api
 from api import CLOB, DATA
-from sample_pick import C, OUT, WINDOW, fetch, gamma_cache, gamma_lookup
+from sample_pick import C, OUT, WINDOW, atomic_write, fetch, gamma_cache, gamma_lookup
 
 CAP = OUT / "capture"
 ROW_CAP = 150_000         # activity rows per Wallet; hitting it is reported, never silent
@@ -47,7 +47,7 @@ def paged(path, params, cap):
 
 
 def save(path, data):
-    path.write_text(json.dumps(data), encoding="utf8")
+    atomic_write(path, json.dumps(data))
 
 
 def capture_wallet(w):
