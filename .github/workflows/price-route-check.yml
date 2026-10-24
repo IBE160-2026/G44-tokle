@@ -1,0 +1,87 @@
+# Daily check of Polymarket's old price-history route (spine AD-24; Edvard, 2026-10-24).
+# One plain GET a day, no keys. The run fails, so GitHub sends an email, only when the answer's class
+# changes from the last run, or when the route has been unreachable for 3 runs in a row.
+# Classes: one-minute (what the Copy Test needs), coarse, empty, gone-<status>.
+name: Price route check
+
+on:
+  schedule:
+    - cron: "17 6 * * *"        # daily, 06:17 UTC; GitHub runs schedules from the default branch only
+  workflow_dispatch:
+  push:
+    paths:
+      - .github/workflows/price-route-check.yml   # a push of this file also shows whether Actions runs at all
+
+permissions: {}
+
+concurrency: price-route-check
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Restore the last answer
+        uses: actions/cache/restore@v6.1.0
+        with:
+          path: state.json
+          key: route-state-${{ github.run_id }}
+          restore-keys: route-state-
+
+      - name: Ask the old route once
+        id: ask
+        run: |
+          # A resolved Market from the Sample Dataset capture, one hour on 1 July 2025 (older than the
+          # replacement route's 7 days, so only the old route can answer it at one-minute grain).
+          URL="https://clob.polymarket.com/prices-history?market=101508092941909893140840077696210540144992151979805105899965366713466670269947&startTs=1751385600&endTs=1751389200&fidelity=1"
+          code=$(curl -sS -A "liquidoracle-route-check (student project)" -o body.json -w "%{http_code}" \
+                 --retry 2 --retry-delay 10 --max-time 30 "$URL" || echo 000)
+          python3 - "$code" <<'PY'
+          import json, os, sys
+          code = sys.argv[1]
+          if code.startswith("5") or code == "000":
+              cls = "unreachable"
+          elif code != "200":
+              cls = f"gone-{code}"
+          else:
+              try:
+                  pts = sorted(p["t"] for p in json.load(open("body.json")).get("history", []))
+              except Exception:
+                  pts = []
+              gaps = sorted(b - a for a, b in zip(pts, pts[1:]))
+              if not pts:
+                  cls = "empty"
+              elif len(pts) >= 40 and gaps[len(gaps) // 2] <= 90:
+                  cls = "one-minute"
+              else:
+                  cls = "coarse"
+          old = json.load(open("state.json")) if os.path.exists("state.json") else None
+          new = dict(old or {"class": None, "unreachable_runs": 0})
+          shout = ""
+          if cls == "unreachable":
+              new["unreachable_runs"] = new.get("unreachable_runs", 0) + 1
+              if new["unreachable_runs"] == 3:
+                  shout = "the old route has been unreachable for 3 runs in a row"
+          else:
+              new["unreachable_runs"] = 0
+              if old and old.get("class") and old["class"] != cls:
+                  shout = f"the answer changed from {old['class']} to {cls}"
+              new["class"] = cls
+          json.dump(new, open("state.json", "w"))
+          print(f"HTTP {code}, class {cls}, last class {old and old.get('class')}")
+          with open(os.environ["GITHUB_OUTPUT"], "a") as f:
+              f.write(f"shout={shout}\n")
+          PY
+
+      - name: Save the answer
+        if: always()
+        uses: actions/cache/save@v6.1.0
+        with:
+          path: state.json
+          key: route-state-${{ github.run_id }}
+
+      - name: Shout only on a change
+        if: steps.ask.outputs.shout != ''
+        run: |
+          echo "::error::Price route check: ${{ steps.ask.outputs.shout }}. See spine AD-24 and PRD FR-18 (insurance pool)."
+          exit 1
