@@ -2,7 +2,7 @@
 title: "PRD: LiquidOracle"
 status: final
 created: 2026-10-12
-updated: 2026-10-21
+updated: 2026-10-24
 ---
 
 # PRD: LiquidOracle
@@ -270,6 +270,7 @@ For each of the Before-Cut-off Passers, over its Copy Sample, the system shows F
 - Every buy fill is copied at its own time plus the Copy Delay (Glossary, Follower PnL). The hand-calculated set includes a Position bought in more than one fill. (Edvard, 2026-10-21.)
 - The page shows how many of the Passers' Copy Sample Markets are shared by two or more Passers. A planted gate: across 1,000 planted Scans in which 10 coin-flipper Passers hold the same side of the same 40 Markets, the Copy p-value is < 0.05 in at most 7%. If the gate fails, the Random Group Check must be changed to account for shared Markets before a Copy Verdict is shown; that is a plan change. Why: without it, Passers in shared Markets beat random groups by luck about 27% of the time instead of 5% (architecture review, 2026-10-21). (Edvard, 2026-10-21.)
 - Price history comes from the old price-history route while it answers with one-minute prices, else from its replacement, which keeps one-minute prices for at least 7 days only. A buy with no one-minute price is left out of that delay and counted (above); the app never silently uses coarser prices. Fetched price history is kept for good. (Architecture, 2026-10-21.)
+- **Fallback if the old route is gone (Edvard, 2026-10-24):** the old route is checked daily. Its replacement keeps one-minute prices for 7 days only, so a real-data Copy Test for a past Cut-off Date needs prices captured in advance. An insurance pool of 50 Wallets for the default Cut-off Date, picked by a rule written down and committed before the capture (`spike/INSURANCE-RULE.md`), is captured with every after-part buy fill's price window. If the route is gone when the real-data run is made (SM-5), the Copy Test runs on this frozen pool instead of a full Scan's Copy Pool: Passers, Copy Samples and the Random Group Check are computed by the app as usual, and the page and the README state the limits: a pool of 50 fixed in advance, not the app's Scan; the pool was ranked by the spike's estimate, not the app's final Real PnL; and with fewer than 2 Passers the Copy Verdict is *Not enough data*, reported as it comes out.
 
 ### 4.6 Language Model and Domains (stage 3)
 
@@ -282,7 +283,7 @@ One setting replaces the language model with keyword rules (Domain) and template
 #### FR-19: Classify Markets
 The system assigns each Market a Domain using the language model (or Mock LLM Mode).
 - Each Market is classified once; the label is stored and reused.
-- Classification of a hand-labelled set of 50 Markets agrees with the hand labels on at least 80%. `[ASSUMPTION: 80% is a sensible bar]` The hand labels are committed before any model output is seen and never edited afterwards. The bar applies to the language model; if the default model (Claude Haiku 5.5) misses it, a larger model is tried and both results are reported. The keyword rules of Mock LLM Mode are checked on other Markets than these 50. (Edvard, 2026-10-21.)
+- Classification of a hand-labelled set of 50 Markets agrees with the hand labels on at least 80%. `[ASSUMPTION: 80% is a sensible bar]` The hand labels are made blind and committed before any model output is seen and never edited afterwards. Blind means Edvard sees only the 50 Markets' questions: no keyword-rule label, no model label and no category field from the data, so the gate measures the model against him, not against the keyword rules. His labels are committed before either labeller runs on these 50 (Edvard, 2026-10-24). The five Domains are defined by Edvard himself, one line each saying where the overlap cases go (the AI suggests none), written first and in the same sitting as the labels, and committed together with them; the model's prompt quotes the definitions word for word and the keyword rules aim at them (Edvard, 2026-10-24). The bar applies to the language model; if the default model (Claude Haiku 5.5) misses it, a larger model is tried and both results are reported. The keyword rules of Mock LLM Mode are checked on other Markets than these 50. (Edvard, 2026-10-21.)
 - Each label is stored with its source (model name or keyword rules) and date. Running the classification again is a deliberate action, never a side effect, because the model's answers can differ between runs. (Edvard, 2026-10-21.)
 
 #### FR-20: Domain Verdicts
