@@ -66,6 +66,6 @@ It also re-checked the hand-calculation Wallets on the real rows. **Its earlier 
 - Add files by name, never `git add .`: the two `validation-report.html` files stay untracked on purpose, as before.
 - Show the diff and this log before committing; push to `sample-dataset`; he opens the pull request himself.
 
-## 8. Still open
+## 8. Backup closed
 
-- Second backup copy on a USB stick (Edvard plugs it in).
+- The AI's copy to the first USB stick came out corrupt: the zip failed its own check and the stick's FAT32 volume reported "Full Repair Needed". The checksum caught it. The AI did not repair or format the stick (the student's device) and offered options. Edvard put the second copy on a USB stick himself and reported that the checksum verifies.
