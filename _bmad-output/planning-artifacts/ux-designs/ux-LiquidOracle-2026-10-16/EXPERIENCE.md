@@ -2,7 +2,7 @@
 name: LiquidOracle
 status: final
 created: 2026-10-16
-updated: 2026-10-21
+updated: 2026-10-24
 sources:
   - _bmad-output/planning-artifacts/prds/prd-LiquidOracle-2026-10-12/prd.md
 ---
@@ -99,7 +99,7 @@ Behaviour only; visuals are in `DESIGN.md` › Components, under the same names.
 | Flag | S3 | Verdict card, under the odds phrase | "⚠ Likely market maker (heuristic, may be wrong)". Never changes the Verdict (FR-22). |
 | Explanation | S3 | Directly under the Verdict card | At most 60 words (FR-23). Whenever template text is shown (Mock LLM Mode, or a replacement under FR-24), it carries the info tag "Template text". |
 | Domain table | S3 | Verdict page, after the honesty notes card | One row per Domain: Domain, Resolved bets, Domain Verdict (Verdict pill) (FR-21). Note under it: "Each Domain's odds are adjusted for testing several Domains." (FR-20). An info tag above the table names where the Domain labels came from: "Labels: Claude Haiku 5.5" or "Labels: keyword rules" (FR-15, FR-19; architecture, 2026-10-21). |
-| New Scan form | S2 | Scans | Cut-off Date (date field) and Number of Wallets (number field, default 200), button "Start Scan". Rules in *State Patterns*. In Offline Mode the date is fixed to the Sample Dataset's default Cut-off Date and the number is the whole Sample Dataset, both read-only, with an info box saying so. |
+| New Scan form | S2 | Scans | Cut-off Date (date field) and Number of Wallets (number field, default 200), button "Start Scan". Under the Number of Wallets, a rough time estimate that updates with the number, computed from the planned request count at the set pace and labelled as rough ("Rough estimate: about 2 hours at 5 requests per second") (Edvard, 2026-10-24). Rules in *State Patterns*. In Offline Mode the date is fixed to the Sample Dataset's default Cut-off Date and the number is the whole Sample Dataset, both read-only, with an info box saying so. |
 | Scan list | S2 | Scans | Earlier Scans, newest first: run date, Cut-off Date, Wallets, Watchlist size, status. A finished Scan links to its Watchlist. A stopped Scan has a button named "Resume Scan (Cut-off Date 1 May 2026)". A failed Scan (an unexpected error) shows "Failed" and no Resume button; so does a Scan whose stored data was rebuilt ("Data rebuilt, cannot resume"). Results of a Scan that has not finished are not shown. |
 | Scan progress bar | S2 | Scans | A progress bar whose text names the current step: "Reading Markets: 34 of 100", "Fetching Wallets: 84 of 600", "Ranking", "Hold-up Test", "Copy Test: 1,200 of 18,000 prices", updated as the Scan runs (architecture, 2026-10-21: the Scan runs these steps in order). The user may leave the page; the Scan keeps running while the app runs, and the Scan list shows it as running. |
 | Scan progress in the tab | S2 | Browser tab | While a Scan runs, the Scans page's tab title counts Wallets ("84/200 · Scan · LiquidOracle") and the favicon's ring fills clockwise from the top (Edvard, 2026-10-16). When the Scan finishes or stops, both go back to normal. Other pages keep their normal title. Screen readers get progress from the page, not from the tab. |
@@ -127,7 +127,7 @@ Behaviour only; visuals are in `DESIGN.md` › Components, under the same names.
 | No Scans yet | Scans | "No Scans yet. A Scan checks the top Wallets by profit made before a date you choose." and the form. | FR-16 |
 | Cut-off Date missing | New Scan form | Error: "Choose a Cut-off Date." Nothing starts. | FR-16 |
 | Cut-off Date today or later | New Scan form | Error: "The Cut-off Date must be in the past." Nothing starts. | FR-16 |
-| No bets after the Cut-off Date | New Scan form | Warning before starting: "Very few bets were resolved after this date, so the Hold-up Test and Copy Test may have too little to test." The user can still start. | FR-17 |
+| Cut-off Date less than 90 days ago | New Scan form | Warning before starting: "Very few bets were resolved after this date, so the Hold-up Test and Copy Test may have too little to test." The user can still start. Rule: the Cut-off Date is less than 90 days before today; no extra fetch. Why 90, not 30: Markets take weeks to months to resolve and the Hold-up Test counts only resolved bets, so a date 30 days back can look fine and still leave almost nothing to test. The Minimum After-bets (10) stays the hard floor (Edvard, 2026-10-24). | FR-17 |
 | Number of Wallets out of range | New Scan form | Error: "Enter a whole number from 10 to 500." Nothing starts. `[ASSUMPTION: 10 to 500 is the AI's guess; revisit after the data spike]` | FR-16 |
 | A Scan is already running | Scans | The form shows "A Scan is running (84 of 200). You can start a new one when it finishes." in an info box, and "Start Scan" is unavailable. | FR-16 |
 | Scan stopped | Scans | If the app was closed mid-Scan: "Interrupted at 120 of 200". If Polymarket stopped answering: "Stopped at 120 of 200: Polymarket did not answer". Both get a Resume button; finished Wallets are not fetched again. | FR-16 |
@@ -266,4 +266,4 @@ Edge: the address has never traded on Polymarket. The page says "No Polymarket h
 
 1. ~~The mechanism for setting Offline Mode and Mock LLM Mode at start~~ **Settled in architecture (2026-10-21):** a start-command flag or the same setting in `.env` (see *Modes* above).
 2. The Sample Dataset's default Cut-off Date (used by the offline Scan): set after the data spike (PRD §9 Q6). Edvard picks it in the next session, with the 10 real Wallets (2026-10-21).
-3. The Number of Wallets range (10 to 500) and the "very few bets after this date" threshold: revisit after the data spike, when fetch times and rate limits are known.
+3. ~~The Number of Wallets range (10 to 500) and the "very few bets after this date" threshold~~ **Settled (Edvard, 2026-10-24):** the range stays 10 to 500, with a rough time estimate on the form instead of a lower limit; the warning shows when the Cut-off Date is less than 90 days ago.
