@@ -42,7 +42,13 @@ def limited_get(*args, **kwargs):
         _next[0] = start + 1 / RATE
     if start > now:
         time.sleep(start - now)
-    return _plain_get(*args, **kwargs)
+    try:
+        return _plain_get(*args, **kwargs)
+    except (TimeoutError, OSError) as e:
+        # a read that times out mid-answer (found 2026-10-24 after 25 of 50 Wallets) is retried by fetch(),
+        # which treats status None as retryable, instead of crashing the run (as spine AD-3 asks of the app)
+        api.log.append((None, str(e)[:80]))
+        return None, None, {}
 
 
 api.get = limited_get

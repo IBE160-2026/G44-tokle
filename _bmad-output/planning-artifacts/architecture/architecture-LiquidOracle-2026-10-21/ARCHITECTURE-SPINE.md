@@ -7,7 +7,7 @@ paradigm: 'layered, functional core / imperative shell'
 scope: 'LiquidOracle v1, stages 1-3: the whole local app (FR-1 to FR-24, PRD s8)'
 status: final
 created: '2026-10-21'
-updated: '2026-10-21'
+updated: '2026-10-24'
 binds: [FR-1, FR-2, FR-3, FR-4, FR-5, FR-6, FR-7, FR-8, FR-9, FR-10, FR-11, FR-12, FR-13, FR-14, FR-15, FR-16, FR-17, FR-18, FR-19, FR-20, FR-21, FR-22, FR-23, FR-24]
 sources:
   - _bmad-output/planning-artifacts/prds/prd-LiquidOracle-2026-10-12/prd.md
@@ -73,7 +73,7 @@ Arrows are the only allowed imports. `core` imports only `records`, the standard
 - **Rule:**
   - Every Polymarket request passes one process-wide limiter guarded by a lock.
   - The pace is the setting `POLYMARKET_REQUESTS_PER_SECOND`, default 5 `[ASSUMPTION]`. Values above 5 are rejected at startup. (Published limits: docs.polymarket.com/api-reference/rate-limits.)
-  - Timeouts, 429, 503, and a Gamma or CloudFront 403 are retried with back-off, honouring `Retry-After`. After the retries they raise `PolymarketUnavailable`. Any other 4xx raises `PolymarketBadRequest` and is logged.
+  - Timeouts, 429, 503, a Gamma or CloudFront 403, and an empty Gamma 404 on a list route (seen during a 2-minute Gamma outage, 2026-10-21) are retried, at most 3 tries in all. When the response carries a `Retry-After` header (a 429 or a 503), the client waits exactly that long instead of its own back-off, because that is what the header asks; otherwise it backs off. Each wait counts as one of the 3 tries. This is the one retry policy for every retried error (Edvard, 2026-10-24). After the third they raise `PolymarketUnavailable`, which stops the job cleanly as `stopped` (resumable, AD-5), so an outage pauses a Scan instead of hanging it. Any other 4xx raises `PolymarketBadRequest` and is logged. (Edvard, 2026-10-23.)
   - A page that times out mid-walk restarts the walk with a smaller `limit`, because the cursor fixes the page size. If that also fails, the read is partial.
 
 ### AD-4 — Cache: freshness belongs to a covered range [ADOPTED]
@@ -141,6 +141,7 @@ Arrows are the only allowed imports. `core` imports only `records`, the standard
   - The client function for Market-anchored lists takes no sort argument and always sends `sort_by=TIMESTAMP&sort_direction=ASC`. A test fails if a Market-anchored request is built otherwise.
   - A Market read has a row cap, the setting `MARKET_ROW_CAP` `[ASSUMPTION]`. A read that is partial (timed out after AD-3's retries, or capped) contributes no candidates. It is stored and shown as "not used: partial", the Scan page says "N of 100 Markets used", and the Scan goes on.
   - A Wallet whose read gets `PolymarketBadRequest` or hits a cap is kept and flagged "not fully read". Its unread Positions are left out with a stored reason (AD-11). The flag travels with the Wallet everywhere it is counted: Scan ranking, Watchlist row, Passers, Hold-up groups, Copy Pool. Every group result shows how many of its Wallets are not fully read.
+  - A candidate that `/v2/positions?user=` refuses as a protocol contract address (400, "protocol contract address") is one of Polymarket's own contracts, not a trader. It is dropped from the candidates and counted in the Scan record, not flagged "not fully read" (found in the Sample Dataset pick, 2026-10-21; Edvard, 2026-10-23).
   - Only `PolymarketUnavailable` stops the job (`stopped`, resumable). A Wallet is never skipped silently.
 
 ### AD-10 — One source per number
@@ -228,7 +229,7 @@ Arrows are the only allowed imports. `core` imports only `records`, the standard
   - **Interface.** `data/model.py` has one interface (classify a Market, write an Explanation), implemented by `AnthropicModel` and `TemplateModel`.
   - **Model.** The setting `LLM_MODEL`, default `claude-haiku-5-5`, pinned as written, with `effort` set to `low` and stored with the model ID.
   - **Labels.** Structured outputs limited to the fixed Domain list. Labels are compared case-insensitively and stored under the canonical name, keyed by (Market, source), where the source is a model ID or `keyword-rules`. They are reused, and classifying again is an explicit action.
-  - **The gate.** The FR-19 hand labels are committed before any model output is seen and never edited. The 80% check applies to a real model: if it fails, the model setting is raised and the check re-run, and both results are logged. Keyword rules are checked on other Markets than the 50 hand-labelled ones.
+  - **The gate.** The FR-19 hand labels are made blind (Edvard sees only the 50 questions: no keyword label, model label or category field) and committed before either labeller runs on those 50, and never edited (Edvard, 2026-10-24). The 80% check applies to a real model: if it fails, the model setting is raised and the check re-run, and both results are logged. Keyword rules are checked on other Markets than the 50 hand-labelled ones.
   - **The FR-24 check** runs in `services` on every Explanation from either implementation.
 
 ### AD-17 — Tests run network-blocked, and CI proves the README [ADOPTED]
@@ -240,6 +241,7 @@ Arrows are the only allowed imports. `core` imports only `records`, the standard
   - GitHub Actions runs `uv sync --locked` then `uv run pytest` on every push, on Windows, macOS and Linux × Python 3.12 and 3.14.
   - One more job runs the README's three commands as shell steps on a fresh checkout, then requests one Sample Wallet's Verdict page and checks its expected Verdict text.
   - `.python-version` names the Python that `uv` installs.
+  - Checks that repeat a whole test 1,000 times (FR-5 coin-flippers, FR-17 and FR-18 planted runs) are marked `slow`. They run in full once per push on Linux with Python 3.14; the other five jobs run the same checks with 100 repetitions. Only the number of repetitions drops: each test still uses 10,000 Simulations, and the determinism checks run unchanged on every job (same Seed gives identical results; two `PYTHONHASHSEED` subprocess runs agree; and a stored golden result, the exact count of Simulations at or above the Real PnL for fixed Wallets and a fixed Seed, is reproduced on every system). Why: float ordering is exactly what differs between systems (the tie bug), so every system must prove it matches. (Edvard, 2026-10-24.)
 
 ### AD-18 — Pages are server-rendered; JavaScript only enhances [ADOPTED]
 
@@ -304,6 +306,8 @@ Arrows are the only allowed imports. `core` imports only `records`, the standard
   - One pure rule `price_at(points, t)` gives the last point at or before t, at most 2 minutes old, live and offline.
   - Fetched windows never expire (AD-4). The Sample Dataset's windows are fetched as early as possible.
   - Online, a buy with no 1-minute price is left out of that Copy Delay and counted (FR-18).
+  - **Daily route check** (Edvard, 2026-10-24): a scheduled GitHub Actions workflow makes one plain GET a day to the old route, with no keys, for a fixed resolved token and window, and classifies the answer (one-minute points, coarser points, no points, or an error after retries). It alerts only when the classification changes from the last run. If the course organisation blocks Actions, a local scheduled task runs the same check, and how this was found out is logged.
+  - **Insurance pool** (Edvard, 2026-10-24): 50 Wallets for the default Cut-off Date, picked by a rule committed before the run (`spike/INSURANCE-RULE.md`), with every buy fill's price window in their first 2,000 after-part Positions, captured while the old route answers and kept outside the repository. If the old route is gone when the real-data Copy Test runs, the Copy Test runs on this frozen pool as a reduced test, with its limits stated (PRD FR-18).
 
 ### AD-25 — Number phrases have one home
 
@@ -321,7 +325,7 @@ Arrows are the only allowed imports. `core` imports only `records`, the standard
 | Domain names in code | The PRD Glossary terms: `Wallet`, `Market`, `Position`, `ResolvedPosition`, `SkillResult`, `Scan`, `Watchlist`, `CopySample`. Python `snake_case` for modules and functions. |
 | Identifiers | Wallet = proxy-wallet address, lower-case `0x…` (FR-1). Market = `condition_id` hex string. Outcome = `token_id` string. |
 | Time | UTC epoch seconds (`int`) everywhere inside the app. Gamma's ISO strings are converted in `data/`. The Cut-off Date is 00:00 UTC (AD-7). Dates are formatted only for display. |
-| Money | USD as `float`. Rounded to cents only for display. Tests compare to the cent (absolute tolerance 0.005). |
+| Money | USD as `float`. Rounded to cents only for display. Tests compare to the cent (absolute tolerance 0.005). **Exception, the Skill Test's comparison:** each Position's win and loss amounts are rounded to whole cents once, and Real PnL and every Simulation sum those integers, so a Simulation equal to the Real PnL counts as a tie exactly. Float sums in different orders differ by tiny amounts and miss ties (found 2026-10-21: p ≈ 0.74 came out as 0.0002). A test: a Wallet whose bets all won at prices near 1 gets a p-value close to the product of its prices. (Edvard, 2026-10-23.) |
 | Errors | `data/` raises typed errors (`PolymarketUnavailable`, `PolymarketBadRequest`, `NotAvailableOffline`, `ModelUnavailable`). `services/` turns them into the messages in EXPERIENCE.md. Pages never show a raw exception. |
 | Job progress | `GET /jobs/<id>/progress` returns JSON `{status, phase, done, total, message}`. It is the only contract between the worker, the pages and `progress.js`. |
 | Settings | Read once into a frozen settings object and passed down, never read from the environment deep in the code. `.env.example` lists every key. |

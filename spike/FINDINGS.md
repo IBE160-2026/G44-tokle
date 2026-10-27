@@ -154,4 +154,71 @@ Every token got one-minute points; no request failed.
 - **One-way door.** On the two biggest Wallets, 150,000 activity rows after the date reached only 12 and 20 August 2025, so 808 and 418 kept tokens may miss later fills. AD-11's cap rule leaves those Positions out. Completing them is possible with `/v2/activity?condition=` (tested with a control) but costs thousands of requests, and Edvard declined it (2026-10-23). If the cap rule ever changes, these two Wallets cannot be fixed: the old one-minute price route will be gone by then. Stated as a limitation in PRD FR-12.
 - `/v2/activity` filters by Market with `condition` (`market` is refused with 400), and `end` with `sort_direction=DESC` works (tested with a control).
 - Size: the raw capture is about 1 GB, 0xd218e4 and 0x63d43b about 370 MB each. The committed Sample Dataset (25 MB, FR-12) must be a trimmed subset, for example each Wallet's Copy Sample; it is rebuilt by one script from the raw capture, never trimmed by hand (spine AD-14, Edvard, 2026-10-23); which subset is a decision for the Sample Dataset story.
-- Backup: the raw capture is zipped (176 MB, 271 files, SHA-256 file alongside) outside the repository in `../G44-tokle-data/`. A second copy on another disk is pending.
+- Backup: the raw capture is zipped (176 MB, 271 files, SHA-256 file alongside) outside the repository in `../G44-tokle-data/`. A second copy is on a USB stick, checksum verified (Edvard, 2026-10-23). A first attempt on another stick came out corrupt (its FAT32 volume needed repair) and was caught by the checksum.
+
+
+## Insurance pool capture (2026-10-24)
+
+Why and rule: `spike/INSURANCE-RULE.md`, committed before the run (536a5cd); PRD FR-18 fallback, spine AD-24. Script `spike/insurance_pick.py`; raw output `spike/raw/insurance/` (2.4 GB, git-ignored), zipped to 283 MB with a SHA-256 file in `../G44-tokle-data/`.
+
+**Pick.** 150 shortlisted from the 77 complete Market reads (189,085 candidates) by the AD-21 pre-filter, ranked by Real PnL on held Positions before 1 July 2025, top 50 kept; 1 protocol contract dropped. The pool was frozen in `pool.json` once chosen and reused on every resume.
+
+**Capture.** 50 Wallets, 10,868 after-part tokens, 203,604 buy fills, 14,092 price requests, about 17,000 to 18,000 requests in all over three runs. Every token got one-minute points; 0 failed, 0 coarse. 14 of the 50 have no bets after the date, 30 have at least 10 after-part tokens, 3 reached the 2,000 cap; activity hit the 300,000-row cap on 2 Wallets on each side. 5 of the 50 are also Sample Dataset Wallets or spares (0xd218e4, 0xd3a6e5, 0xcf0d7f, 0xeb214d, 0x8861f0).
+
+**Against the estimate.** The AI estimated 20,000 to 26,000 tokens and 28,000 to 35,000 requests; the real numbers were about half, because more of the high earners had no or few bets after the date. Time: about 70 minutes of running in all (17:15 to 18:25 CEST, from the log files' times), faster than the estimated 2 hours, because there were about half as many tokens.
+
+**Found on the way.**
+- A price request that timed out while reading the answer crashed the run after 25 of 50 Wallets: the spike's HTTP helper treats a timeout as a crash, not a retryable error. Fixed in the insurance script (a timeout now counts as a retryable failure) and resumed; the resume skipped the 25 finished Wallets and reused the frozen pool with 0 ranking requests. The app's client retries timeouts by design (spine AD-3, Story 2.1).
+- The resume was also proven on purpose earlier: stopped at 54 of 150 ranked, restarted, went on at 55.
+
+**Pool** (50 Wallets, rank order):
+1. 0xc6587b11a2209e46dfe3928b31c5514a8e33b784
+2. 0x8861f0bb5e0c19474ba73beeadc13ed8915beed6
+3. 0xe899b5ea69afb161da7a35597b6fe70398860899
+4. 0xcf0d7f69cf162918b33fc1ea7449583fa537132d
+5. 0x4f2ba33b080882c0f6b296f48cfd07b6c326f448
+6. 0xb74711992caf6d04fa55eecc46b8efc95311b050
+7. 0xa8e0f6cd46306617f7b9d0897fef215fb02f1dd2
+8. 0xbb903888f2d952a1845c90142267c61b4926ad7f
+9. 0xd218e474776403a330142299f7796e8ba32eb5c9
+10. 0xe25b9180f5687aa85bd94ee309bb72a464320f1b
+11. 0xe639e41094bbeae18f3e6d1790c17299183f082a
+12. 0x14a1147ae7d206b835c1ee8f901e4e2eec111149
+13. 0xc060e67e93ae3b707d43086fae4dcb2d14988956
+14. 0x45580feac3b916a88b7513929e26f86b3adea2b3
+15. 0x62cf46cd4c3af254dccfc37a7f93de265b4b5826
+16. 0xbbd20bdaea1ac8b93f9210a7e6c38b26587cd91e
+17. 0x1872882c6791aa2f511694d890a1bf258917ae0f
+18. 0x1cc16713196d456f86fa9c7387dd326a7f73b8df
+19. 0x5d1c0e7ec9ef13fcaf08241b604d10f727154d4d
+20. 0xbf5bf2730e1d679eb9d6ee37ef48d03959e823ca
+21. 0x4344066fa99418555cd750de88883b703003caef
+22. 0x33d1dba0cd69aa097dcae799a8e3e7f54d88546b
+23. 0x1281d24ee91406bdc71fc94a2a89b464fe378d51
+24. 0x41ed8e243316a227287d7940ca74662c5e8a2032
+25. 0x4e820a4b31acc9d0649fdef68f9239f0c997b85c
+26. 0x7c3db723f1d4d8cb9c550095203b686cb11e5c6b
+27. 0x03eef735228c7268ba3cd8a3a10f421455c8fddd
+28. 0xf82386dd8f423bee8df7ac571e0bec946af152d0
+29. 0x47a0e1f2aec4b269382c094c5fd8a34247c61de0
+30. 0x613081e20f5b3a39c74ad1e29948e522865c144a
+31. 0x4851a13a61c99688c68191e8e8a8755ea5b81e94
+32. 0xe5b0a2b38390fd47bb7174580e7c40c0bc81be26
+33. 0x1c3cdc2caa24eeb9434100f82ac32c22a26b1b01
+34. 0x6f72fea92844c87b9d6683c415e7caef70ee83ad
+35. 0x66aa09c4e4890dfea662c3aa1c39787d682e9290
+36. 0xeb214d487c4f531ef7a3398631d56d3de5e08145
+37. 0x335ad660402270140a4f951360eeabf09bbc430a
+38. 0xb91726df3ceb05747fdddfc8b497ae7349269a73
+39. 0x54ba7686f4df967176d09722d3c8b396bdbd1f9b
+40. 0x0a854897a06d4999e5b2dde5693609f1428ffe9d
+41. 0x39c202e6373922005fc1ef479f2749989b7bd478
+42. 0x4eedab5a1ddb5e9ecaa793e1c3bf9506a60a7304
+43. 0x381ca38ec77a679408ab47160f7b1c622887cbaf
+44. 0xc8ab97a9089a9ff7e6ef0688e6e591a066946418
+45. 0xf2cba1ce1411644335d6ccdc60781313afd13bbd
+46. 0x8fd93d7e517b9d98c4897908afefd2d7a8b4544a
+47. 0x6c7116b224e316e0e795cec224a957c62d3e3584
+48. 0xd3a6e523c440f94f9259398fbcf7b5cc5ccffd55
+49. 0x9463843be36315b22b8778ab08fbaa71399f6a9e
+50. 0x10bcf303aee0a812083ab5ddfba3db25519b3f9c
