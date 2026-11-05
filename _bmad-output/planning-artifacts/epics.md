@@ -345,7 +345,8 @@ So that the Verdict says how often a trader with no edge would do as well.
 **When** the Skill Test runs
 **Then** Real PnL = Σ s · (o − p) − Own Fees (FR-4), equal to the Synthetic Wallets' hand values to the cent
 **And** each of 10,000 Simulations draws one uniform U per Market, shared by every Position in that Market (one side wins when U < p, the other when U > 1 − p), so each Position wins with probability equal to its Entry Price (AD-20)
-**And** win and loss amounts are rounded to whole cents once, and Real PnL and every Simulation sum those integers, so p = (1 + number of Simulations ≥ Real PnL) / 10,001 counts ties exactly (FR-5; Conventions › Money, P-3).
+**And** for the p-value only, win and loss amounts are rounded to whole cents once, with Own Fees left out, and the real result and every Simulation sum those integers, so p = (1 + number of Simulations ≥ the real result) / 10,001 counts ties exactly (FR-5; Conventions › Money, P-3)
+**And** the Real PnL shown and stored is the exact sum, never the rounded one, and a test on a Wallet with many small fractional amounts shows the two differ while the exact one matches its hand value to the cent (FR-4; Edvard, 2026-11-05).
 
 **Given** the Story 1.3 fixtures
 **When** the checks run
