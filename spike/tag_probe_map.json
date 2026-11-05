@@ -1,0 +1,47 @@
+{
+ "domains": {
+  "politics": [
+   "Elections",
+   "Geopolitics",
+   "Global Elections",
+   "Politics",
+   "Trump",
+   "US Politics",
+   "World",
+   "World Elections"
+  ],
+  "sports": [
+   "Games",
+   "Sports"
+  ],
+  "crypto": [
+   "Bitcoin",
+   "Crypto",
+   "Crypto Prices",
+   "Ethereum",
+   "Solana",
+   "XRP"
+  ],
+  "macro": [
+   "Business",
+   "Economic Policy",
+   "Economy",
+   "Fed",
+   "Fed Rates",
+   "Finance",
+   "Inflation",
+   "Macro",
+   "Stocks",
+   "Tariffs",
+   "Trade War"
+  ]
+ },
+ "economy_type": [
+  "Tariffs",
+  "Trade War",
+  "Economy",
+  "Fed",
+  "Fed Rates",
+  "Inflation"
+ ]
+}
