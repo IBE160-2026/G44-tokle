@@ -75,3 +75,19 @@ The source name `tag-rules` and the info tag "Labels: Polymarket tags" are also 
 Edvard writes his Domain definitions and labels the 50 Markets blind. The tag map comes after that, in Story 7.1.
 
 The AI's rough test map stays out of the repo until then, so it cannot steer his definitions. This was the AI's call and it departs slightly from "probes in spike": until the map is committed, `analyse` cannot be rerun from the repo alone.
+
+## 8. Later the same day: Edvard's definitions and hand labels
+
+> "ok i did the fifty by hand without looking at any tags. first my domain definitions [...] n here are my labels. 18 n 50 i wasnt sure about so i put other [...] put these into the hand label file n write my definitions down where they belong, commit it on the same branch as the tag work"
+
+The definitions and the labels are Edvard's own; the AI only put them into the files. Before committing, it asked three questions, because the labels are never edited afterwards:
+
+| Question | AI's recommendation | Edvard |
+|---|---|---|
+| His list said "unsure" for Market 50, but he wrote that he put "other" | other | other |
+| Write "and" where he typed "n", since the model's prompt quotes the definitions word for word | yes, spelling only | yes |
+| The plan asked each line to say where its overlap cases go; his lines cover two | commit as written, so the definitions still come before the labels | commit as written |
+
+The plan named no file for the definitions, so the AI chose `sample_data/hand_labels/domain-definitions.md`. The commit message says no labeller ran on the 50 and no tags were fetched for their events before it.
+
+Totals: politics 20, sports 13, other 12, crypto 4, macro 1. With only one macro Market, the 80% check says little about macro.
