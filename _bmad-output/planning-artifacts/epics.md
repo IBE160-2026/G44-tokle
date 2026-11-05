@@ -38,7 +38,7 @@ Requirement IDs are the PRD's own (FR-1 to FR-24; FR-15 keeps its old number and
 - FR-5 (S1): Luck Distribution and p-value from 10,000 Simulations; p = (1 + #Simulations ≥ Real PnL) / 10,001. Checks: hand-check Wallet (10 at 0.50, all won) p in [0.0003, 0.002]; a fixed fee per Position lowers Real PnL by exactly the total fee and leaves p and Verdict unchanged; sharp trader (100 at 0.50, 70 won) p < 0.01; favourite buyer (100 at 0.90, 90 won) p ≥ 0.05; 1,000 coin-flippers: p < 0.05 for at most 7%, p < 0.01 for at most 2%.
 - FR-6 (S1): Verdict from thresholds: *Skilled (high confidence)* p < 0.01, *Likely skilled* p < 0.05, *No evidence of skill*, *Not enough data* below 30 Resolved Positions. Check: 29 gives *Not enough data* and no p-value; 30 gives a Verdict.
 - FR-7 (S1): Reproducibility. Each Skill Test runs with a stored Seed; same data and Seed give the identical p-value and Verdict.
-- FR-8 (S1): Verdict card shows the Verdict, Resolved Positions, Real PnL and the odds phrase: "about 1 time in N" (N = 1/p to 2 significant figures), "fewer than 1 time in 10,000" when no Simulation reached it (and for p = 1/10,001), "more than half the time" above 0.5.
+- FR-8 (S1): Verdict card shows the Verdict, Resolved Positions, Real PnL and the odds phrase: "about 1 time in N" (N = 1/p to 2 significant figures, a whole number below 10), "fewer than 1 time in 10,000" when no Simulation reached it (and for p = 1/10,001), "more than half the time" above 0.5.
 - FR-9 (S1): Luck chart. Histogram of the Luck Distribution in dollars with the Real PnL marked; the axis always includes the Real PnL; beyond every Simulation the marker reads "above all 10,000 Simulations" (or "below …"). Check: a planted Real PnL above the largest Simulation.
 - FR-10 (S1): Too little data. *Not enough data* shows the count and how many more are needed; no chart.
 - FR-11 (S1): Honesty notes on every Verdict card: share of Real PnL from the largest Position; N of M held to resolution and Exit PnL; a warning when Exit PnL < 0; the 2,000-window line ("latest 2,000" / "first 2,000"; Watchlist: both windows); left-out counts per reason and the >10% `[ASSUMPTION]` sentence; fees that failed the schedule check with their total; the >20% `[ASSUMPTION]` undetected-links note; the Seed; the fixed limits note and "not financial advice". Check: the stop-loss Synthetic Wallet shows the warning; Exit PnL ≥ 0 or no sales shows none.
@@ -385,7 +385,7 @@ So that the card, the chart and later the Explanation never disagree.
 
 **Given** `core/phrases.py` (AD-25)
 **When** a p-value is phrased
-**Then** it gives "about 1 time in N" with N = 1/p to 2 significant figures (0.0033 gives "about 1 time in 300", 0.0099 "about 1 time in 100", 0.25 "about 1 time in 4"), "fewer than 1 time in 10,000" when no Simulation reached the Real PnL and for 1/10,001, and "more than half the time" above 0.5 (FR-8)
+**Then** it gives "about 1 time in N" with N = 1/p to 2 significant figures and a whole number below 10, so never a decimal (0.0033 gives "about 1 time in 300", 0.0099 "about 1 time in 100", 0.25 "about 1 time in 4", 0.45 "about 1 time in 2", 0.11 "about 1 time in 9"), "fewer than 1 time in 10,000" when no Simulation reached the Real PnL and for 1/10,001, and "more than half the time" above 0.5 (FR-8)
 **And** money is written `$12,340` and `−$1,240` with a real minus sign (UX-DR14)
 **And** the *Not enough data* sentence reads "12 resolved bets; at least 30 are needed for a Verdict (18 more)" (FR-10).
 
