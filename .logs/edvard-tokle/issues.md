@@ -12,5 +12,6 @@
 - [x] 2026-11-05 [domain-tags](997-2026-11-05-03-52-00-domain-tags.md) — Edvard confirms or changes the AI's additions: one Domain per Market, the Other rule, tags read from the stored record, `include_tag=true` from Epic 2, the one-off tag fetch for the Sample Dataset (løst 2026-11-05)
 - [ ] 2026-11-05 [domain-tags](997-2026-11-05-03-52-00-domain-tags.md) — write the tag map from Edvard's committed definitions and check it on Markets outside the 50 (Story 7.1)
 - [x] 2026-11-05 [domain-tags](997-2026-11-05-03-52-00-domain-tags.md) — decide whether the probe scripts go in `spike/`, so the memlog's numbers can be rerun from the repo (løst 2026-11-05)
-- [ ] 2026-11-05 [domain-tags](997-2026-11-05-03-52-00-domain-tags.md) — after Edvard's definitions and labels are committed, commit the rough test map (`spike/raw/tag_probe_map.json`), so `spike/tag_probe.py analyse` can be rerun from the repo
+- [x] 2026-11-05 [domain-tags](997-2026-11-05-03-52-00-domain-tags.md) — after Edvard's definitions and labels are committed, commit the rough test map (`spike/raw/tag_probe_map.json`), so `spike/tag_probe.py analyse` can be rerun from the repo (løst 2026-11-05)
 - [ ] 2026-11-05 [domain-tags](997-2026-11-05-03-52-00-domain-tags.md) — only one macro Market among the 50 hand labels, so the 80% check says little about macro (Story 7.2)
+- [ ] 2026-11-05 [domain-tags](997-2026-11-05-03-52-00-domain-tags.md) — score the tag rules only on Markets outside the 50 and never report the 50 as their score; the AI has seen the 50 with their tags (Story 7.1)
