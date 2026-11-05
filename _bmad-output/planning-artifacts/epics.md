@@ -18,9 +18,9 @@ This document provides the complete epic and story breakdown for LiquidOracle, d
 Requirement IDs are the PRD's own (FR-1 to FR-24; FR-15 keeps its old number and belongs to stage 3). Architecture rules keep their spine IDs (AD-1 to AD-25). Stage marks S1, S2, S3 follow PRD §6.1.
 
 **Timing and slipping rules** (Edvard, 2026-10-23 and 2026-10-24):
-- Build window: 2 November to 1 December 2026. **1 December is a hard stop for code**: after it, only fixes that make the README commands or the tests run, each logged, and nothing new. 1 to 15 December is for the reflection report (30% of the grade), the README check and repository tidying; the repositories lock on 15 December.
+- Build window: 5 November to 1 December 2026, moved from 2 November because no code had been started by then; nothing is built 14 to 16 November (Edvard, 2026-11-05). **1 December is a hard stop for code**: after it, only fixes that make the README commands or the tests run, each logged, and nothing new. 1 to 15 December is for the reflection report (30% of the grade), the README check and repository tidying; the repositories lock on 15 December.
 - Stage 1 must stand alone as a working app and never slips. If time runs short, work is cut from stage 3 first, never from stage 1.
-- Checkpoint 20 November: if stage 1 is not done by then, stage 3 is dropped entirely and the time goes to stages 1 and 2.
+- Checkpoint 20 November: if stage 1 is not done by then, stage 3 is dropped entirely and the time goes to stages 1 and 2. The targets below finish stage 1 on 23 November, so this rule applies unless stage 1 finishes early (2026-11-05).
 - Inside Epic 1, only the visual polish of Story 1.7 moves later (dark theme, hover states, responsive details), staying inside stage 1; Story 1.5 stays before 1.7 because the card needs its phrases, and Story 1.4's checks are never cut (Edvard, 2026-10-24, after the final validation).
 - Inside stage 3, Epic 8 slips before Epic 7. A partial stage 3 is fine; whatever is left out is stated in the README and logged with the reason. Because stage 3 can stop after any story, each stage 3 story ends with all tests passing and the README updated (NFR-12).
 - Edvard's five Domain definitions and 50 blind hand labels (Story 7.2's first step) are done early, in the Epic 1 week, and committed before any labeller runs on those Markets (Edvard, 2026-10-24).
@@ -199,35 +199,35 @@ Stage marks as in EXPERIENCE.md. A page or element of a later stage is absent un
 
 ## Epic List
 
-### Epic 1: Check a synthetic Wallet offline (S1, target 2 to 7 Nov)
+### Epic 1: Check a synthetic Wallet offline (S1, target 5 to 10 Nov)
 The examiner clones the repository, runs the three README commands, picks a Synthetic Wallet in Offline Mode and sees a correct Verdict card; the tests pass in CI on Windows, macOS and Linux. The Skill Test, the riskiest part, is built and proven first, on Wallets with known answers.
 **FRs covered:** FR-1 (form and checks), FR-3 (basic), FR-4 (synthetic), FR-5, FR-6, FR-7, FR-8, FR-10, FR-12 (synthetic part), FR-13 (S1 types), FR-14
 
-### Epic 2: Check a real Wallet (S1, target 8 to 13 Nov)
+### Epic 2: Check a real Wallet (S1, target 11 to 13 and 17 to 19 Nov)
 The user pastes any Polymarket address and gets a Verdict from live data; a second lookup is instant, outages are handled, and the 10 real Sample Wallets work offline.
 **FRs covered:** FR-1 (no history), FR-2, FR-3 (all exclusions), FR-4 (hand calculations), FR-12 (real Wallets)
 
-### Epic 3: A Verdict you can trust (S1, target 14 to 17 Nov)
+### Epic 3: A Verdict you can trust (S1, target 20 to 23 Nov)
 The user sees the luck chart with the Wallet's marker and its text alternative, and the honesty notes; the page works by keyboard and screen reader, in both themes and at any width. Stage 1 is done: all tests pass and the README is updated.
 **FRs covered:** FR-9, FR-11
 
-### Epic 4: Scan for skilled Wallets (S2, target 18 to 21 Nov)
+### Epic 4: Scan for skilled Wallets (S2, target 24 to 26 Nov)
 The user chooses a Cut-off Date, runs a Scan that can be left, interrupted and resumed, and sees the Watchlist with the Minimum Luck Passes and the population tested.
 **FRs covered:** FR-16, FR-13 (S2 types)
 
-### Epic 5: Does the skill last? Hold-up Test (S2, target 22 to 23 Nov)
+### Epic 5: Does the skill last? Hold-up Test (S2, target 27 to 28 Nov)
 The user compares the Before-Cut-off Passers with the Comparison Group on the bets after the Cut-off Date.
 **FRs covered:** FR-17
 
-### Epic 6: Could a late follower have profited? Copy Test (S2, target 24 to 27 Nov)
+### Epic 6: Could a late follower have profited? Copy Test (S2, target 29 Nov to 1 Dec)
 The user sees Follower PnL and Follower Return at 1, 5 and 30 minutes and the Random Group Check; a Hold-up Test and Copy Test on real data are run and reported (SM-5). Stage 2 is done.
 **FRs covered:** FR-18
 
-### Epic 7: Where is the edge? Domain Verdicts (S3, target 28 to 30 Nov)
+### Epic 7: Where is the edge? Domain Verdicts (S3, no dates: only if stage 1 finishes by 20 Nov and time is left)
 The user sees a Domain table on the Verdict page, with or without a model key.
 **FRs covered:** FR-15, FR-19, FR-20, FR-21
 
-### Epic 8: Bots and plain-language explanations (S3, target 30 Nov to 1 Dec)
+### Epic 8: Bots and plain-language explanations (S3, no dates: only after Epic 7, if time is left)
 The user sees a market-maker Flag where it applies and a checked Explanation of at most 60 words.
 **FRs covered:** FR-22, FR-23, FR-24
 
