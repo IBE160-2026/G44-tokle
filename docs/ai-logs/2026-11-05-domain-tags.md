@@ -75,3 +75,38 @@ The source name `tag-rules` and the info tag "Labels: Polymarket tags" are also 
 Edvard writes his Domain definitions and labels the 50 Markets blind. The tag map comes after that, in Story 7.1.
 
 The AI's rough test map stays out of the repo until then, so it cannot steer his definitions. This was the AI's call and it departs slightly from "probes in spike": until the map is committed, `analyse` cannot be rerun from the repo alone.
+
+## 8. Later the same day: Edvard's definitions and hand labels
+
+> "ok i did the fifty by hand without looking at any tags. first my domain definitions [...] n here are my labels. 18 n 50 i wasnt sure about so i put other [...] put these into the hand label file n write my definitions down where they belong, commit it on the same branch as the tag work"
+
+The definitions and the labels are Edvard's own; the AI only put them into the files. Before committing, it asked three questions, because the labels are never edited afterwards:
+
+| Question | AI's recommendation | Edvard |
+|---|---|---|
+| His list said "unsure" for Market 50, but he wrote that he put "other" | other | other |
+| Write "and" where he typed "n", since the model's prompt quotes the definitions word for word | yes, spelling only | yes |
+| The plan asked each line to say where its overlap cases go; his lines cover two | commit as written, so the definitions still come before the labels | commit as written |
+
+The plan named no file for the definitions, so the AI chose `sample_data/hand_labels/domain-definitions.md`. The commit message says no labeller ran on the 50 and no tags were fetched for their events before it.
+
+Totals: politics 20, sports 13, other 12, crypto 4, macro 1. With only one macro Market, the 80% check says little about macro.
+
+## 9. Tags against Edvard's labels
+
+> "show me that test map n put it in the same PR, my labels are locked in now so it cant steer me anymore [...] then do the actual comparison, how often did the tags agree with my fifty n which ones did they get wrong. tell me in plain words, i want to know where it fails not just a percentage"
+
+The AI showed him the rough test map, committed it (`spike/tag_probe_map.json`) and added a `compare` step to `spike/tag_probe.py`. Tags for the 50 Markets were fetched only now, after his labels were committed (3 requests).
+
+**Result: 40 of 50 agree.** Here is where the 10 misses come from:
+
+| Cause | Markets | What happened |
+|---|---|---|
+| The map, not the tags | 6, 8, 27, 29 | Tariff and trade-deal Markets. The map put Tariffs and Trade War under macro; Edvard's definitions make them politics. |
+| The map, not the tags | 19 | One company's share price. The map put Stocks under macro; his definitions say other. |
+| A tag word with two meanings | 44 | A video game's review score, tagged "Games", which the map read as sports. |
+| His two unsure Markets | 18, 50 | An NHL award and an NFL scoring oddity. The tags say sports; he chose other. |
+| Real disagreement | 10 | Whether Trump says "Russia" or "Ukraine" 5+ times. The tags describe the topic (Geopolitics, Politics); he labelled the bet itself as other. |
+| Real disagreement | 11 | A drones Market tagged Culture and Ukraine, with no politics tag; he said politics. |
+
+**What this number is not.** It scores the AI's rough map, written before Edvard's definitions, not the tag rules. That 40 of 50 matches the 80% bar is a coincidence: the bar is for the language model. The AI has now seen the 50 with their tags, so a map written next could be fitted to them without anyone meaning to. As FR-19 already says, the tag rules are scored only on other Markets, and the 50 are never reported as their score.

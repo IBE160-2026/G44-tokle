@@ -1182,7 +1182,7 @@ So that the Domain table is trustworthy when a key is set.
 **Given** the 50 Markets in `sample_data/hand_labels/markets.csv` (drawn by `spike/hand_label_draw.py`: 5 per Sample Wallet, seeded, resolved Markets only)
 **When** Edvard labels them
 **Then** in one sitting he first writes a one-line definition of each Domain, saying where the overlap cases go (the AI suggests none), then labels blind: the file shows only each Market's question, with no tag-rule label, model label, category or tag field (Edvard, 2026-10-24)
-**And** the definitions and the labels are committed together before either labeller (tag rules or model) runs on these 50, and are never edited afterwards (FR-19, AD-16).
+**And** the definitions and the labels are committed together before either labeller (tag rules or model) runs on these 50, and are never edited afterwards (FR-19, AD-16); done 2026-11-05, with the definitions in `sample_data/hand_labels/domain-definitions.md`.
 
 **Given** a key in `.env`
 **When** a Market needs a Domain online

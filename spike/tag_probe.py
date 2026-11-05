@@ -1,15 +1,18 @@
 """Do Polymarket's event tags cover the Sample Wallets' Markets? (PRD FR-15, FR-19; spine AD-16; 2026-11-05)
 
-Read-only, public Gamma requests, no keys. Every step leaves out the events behind Edvard's 50 hand-label
-Markets (sample_data/hand_labels/markets.csv), so nothing here fetches or shows their tags (Edvard, 2026-11-05).
+Read-only, public Gamma requests, no keys. The first four steps leave out the events behind Edvard's 50
+hand-label Markets (sample_data/hand_labels/markets.csv), so they never fetch or show their tags (Edvard,
+2026-11-05). Only `compare` reads those, and it was first run after his labels were committed (f54d1b7).
 
   python spike/tag_probe.py endpoints   which Gamma routes return tags, on one event (5 requests)
   python spike/tag_probe.py draw        tags of a seeded 1,000 events, saved to raw/ (20 requests)
   python spike/tag_probe.py batch       tags on a 20-Market call, with and without include_tag (2 requests)
-  python spike/tag_probe.py analyse     coverage from the saved draw, using raw/tag_probe_map.json
+  python spike/tag_probe.py analyse     coverage from the saved draw, using tag_probe_map.json
+  python spike/tag_probe.py compare     the test map against Edvard's 50 hand labels (3 requests)
 
-The rough test map behind `analyse` stays out of the repo until Edvard's definitions and labels are committed,
-so it cannot steer them. It only sizes the problem: it is not the tag rules and was not checked for accuracy.
+tag_probe_map.json is the AI's rough test map, written on 2026-11-05 before Edvard's definitions, only to
+size the problem. It was kept out of the repo until his definitions and labels were committed, so it could
+not steer them. It is not the tag rules: those are written from his definitions and checked on other Markets.
 """
 import csv
 import json
@@ -25,7 +28,8 @@ HERE = Path(__file__).resolve().parent
 SAMPLE = HERE / "raw" / "sample"
 HAND_LABELS = HERE.parent / "sample_data" / "hand_labels" / "markets.csv"
 DRAW_FILE = HERE / "raw" / "tag_probe_draw.json"
-MAP_FILE = HERE / "raw" / "tag_probe_map.json"
+MAP_FILE = HERE / "tag_probe_map.json"
+HAND50_FILE = HERE / "raw" / "tag_probe_hand50.json"
 SEED, DRAW, BATCH = 20261105, 1000, 50
 
 
@@ -122,6 +126,34 @@ def analyse():
     print("economy-type events", len(economy), "also Politics", sum("Politics" in events[e]["tags"] for e in economy))
 
 
+def compare():
+    """The test map against Edvard's labels. Off the map counts as other (FR-15); more than one Domain is a miss."""
+    with HAND_LABELS.open(encoding="utf8") as f:
+        rows = list(csv.DictReader(f))
+    assert all(r["domain"] for r in rows), "the hand labels must be committed first"
+    if not HAND50_FILE.exists():
+        found = {}
+        for i in range(0, len(rows), 20):
+            _, data, _ = api.get(GAMMA, "/markets", [("condition_ids", r["condition_id"]) for r in rows[i:i + 20]]
+                                 + [("closed", "true"), ("limit", 100), ("include_tag", "true")])
+            for m in data:
+                found[m["conditionId"]] = labels(m.get("tags"))
+        HAND50_FILE.write_text(json.dumps(found), encoding="utf8")
+        print("requests", len(api.log))
+    tags = json.loads(HAND50_FILE.read_text(encoding="utf8"))
+    domains = {k: set(v) for k, v in json.loads(MAP_FILE.read_text(encoding="utf8"))["domains"].items()}
+    agree = 0
+    for r in rows:
+        t = tags.get(r["condition_id"])
+        hits = sorted(k for k, v in domains.items() if set(t or []) & v)
+        got = "no tags" if t is None else "other" if not hits else hits[0] if len(hits) == 1 else "+".join(hits)
+        if got == r["domain"]:
+            agree += 1
+        else:
+            print(f'{r["n"]:>2}  Edvard {r["domain"]:<8} map {got:<16} {r["question"][:70]}  {t}')
+    print(f"agree {agree} of {len(rows)}")
+
+
 if __name__ == "__main__":
     sys.stdout.reconfigure(encoding="utf8")
-    {"endpoints": endpoints, "draw": draw, "batch": batch, "analyse": analyse}[sys.argv[1]]()
+    {"endpoints": endpoints, "draw": draw, "batch": batch, "analyse": analyse, "compare": compare}[sys.argv[1]]()
