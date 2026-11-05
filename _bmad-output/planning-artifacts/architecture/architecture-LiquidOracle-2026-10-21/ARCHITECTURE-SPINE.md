@@ -7,7 +7,7 @@ paradigm: 'layered, functional core / imperative shell'
 scope: 'LiquidOracle v1, stages 1-3: the whole local app (FR-1 to FR-24, PRD s8)'
 status: final
 created: '2026-10-21'
-updated: '2026-10-24'
+updated: '2026-11-05'
 binds: [FR-1, FR-2, FR-3, FR-4, FR-5, FR-6, FR-7, FR-8, FR-9, FR-10, FR-11, FR-12, FR-13, FR-14, FR-15, FR-16, FR-17, FR-18, FR-19, FR-20, FR-21, FR-22, FR-23, FR-24]
 sources:
   - _bmad-output/planning-artifacts/prds/prd-LiquidOracle-2026-10-12/prd.md
@@ -325,7 +325,7 @@ Arrows are the only allowed imports. `core` imports only `records`, the standard
 | Domain names in code | The PRD Glossary terms: `Wallet`, `Market`, `Position`, `ResolvedPosition`, `SkillResult`, `Scan`, `Watchlist`, `CopySample`. Python `snake_case` for modules and functions. |
 | Identifiers | Wallet = proxy-wallet address, lower-case `0x…` (FR-1). Market = `condition_id` hex string. Outcome = `token_id` string. |
 | Time | UTC epoch seconds (`int`) everywhere inside the app. Gamma's ISO strings are converted in `data/`. The Cut-off Date is 00:00 UTC (AD-7). Dates are formatted only for display. |
-| Money | USD as `float`. Rounded to cents only for display. Tests compare to the cent (absolute tolerance 0.005). **Exception, the Skill Test's comparison:** each Position's win and loss amounts are rounded to whole cents once, and Real PnL and every Simulation sum those integers, so a Simulation equal to the Real PnL counts as a tie exactly. Float sums in different orders differ by tiny amounts and miss ties (found 2026-10-21: p ≈ 0.74 came out as 0.0002). A test: a Wallet whose bets all won at prices near 1 gets a p-value close to the product of its prices. (Edvard, 2026-10-23.) |
+| Money | USD as `float`. Rounded to cents only for display. Tests compare to the cent (absolute tolerance 0.005). **Exception, the Skill Test's comparison:** each Position's win and loss amounts are rounded to whole cents once, and the real result and every Simulation sum those integers, so a Simulation equal to the real result counts as a tie exactly. Float sums in different orders differ by tiny amounts and miss ties (found 2026-10-21: p ≈ 0.74 came out as 0.0002). A test: a Wallet whose bets all won at prices near 1 gets a p-value close to the product of its prices. (Edvard, 2026-10-23.) **Two sums (Edvard, 2026-11-05):** these integers are used only for that count. The Real PnL that is shown, stored and checked to the cent (FR-4) is the exact sum Σ s·(o − p) − Own Fees, because rounded amounts add up to an error (roughly 13 cents on 2,000 bets). Own Fees stay out of the integer comparison: they lower both sides equally, so they cannot change the p-value (FR-5). The chart's bins use the same Simulation totals with Own Fees taken off (PRD Glossary, Simulation). |
 | Errors | `data/` raises typed errors (`PolymarketUnavailable`, `PolymarketBadRequest`, `NotAvailableOffline`, `ModelUnavailable`). `services/` turns them into the messages in EXPERIENCE.md. Pages never show a raw exception. |
 | Job progress | `GET /jobs/<id>/progress` returns JSON `{status, phase, done, total, message}`. It is the only contract between the worker, the pages and `progress.js`. |
 | Settings | Read once into a frozen settings object and passed down, never read from the environment deep in the code. `.env.example` lists every key. |

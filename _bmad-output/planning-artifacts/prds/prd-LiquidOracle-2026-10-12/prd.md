@@ -2,7 +2,7 @@
 title: "PRD: LiquidOracle"
 status: final
 created: 2026-10-12
-updated: 2026-10-24
+updated: 2026-11-05
 ---
 
 # PRD: LiquidOracle
@@ -156,6 +156,7 @@ Each Skill Test runs with a Seed that is stored with the result.
 #### FR-8: Verdict card
 The page shows the Verdict, the number of Resolved Positions, Real PnL, and the p-value in plain words ("about 1 time in N").
 - N is 1 divided by the p-value, rounded to 2 significant figures: 0.0033 is shown as "about 1 time in 300", 0.0099 as "about 1 time in 100", 0.25 as "about 1 time in 4".
+- Below 10, N is rounded to a whole number, so the phrase never shows a decimal: 0.45 is shown as "about 1 time in 2", 0.27 as "about 1 time in 4", 0.11 as "about 1 time in 9". (Edvard, 2026-11-05.)
 - When no Simulation reached the Real PnL, the card says "fewer than 1 time in 10,000", never "about 1 time in 10,000": 10,000 Simulations cannot show a smaller chance than that.
 - When the p-value is above 0.5, the card says "more than half the time".
 - A p-value of 1/10,001 is shown as "fewer than 1 time in 10,000", and 0.0099 as "about 1 time in 100".

@@ -2,7 +2,7 @@
 name: LiquidOracle
 status: final
 created: 2026-10-16
-updated: 2026-10-24
+updated: 2026-11-05
 sources:
   - _bmad-output/planning-artifacts/prds/prd-LiquidOracle-2026-10-12/prd.md
 ---
@@ -67,7 +67,7 @@ Glossary terms are capitalised on screen as in the PRD's own texts: Wallet, Verd
 **Banned words** about a Wallet anywhere in the app, including Explanations (PRD §8, FR-24): "guaranteed", "insider", "will win". **Also avoided** about a Wallet: "copy this", "follow", "recommended", "winner", "best", "top" (except in the factual Scan definition "top Wallets by profit"), "safe", "proven", "sure thing", "beat the market", "genius", "smart money". The PRD's test names (Copy Test, Follower PnL, Follower Return) are allowed.
 
 **Number and phrase rules** (repeated from the PRD because they are what the user reads):
-- The odds phrase follows FR-8 exactly: "about 1 time in N" (N to 2 significant figures), "fewer than 1 time in 10,000", "more than half the time".
+- The odds phrase follows FR-8 exactly: "about 1 time in N" (N to 2 significant figures, and a whole number below 10, so never a decimal), "fewer than 1 time in 10,000", "more than half the time".
 - Money: `$12,340` and `−$1,240` (real minus sign), no colour for sign. Follower Return as a percentage with one decimal: `+4.2%`, `−1.8%`.
 - Counts in words and digits together where they matter: "48 of 60 positions held to resolution".
 - Copy p-value (FR-18): "random groups did as well in X% of draws", with X to one decimal under 10% and whole above ("0.4%", "23%"). When no random group scored as well: "no random group did as well in 10,000 draws" (FR-18, added 2026-10-16).

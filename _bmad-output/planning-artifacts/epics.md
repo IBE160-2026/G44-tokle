@@ -1,5 +1,5 @@
 ---
-stepsCompleted: [1, 2, 3]
+stepsCompleted: [1, 2, 3, 4]
 inputDocuments:
   - _bmad-output/planning-artifacts/prds/prd-LiquidOracle-2026-10-12/prd.md
   - _bmad-output/planning-artifacts/prds/prd-LiquidOracle-2026-10-12/addendum.md
@@ -18,9 +18,9 @@ This document provides the complete epic and story breakdown for LiquidOracle, d
 Requirement IDs are the PRD's own (FR-1 to FR-24; FR-15 keeps its old number and belongs to stage 3). Architecture rules keep their spine IDs (AD-1 to AD-25). Stage marks S1, S2, S3 follow PRD §6.1.
 
 **Timing and slipping rules** (Edvard, 2026-10-23 and 2026-10-24):
-- Build window: 2 November to 1 December 2026. **1 December is a hard stop for code**: after it, only fixes that make the README commands or the tests run, each logged, and nothing new. 1 to 15 December is for the reflection report (30% of the grade), the README check and repository tidying; the repositories lock on 15 December.
+- Build window: 5 November to 1 December 2026, moved from 2 November because no code had been started by then; nothing is built 14 to 16 November (Edvard, 2026-11-05). **1 December is a hard stop for code**: after it, only fixes that make the README commands or the tests run, each logged, and nothing new. 1 to 15 December is for the reflection report (30% of the grade), the README check and repository tidying; the repositories lock on 15 December.
 - Stage 1 must stand alone as a working app and never slips. If time runs short, work is cut from stage 3 first, never from stage 1.
-- Checkpoint 20 November: if stage 1 is not done by then, stage 3 is dropped entirely and the time goes to stages 1 and 2.
+- Checkpoint 20 November: if stage 1 is not done by then, stage 3 is dropped entirely and the time goes to stages 1 and 2. The targets below finish stage 1 on 23 November, so this rule applies unless stage 1 finishes early (2026-11-05).
 - Inside Epic 1, only the visual polish of Story 1.7 moves later (dark theme, hover states, responsive details), staying inside stage 1; Story 1.5 stays before 1.7 because the card needs its phrases, and Story 1.4's checks are never cut (Edvard, 2026-10-24, after the final validation).
 - Inside stage 3, Epic 8 slips before Epic 7. A partial stage 3 is fine; whatever is left out is stated in the README and logged with the reason. Because stage 3 can stop after any story, each stage 3 story ends with all tests passing and the README updated (NFR-12).
 - Edvard's five Domain definitions and 50 blind hand labels (Story 7.2's first step) are done early, in the Epic 1 week, and committed before any labeller runs on those Markets (Edvard, 2026-10-24).
@@ -38,7 +38,7 @@ Requirement IDs are the PRD's own (FR-1 to FR-24; FR-15 keeps its old number and
 - FR-5 (S1): Luck Distribution and p-value from 10,000 Simulations; p = (1 + #Simulations ≥ Real PnL) / 10,001. Checks: hand-check Wallet (10 at 0.50, all won) p in [0.0003, 0.002]; a fixed fee per Position lowers Real PnL by exactly the total fee and leaves p and Verdict unchanged; sharp trader (100 at 0.50, 70 won) p < 0.01; favourite buyer (100 at 0.90, 90 won) p ≥ 0.05; 1,000 coin-flippers: p < 0.05 for at most 7%, p < 0.01 for at most 2%.
 - FR-6 (S1): Verdict from thresholds: *Skilled (high confidence)* p < 0.01, *Likely skilled* p < 0.05, *No evidence of skill*, *Not enough data* below 30 Resolved Positions. Check: 29 gives *Not enough data* and no p-value; 30 gives a Verdict.
 - FR-7 (S1): Reproducibility. Each Skill Test runs with a stored Seed; same data and Seed give the identical p-value and Verdict.
-- FR-8 (S1): Verdict card shows the Verdict, Resolved Positions, Real PnL and the odds phrase: "about 1 time in N" (N = 1/p to 2 significant figures), "fewer than 1 time in 10,000" when no Simulation reached it (and for p = 1/10,001), "more than half the time" above 0.5.
+- FR-8 (S1): Verdict card shows the Verdict, Resolved Positions, Real PnL and the odds phrase: "about 1 time in N" (N = 1/p to 2 significant figures, a whole number below 10), "fewer than 1 time in 10,000" when no Simulation reached it (and for p = 1/10,001), "more than half the time" above 0.5.
 - FR-9 (S1): Luck chart. Histogram of the Luck Distribution in dollars with the Real PnL marked; the axis always includes the Real PnL; beyond every Simulation the marker reads "above all 10,000 Simulations" (or "below …"). Check: a planted Real PnL above the largest Simulation.
 - FR-10 (S1): Too little data. *Not enough data* shows the count and how many more are needed; no chart.
 - FR-11 (S1): Honesty notes on every Verdict card: share of Real PnL from the largest Position; N of M held to resolution and Exit PnL; a warning when Exit PnL < 0; the 2,000-window line ("latest 2,000" / "first 2,000"; Watchlist: both windows); left-out counts per reason and the >10% `[ASSUMPTION]` sentence; fees that failed the schedule check with their total; the >20% `[ASSUMPTION]` undetected-links note; the Seed; the fixed limits note and "not financial advice". Check: the stop-loss Synthetic Wallet shows the warning; Exit PnL ≥ 0 or no sales shows none.
@@ -199,35 +199,35 @@ Stage marks as in EXPERIENCE.md. A page or element of a later stage is absent un
 
 ## Epic List
 
-### Epic 1: Check a synthetic Wallet offline (S1, target 2 to 7 Nov)
+### Epic 1: Check a synthetic Wallet offline (S1, target 5 to 10 Nov)
 The examiner clones the repository, runs the three README commands, picks a Synthetic Wallet in Offline Mode and sees a correct Verdict card; the tests pass in CI on Windows, macOS and Linux. The Skill Test, the riskiest part, is built and proven first, on Wallets with known answers.
 **FRs covered:** FR-1 (form and checks), FR-3 (basic), FR-4 (synthetic), FR-5, FR-6, FR-7, FR-8, FR-10, FR-12 (synthetic part), FR-13 (S1 types), FR-14
 
-### Epic 2: Check a real Wallet (S1, target 8 to 13 Nov)
+### Epic 2: Check a real Wallet (S1, target 11 to 13 and 17 to 19 Nov)
 The user pastes any Polymarket address and gets a Verdict from live data; a second lookup is instant, outages are handled, and the 10 real Sample Wallets work offline.
 **FRs covered:** FR-1 (no history), FR-2, FR-3 (all exclusions), FR-4 (hand calculations), FR-12 (real Wallets)
 
-### Epic 3: A Verdict you can trust (S1, target 14 to 17 Nov)
+### Epic 3: A Verdict you can trust (S1, target 20 to 23 Nov)
 The user sees the luck chart with the Wallet's marker and its text alternative, and the honesty notes; the page works by keyboard and screen reader, in both themes and at any width. Stage 1 is done: all tests pass and the README is updated.
 **FRs covered:** FR-9, FR-11
 
-### Epic 4: Scan for skilled Wallets (S2, target 18 to 21 Nov)
+### Epic 4: Scan for skilled Wallets (S2, target 24 to 26 Nov)
 The user chooses a Cut-off Date, runs a Scan that can be left, interrupted and resumed, and sees the Watchlist with the Minimum Luck Passes and the population tested.
 **FRs covered:** FR-16, FR-13 (S2 types)
 
-### Epic 5: Does the skill last? Hold-up Test (S2, target 22 to 23 Nov)
+### Epic 5: Does the skill last? Hold-up Test (S2, target 27 to 28 Nov)
 The user compares the Before-Cut-off Passers with the Comparison Group on the bets after the Cut-off Date.
 **FRs covered:** FR-17
 
-### Epic 6: Could a late follower have profited? Copy Test (S2, target 24 to 27 Nov)
+### Epic 6: Could a late follower have profited? Copy Test (S2, target 29 Nov to 1 Dec)
 The user sees Follower PnL and Follower Return at 1, 5 and 30 minutes and the Random Group Check; a Hold-up Test and Copy Test on real data are run and reported (SM-5). Stage 2 is done.
 **FRs covered:** FR-18
 
-### Epic 7: Where is the edge? Domain Verdicts (S3, target 28 to 30 Nov)
+### Epic 7: Where is the edge? Domain Verdicts (S3, no dates: only if stage 1 finishes by 20 Nov and time is left)
 The user sees a Domain table on the Verdict page, with or without a model key.
 **FRs covered:** FR-15, FR-19, FR-20, FR-21
 
-### Epic 8: Bots and plain-language explanations (S3, target 30 Nov to 1 Dec)
+### Epic 8: Bots and plain-language explanations (S3, no dates: only after Epic 7, if time is left)
 The user sees a market-maker Flag where it applies and a checked Explanation of at most 60 words.
 **FRs covered:** FR-22, FR-23, FR-24
 
@@ -345,7 +345,8 @@ So that the Verdict says how often a trader with no edge would do as well.
 **When** the Skill Test runs
 **Then** Real PnL = Σ s · (o − p) − Own Fees (FR-4), equal to the Synthetic Wallets' hand values to the cent
 **And** each of 10,000 Simulations draws one uniform U per Market, shared by every Position in that Market (one side wins when U < p, the other when U > 1 − p), so each Position wins with probability equal to its Entry Price (AD-20)
-**And** win and loss amounts are rounded to whole cents once, and Real PnL and every Simulation sum those integers, so p = (1 + number of Simulations ≥ Real PnL) / 10,001 counts ties exactly (FR-5; Conventions › Money, P-3).
+**And** for the p-value only, win and loss amounts are rounded to whole cents once, with Own Fees left out, and the real result and every Simulation sum those integers, so p = (1 + number of Simulations ≥ the real result) / 10,001 counts ties exactly (FR-5; Conventions › Money, P-3)
+**And** the Real PnL shown and stored is the exact sum, never the rounded one, and a test on a Wallet with many small fractional amounts shows the two differ while the exact one matches its hand value to the cent (FR-4; Edvard, 2026-11-05).
 
 **Given** the Story 1.3 fixtures
 **When** the checks run
@@ -384,7 +385,7 @@ So that the card, the chart and later the Explanation never disagree.
 
 **Given** `core/phrases.py` (AD-25)
 **When** a p-value is phrased
-**Then** it gives "about 1 time in N" with N = 1/p to 2 significant figures (0.0033 gives "about 1 time in 300", 0.0099 "about 1 time in 100", 0.25 "about 1 time in 4"), "fewer than 1 time in 10,000" when no Simulation reached the Real PnL and for 1/10,001, and "more than half the time" above 0.5 (FR-8)
+**Then** it gives "about 1 time in N" with N = 1/p to 2 significant figures and a whole number below 10, so never a decimal (0.0033 gives "about 1 time in 300", 0.0099 "about 1 time in 100", 0.25 "about 1 time in 4", 0.45 "about 1 time in 2", 0.11 "about 1 time in 9"), "fewer than 1 time in 10,000" when no Simulation reached the Real PnL and for 1/10,001, and "more than half the time" above 0.5 (FR-8)
 **And** money is written `$12,340` and `−$1,240` with a real minus sign (UX-DR14)
 **And** the *Not enough data* sentence reads "12 resolved bets; at least 30 are needed for a Verdict (18 more)" (FR-10).
 
