@@ -2,7 +2,7 @@
 title: "Product Brief: LiquidOracle"
 status: final
 created: 2026-09-16
-updated: 2026-10-21
+updated: 2026-11-05
 ---
 
 # Product Brief: LiquidOracle
@@ -46,6 +46,9 @@ updated: 2026-10-21
 >
 > **Revision 2026-10-21 (8)**, after the architecture review (`architecture/architecture-LiquidOracle-2026-10-21/`, AD-20):
 > - Method step 5: bets that depend on the same result now share one random draw. Drawing each position on its own counted linked bets as separate evidence: 7 wallets betting the same side of the same 40 markets were treated as 280 coin flips, which turned a p-value of about 0.04 into one below 0.0001. Each position still comes true with probability *p*, so the hand-checkable cases are unchanged.
+>
+> **Revision 2026-11-05 (9)**, the student's decision after a check of Polymarket's data (`docs/ai-logs/2026-11-05-domain-tags.md`):
+> - The mock language model labels domains from Polymarket's own event tags instead of keywords in the question. The language model stays the main labeller.
 
 ## Executive Summary
 
@@ -148,7 +151,7 @@ The examiner must be able to run the app from the README without our API keys an
 
 - **Sample data**: about 10 real wallets (fetched once, a mix of verdicts) plus all synthetic wallets, saved as files in the repository.
 - **Offline mode**: one setting makes the app read only the saved data, with no network calls.
-- **Mock language model**: a mode that classifies markets by keywords ("election" → politics, "bitcoin" → crypto) and fills explanation templates, so no key is needed.
+- **Mock language model**: a mode that classifies markets by mapping Polymarket's own event tags onto the domains and fills explanation templates, so no key is needed.
 - **Cost control**: each market is classified once and the label is stored, so the language model is never asked about the same market twice.
 - **Secrets**: the language model key lives in `.env`, which is never committed; the repository has an `.env.example`.
 

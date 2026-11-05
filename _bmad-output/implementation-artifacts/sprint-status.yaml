@@ -87,7 +87,7 @@ development_status:
   epic-6-retrospective: optional
 
   epic-7: backlog
-  7-1-domain-verdicts-with-keyword-labels: backlog
+  7-1-domain-verdicts-with-tag-labels: backlog
   7-2-model-labels-with-the-80-gate: backlog
   epic-7-retrospective: optional
 

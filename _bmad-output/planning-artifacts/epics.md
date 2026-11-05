@@ -54,8 +54,8 @@ Requirement IDs are the PRD's own (FR-1 to FR-24; FR-15 keeps its old number and
 
 **Stage 3: Domains, Flags, Explanations**
 
-- FR-15 (S3): Mock LLM Mode. One setting replaces the model with keyword rules and templates; on by default without a key; FR-19 and FR-23 tests pass without a key.
-- FR-19 (S3): Classify Markets into politics, sports, crypto, macro, other. Each Market classified once, stored with source and date, reused; re-classifying is deliberate. 50 hand labels committed before any model output, never edited; ≥ 80% agreement `[ASSUMPTION]` for the model (if Haiku 5.5 misses, a larger model is tried and both reported); keyword rules checked on other Markets.
+- FR-15 (S3): Mock LLM Mode. One setting replaces the model with tag rules (a fixed map from Polymarket's event tags to Domains) and templates; on by default without a key; FR-19 and FR-23 tests pass without a key.
+- FR-19 (S3): Classify Markets into politics, sports, crypto, macro, other. Each Market classified once, stored with source and date, reused; re-classifying is deliberate. 50 hand labels committed before any model output, never edited; ≥ 80% agreement `[ASSUMPTION]` for the model (if Haiku 5.5 misses, a larger model is tried and both reported); tag rules checked on other Markets.
 - FR-20 (S3): Domain Verdicts. Skill Test per Domain with ≥ 30 Resolved Positions, Bonferroni-corrected (× number of Domains tested, capped at 1). Split-domain Synthetic Wallet: crypto *Skilled (high confidence)*, sports *No evidence of skill*.
 - FR-21 (S3): Domain table on the Verdict page: Domain, Resolved Positions, Domain Verdict.
 - FR-22 (S3): Bot and market-maker Flag when at least 2 of 3 rules hold (both outcomes in ≥ 30% of Markets; sold ≥ 80% of shares bought; median buy-to-sell under 1 hour) `[ASSUMPTION]`; shown as "Likely market maker (heuristic, may be wrong)", never changes the Verdict. Synthetic market maker flagged; coin-flipper and sharp trader not.
@@ -516,7 +516,8 @@ So that the Verdict never rests on a half-finished fetch or on bets from the wro
 
 **Given** the window's Markets
 **When** their data is fetched
-**Then** Gamma is asked for 20 Markets per request, and resolution, resolution time (`closedTime`, never `last_event_at`), outcomes, fee schedule and start date come only from Gamma (AD-7, AD-10)
+**Then** Gamma is asked for 20 Markets per request with `include_tag=true`, and resolution, resolution time (`closedTime`, never `last_event_at`), outcomes, fee schedule, start date and event tags come only from Gamma (AD-7, AD-10; tags used from Story 7.1; AI's proposal, Edvard confirmed, 2026-11-05)
+**And** this read is not run on the Sample Wallets until Edvard's definitions and labels are committed, because it would fetch tags for the events behind his 50 hand-label Markets (FR-19; Edvard's rule, 2026-11-05)
 **And** records of resolved Markets and their fee schedules never expire once stored; records of open Markets expire with the Wallet lists (AD-4).
 
 **Given** the window
@@ -1136,7 +1137,7 @@ So that I can judge the method on reality, not only on made-up Wallets.
 
 The user sees a Domain table on the Verdict page, with or without a model key. Stage 3 is likely to be partial, so its stories are ordered so that stopping after any one still leaves something that works and can be demoed, and no story only makes sense once a later one lands (Edvard, 2026-10-24).
 
-### Story 7.1: Domain Verdicts with keyword labels
+### Story 7.1: Domain Verdicts with tag labels
 
 As a user,
 I want to see in which Domains a Wallet's edge is, even without a model key,
@@ -1146,8 +1147,13 @@ So that "skilled" is not one blended number.
 
 **Given** Mock LLM Mode for Domains (on by default with no key, or `--mock-llm`)
 **When** a Market needs a Domain
-**Then** `TemplateModel`'s keyword rules assign one of politics, sports, crypto, macro, other, aiming at Edvard's Domain definitions once they are committed; the label is stored with source `keyword-rules` and its date, keyed by (Market, source), and reused (FR-15, FR-19, AD-16)
-**And** the keyword rules are checked on a small set of Markets kept apart from the 50 hand-labelled ones, and they are never run on those 50 before Edvard's labels are committed (FR-19).
+**Then** `TemplateModel`'s tag rules map the event tags on the stored Market record to exactly one of politics, sports, crypto, macro, other, written from Edvard's committed Domain definitions, with a Market whose tags are all off the map going to *Other*; the label is stored with source `tag-rules` and its date, keyed by (Market, source), and reused (FR-15, FR-19, AD-16; tag rules: Edvard, 2026-11-05; one Domain per Market and the *Other* rule: AI's proposal, Edvard confirmed)
+**And** the tag rules are checked on a small set of Markets kept apart from the 50 hand-labelled ones, and they are never run on those 50 before Edvard's labels are committed (FR-19).
+
+**Given** the raw capture, which holds no tags
+**When** the Sample Dataset is rebuilt for Domains
+**Then** a one-off script reads the Sample Wallets' event tags once from Gamma and saves them next to the capture zip with their own SHA-256 file, and the build-sample script from Story 2.6 is extended to add them to the Market records, with nothing edited by hand (AD-14; AI's proposal, Edvard confirmed, 2026-11-05)
+**And** the script leaves out the events behind the 50 hand-label Markets, and adds them only once Edvard's definitions and labels are committed (FR-19; Edvard, 2026-11-05).
 
 **Given** a Wallet's tested Positions
 **When** the Domain Verdicts run
@@ -1160,10 +1166,10 @@ So that "skilled" is not one blended number.
 
 **Given** the Verdict page
 **When** a Wallet has Domain results
-**Then** after the honesty notes the Domain table shows Domain, Resolved bets and a Domain Verdict pill per row, the note "Each Domain's odds are adjusted for testing several Domains.", and the tag "Labels: keyword rules" (FR-21, UX-DR40, AD-13)
-**And** in Offline Mode the table uses the stored keyword labels only and never calls a model (FR-14; Edvard, 2026-10-24).
+**Then** after the honesty notes the Domain table shows Domain, Resolved bets and a Domain Verdict pill per row, the note "Each Domain's odds are adjusted for testing several Domains.", and the tag "Labels: Polymarket tags" (FR-21, UX-DR40, AD-13)
+**And** in Offline Mode the table uses the stored tag labels only and never calls a model (FR-14; Edvard, 2026-10-24).
 
-**If stage 3 stops here:** the Domain table works fully online and offline with keyword labels, and the split-domain check passes.
+**If stage 3 stops here:** the Domain table works fully online and offline with tag labels, and the split-domain check passes.
 
 ### Story 7.2: Model labels with the 80% gate
 
@@ -1175,8 +1181,8 @@ So that the Domain table is trustworthy when a key is set.
 
 **Given** the 50 Markets in `sample_data/hand_labels/markets.csv` (drawn by `spike/hand_label_draw.py`: 5 per Sample Wallet, seeded, resolved Markets only)
 **When** Edvard labels them
-**Then** in one sitting he first writes a one-line definition of each Domain, saying where the overlap cases go (the AI suggests none), then labels blind: the file shows only each Market's question, with no keyword label, model label or category field (Edvard, 2026-10-24)
-**And** the definitions and the labels are committed together before either labeller (keyword rules or model) runs on these 50, and are never edited afterwards (FR-19, AD-16).
+**Then** in one sitting he first writes a one-line definition of each Domain, saying where the overlap cases go (the AI suggests none), then labels blind: the file shows only each Market's question, with no tag-rule label, model label, category or tag field (Edvard, 2026-10-24)
+**And** the definitions and the labels are committed together before either labeller (tag rules or model) runs on these 50, and are never edited afterwards (FR-19, AD-16).
 
 **Given** a key in `.env`
 **When** a Market needs a Domain online
@@ -1190,7 +1196,7 @@ So that the Domain table is trustworthy when a key is set.
 
 **Given** the Verdict page online with model labels
 **When** the Domain table renders
-**Then** its tag reads "Labels: Claude Haiku 5.5" (or the model actually used); if the model does not answer, the table is replaced by "Domains are not available: the language model did not answer." (UX-DR40); with no key, Story 7.1's keyword labels are used and tagged as such.
+**Then** its tag reads "Labels: Claude Haiku 5.5" (or the model actually used); if the model does not answer, the table is replaced by "Domains are not available: the language model did not answer." (UX-DR40); with no key, Story 7.1's tag labels are used and tagged as such.
 
 **If stage 3 stops here:** the same table with model labels and a measured agreement rate; without a key it falls back to Story 7.1.
 

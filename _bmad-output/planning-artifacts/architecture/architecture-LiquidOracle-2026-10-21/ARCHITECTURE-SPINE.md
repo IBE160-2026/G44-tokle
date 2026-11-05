@@ -155,7 +155,7 @@ Arrows are the only allowed imports. `core` imports only `records`, the standard
 | Which Positions exist, Entry Price, shares bought | positions lists (`/v2/positions`, CLOSED and OPEN) |
 | Shares held at resolution | activity rows: Σ buys − Σ sells per token. REDEEM rows are never a share source |
 | First-buy time, Own Fees, splits, merges, conversions, sells, buy-to-sell times (FR-22) | activity rows (`/v2/activity`, types TRADE, REDEEM, SPLIT, MERGE, CONVERSION, `start` sent explicitly, `limit` always sent; `is_combo` rows dropped) |
-| Resolution, resolution time, fee schedule, outcomes, Market start date | Gamma Market data |
+| Resolution, resolution time, fee schedule, outcomes, Market start date, event tags (`include_tag=true`) | Gamma Market data |
 | Copy Test prices | price history (AD-24) |
 | Exit PnL; Copy Test fills (each buy fill is copied at its own time + Copy Delay, and Follower PnL sums over fills) | activity rows |
 
@@ -224,12 +224,12 @@ Arrows are the only allowed imports. `core` imports only `records`, the standard
 ### AD-16 — The language model sits behind one interface; labels are stored, never silently redone [ADOPTED]
 
 - **Binds:** FR-15, FR-19, FR-20, FR-23, FR-24
-- **Prevents:** reruns giving different labels (Haiku 5.5 rejects `temperature 0`); keyword labels and model labels mixing; a test that tunes itself to its labels.
+- **Prevents:** reruns giving different labels (Haiku 5.5 rejects `temperature 0`); tag-rule labels and model labels mixing; a test that tunes itself to its labels.
 - **Rule:**
   - **Interface.** `data/model.py` has one interface (classify a Market, write an Explanation), implemented by `AnthropicModel` and `TemplateModel`.
   - **Model.** The setting `LLM_MODEL`, default `claude-haiku-5-5`, pinned as written, with `effort` set to `low` and stored with the model ID.
-  - **Labels.** Structured outputs limited to the fixed Domain list. Labels are compared case-insensitively and stored under the canonical name, keyed by (Market, source), where the source is a model ID or `keyword-rules`. They are reused, and classifying again is an explicit action.
-  - **The gate.** The FR-19 hand labels are made blind (Edvard sees only the 50 questions: no keyword label, model label or category field) and committed before either labeller runs on those 50, and never edited (Edvard, 2026-10-24). The 80% check applies to a real model: if it fails, the model setting is raised and the check re-run, and both results are logged. Keyword rules are checked on other Markets than the 50 hand-labelled ones.
+  - **Labels.** Structured outputs limited to the fixed Domain list. Labels are compared case-insensitively and stored under the canonical name, keyed by (Market, source), where the source is a model ID or `tag-rules`. They are reused, and classifying again is an explicit action. `TemplateModel` labels from the event tags on the stored Market record, so it makes no request of its own (AI's proposal, Edvard confirmed, 2026-11-05).
+  - **The gate.** The FR-19 hand labels are made blind (Edvard sees only the 50 questions: no tag-rule label, model label, category or tag field) and committed before either labeller runs on those 50, and never edited (Edvard, 2026-10-24). The 80% check applies to a real model: if it fails, the model setting is raised and the check re-run, and both results are logged. Tag rules are written from Edvard's committed Domain definitions and checked on other Markets than the 50 hand-labelled ones. No tag is read for the events behind those 50 until his definitions and labels are committed (Edvard, 2026-11-05).
   - **The FR-24 check** runs in `services` on every Explanation from either implementation.
 
 ### AD-17 — Tests run network-blocked, and CI proves the README [ADOPTED]
@@ -431,5 +431,5 @@ erDiagram
 | A Market-anchored read with `sort_by=TIMESTAMP` | The probes used the default sort; the first data story checks one. |
 | `/v2/resolutions` as a fallback for Gamma resolution times | Not yet compared with Gamma; only needed if Gamma fails. |
 | Size gaps on v2 | Re-measured while building the Sample Dataset (AD-11). |
-| Keyword rules and templates for Mock LLM Mode | Story-level content within AD-16. |
+| Tag rules and templates for Mock LLM Mode | Story-level content within AD-16. |
 | Hosting, accounts, login | Out of scope (PRD s5, s8). |
