@@ -7,7 +7,7 @@
 - [ ] 2026-11-05 [sprint-planning](998-2026-11-05-02-15-33-sprint-planning.md) — decide which part of the largest Wallets goes in the committed Sample Dataset, 152 to 362 MB raw against the 25 MB limit (Story 2.6)
 - [ ] 2026-11-05 [sprint-planning](998-2026-11-05-02-15-33-sprint-planning.md) — set values for `ACTIVITY_ROW_CAP` and `MARKET_ROW_CAP` (Stories 2.2 and 4.2)
 - [ ] 2026-11-05 [sprint-planning](998-2026-11-05-02-15-33-sprint-planning.md) — fix small plan mismatches: UX-DR7's Scan URLs vs `EXPERIENCE.md`; settled items still listed in the spine's Deferred table and in `EXPERIENCE.md`
-- [ ] 2026-11-05 [sprint-planning](998-2026-11-05-02-15-33-sprint-planning.md) — uv 0.12.15 installed locally vs 0.13.4 pinned in the spine; settle in Story 1.1
+- [x] 2026-11-05 [sprint-planning](998-2026-11-05-02-15-33-sprint-planning.md) — uv 0.12.15 installed locally vs 0.13.4 pinned in the spine; settle in Story 1.1 (løst 2026-11-11: 0.13.4)
 - [ ] 2026-11-05 [sprint-planning](998-2026-11-05-02-15-33-sprint-planning.md) — stage 1 has no spare time in the new dates; if it finishes by 20 November, stage 3 is back in play
 - [x] 2026-11-05 [domain-tags](997-2026-11-05-03-52-00-domain-tags.md) — Edvard confirms or changes the AI's additions: one Domain per Market, the Other rule, tags read from the stored record, `include_tag=true` from Epic 2, the one-off tag fetch for the Sample Dataset (løst 2026-11-05)
 - [ ] 2026-11-05 [domain-tags](997-2026-11-05-03-52-00-domain-tags.md) — write the tag map from Edvard's committed definitions and check it on Markets outside the 50 (Story 7.1)
@@ -15,3 +15,5 @@
 - [x] 2026-11-05 [domain-tags](997-2026-11-05-03-52-00-domain-tags.md) — after Edvard's definitions and labels are committed, commit the rough test map (`spike/raw/tag_probe_map.json`), so `spike/tag_probe.py analyse` can be rerun from the repo (løst 2026-11-05)
 - [ ] 2026-11-05 [domain-tags](997-2026-11-05-03-52-00-domain-tags.md) — only one macro Market among the 50 hand labels, so the 80% check says little about macro (Story 7.2)
 - [ ] 2026-11-05 [domain-tags](997-2026-11-05-03-52-00-domain-tags.md) — score the tag rules only on Markets outside the 50 and never report the 50 as their score; the AI has seen the 50 with their tags (Story 7.1)
+- [ ] 2026-11-11 [story-1-1-project-skeleton](996-2026-11-11-17-13-50-story-1-1-project-skeleton.md) — first CI run on GitHub: check all six test jobs run and pass in the course organisation (Story 1.1)
+- [ ] 2026-11-11 [story-1-1-project-skeleton](996-2026-11-11-17-13-50-story-1-1-project-skeleton.md) — set Story 1.1 to `done` in `sprint-status.yaml` when its PR is merged
