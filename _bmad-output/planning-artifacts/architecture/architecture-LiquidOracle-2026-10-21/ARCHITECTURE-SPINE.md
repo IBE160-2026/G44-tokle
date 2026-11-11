@@ -7,7 +7,7 @@ paradigm: 'layered, functional core / imperative shell'
 scope: 'LiquidOracle v1, stages 1-3: the whole local app (FR-1 to FR-24, PRD s8)'
 status: final
 created: '2026-10-21'
-updated: '2026-11-05'
+updated: '2026-11-11'
 binds: [FR-1, FR-2, FR-3, FR-4, FR-5, FR-6, FR-7, FR-8, FR-9, FR-10, FR-11, FR-12, FR-13, FR-14, FR-15, FR-16, FR-17, FR-18, FR-19, FR-20, FR-21, FR-22, FR-23, FR-24]
 sources:
   - _bmad-output/planning-artifacts/prds/prd-LiquidOracle-2026-10-12/prd.md
@@ -152,7 +152,8 @@ Arrows are the only allowed imports. `core` imports only `records`, the standard
 
 | Number | Only source |
 | --- | --- |
-| Which Positions exist, Entry Price, shares bought | positions lists (`/v2/positions`, CLOSED and OPEN) |
+| Which Positions exist, shares bought | positions lists (`/v2/positions`, CLOSED and OPEN) |
+| Entry Price | activity rows: the share-weighted average of the Position's BUY fills. Never the positions list's `avg_price`, which moves when the Wallet sells (0x736483: 986 of 1,388 sold Positions differ; all 1,459 without sells match). (Edvard, 2026-11-11, Story 1.2.) |
 | Shares held at resolution | activity rows: Σ buys − Σ sells per token. REDEEM rows are never a share source |
 | First-buy time, Own Fees, splits, merges, conversions, sells, buy-to-sell times (FR-22) | activity rows (`/v2/activity`, types TRADE, REDEEM, SPLIT, MERGE, CONVERSION, `start` sent explicitly, `limit` always sent; `is_combo` rows dropped) |
 | Resolution, resolution time, fee schedule, outcomes, Market start date, event tags (`include_tag=true`) | Gamma Market data |
@@ -173,6 +174,7 @@ Arrows are the only allowed imports. `core` imports only `records`, the standard
     - unread, because the Wallet's read was capped or refused (AD-7, AD-9);
     - one whose share gap between positions list and activity is above 1% `[ASSUMPTION]` (the gap's size is stored, so the line can move without refetching);
     - in a Market with unclear resolution (AD-7).
+  - **Slivers are not exclusions.** A Position with less than 1% `[ASSUMPTION]` of its bought shares and fewer than 1 share held at resolution is a Sliver (PRD Glossary): `core/positions` returns it apart from the tested Positions, its money stays in Real PnL and every Simulation, and it is in neither the tested count nor any left-out count. Shares are compared after rounding to 6 decimals, Polymarket's share precision. (Edvard, 2026-11-11, Story 1.2.)
   - **Both sides.** The same rules apply before and after the cut-off.
   - **Thresholds.** The 30 minimum, Minimum After-bets, the Copy Pool and the 10% rule all use the tested count.
   - **The note.** When more than 10% `[ASSUMPTION]` of the Positions in the window are left out, for any of these reasons together, the Verdict says plainly that only part of the Wallet's activity was judged.

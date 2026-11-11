@@ -16,4 +16,7 @@
 - [ ] 2026-11-05 [domain-tags](997-2026-11-05-03-52-00-domain-tags.md) — only one macro Market among the 50 hand labels, so the 80% check says little about macro (Story 7.2)
 - [ ] 2026-11-05 [domain-tags](997-2026-11-05-03-52-00-domain-tags.md) — score the tag rules only on Markets outside the 50 and never report the 50 as their score; the AI has seen the 50 with their tags (Story 7.1)
 - [x] 2026-11-11 [story-1-1-project-skeleton](996-2026-11-11-17-13-50-story-1-1-project-skeleton.md) — first CI run on GitHub: check all six test jobs run and pass in the course organisation (Story 1.1) (løst 2026-11-11: run 43059858266, 6 av 6 grønne)
-- [ ] 2026-11-11 [story-1-1-project-skeleton](996-2026-11-11-17-13-50-story-1-1-project-skeleton.md) — set Story 1.1 to `done` in `sprint-status.yaml` when its PR is merged
+- [x] 2026-11-11 [story-1-1-project-skeleton](996-2026-11-11-17-13-50-story-1-1-project-skeleton.md) — set Story 1.1 to `done` in `sprint-status.yaml` when its PR is merged (løst 2026-11-11: fd0e826)
+- [ ] 2026-11-11 [story-1-2-positions-from-fills](995-2026-11-11-19-43-35-story-1-2-positions-from-fills.md) — Story 2.7: the 0x29306d hand calculation follows the Sliver rule (18 tested + 3 Slivers whose money counts + 2 sold = the 23 in the story)
+- [ ] 2026-11-11 [story-1-2-positions-from-fills](995-2026-11-11-19-43-35-story-1-2-positions-from-fills.md) — Story 2.3: count tokens that sell before they buy (running balance below zero) on the Sample Wallets; if any, an AD-11 rule change goes to Edvard
+- [ ] 2026-11-11 [story-1-2-positions-from-fills](995-2026-11-11-19-43-35-story-1-2-positions-from-fills.md) — Story 1.7: decide whether split-or-merged Positions count in the Exit PnL total and whether sell fees count
