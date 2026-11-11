@@ -2,7 +2,7 @@
 title: "PRD: LiquidOracle"
 status: final
 created: 2026-10-12
-updated: 2026-11-05
+updated: 2026-11-11
 ---
 
 # PRD: LiquidOracle
@@ -56,14 +56,15 @@ v1 is built in three stages, each a working app: (1) a verdict for the whole wal
 - **Wallet**: a Polymarket account, identified by its public address.
 - **Market**: one Polymarket question (e.g. "Will X win the election?"). Has one or more outcomes and, once settled, a resolution.
 - **Position**: all of one Wallet's buys of one outcome in one Market, combined. One Position = one bet, however many fills it was bought in.
-- **Resolved Position**: a Position still held when its Market resolved. Only Resolved Positions enter the Skill Test.
-- **Entry Price** (*p*): the average price paid per share of a Position, between 0 and 1. Read as the market's probability for that outcome.
+- **Resolved Position**: a Position still held when its Market resolved. Only Resolved Positions enter the Skill Test. A Sliver is not counted as one.
+- **Sliver**: a Position with less than 1% `[ASSUMPTION]` of its bought shares, and fewer than 1 share, still held when its Market resolved (most traders who "sell everything" keep such a remainder). Its money counts in Real PnL and in every Simulation, but it is not counted as a bet: not in the number of Resolved Positions, the 30 minimum, the held count (N of M) or the left-out counts. The 1-share limit means it can pay at most $1; it never depends on whether the bet won, so it cannot favour winners. (Edvard, 2026-11-11.)
+- **Entry Price** (*p*): the average price paid per share of a Position, between 0 and 1: the share-weighted average of its buy fills, which sells do not change (Polymarket's own average moves on sells; Edvard, 2026-11-11). Read as the market's probability for that outcome.
 - **Shares** (*s*): the number of shares held in a Position at resolution.
 - **Outcome** (*o*): 1 if the Position's outcome happened, 0 if not.
 - **Own Fees**: the taker fees a Wallet paid on the buys of a Position, as Polymarket recorded them; 0 in Markets that charge no fee and on fills where the Wallet was the maker. Read from the Wallet's activity rows (cash paid − shares × price) in Markets that charge fees, and checked against that Market's own fee schedule. A fee that fails the check is not counted (it counts as 0) and is shown on the Verdict card (FR-11). (Architecture, 2026-10-21.)
-- **Real PnL**: Σ *s* · (*o* − *p*) over a Wallet's Resolved Positions, minus the Own Fees on those Positions. The profit the Wallet actually kept.
+- **Real PnL**: Σ *s* · (*o* − *p*) over a Wallet's Resolved Positions and Slivers, minus the Own Fees on those Positions. The profit the Wallet actually kept.
 - **Exit PnL**: the PnL realised on shares a Wallet sold before resolution: Σ (shares sold) · (sell price − *p*). Shown, never part of the Skill Test.
-- **Simulation**: one replay of a Wallet's Resolved Positions in which each Outcome is drawn at random, coming true with probability equal to its Entry Price. Bets that depend on the same result share one random draw: all Positions in one Market (also across Wallets, in the Hold-up Test), the Markets of one negative-risk event (only one can win), and a detectable ladder (same underlying, same resolution date). Each Position still comes true with probability equal to its Entry Price; what changes is that linked bets win and lose together, as they do in reality, instead of counting as separate evidence. The Own Fees are charged in every Simulation exactly as in the real result, so they lower both by the same amount and the p-value does not change.
+- **Simulation**: one replay of a Wallet's Resolved Positions and Slivers in which each Outcome is drawn at random, coming true with probability equal to its Entry Price. Bets that depend on the same result share one random draw: all Positions in one Market (also across Wallets, in the Hold-up Test), the Markets of one negative-risk event (only one can win), and a detectable ladder (same underlying, same resolution date). Each Position still comes true with probability equal to its Entry Price; what changes is that linked bets win and lose together, as they do in reality, instead of counting as separate evidence. The Own Fees are charged in every Simulation exactly as in the real result, so they lower both by the same amount and the p-value does not change.
 - **Luck Distribution**: the Real PnL formula applied to 10,000 Simulations.
 - **p-value**: (1 + number of Simulations with PnL ≥ Real PnL) / (1 + 10,000). The chance that a trader with no edge does at least this well.
 - **Verdict**: one of *Skilled (high confidence)* (p < 0.01), *Likely skilled* (p < 0.05), *No evidence of skill*, or *Not enough data* (fewer than 30 Resolved Positions).
@@ -122,6 +123,7 @@ The system combines a Wallet's fills into Positions and marks which are Resolved
 - The shares held at resolution are the Wallet's bought shares minus its sold shares, from its activity rows. Redemptions are never used to count shares, because an unredeemed loser has none. (Architecture, 2026-10-21.)
 - Besides fully sold Positions, a Position is left out of the Skill Test, counted, and shown with its reason when: the Wallet split, merged or converted shares in that Market (the recorded entry price of such a Position is bookkeeping, not a price paid); the token appears only in the activity rows; its shares held are not between 0 and the shares bought; the two sources disagree on shares bought by more than 1% `[ASSUMPTION]` (the size of the gap is stored); its Market has an unclear resolution; or the Wallet's history could not be read in full (FR-16). The same rules apply before and after the Cut-off Date. (Architecture, 2026-10-21.)
 - A Position fully sold before resolution is not a Resolved Position. It is counted and shown, but left out of the Skill Test.
+- A Position partly sold down to a Sliver (Glossary) is not counted as a bet, but its money stays in Real PnL and in every Simulation. (Edvard, 2026-11-11.)
 - A Position partly sold before resolution enters the Skill Test with the shares still held at resolution, at the original Entry Price. `[ASSUMPTION: testing the shares still held, at the original Entry Price, is a fair way to treat a partly sold Position]` The shares sold count toward Exit PnL.
 - **Known limit (decided):** which Positions reach resolution is the trader's choice and can depend on how the price moved after the buy. A trader who sells losers early and keeps the rest looks better in the Skill Test than they are. v1 accepts this and makes it visible (FR-11); handling it in the test is deferred to v2 (§6.2).
 
@@ -401,6 +403,7 @@ Each is a starting value, not measured. Edvard confirms or changes it once real 
 - §3, §4.5 FR-18: the Spread Allowance is half a cent (0.005) per share; measured in large liquid Markets only.
 - §8: the app runs locally on the user's or examiner's laptop as a web page; it is not hosted publicly.
 - §3, §4.1 FR-3: a gap above 1% between the two sources' shares bought leaves a Position out.
+- §3 Sliver, §4.1 FR-3: less than 1% of the bought shares (and fewer than 1 share) left at resolution makes a Position a Sliver, not a counted bet.
 - §4.3 FR-11: more than 10% of Positions left out gets a plain sentence; more than 20% in events with undetected links gets a note.
 - §4.4 FR-12: the committed Sample Dataset stays under 25 MB.
 - §4.5 FR-16: the Scan funnel uses Markets resolved in the 90 days before the Cut-off Date, the top 100 by volume, and a shortlist of 3 × the Scan size.

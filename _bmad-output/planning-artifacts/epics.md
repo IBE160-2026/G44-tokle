@@ -280,7 +280,7 @@ So that the Verdict rests on the bets the Wallet really held to resolution.
 
 **Given** the shared record types (`Position`, `ActivityRow`, `Market`, `PricePoint`) in `records`, with no app imports (AD-1)
 **When** several BUY fills of the same outcome in the same Market are built
-**Then** they form one Position whose Entry Price is the share-weighted average price (FR-3)
+**Then** they form one Position whose Entry Price is the share-weighted average price of its BUY fills, which sells do not change (FR-3; AD-10, Edvard, 2026-11-11)
 **And** shares held at resolution = Σ bought − Σ sold for that token, from activity rows; REDEEM rows are never a share source (AD-10).
 
 **Given** a Market
@@ -291,7 +291,8 @@ So that the Verdict rests on the bets the Wallet really held to resolution.
 **When** they are built
 **Then** a fully sold Position is left out as "sold before resolution" and counted (FR-3)
 **And** a partly sold Position enters with the shares still held at the original Entry Price, and its sold shares count toward Exit PnL = Σ shares sold × (sell price − p) (Glossary)
-**And** a Position whose shares held are not within 0 < s ≤ shares bought is left out as "not explained" (AD-11).
+**And** a Position whose shares held are not within 0 < s ≤ shares bought is left out as "not explained" (AD-11)
+**And** a Position with less than 1% of its bought shares and fewer than 1 share held is a Sliver: returned apart, its money kept for Real PnL and the Simulations, and counted neither as tested nor as left out (PRD Glossary, AD-11; Edvard, 2026-11-11).
 
 **Given** a Market where the Wallet has a SPLIT, MERGE or CONVERSION row
 **When** it is built
@@ -343,7 +344,7 @@ So that the Verdict says how often a trader with no edge would do as well.
 
 **Given** a set of Resolved Positions
 **When** the Skill Test runs
-**Then** Real PnL = Σ s · (o − p) − Own Fees (FR-4), equal to the Synthetic Wallets' hand values to the cent
+**Then** Real PnL = Σ s · (o − p) − Own Fees over the tested Positions and the Slivers (FR-4), equal to the Synthetic Wallets' hand values to the cent; Slivers are simulated too but never counted toward the 30 minimum (Story 1.2; Edvard, 2026-11-11)
 **And** each of 10,000 Simulations draws one uniform U per Market, shared by every Position in that Market (one side wins when U < p, the other when U > 1 − p), so each Position wins with probability equal to its Entry Price (AD-20)
 **And** for the p-value only, win and loss amounts are rounded to whole cents once, with Own Fees left out, and the real result and every Simulation sum those integers, so p = (1 + number of Simulations ≥ the real result) / 10,001 counts ties exactly (FR-5; Conventions › Money, P-3)
 **And** the Real PnL shown and stored is the exact sum, never the rounded one, and a test on a Wallet with many small fractional amounts shows the two differ while the exact one matches its hand value to the cent (FR-4; Edvard, 2026-11-05).

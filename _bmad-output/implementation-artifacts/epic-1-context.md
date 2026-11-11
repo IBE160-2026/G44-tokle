@@ -26,6 +26,7 @@ An examiner clones the repository, runs three README commands (`uv sync`, `uv ru
 - The core is testable: the Skill Test code holds no network, web or model code. Every requirement with consequences has at least one automated test, and each test names the FR or AD it checks.
 - Data lives in SQLite (a course requirement). Offline runs use `instance/offline.db` and live runs use `instance/live.db`. Both are git-ignored.
 - Skill Test facts: Real PnL = Σ s·(o − p) − Own Fees. There are 10,000 Simulations, and p = (1 + count ≥ real) / 10,001. The Verdict thresholds are p < 0.01 *Skilled (high confidence)* and p < 0.05 *Likely skilled*, otherwise *No evidence of skill*. Below 30 Resolved Positions the Verdict is *Not enough data*. The same data and Seed always give the same result.
+- Positions (Edvard, 2026-11-11): Entry Price is the share-weighted average of the BUY fills, never Polymarket's `avg_price`. A Sliver (under 1% of bought shares and fewer than 1 share held) keeps its money in Real PnL and every Simulation but is not counted as a bet, tested or left out.
 - Wording: never "guaranteed", "insider" or "will win" about a Wallet, plus the UX list of avoided words. A test enforces this over every template and fixed text.
 
 ## Technical Decisions
