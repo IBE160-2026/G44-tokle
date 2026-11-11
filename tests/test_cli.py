@@ -9,6 +9,7 @@ import pytest
 from flask import Flask
 
 import liquidoracle.__main__ as cli
+from liquidoracle.settings import Settings
 
 
 @pytest.fixture
@@ -91,17 +92,47 @@ def test_busy_port_stops_run_with_a_plain_message(
     assert fake_server == {}
 
 
-def test_server_error_on_start_gives_a_plain_message(
-    in_empty_dir: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
-) -> None:
-    """AD-23: an operating-system error while binding is shown as a sentence, not a traceback."""
+@pytest.fixture
+def captured_settings(monkeypatch: pytest.MonkeyPatch) -> list[Settings]:
+    """Replace serve() so no server starts; record the Settings that main() built."""
+    seen: list[Settings] = []
+    monkeypatch.setattr(cli, "serve", lambda settings: seen.append(settings) or 0)
+    return seen
 
-    def failing_run(self: Flask, **kwargs: Any) -> None:
-        raise OSError(98, "Address already in use")
 
-    monkeypatch.setattr(Flask, "run", failing_run)
-    monkeypatch.setattr(cli, "port_in_use", lambda host, port: False)
-    assert cli.main(["run"]) == 2
-    err = capsys.readouterr().err
-    assert "cannot start on port 8044: Address already in use" in err
-    assert "Traceback" not in err
+def test_offline_and_seed_flags_reach_the_settings(in_empty_dir: Path, captured_settings: list[Settings]) -> None:
+    """AD-13: `run --offline --seed 7` gives settings with Offline Mode on and Seed 7."""
+    assert cli.main(["run", "--offline", "--seed", "7"]) == 0
+    assert (captured_settings[0].offline, captured_settings[0].seed) == (True, 7)
+
+
+def test_offline_in_env_file_holds_when_no_flag_is_given(in_empty_dir: Path, captured_settings: list[Settings]) -> None:
+    """AD-13: OFFLINE=true in .env turns on Offline Mode when --offline is not given."""
+    (in_empty_dir / ".env").write_text("OFFLINE=true\nSEED=9\n", encoding="utf-8")
+    assert cli.main(["run"]) == 0
+    assert (captured_settings[0].offline, captured_settings[0].seed) == (True, 9)
+
+
+def test_port_in_use_is_true_when_the_port_answers(monkeypatch: pytest.MonkeyPatch) -> None:
+    """AD-23: a port that accepts a connection counts as in use (the Windows double-start bug)."""
+
+    class Answering:
+        def __enter__(self) -> "Answering":
+            return self
+
+        def __exit__(self, *exc: object) -> None:
+            return None
+
+    monkeypatch.setattr(cli.socket, "create_connection", lambda address, timeout: Answering())
+    assert cli.port_in_use("127.0.0.1", 8044) is True
+
+
+@pytest.mark.parametrize("error", [ConnectionRefusedError(), TimeoutError(), OSError("unreachable")])
+def test_port_in_use_is_false_when_nothing_answers(monkeypatch: pytest.MonkeyPatch, error: OSError) -> None:
+    """AD-23: a refused, timed-out or failed connection means the port is free."""
+
+    def refuse(address: object, timeout: float) -> None:
+        raise error
+
+    monkeypatch.setattr(cli.socket, "create_connection", refuse)
+    assert cli.port_in_use("127.0.0.1", 8044) is False

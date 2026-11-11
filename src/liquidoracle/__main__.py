@@ -53,11 +53,18 @@ def main(argv: list[str] | None = None) -> int:
     if args.command == "make-synthetic":
         print("make-synthetic is not built yet (Story 1.3).")
         return 0
+    if args.command != "run":  # argparse allows only the three commands; never start by accident
+        raise AssertionError(f"unhandled command {args.command!r}")
 
+    env_file = Path.cwd() / ".env"
+    if env_file.is_file():
+        log.info("Reading settings from %s", env_file)
+    else:
+        log.info("No .env in %s; using flags and defaults", Path.cwd())
     try:
         settings = load_settings(
             cli={"offline": args.offline, "port": args.port, "seed": args.seed},
-            env_file=Path.cwd() / ".env",
+            env_file=env_file,
         )
     except SettingsError as error:
         print(f"LiquidOracle cannot start: {error}", file=sys.stderr)
@@ -81,21 +88,15 @@ def serve(settings: Settings) -> int:
 
     app = create_app(settings)
     log.info("LiquidOracle is running at http://%s:%d (press Ctrl+C to stop)", HOST, settings.port)
-    try:
-        app.run(
-            host=HOST,
-            port=settings.port,
-            debug=False,
-            use_reloader=False,
-            load_dotenv=False,
-        )
-    except OSError as error:  # most often: the port is already in use
-        print(
-            f"LiquidOracle cannot start on port {settings.port}: {error.strerror or error}. "
-            "Close the other program or choose another port with --port.",
-            file=sys.stderr,
-        )
-        return 2
+    # If binding still fails (no permission, or another program took the port after the
+    # check above), Werkzeug prints a plain message itself and exits with code 1.
+    app.run(
+        host=HOST,
+        port=settings.port,
+        debug=False,
+        use_reloader=False,
+        load_dotenv=False,
+    )
     return 0
 
 
@@ -104,6 +105,8 @@ def port_in_use(host: str, port: int) -> bool:
 
     Needed because on Windows a second server can bind the same port without an
     error, and then it never gets any requests (found while building Story 1.1).
+    Accepted limits: a program that grabs the port between this check and the bind
+    is not caught, and a free port can add up to half a second to the start.
     """
     try:
         with socket.create_connection((host, port), timeout=0.5):

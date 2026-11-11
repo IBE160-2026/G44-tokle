@@ -142,3 +142,28 @@ def test_env_example_lists_every_key() -> None:
     lines = (REPO / ".env.example").read_text(encoding="utf-8").splitlines()
     keys = {line.split("=", 1)[0].strip() for line in lines if "=" in line and not line.lstrip().startswith("#")}
     assert keys == set(ENV_KEYS)
+
+
+def test_env_file_does_not_fill_in_process_variables(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """AD-13: `${PORT}` in .env is not filled in from the process environment."""
+    monkeypatch.setenv("PORT", "7000")
+    env = write_env(tmp_path, "PORT=${PORT}\n")
+    with pytest.raises(SettingsError, match="PORT must be a whole number"):
+        load_settings(cli={}, env_file=env)
+
+
+def test_unreadable_env_file_gives_a_plain_error(tmp_path: Path) -> None:
+    """AD-13: a .env that is not UTF-8 text stops the start with a sentence, not a traceback."""
+    env = tmp_path / ".env"
+    env.write_bytes("PORT=9000\n".encode("utf-16"))
+    with pytest.raises(SettingsError, match="could not be read"):
+        load_settings(cli={}, env_file=env)
+
+
+def test_unknown_env_key_is_warned_about(tmp_path: Path, caplog: pytest.LogCaptureFixture) -> None:
+    """AD-13: a misspelt key such as POTR=9000 is named in a warning, and the default holds."""
+    env = write_env(tmp_path, "POTR=9000\n")
+    with caplog.at_level("WARNING", logger="liquidoracle.settings"):
+        settings = load_settings(cli={}, env_file=env)
+    assert settings.port == 8044
+    assert "POTR" in caplog.text

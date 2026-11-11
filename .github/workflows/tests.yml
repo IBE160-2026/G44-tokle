@@ -12,6 +12,11 @@ on:
 permissions:
   contents: read
 
+# A newer push to the same branch or pull request cancels the run it replaces.
+concurrency:
+  group: tests-${{ github.event_name }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   test:
     name: ${{ matrix.os }} · Python ${{ matrix.python }}
@@ -30,9 +35,13 @@ jobs:
         with:
           version: "0.13.4"
           python-version: ${{ matrix.python }}
+          enable-cache: true
 
       - name: Install the locked dependencies
         run: uv sync --locked
+
+      - name: Check that the liquidoracle command is installed
+        run: uv run liquidoracle --help
 
       - name: Run the tests
         shell: bash

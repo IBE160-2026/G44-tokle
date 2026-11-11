@@ -35,12 +35,19 @@ Settings come from three places. A command-line flag wins over `.env`, and `.env
 
 To change a setting, copy `.env.example` to `.env` in the project folder and edit it. `.env` is git-ignored and never committed.
 
+```sh
+cp .env.example .env              # macOS and Linux
+Copy-Item .env.example .env       # Windows PowerShell
+```
+
+The app reads `.env` from the folder you start it in, so run the commands from the project folder. At start it prints which `.env` it read. Unknown keys get a warning and are ignored.
+
 | Key | Default | What it does |
 | --- | --- | --- |
 | `PORT` | `8044` | Port the app serves on. Flag: `--port` |
 | `SEED` | `44` | Random Seed for the Skill Test. The same Seed and data always give the same result. Flag: `--seed` |
 | `POLYMARKET_REQUESTS_PER_SECOND` | `5` | Most requests per second sent to Polymarket. Above 5 is refused. |
-| `OFFLINE` | `false` | Offline Mode: sample data only, no network. Flag: `--offline` |
+| `OFFLINE` | `false` | Offline Mode: sample data only, no network. `true`/`false` (also `1`/`0`, `yes`/`no`, `on`/`off`). Flag: `--offline` |
 | `ANTHROPIC_API_KEY` | empty | Key for the language model (stage 3, optional). Without it, template text is used. |
 
 No key is needed to run the app or the tests. A bad value, such as a pace above 5, stops the start with a sentence that says what to fix.
@@ -52,6 +59,8 @@ uv run pytest
 ```
 
 Every test runs with the network blocked. Tests that need the real network live in `tests/online/` and are skipped unless you ask for them: `uv run pytest -m online --force-enable-socket tests/online`.
+
+Checks marked `slow` repeat a whole test 100 times by default. `uv run pytest --repetitions 1000` runs them in full, as CI does on Linux with Python 3.14.
 
 GitHub Actions runs the tests on every push on Windows, macOS and Linux with Python 3.12 and 3.14 ([`.github/workflows/tests.yml`](.github/workflows/tests.yml)).
 

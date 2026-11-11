@@ -46,9 +46,13 @@ ALLOWED_THIRD_PARTY = {
     "__main__": {"flask"},
 }
 
-# AD-1: standard-library modules that do network or database work; never in core or records.
-NO_IO_LAYERS = {"core", "records"}
-IO_STDLIB = {"socket", "ssl", "http", "urllib", "sqlite3", "ftplib", "smtplib", "asyncio"}
+# AD-1, AD-2, AD-6: standard-library modules that do network or database work. Only `data`
+# and the shell (`__main__`) may use them.
+IO_LAYERS = {"data", "__main__"}
+IO_STDLIB = {
+    "socket", "socketserver", "ssl", "http", "urllib", "xmlrpc", "ftplib", "smtplib",
+    "imaplib", "poplib", "asyncio", "sqlite3", "dbm", "shelve",
+}
 
 # AD-13: only these modules may read the environment or `.env`.
 ENV_READERS = {"__main__", "settings"}
@@ -91,6 +95,8 @@ def imported_modules(tree: ast.AST, rel: Path) -> list[str]:
 def import_violations(rel: Path, source: str) -> list[str]:
     """AD-1 import rule for one module. Returns one message per forbidden import."""
     layer = layer_of(rel)
+    if layer not in ALLOWED_APP_IMPORTS:
+        return [f"{rel}: unknown layer '{layer}'; add it to the AD-1 rule tables"]
     tree = ast.parse(source, filename=str(rel))
     problems = []
     for module in imported_modules(tree, rel):
@@ -103,7 +109,7 @@ def import_violations(rel: Path, source: str) -> list[str]:
             if target != layer and target not in ALLOWED_APP_IMPORTS[layer]:
                 problems.append(f"{rel}: layer '{layer}' may not import '{module}'")
         elif top in sys.stdlib_module_names:
-            if layer in NO_IO_LAYERS and top in IO_STDLIB:
+            if layer not in IO_LAYERS and top in IO_STDLIB:
                 problems.append(f"{rel}: layer '{layer}' may not import '{module}' (network or database)")
         elif top not in ALLOWED_THIRD_PARTY[layer]:
             problems.append(f"{rel}: layer '{layer}' may not import the library '{module}'")
@@ -159,6 +165,9 @@ def test_app_imports_follow_the_layer_rule() -> None:
         ("data/store.py", "from liquidoracle.services import lookup\n"),
         ("web/routes.py", "from liquidoracle.data import store\n"),
         ("web/routes.py", "import anthropic\n"),
+        ("services/lookup.py", "import sqlite3\n"),
+        ("web/routes.py", "import socket\n"),
+        ("helpers.py", "import json\n"),
     ],
 )
 def test_planted_forbidden_import_is_caught(path: str, source: str) -> None:
@@ -173,6 +182,8 @@ def test_planted_forbidden_import_is_caught(path: str, source: str) -> None:
         ("core/skilltest.py", "from . import rng\nfrom ..records import Position\n"),
         ("services/lookup.py", "from liquidoracle.core import skilltest\nfrom liquidoracle.data import store\n"),
         ("web/routes.py", "from flask import Flask\nfrom liquidoracle.services import lookup\n"),
+        ("data/store.py", "import sqlite3\nfrom liquidoracle.records import Position\n"),
+        ("__main__.py", "import socket\n"),
     ],
 )
 def test_allowed_imports_pass(path: str, source: str) -> None:
@@ -206,7 +217,8 @@ def test_online_tests_are_deselected_by_default() -> None:
     """AD-17: tests in tests/online/ are marked `online` and do not run unless asked for."""
     command = [sys.executable, "-m", "pytest", "--collect-only", "-q", "-p", "no:cacheprovider", "tests/online"]
     default = subprocess.run(command, cwd=REPO, capture_output=True, text=True, timeout=120)
-    assert "1 deselected" in default.stdout, default.stdout + default.stderr
+    assert re.search(r"\b[1-9]\d* deselected", default.stdout), default.stdout + default.stderr
+    assert "test_online_marker.py::" not in default.stdout, default.stdout
     chosen = subprocess.run([*command, "-m", "online"], cwd=REPO, capture_output=True, text=True, timeout=120)
     assert "test_online_marker.py::test_online_tests_are_marked" in chosen.stdout, chosen.stdout + chosen.stderr
 
@@ -215,6 +227,19 @@ def test_repetitions_option_sets_the_slow_count(repetitions: int, request: pytes
     """AD-17: slow checks read their repetition count from one option (default 100)."""
     assert repetitions == request.config.getoption("--repetitions")
     assert repetitions >= 1
+
+
+def test_repetitions_default_is_100_and_bad_values_are_refused() -> None:
+    """AD-17: the repetition count defaults to 100 and must be a whole number of 1 or more."""
+    command = [sys.executable, "-m", "pytest", "--help", "-p", "no:cacheprovider"]
+    out = subprocess.run(command, cwd=REPO, capture_output=True, text=True, timeout=120).stdout
+    assert "(default 100;" in " ".join(out.split()), out
+    for bad in ("0", "-1", "abc"):
+        refused = subprocess.run(
+            [*command[:3], "--collect-only", "-q", "-p", "no:cacheprovider", f"--repetitions={bad}", "tests/online"],
+            cwd=REPO, capture_output=True, text=True, timeout=120,
+        )
+        assert refused.returncode == 4 and "--repetitions" in refused.stderr, refused.stderr
 
 
 def test_every_test_names_its_requirement() -> None:

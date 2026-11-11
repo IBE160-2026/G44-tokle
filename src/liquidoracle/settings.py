@@ -7,12 +7,15 @@ environment variables are not read. Only this module and `__main__` may read
 
 from __future__ import annotations
 
+import logging
 import math
 from collections.abc import Mapping
 from dataclasses import dataclass, field
 from pathlib import Path
 
 from dotenv import dotenv_values
+
+log = logging.getLogger(__name__)
 
 # Polite pacing toward Polymarket: never more than this many requests per second (NFR-6, AD-3).
 MAX_REQUESTS_PER_SECOND = 5.0
@@ -86,7 +89,24 @@ def load_settings(
 def _read_env_file(env_file: Path | None) -> dict[str, str | None]:
     if env_file is None or not env_file.is_file():
         return {}
-    return dict(dotenv_values(env_file))
+    try:
+        # interpolate=False: `${VAR}` would otherwise be filled in from the process
+        # environment, which these settings never read (AD-13).
+        values = dict(dotenv_values(env_file, interpolate=False, encoding="utf-8"))
+    except (OSError, UnicodeDecodeError) as error:
+        raise SettingsError(
+            f"The settings file {env_file} could not be read ({error}). "
+            "Save it as plain UTF-8 text."
+        ) from None
+    unknown = sorted(set(values) - set(ENV_KEYS))
+    if unknown:
+        log.warning(
+            "Ignoring unknown keys in %s: %s. Known keys: %s.",
+            env_file,
+            ", ".join(unknown),
+            ", ".join(ENV_KEYS),
+        )
+    return values
 
 
 def _parse_int(value: object, key: str) -> int:

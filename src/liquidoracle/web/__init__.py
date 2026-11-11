@@ -10,7 +10,6 @@ from liquidoracle.settings import Settings
 def create_app(settings: Settings) -> Flask:
     """Build the Flask app. It never starts a server or a worker; `liquidoracle run` does (AD-23)."""
     app = Flask(__name__)
-    app.config["LIQUIDORACLE_SETTINGS"] = settings
 
     @app.get("/")
     def check_a_wallet() -> str:
