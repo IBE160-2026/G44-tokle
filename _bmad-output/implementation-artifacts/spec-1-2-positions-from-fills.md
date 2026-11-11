@@ -2,7 +2,7 @@
 title: 'Story 1.2: Positions from fills'
 type: 'feature'
 created: '2026-11-11'
-status: 'in-review'
+status: 'done'
 route: 'dispatch'
 review_loop_iteration: 0
 baseline_commit: '056c33b3cbba672f2ad38bf5b8c377127f288f95'
