@@ -5,3 +5,8 @@
 #
 # [agents.bmad-agent-pm]
 # description = "Prefers short, bulleted PRDs over narrative drafts."
+
+# bmad-build needs this; the installer left it out of _bmad/config.toml
+# (the older _bmad/core/config.yaml has communication_language: english).
+[core]
+communication_language = "English"
