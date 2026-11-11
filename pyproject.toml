@@ -1,0 +1,40 @@
+[project]
+name = "liquidoracle"
+version = "0.1.0"
+description = "Tells whether a Polymarket wallet's results show skill or luck. Local, read-only."
+readme = "README.md"
+requires-python = ">=3.12"
+authors = [{ name = "Edvard Tokle" }]
+# Versions pinned in the architecture spine (Stack table).
+dependencies = [
+    "flask==3.1.3",
+    "requests==2.34.2",
+    "numpy==2.5.4",
+    "anthropic==1.17.0",
+    "python-dotenv==1.2.4",
+]
+
+[project.scripts]
+liquidoracle = "liquidoracle.__main__:main"
+
+[dependency-groups]
+dev = [
+    "pytest==9.1.1",
+    "pytest-socket==0.8.1",
+]
+
+[build-system]
+requires = ["uv_build>=0.13.4,<0.14"]
+build-backend = "uv_build"
+
+[tool.uv]
+required-version = ">=0.13"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+# AD-17: every test runs with sockets blocked; tests in tests/online/ are marked and never run here.
+addopts = '--disable-socket -m "not online" --strict-markers'
+markers = [
+    "online: goes to the real network; lives in tests/online/, never runs in CI (AD-17)",
+    "slow: repeats a whole check; --repetitions sets how many times (AD-17)",
+]
