@@ -59,7 +59,7 @@ def build_positions(fills: Iterable[ActivityRow], markets: Mapping[str, Market])
         market = markets.get(condition_id)
         if market is None or not market.closed:
             continue
-        position = _build_one(market, token_id, trades[(condition_id, token_id)], condition_id in split_markets)
+        position = _build_one(market, condition_id, token_id, trades[(condition_id, token_id)], condition_id in split_markets)
         if position.reason is not None:
             left_out.append(position)
         elif _is_sliver(position):
@@ -69,19 +69,19 @@ def build_positions(fills: Iterable[ActivityRow], markets: Mapping[str, Market])
     return PositionSet(tested=tuple(tested), slivers=tuple(slivers), left_out=tuple(left_out))
 
 
-def _build_one(market: Market, token_id: str, rows: list[ActivityRow], split: bool) -> Position:
+def _build_one(market: Market, condition_id: str, token_id: str, rows: list[ActivityRow], split: bool) -> Position:
     # Sort so float sums do not depend on the order the fills arrived in.
     rows = sorted(rows, key=lambda r: (r.timestamp, r.side or "", r.size, r.price, r.usdc_size))
     buys = [r for r in rows if r.side == "BUY"]
     sells = [r for r in rows if r.side == "SELL"]
 
-    bought = sum(r.size for r in buys)
-    sold = sum(r.size for r in sells)
+    bought = sum((r.size for r in buys), 0.0)
+    sold = sum((r.size for r in sells), 0.0)
     entry_price = sum(r.size * r.price for r in buys) / bought if bought > 0 else None
     exit_pnl = None
     if entry_price is not None:
-        exit_pnl = sum(r.size * (r.price - entry_price) for r in sells)
-    own_fees = sum(r.usdc_size - r.size * r.price for r in buys) if market.fees_enabled else 0.0
+        exit_pnl = sum((r.size * (r.price - entry_price) for r in sells), 0.0)
+    own_fees = sum((r.usdc_size - r.size * r.price for r in buys), 0.0) if market.fees_enabled else 0.0
 
     shares_bought = round(bought, SHARE_DECIMALS)
     shares_sold = round(sold, SHARE_DECIMALS)
@@ -103,7 +103,7 @@ def _build_one(market: Market, token_id: str, rows: list[ActivityRow], split: bo
         reason = None
 
     return Position(
-        condition_id=market.condition_id,
+        condition_id=condition_id,
         token_id=token_id,
         outcome=outcome,
         entry_price=entry_price,
@@ -118,6 +118,7 @@ def _build_one(market: Market, token_id: str, rows: list[ActivityRow], split: bo
 
 def _is_sliver(position: Position) -> bool:
     return (
-        position.shares_held < SLIVER_SHARE_OF_BOUGHT * position.shares_bought
+        # Rounded like the shares, so exactly 1% is never a Sliver (0.01 * 70 is 0.7000000000000001).
+        position.shares_held < round(SLIVER_SHARE_OF_BOUGHT * position.shares_bought, SHARE_DECIMALS)
         and position.shares_held < SLIVER_MAX_SHARES
     )

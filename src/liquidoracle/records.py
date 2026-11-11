@@ -110,6 +110,7 @@ class PositionSet:
     def excluded_counts(self) -> dict[ExclusionReason, int]:
         counts = {reason: 0 for reason in ExclusionReason}
         for position in self.left_out:
-            assert position.reason is not None
+            if position.reason is None:
+                raise ValueError(f"left-out Position {position.token_id} has no reason")
             counts[position.reason] += 1
         return counts

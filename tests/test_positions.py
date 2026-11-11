@@ -78,6 +78,7 @@ def test_partly_sold_position_enters_at_shares_held_and_original_price() -> None
     assert position.entry_price == pytest.approx(0.40)
     assert position.exit_pnl == pytest.approx(12.00, abs=CENT)
     assert position.reason is None
+    assert isinstance(build([buy(100, 0.40)]).tested[0].exit_pnl, float)  # 0.0, not the int 0
 
 
 def test_sells_never_change_the_entry_price() -> None:
@@ -126,11 +127,26 @@ def test_a_sliver_needs_both_limits(bought: float, sold: float) -> None:
     assert result.slivers == ()
 
 
-def test_sliver_limits_are_strict() -> None:
-    """AD-11, PRD Glossary Sliver: exactly 1% left (0.9 share of 90) is not under 1%, so the Position is tested."""
-    result = build([buy(90, 0.30), sell(89.1, 0.50)])
-    assert result.tested[0].shares_held == pytest.approx(0.9)
+@pytest.mark.parametrize("bought", [35, 57, 70, 90])
+def test_exactly_one_percent_left_is_not_a_sliver(bought: float) -> None:
+    """AD-11, PRD Glossary Sliver: exactly 1% left is not under 1%, also where 0.01 * bought is a hair above it in floats (70)."""
+    result = build([buy(bought, 0.30), sell(round(bought * 0.99, 6), 0.50)])
+    assert result.tested_count == 1
     assert result.slivers == ()
+
+
+def test_exactly_one_share_left_is_not_a_sliver() -> None:
+    """AD-11, PRD Glossary Sliver: 1 share of 1,000 is under 1% but not under 1 share, so the Position is tested."""
+    result = build([buy(1000, 0.30), sell(999, 0.50)])
+    assert result.tested[0].shares_held == 1
+    assert result.slivers == ()
+
+
+def test_a_losing_sliver_keeps_its_loss() -> None:
+    """AD-11, PRD Glossary Sliver: a Sliver on the losing outcome is set apart with o = 0, so its loss still counts in Story 1.4."""
+    result = build([buy(1000, 0.30, token=NO), sell(999.5, 0.50, token=NO)])
+    assert result.tested_count == 0
+    assert [s.outcome for s in result.slivers] == [0.0]
 
 
 def test_selling_more_than_bought_is_not_explained() -> None:
@@ -171,6 +187,7 @@ def test_split_merge_or_conversion_leaves_the_whole_market_out(kind: str) -> Non
         market(prices=(1.0, 1.0)),
         market(prices=(0.0, 0.0)),
         market(prices=(0.98, 0.02)),
+        Market(M, True, 1_750_000_000, (YES, NO, "third"), (1.0, 0.0)),  # lists out of step
     ],
 )
 def test_closed_market_without_a_clean_resolution_is_unclear(resolved_market: Market) -> None:
@@ -256,7 +273,7 @@ def test_token_missing_from_its_market_is_unclear() -> None:
 
 
 def test_window_adds_up() -> None:
-    """AD-11: window size = tested + Slivers + every left-out count, and pages print only from this record."""
+    """AD-11: window size = tested + Slivers + every left-out count."""
     fills = [
         buy(100, 0.40, cid="0xa"),  # tested
         buy(100, 0.40, cid="0xb"),
@@ -298,6 +315,7 @@ def test_builder_is_pure_and_order_independent() -> None:
     "bad",
     [
         ActivityRow("TRADE", M, 1, 10.0, 4.0, 0.4, token_id=None, side="BUY"),
+        ActivityRow("TRADE", M, 1, 10.0, 4.0, 0.4, token_id="", side="BUY"),  # the shape of non-TRADE rows
         ActivityRow("TRADE", M, 1, 10.0, 4.0, 0.4, token_id=YES, side=None),
         ActivityRow("REWARD", M, 1, 10.0, 4.0, 0.4),
     ],
