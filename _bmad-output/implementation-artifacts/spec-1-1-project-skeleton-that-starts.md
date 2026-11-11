@@ -2,7 +2,7 @@
 title: 'Story 1.1: Project skeleton that starts'
 type: 'feature'
 created: '2026-11-11'
-status: 'in-review'
+status: 'done'
 route: 'dispatch'
 review_loop_iteration: 0
 baseline_commit: '674e714f63ed9c9feea023ccdf0cf0292530507b'
