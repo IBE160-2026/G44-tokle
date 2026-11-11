@@ -62,3 +62,6 @@ Thumbs.db
 
 # Data spike: big raw API dumps stay local; trimmed samples in spike/samples/ are committed
 spike/raw/
+
+# App databases (instance/live.db, instance/offline.db) are made locally, never committed
+instance/
