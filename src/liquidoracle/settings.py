@@ -127,7 +127,11 @@ def _parse_rate(value: object | None, default: float) -> float:
         raise SettingsError(
             f"POLYMARKET_REQUESTS_PER_SECOND must be a number, not {value!r}."
         ) from None
-    if not math.isfinite(rate) or rate <= 0:
+    if not math.isfinite(rate):
+        raise SettingsError(
+            f"POLYMARKET_REQUESTS_PER_SECOND must be a number, not {value!r}."
+        )
+    if rate <= 0:
         raise SettingsError(
             f"POLYMARKET_REQUESTS_PER_SECOND must be above 0, not {value}."
         )
