@@ -9,7 +9,9 @@ from __future__ import annotations
 import ast
 import json
 import math
+import shutil
 import subprocess
+from collections import Counter
 from dataclasses import replace
 from pathlib import Path
 
@@ -61,19 +63,23 @@ def test_committed_files_equal_fresh_output() -> None:
         assert committed == sample_json.dumps(wallet).encode("utf-8"), name
 
 
-def test_generator_uses_its_own_constant_and_no_other_randomness() -> None:
-    """AD-14, AD-15: the generator reads no settings and uses neither `random`, numpy nor `hash()`."""
-    tree = ast.parse((REPO / "src" / "liquidoracle" / "data" / "synthetic.py").read_text(encoding="utf-8"))
+BANNED_IMPORTS = ("random", "numpy", "os", "secrets", "time", "liquidoracle.settings")
+
+
+@pytest.mark.parametrize("module", ["synthetic.py", "sample_json.py"])
+def test_generator_uses_its_own_constant_and_no_other_randomness(module: str) -> None:
+    """AD-14, AD-15: the generator and its serializer read no settings or environment, and use neither `random`, numpy nor `hash()`."""
+    tree = ast.parse((REPO / "src" / "liquidoracle" / "data" / module).read_text(encoding="utf-8"))
     imported = set()
     for node in ast.walk(tree):
         if isinstance(node, ast.Import):
             imported |= {alias.name for alias in node.names}
         elif isinstance(node, ast.ImportFrom):
-            imported.add(node.module or "")
-        elif isinstance(node, ast.Call) and isinstance(node.func, ast.Name):
-            assert node.func.id != "hash", "hash() changes with PYTHONHASHSEED"
-    assert not {"random", "numpy", "liquidoracle.settings"} & imported
-    assert not any(name.startswith(("numpy.", "random.")) for name in imported)
+            # `from liquidoracle import settings` is caught as liquidoracle.settings
+            imported |= {node.module or ""} | {f"{node.module}.{alias.name}" for alias in node.names}
+        elif isinstance(node, ast.Name):
+            assert node.id not in {"hash", "__import__"}, f"{node.id} is not allowed"
+    assert [name for name in imported if name == BANNED_IMPORTS[-1] or name.split(".")[0] in BANNED_IMPORTS[:-1]] == []
 
 
 def test_draws_depend_only_on_their_inputs() -> None:
@@ -105,6 +111,15 @@ def test_serializer_round_trip(compact: bool) -> None:
         lambda d: d["activity"][0].pop("side"),
         lambda d: d["positions"][0].update(colour="red"),
         lambda d: d.update(activity=None),
+        lambda d: d.update(address=None),
+        lambda d: d["activity"][0].update(token_id=5),
+        lambda d: d["activity"][0].update(side="buy"),
+        lambda d: d["activity"][0].update(timestamp="1735689600"),
+        lambda d: d["activity"][0].update(timestamp=1735689600.9),
+        lambda d: d["activity"][0].update(size=True),
+        lambda d: d["markets"][0].update(token_ids="10"),
+        lambda d: d["positions"][0].update(status="PENDING"),
+        lambda d: d["prices"].append("not an object"),
     ],
 )
 def test_serializer_refuses_malformed_files(corrupt: object) -> None:
@@ -115,10 +130,28 @@ def test_serializer_refuses_malformed_files(corrupt: object) -> None:
         sample_json.loads(json.dumps(document))
 
 
-def test_serializer_refuses_text_that_is_not_json() -> None:
-    """AD-14: a broken file gives a ValueError that names the file."""
+@pytest.mark.parametrize("text", ["{not json", "[]", '{"address": NaN}', '{"address": Infinity}'])
+def test_serializer_refuses_text_that_is_not_a_wallet(text: str) -> None:
+    """AD-14: broken JSON, a non-object, NaN or Infinity all give the same ValueError."""
     with pytest.raises(ValueError, match="not a Sample Dataset Wallet file"):
-        sample_json.loads("{not json")
+        sample_json.loads(text)
+
+
+def test_serializer_refuses_infinity_in_a_time_field() -> None:
+    """AD-14: Infinity in a time field is a ValueError, not an OverflowError from int()."""
+    text = sample_json.dumps(SMALL["hand-check"]).replace('"timestamp": 1735689600', '"timestamp": Infinity', 1)
+    assert "Infinity" in text
+    with pytest.raises(ValueError, match="Infinity is not allowed"):
+        sample_json.loads(text)
+
+
+@pytest.mark.parametrize("content", [b"{not json", "ÿ not utf-8".encode("latin-1")])
+def test_read_wallet_names_the_broken_file(tmp_path: Path, content: bytes) -> None:
+    """AD-14: a malformed or non-UTF-8 file gives a ValueError that names the file."""
+    path = tmp_path / "broken-wallet.json"
+    path.write_bytes(content)
+    with pytest.raises(ValueError, match="broken-wallet.json"):
+        sample_json.read_wallet(path)
 
 
 # --- the intended bets, through the Story 1.2 builder (FR-13) ---------------------------------
@@ -170,6 +203,8 @@ def test_stop_loss_trader_sells_the_fallen_bets() -> None:
         assert p.exit_pnl == pytest.approx(expected["exit_pnl_each"], abs=CENT)
     assert sum(p.exit_pnl for p in sold) == pytest.approx(expected["exit_pnl_total"], abs=CENT)
     assert all(p.outcome == 1.0 and p.shares_held == 100 for p in built.tested)
+    total = real_pnl(built) + sum(p.exit_pnl for p in sold)  # no edge: about zero overall
+    assert total == pytest.approx(expected["total_pnl"], abs=CENT)
 
 
 def test_stop_loss_price_paths_explain_the_sells() -> None:
@@ -179,14 +214,18 @@ def test_stop_loss_price_paths_explain_the_sells() -> None:
     for point in wallet.prices:
         path.setdefault(point.token_id, []).append((point.t, point.price))
     outcome = {m.token_ids[0]: m.outcome_prices[0] for m in wallet.markets}
-    for row in wallet.activity:
-        points = sorted(path[row.token_id])
-        assert points[-1][1] == outcome[row.token_id]
-        if row.side == "BUY":
-            assert points[0] == (row.timestamp, row.price)
-        else:
-            assert (row.timestamp, row.price) in points and row.price < points[0][1]
-    assert len(path) == 100
+    sold = {row.token_id: row for row in wallet.activity if row.side == "SELL"}
+    for token, points in path.items():
+        points.sort()
+        assert points[0][1] == 0.50 and points[-1][1] == outcome[token]
+        before_end = [price for _, price in points[:-1]]
+        if token in sold:  # fell to the stop, sold exactly there, never lower before resolution
+            assert sold[token].price == synthetic.STOP_LOSS_PRICE
+            assert (sold[token].timestamp, synthetic.STOP_LOSS_PRICE) in points
+            assert min(before_end) == synthetic.STOP_LOSS_PRICE
+        else:  # held: never touched the stop
+            assert min(before_end) > synthetic.STOP_LOSS_PRICE
+    assert len(path) == 100 and len(sold) == 67
 
 
 # --- structure the later stories rely on (AD-10, AD-14) ---------------------------------------
@@ -251,8 +290,16 @@ def test_coin_flippers_bet_at_whole_cent_prices(repetitions: int) -> None:
         assert built.tested_count == expected["bets_each"] and not built.left_out and not built.slivers
         prices += [p.entry_price for p in built.tested]
     assert all(round(p * 100) == pytest.approx(p * 100, abs=1e-9) for p in prices)
-    assert min(prices) == expected["price_min"] and max(prices) == expected["price_max"]
+    assert expected["price_min"] <= min(prices) and max(prices) <= expected["price_max"]
 
+
+def test_coin_flipper_prices_are_uniform_over_the_cents() -> None:
+    """FR-13: over the first 100 coin-flippers every cent from 0.10 to 0.90 occurs, each within 5 SD of 1/81 of the bets."""
+    counts = Counter(round(row.price * 100) for wallet in synthetic.coin_flippers(100) for row in wallet.activity)
+    assert sorted(counts) == list(range(10, 91))
+    n = sum(counts.values())
+    mean, sd = n / 81, math.sqrt(n * (1 / 81) * (80 / 81))
+    assert all(abs(count - mean) < 5 * sd for count in counts.values()), counts
 
 @pytest.mark.slow
 def test_coin_flippers_win_at_their_prices(repetitions: int) -> None:
@@ -271,13 +318,16 @@ def test_coin_flippers_win_at_their_prices(repetitions: int) -> None:
 
 def test_coin_flippers_are_never_committed() -> None:
     """FR-12, AD-14: the coin-flipper folder is git-ignored and no coin-flipper file is tracked."""
+    if shutil.which("git") is None or not (REPO / ".git").exists():
+        pytest.skip("needs a git checkout (not a zip download)")
     ignored = subprocess.run(
         ["git", "check-ignore", "-q", str(synthetic.COIN_FLIPPER_DIR / "coin-flipper-0000.json")],
         cwd=REPO, capture_output=True, timeout=30,
     )
     assert ignored.returncode == 0
     tracked = subprocess.run(["git", "ls-files"], cwd=REPO, capture_output=True, text=True, timeout=30, check=True)
-    assert "coin-flipper" not in tracked.stdout
+    data_files = [f for f in tracked.stdout.splitlines() if f.startswith(("sample_data/", "instance/"))]
+    assert data_files and not [f for f in data_files if "coin-flipper" in f]
 
 
 # --- the command (FR-13) ----------------------------------------------------------------------
@@ -286,6 +336,7 @@ def test_coin_flippers_are_never_committed() -> None:
 def test_make_synthetic_writes_both_groups(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     """FR-13, AD-14: `make-synthetic` writes the five small Wallets and the 1,000 coin-flippers into instance/."""
     (tmp_path / "sample_data").mkdir()
+    (tmp_path / "pyproject.toml").touch()
     monkeypatch.chdir(tmp_path)
     assert cli.main(["make-synthetic"]) == 0
     for name in SMALL:
@@ -295,14 +346,20 @@ def test_make_synthetic_writes_both_groups(tmp_path: Path, monkeypatch: pytest.M
     assert sample_json.read_wallet(flippers[-1]) == synthetic.coin_flipper(999)
 
 
+@pytest.mark.parametrize("present", [(), ("sample_data",), ("pyproject.toml",)])
 def test_make_synthetic_refuses_outside_the_repository(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+    present: tuple[str, ...], tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
 ) -> None:
-    """FR-13: run outside the repository folder, `make-synthetic` writes nothing and says why."""
+    """FR-13: where sample_data/ and pyproject.toml are not both present, `make-synthetic` writes nothing and says why."""
+    if "sample_data" in present:
+        (tmp_path / "sample_data").mkdir()
+    if "pyproject.toml" in present:
+        (tmp_path / "pyproject.toml").touch()
+    before = sorted(tmp_path.rglob("*"))
     monkeypatch.chdir(tmp_path)
     assert cli.main(["make-synthetic"]) == 2
     assert "repository folder" in capsys.readouterr().err
-    assert list(tmp_path.iterdir()) == []
+    assert sorted(tmp_path.rglob("*")) == before
 
 
 def test_changing_a_wallet_changes_its_file() -> None:

@@ -27,7 +27,9 @@ uv run liquidoracle run
 
 Then open **http://127.0.0.1:8044** in your browser. Stop the app with `Ctrl+C`.
 
-The app runs only on your own computer (it listens on 127.0.0.1, not on the network). Two more commands exist but aren't built yet: `uv run liquidoracle load-sample` (the Sample Dataset) and `uv run liquidoracle make-synthetic` (the Synthetic Wallets).
+The app runs only on your own computer (it listens on 127.0.0.1, not on the network). `uv run liquidoracle load-sample` (the Sample Dataset) exists but isn't built yet.
+
+`uv run liquidoracle make-synthetic` rebuilds the Synthetic Wallets: made-up Wallets whose correct answers are known in advance, used to check the Skill Test. Run it from the repository folder. It rewrites the five small Wallets in `sample_data/synthetic/` (committed; the output is identical every time, so `git status` stays clean) and writes 1,000 coin-flipper Wallets (about 90 MB) to `instance/synthetic/coin-flippers/`, which is never committed. You don't need it to run the app or the tests.
 
 ## Settings and keys
 

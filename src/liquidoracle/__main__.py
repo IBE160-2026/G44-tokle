@@ -76,9 +76,10 @@ def make_synthetic(root: Path) -> int:
     """FR-13, AD-14: write the small Synthetic Wallets (committed) and the coin-flippers (git-ignored)."""
     from liquidoracle.data import synthetic
 
-    if not (root / "sample_data").is_dir():
+    if not ((root / "sample_data").is_dir() and (root / "pyproject.toml").is_file()):
         print(
-            f"make-synthetic must run from the LiquidOracle repository folder (no sample_data/ in {root}).",
+            f"make-synthetic must run from the LiquidOracle repository folder ({root} has no sample_data/ "
+            "and pyproject.toml).",
             file=sys.stderr,
         )
         return 2

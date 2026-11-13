@@ -41,7 +41,8 @@ class _Bet:
 def uniform(wallet: str, bet: int, purpose: str) -> float:
     """A number in [0, 1) fixed by its inputs (AD-15 note, Story 1.3)."""
     digest = hashlib.sha256(f"{GENERATOR_SEED}:{wallet}:{bet}:{purpose}".encode()).digest()
-    return int.from_bytes(digest[:8], "big") / 2**64
+    # 53 bits, a float's precision: 64 bits / 2**64 can round up to exactly 1.0 (review, 2026-11-13).
+    return (int.from_bytes(digest[:8], "big") >> 11) / 2**53
 
 
 def small_wallets() -> tuple[SampleWallet, ...]:
