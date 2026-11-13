@@ -2,7 +2,7 @@
 title: 'Story 1.3: Synthetic Wallets with known answers'
 type: 'feature'
 created: '2026-11-13'
-status: 'in-review'
+status: 'done'
 route: 'dispatch'
 review_loop_iteration: 0
 baseline_commit: '8e55120f1d4ca2d79babeb449ee56c3b96ac19e9'
