@@ -65,6 +65,34 @@ class PricePoint:
 
 
 @dataclass(frozen=True, slots=True)
+class ListedPosition:
+    """One row of a Wallet's positions lists (AD-10: which Positions exist, shares bought).
+
+    `status` is CLOSED (sold, or redeemed after resolution) or OPEN (still held, which includes
+    settled losers nobody redeemed). `first_entry_at` is the first buy time (AD-7).
+    Story 2.1 may add fields as the live client needs them.
+    """
+
+    condition_id: str
+    token_id: str
+    status: str
+    shares_bought: float
+    first_entry_at: int
+
+
+@dataclass(frozen=True, slots=True)
+class SampleWallet:
+    """Everything the Sample Dataset stores for one Wallet (AD-14), as the client would return it."""
+
+    address: str
+    name: str
+    activity: tuple[ActivityRow, ...]
+    positions: tuple[ListedPosition, ...]
+    markets: tuple[Market, ...]
+    prices: tuple[PricePoint, ...] = ()
+
+
+@dataclass(frozen=True, slots=True)
 class Position:
     """All of one Wallet's fills of one outcome in one Market (PRD Glossary, FR-3).
 

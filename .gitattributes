@@ -1,0 +1,3 @@
+# Sample Dataset files must be byte-identical to the generator output on every OS (FR-13, AD-14),
+# so git never converts their line endings.
+sample_data/**/*.json text eol=lf

@@ -39,7 +39,7 @@ def build_parser() -> argparse.ArgumentParser:
     run.add_argument("--seed", type=int, default=None, help="random Seed for the tests (default 44)")
 
     commands.add_parser("load-sample", help="load the Sample Dataset (not built yet)")
-    commands.add_parser("make-synthetic", help="generate the Synthetic Wallets (not built yet)")
+    commands.add_parser("make-synthetic", help="generate the Synthetic Wallets (run from the repository folder)")
     return parser
 
 
@@ -51,8 +51,7 @@ def main(argv: list[str] | None = None) -> int:
         print("load-sample is not built yet (Story 1.6).")
         return 0
     if args.command == "make-synthetic":
-        print("make-synthetic is not built yet (Story 1.3).")
-        return 0
+        return make_synthetic(Path.cwd())
     if args.command != "run":  # argparse allows only the three commands; never start by accident
         raise AssertionError(f"unhandled command {args.command!r}")
 
@@ -71,6 +70,24 @@ def main(argv: list[str] | None = None) -> int:
         return 2
 
     return serve(settings)
+
+
+def make_synthetic(root: Path) -> int:
+    """FR-13, AD-14: write the small Synthetic Wallets (committed) and the coin-flippers (git-ignored)."""
+    from liquidoracle.data import synthetic
+
+    if not ((root / "sample_data").is_dir() and (root / "pyproject.toml").is_file()):
+        print(
+            f"make-synthetic must run from the LiquidOracle repository folder ({root} has no sample_data/ "
+            "and pyproject.toml).",
+            file=sys.stderr,
+        )
+        return 2
+    small = synthetic.write_small(root)
+    folder = synthetic.write_coin_flippers(root)
+    print(f"Wrote {len(small)} Synthetic Wallets to {root / synthetic.SMALL_DIR}")
+    print(f"Wrote {synthetic.COIN_FLIPPERS} coin-flippers to {folder} (not committed)")
+    return 0
 
 
 def serve(settings: Settings) -> int:

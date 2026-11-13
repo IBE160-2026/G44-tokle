@@ -317,7 +317,7 @@ So that the Skill Test can be checked against answers fixed before it was writte
 
 **Given** `uv run liquidoracle make-synthetic`
 **When** it runs
-**Then** it generates the stage 1 types of FR-13: hand-check (10 bets at 0.50, all won), coin-flipper (1,000 Wallets of 100 bets, prices uniform from 0.10 to 0.90, outcomes drawn at those prices), favourite buyer (100 at 0.90, exactly 90 won), sharp trader (100 at 0.50, exactly 70 won), thin wallet (29 Resolved Positions), stop-loss trader (100 at 0.50 with no edge; bets whose price has fallen are sold before resolution, the rest held), with the price paths these need
+**Then** it generates the stage 1 types of FR-13: hand-check (10 bets at 0.50, all won), coin-flipper (1,000 Wallets of 100 bets, prices uniform from 0.10 to 0.90, outcomes drawn at those prices), favourite buyer (100 at 0.90, exactly 90 won), sharp trader (100 at 0.50, exactly 70 won), thin wallet (29 Resolved Positions), stop-loss trader (100 at 0.50 with no edge; the price moves fairly and bets that fall to 0.25 are sold there: 67 sold, 17 of them in Markets their side later won, and 33 held, all won; Edvard, 2026-11-13), with the price paths these need
 **And** it writes fills (activity rows) first and derives the positions lists and Markets from them with the one serializer, using its own fixed constant, not the `SEED` setting (AD-14)
 **And** every tested synthetic Position has its own Market.
 
@@ -327,7 +327,7 @@ So that the Skill Test can be checked against answers fixed before it was writte
 
 **Given** each generated Wallet
 **When** it goes through the Story 1.2 builder
-**Then** a test confirms the intended bets: sharp trader 100 Resolved Positions at 0.50 with exactly 70 won; favourite buyer 100 at 0.90 with exactly 90 won; hand-check 10 won at 0.50; thin wallet 29; stop-loss trader the intended counts held and sold, with negative Exit PnL on the sold ones
+**Then** a test confirms the intended bets: sharp trader 100 Resolved Positions at 0.50 with exactly 70 won; favourite buyer 100 at 0.90 with exactly 90 won; hand-check 10 won at 0.50; thin wallet 29; stop-loss trader 33 held, all won, and 67 sold at 0.25, each with negative Exit PnL
 **And** each type's expected Verdict and p-value range from the FR-13 table is stored as a fixture next to it, before the Skill Test exists.
 
 **Given** the 1,000 coin-flippers

@@ -32,11 +32,10 @@ def fake_server(monkeypatch: pytest.MonkeyPatch) -> dict[str, Any]:
     return calls
 
 
-@pytest.mark.parametrize(("command", "story"), [("load-sample", "1.6"), ("make-synthetic", "1.3")])
-def test_unbuilt_commands_say_not_built_yet(command: str, story: str, capsys: pytest.CaptureFixture[str]) -> None:
-    """AD-14, FR-13: the load-sample and make-synthetic commands exist and say they are not built yet."""
-    assert cli.main([command]) == 0
-    assert f"not built yet (Story {story})" in capsys.readouterr().out
+def test_load_sample_says_not_built_yet(capsys: pytest.CaptureFixture[str]) -> None:
+    """AD-14: the load-sample command exists and says it is not built yet."""
+    assert cli.main(["load-sample"]) == 0
+    assert "not built yet (Story 1.6)" in capsys.readouterr().out
 
 
 def test_run_uses_the_serving_rules(in_empty_dir: Path, fake_server: dict[str, Any]) -> None:

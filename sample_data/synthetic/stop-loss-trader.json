@@ -1,0 +1,5117 @@
+{
+ "activity": [
+  {
+   "condition_id": "0xfa6b6b327912a6c68c86876e0068705ecf2066d26391dc2d3e2277b26f8cf952",
+   "price": 0.5,
+   "side": "BUY",
+   "size": 100.0,
+   "timestamp": 1735689600,
+   "token_id": "66128829987676792075111956928278352159703165321014490646896276894167323790188",
+   "type": "TRADE",
+   "usdc_size": 50.0
+  },
+  {
+   "condition_id": "0x543a01176d3470fe77989d1d10eec50b39e31c6da32ff8d5406f9829b0880778",
+   "price": 0.5,
+   "side": "BUY",
+   "size": 100.0,
+   "timestamp": 1735776000,
+   "token_id": "75497701072906409699790694815404690041919230137817300312031644483989341698925",
+   "type": "TRADE",
+   "usdc_size": 50.0
+  },
+  {
+   "condition_id": "0x543a01176d3470fe77989d1d10eec50b39e31c6da32ff8d5406f9829b0880778",
+   "price": 0.25,
+   "side": "SELL",
+   "size": 100.0,
+   "timestamp": 1735819200,
+   "token_id": "75497701072906409699790694815404690041919230137817300312031644483989341698925",
+   "type": "TRADE",
+   "usdc_size": 25.0
+  },
+  {
+   "condition_id": "0xeb3a7c81cb1c39f6e65892bc9a51defa83f987f27d50898943ee9e31124dfdc9",
+   "price": 0.5,
+   "side": "BUY",
+   "size": 100.0,
+   "timestamp": 1735862400,
+   "token_id": "49903961174841230641937171022420965775715232561499068034300510327346260974872",
+   "type": "TRADE",
+   "usdc_size": 50.0
+  },
+  {
+   "condition_id": "0x8bb017bb786a999d64ba6476840973cf62a7e92570e2b1065d5ccfd90ea7f59f",
+   "price": 0.5,
+   "side": "BUY",
+   "size": 100.0,
+   "timestamp": 1735948800,
+   "token_id": "83092917796208310822429217183056531679214979320795424259735611174664456329348",
+   "type": "TRADE",
+   "usdc_size": 50.0
+  },
+  {
+   "condition_id": "0xcb6a52dadd26fd6aa608de6d89bb30853151dd0765111ceafdd746e3ca8d2515",
+   "price": 0.5,
+   "side": "BUY",
+   "size": 100.0,
+   "timestamp": 1736035200,
+   "token_id": "106962870718785311472301140532003921047932534766569222089778147008890622573077",
+   "type": "TRADE",
+   "usdc_size": 50.0
+  },
+  {
+   "condition_id": "0xcb6a52dadd26fd6aa608de6d89bb30853151dd0765111ceafdd746e3ca8d2515",
+   "price": 0.25,
+   "side": "SELL",
+   "size": 100.0,
+   "timestamp": 1736078400,
+   "token_id": "106962870718785311472301140532003921047932534766569222089778147008890622573077",
+   "type": "TRADE",
+   "usdc_size": 25.0
+  },
+  {
+   "condition_id": "0x1e7f5a751564b9efa83edeae9b7ba48c82e06a12f4a20cdc3912689702d4edff",
+   "price": 0.5,
+   "side": "BUY",
+   "size": 100.0,
+   "timestamp": 1736121600,
+   "token_id": "25420560870511224616194504164904252760108210140233148826178160734670735945151",
+   "type": "TRADE",
+   "usdc_size": 50.0
+  },
+  {
+   "condition_id": "0x1e7f5a751564b9efa83edeae9b7ba48c82e06a12f4a20cdc3912689702d4edff",
+   "price": 0.25,
+   "side": "SELL",
+   "size": 100.0,
+   "timestamp": 1736164800,
+   "token_id": "25420560870511224616194504164904252760108210140233148826178160734670735945151",
+   "type": "TRADE",
+   "usdc_size": 25.0
+  },
+  {
+   "condition_id": "0x605899cab27a909643812505e23ddca8bbf4bc64b6e8484871b4309909287043",
+   "price": 0.5,
+   "side": "BUY",
+   "size": 100.0,
+   "timestamp": 1736208000,
+   "token_id": "787049108981965596488456891398667784007925748179656834121381123555734054147",
+   "type": "TRADE",
+   "usdc_size": 50.0
+  },
+  {
+   "condition_id": "0x3465ac919605e2ba1087e869ef67f02439dc91b3795bbc3f9552d99612d6b81a",
+   "price": 0.5,
+   "side": "BUY",
+   "size": 100.0,
+   "timestamp": 1736294400,
+   "token_id": "67063817775777872674414215273567753175019464151124472314496821465483213598224",
+   "type": "TRADE",
+   "usdc_size": 50.0
+  },
+  {
+   "condition_id": "0xd2ff5a7d85df2a432f2ac01547b1be9cfc9216415e73d00e2ad4b90dedc8dd0a",
+   "price": 0.5,
+   "side": "BUY",
+   "size": 100.0,
+   "timestamp": 1736380800,
+   "token_id": "109134708627812254351305270336336900459346079967894451278934561345826975457005",
+   "type": "TRADE",
+   "usdc_size": 50.0
+  },
+  {
+   "condition_id": "0xd2ff5a7d85df2a432f2ac01547b1be9cfc9216415e73d00e2ad4b90dedc8dd0a",
+   "price": 0.25,
+   "side": "SELL",
+   "size": 100.0,
+   "timestamp": 1736424000,
+   "token_id": "109134708627812254351305270336336900459346079967894451278934561345826975457005",
+   "type": "TRADE",
+   "usdc_size": 25.0
+  },
+  {
+   "condition_id": "0xf50757f3a8c8737748b075163a5221e311057bea888448ab1932da340dea55c2",
+   "price": 0.5,
+   "side": "BUY",
+   "size": 100.0,
+   "timestamp": 1736467200,
+   "token_id": "79395541981787583442034138725721363563631055910009343967431233640654334563243",
+   "type": "TRADE",
+   "usdc_size": 50.0
+  },
+  {
+   "condition_id": "0x16a0db2faab003bf5b16983cb4527173b4b28179b89364f6eda474018315816d",
+   "price": 0.5,
+   "side": "BUY",
+   "size": 100.0,
+   "timestamp": 1736553600,
+   "token_id": "100436726390878957235350621602667921128089609491968733638394180925840420204585",
+   "type": "TRADE",
+   "usdc_size": 50.0
+  },
+  {
+   "condition_id": "0x16a0db2faab003bf5b16983cb4527173b4b28179b89364f6eda474018315816d",
+   "price": 0.25,
+   "side": "SELL",
+   "size": 100.0,
+   "timestamp": 1736596800,
+   "token_id": "100436726390878957235350621602667921128089609491968733638394180925840420204585",
+   "type": "TRADE",
+   "usdc_size": 25.0
+  },
+  {
+   "condition_id": "0xec62a5bfe3f4386f4a073af360c88a9d38501ea97ac46a2b665e2c3d1975b73d",
+   "price": 0.5,
+   "side": "BUY",
+   "size": 100.0,
+   "timestamp": 1736640000,
+   "token_id": "96875616685487590766342872920370906417021618960573019683952782665721175601459",
+   "type": "TRADE",
+   "usdc_size": 50.0
+  },
+  {
+   "condition_id": "0xec62a5bfe3f4386f4a073af360c88a9d38501ea97ac46a2b665e2c3d1975b73d",
+   "price": 0.25,
+   "side": "SELL",
+   "size": 100.0,
+   "timestamp": 1736683200,
+   "token_id": "96875616685487590766342872920370906417021618960573019683952782665721175601459",
+   "type": "TRADE",
+   "usdc_size": 25.0
+  },
+  {
+   "condition_id": "0x4d81567c8e4255ef1d90d43d7aaad65ca172ab3da00e59a87c8843955d3b93c6",
+   "price": 0.5,
+   "side": "BUY",
+   "size": 100.0,
+   "timestamp": 1736726400,
+   "token_id": "37845762585058791023095585032077752438606832590873387045075382741532286996001",
+   "type": "TRADE",
+   "usdc_size": 50.0
+  },
+  {
+   "condition_id": "0x35f56539a72b4a0af6a7ad8d0b01f110ef1f4f41c01e4757e66dba3fb400e238",
+   "price": 0.5,
+   "side": "BUY",
+   "size": 100.0,
+   "timestamp": 1736812800,
+   "token_id": "488629973209890338723344394103365282313094331798389085849103815921453583942",
+   "type": "TRADE",
+   "usdc_size": 50.0
+  },
+  {
+   "condition_id": "0x35f56539a72b4a0af6a7ad8d0b01f110ef1f4f41c01e4757e66dba3fb400e238",
+   "price": 0.25,
+   "side": "SELL",
+   "size": 100.0,
+   "timestamp": 1736856000,
+   "token_id": "488629973209890338723344394103365282313094331798389085849103815921453583942",
+   "type": "TRADE",
+   "usdc_size": 25.0
+  },
+  {
+   "condition_id": "0x0a8c6904d22331a36fcb1b4df02bb06604497c7ca6c7bda310b50bc7fc9cc468",
+   "price": 0.5,
+   "side": "BUY",
+   "size": 100.0,
+   "timestamp": 1736899200,
+   "token_id": "20672076687917503394644221997687778626669353799133412758996376704574024803320",
+   "type": "TRADE",
+   "usdc_size": 50.0
+  },
+  {
+   "condition_id": "0x0a8c6904d22331a36fcb1b4df02bb06604497c7ca6c7bda310b50bc7fc9cc468",
+   "price": 0.25,
+   "side": "SELL",
+   "size": 100.0,
+   "timestamp": 1736942400,
+   "token_id": "20672076687917503394644221997687778626669353799133412758996376704574024803320",
+   "type": "TRADE",
+   "usdc_size": 25.0
+  },
+  {
+   "condition_id": "0xa40281fdbde0bc0cc42412583ca290de10d6454f7b4491f17644484ef6f87422",
+   "price": 0.5,
+   "side": "BUY",
+   "size": 100.0,
+   "timestamp": 1736985600,
+   "token_id": "95263391126698505531752376757417014084275644459763315690825499771457924061107",
+   "type": "TRADE",
+   "usdc_size": 50.0
+  },
+  {
+   "condition_id": "0xa40281fdbde0bc0cc42412583ca290de10d6454f7b4491f17644484ef6f87422",
+   "price": 0.25,
+   "side": "SELL",
+   "size": 100.0,
+   "timestamp": 1737028800,
+   "token_id": "95263391126698505531752376757417014084275644459763315690825499771457924061107",
+   "type": "TRADE",
+   "usdc_size": 25.0
+  },
+  {
+   "condition_id": "0xf006ed7925f688ba82f4e09a37eaca27409cf9747f3bf8370ae9fb2b3882586f",
+   "price": 0.5,
+   "side": "BUY",
+   "size": 100.0,
+   "timestamp": 1737072000,
+   "token_id": "90850779514731387738417855528241911223879376091859148949206092441335793867100",
+   "type": "TRADE",
+   "usdc_size": 50.0
+  },
+  {
+   "condition_id": "0x0be924f51c00e5de44f1d4cdc855ebfde0c8203f2e5bbcad1652a48efa0b98cb",
+   "price": 0.5,
+   "side": "BUY",
+   "size": 100.0,
+   "timestamp": 1737158400,
+   "token_id": "98112554943799720922090266386676763778362444267061852914107460418984710244463",
+   "type": "TRADE",
+   "usdc_size": 50.0
+  },
+  {
+   "condition_id": "0x0be924f51c00e5de44f1d4cdc855ebfde0c8203f2e5bbcad1652a48efa0b98cb",
+   "price": 0.25,
+   "side": "SELL",
+   "size": 100.0,
+   "timestamp": 1737201600,
+   "token_id": "98112554943799720922090266386676763778362444267061852914107460418984710244463",
+   "type": "TRADE",
+   "usdc_size": 25.0
+  },
+  {
+   "condition_id": "0x63583b6b77f00bfff28ce8417e812d2302149a877b514b9b4ade94868ec160c3",
+   "price": 0.5,
+   "side": "BUY",
+   "size": 100.0,
+   "timestamp": 1737244800,
+   "token_id": "34090402077547042372392098084937948424541157237889861366260270051041943696166",
+   "type": "TRADE",
+   "usdc_size": 50.0
+  },
+  {
+   "condition_id": "0x63583b6b77f00bfff28ce8417e812d2302149a877b514b9b4ade94868ec160c3",
+   "price": 0.25,
+   "side": "SELL",
+   "size": 100.0,
+   "timestamp": 1737288000,
+   "token_id": "34090402077547042372392098084937948424541157237889861366260270051041943696166",
+   "type": "TRADE",
+   "usdc_size": 25.0
+  },
+  {
+   "condition_id": "0x673c2fdd724a51b527afcaa73e55675be81cd53d32016ec2ebab00a5e1ad440e",
+   "price": 0.5,
+   "side": "BUY",
+   "size": 100.0,
+   "timestamp": 1737331200,
+   "token_id": "2627048804092446412294827842093607091717998368287754188317193719112362895907",
+   "type": "TRADE",
+   "usdc_size": 50.0
+  },
+  {
+   "condition_id": "0xa50def829e0c6e6f1f94b9079065fe979fd58b9ca44e37ef9298bc5f67b59b18",
+   "price": 0.5,
+   "side": "BUY",
+   "size": 100.0,
+   "timestamp": 1737417600,
+   "token_id": "51066046898370043758133470378126289944847396377824145797772209185349128253287",
+   "type": "TRADE",
+   "usdc_size": 50.0
+  },
+  {
+   "condition_id": "0xb5aec8aa8200ab48ee35002d1bddbd31bf5c2ba88d65981395f58c3e3c50c09a",
+   "price": 0.5,
+   "side": "BUY",
+   "size": 100.0,
+   "timestamp": 1737504000,
+   "token_id": "93512365612936571335770008526087149606456018579757512268591931669208203122266",
+   "type": "TRADE",
+   "usdc_size": 50.0
+  },
+  {
+   "condition_id": "0xb5aec8aa8200ab48ee35002d1bddbd31bf5c2ba88d65981395f58c3e3c50c09a",
+   "price": 0.25,
+   "side": "SELL",
+   "size": 100.0,
+   "timestamp": 1737547200,
+   "token_id": "93512365612936571335770008526087149606456018579757512268591931669208203122266",
+   "type": "TRADE",
+   "usdc_size": 25.0
+  },
+  {
+   "condition_id": "0xd4199421b4ad8cbce6c92675248d293a0eb3d0cff68ee859e9d40ec471aa2455",
+   "price": 0.5,
+   "side": "BUY",
+   "size": 100.0,
+   "timestamp": 1737590400,
+   "token_id": "10451003741073020795084303869581801197881897785558656838598999923472057141473",
+   "type": "TRADE",
+   "usdc_size": 50.0
+  },
+  {
+   "condition_id": "0xd4199421b4ad8cbce6c92675248d293a0eb3d0cff68ee859e9d40ec471aa2455",
+   "price": 0.25,
+   "side": "SELL",
+   "size": 100.0,
+   "timestamp": 1737633600,
+   "token_id": "10451003741073020795084303869581801197881897785558656838598999923472057141473",
+   "type": "TRADE",
+   "usdc_size": 25.0
+  },
+  {
+   "condition_id": "0xc67f88c55cbedf78a007c07f0385c301bc53497fec81803f4899176e083bedf0",
+   "price": 0.5,
+   "side": "BUY",
+   "size": 100.0,
+   "timestamp": 1737676800,
+   "token_id": "64781373666125159820209808107784645574491553562165183018546188636044152512126",
+   "type": "TRADE",
+   "usdc_size": 50.0
+  },
+  {
+   "condition_id": "0x3834438ec89b2e9e18aeaa01fee79525bc7e1b87d637f12c433212fefac43dba",
+   "price": 0.5,
+   "side": "BUY",
+   "size": 100.0,
+   "timestamp": 1737763200,
+   "token_id": "108800880677953444051172418917401102395964933399571906840731655558428737065565",
+   "type": "TRADE",
+   "usdc_size": 50.0
+  },
+  {
+   "condition_id": "0x3834438ec89b2e9e18aeaa01fee79525bc7e1b87d637f12c433212fefac43dba",
+   "price": 0.25,
+   "side": "SELL",
+   "size": 100.0,
+   "timestamp": 1737806400,
+   "token_id": "108800880677953444051172418917401102395964933399571906840731655558428737065565",
+   "type": "TRADE",
+   "usdc_size": 25.0
+  },
+  {
+   "condition_id": "0x0d3fc02329b9e8bc7863a18968bfeb4cf877aa5bcd2547471e821ebca30a5b36",
+   "price": 0.5,
+   "side": "BUY",
+   "size": 100.0,
+   "timestamp": 1737849600,
+   "token_id": "95226745358809400440212832947118145574854442135980086576607772271422534781864",
+   "type": "TRADE",
+   "usdc_size": 50.0
+  },
+  {
+   "condition_id": "0x0d3fc02329b9e8bc7863a18968bfeb4cf877aa5bcd2547471e821ebca30a5b36",
+   "price": 0.25,
+   "side": "SELL",
+   "size": 100.0,
+   "timestamp": 1737892800,
+   "token_id": "95226745358809400440212832947118145574854442135980086576607772271422534781864",
+   "type": "TRADE",
+   "usdc_size": 25.0
+  },
+  {
+   "condition_id": "0x1ce4acff98be4e5f0b413f1b0fcd7f9c6acf96efbc4fe73393df15c4196a12d1",
+   "price": 0.5,
+   "side": "BUY",
+   "size": 100.0,
+   "timestamp": 1737936000,
+   "token_id": "12881697632685773333672846800322632707173945429335061139822844741894773477379",
+   "type": "TRADE",
+   "usdc_size": 50.0
+  },
+  {
+   "condition_id": "0x1ce4acff98be4e5f0b413f1b0fcd7f9c6acf96efbc4fe73393df15c4196a12d1",
+   "price": 0.25,
+   "side": "SELL",
+   "size": 100.0,
+   "timestamp": 1737979200,
+   "token_id": "12881697632685773333672846800322632707173945429335061139822844741894773477379",
+   "type": "TRADE",
+   "usdc_size": 25.0
+  },
+  {
+   "condition_id": "0x9ae2be7553fb0d4d0f168088ea36b42e5743f6460a3d60f8ac6a45ec95782fcd",
+   "price": 0.5,
+   "side": "BUY",
+   "size": 100.0,
+   "timestamp": 1738022400,
+   "token_id": "40994122866321048802564533789869355905089907679778211611270541672464823424448",
+   "type": "TRADE",
+   "usdc_size": 50.0
+  },
+  {
+   "condition_id": "0x69883074f31a689f63b14f1726c1b3c72a42188ec090870e375926eab1dd186c",
+   "price": 0.5,
+   "side": "BUY",
+   "size": 100.0,
+   "timestamp": 1738108800,
+   "token_id": "15313428223689368356890877782630759769767078866125745148319208908939923707151",
+   "type": "TRADE",
+   "usdc_size": 50.0
+  },
+  {
+   "condition_id": "0x69883074f31a689f63b14f1726c1b3c72a42188ec090870e375926eab1dd186c",
+   "price": 0.25,
+   "side": "SELL",
+   "size": 100.0,
+   "timestamp": 1738152000,
+   "token_id": "15313428223689368356890877782630759769767078866125745148319208908939923707151",
+   "type": "TRADE",
+   "usdc_size": 25.0
+  },
+  {
+   "condition_id": "0xff0c3e792303177a32da1e83946b5a7725ec8eb3e2bf80b58f598cc5dbb33443",
+   "price": 0.5,
+   "side": "BUY",
+   "size": 100.0,
+   "timestamp": 1738195200,
+   "token_id": "100066074531320176882885585964552940309737638986910191880797699321315394175019",
+   "type": "TRADE",
+   "usdc_size": 50.0
+  },
+  {
+   "condition_id": "0xff0c3e792303177a32da1e83946b5a7725ec8eb3e2bf80b58f598cc5dbb33443",
+   "price": 0.25,
+   "side": "SELL",
+   "size": 100.0,
+   "timestamp": 1738238400,
+   "token_id": "100066074531320176882885585964552940309737638986910191880797699321315394175019",
+   "type": "TRADE",
+   "usdc_size": 25.0
+  },
+  {
+   "condition_id": "0x0edde40eb7694abe14c4a668c989ee701b5edb79d18c8260fe90732824563cf2",
+   "price": 0.5,
+   "side": "BUY",
+   "size": 100.0,
+   "timestamp": 1738281600,
+   "token_id": "71795007002834977057441567106771270950235251494764421671656072695192320114758",
+   "type": "TRADE",
+   "usdc_size": 50.0
+  },
+  {
+   "condition_id": "0x66af6a34401434cd6ea426d91835394290a293e06a2b1eeaeaa945eb08ac8d7f",
+   "price": 0.5,
+   "side": "BUY",
+   "size": 100.0,
+   "timestamp": 1738368000,
+   "token_id": "43781660943167898070737550218334565811209514063451370094606353752800030042777",
+   "type": "TRADE",
+   "usdc_size": 50.0
+  },
+  {
+   "condition_id": "0x66af6a34401434cd6ea426d91835394290a293e06a2b1eeaeaa945eb08ac8d7f",
+   "price": 0.25,
+   "side": "SELL",
+   "size": 100.0,
+   "timestamp": 1738411200,
+   "token_id": "43781660943167898070737550218334565811209514063451370094606353752800030042777",
+   "type": "TRADE",
+   "usdc_size": 25.0
+  },
+  {
+   "condition_id": "0x8004b2edb38263adbc15c9da918defa581c6ad395135764ee43fe798affe1992",
+   "price": 0.5,
+   "side": "BUY",
+   "size": 100.0,
+   "timestamp": 1738454400,
+   "token_id": "83956398129889667799938737724446878507969053538789799263207161545658380035627",
+   "type": "TRADE",
+   "usdc_size": 50.0
+  },
+  {
+   "condition_id": "0x8004b2edb38263adbc15c9da918defa581c6ad395135764ee43fe798affe1992",
+   "price": 0.25,
+   "side": "SELL",
+   "size": 100.0,
+   "timestamp": 1738497600,
+   "token_id": "83956398129889667799938737724446878507969053538789799263207161545658380035627",
+   "type": "TRADE",
+   "usdc_size": 25.0
+  },
+  {
+   "condition_id": "0xb87f597f66f1a2e73313fb4cfcd7a51ecfe92c07c38c3143638cb8e1fdd5f624",
+   "price": 0.5,
+   "side": "BUY",
+   "size": 100.0,
+   "timestamp": 1738540800,
+   "token_id": "110199952934885089242101210610500216559325039206096691037283226925308311142073",
+   "type": "TRADE",
+   "usdc_size": 50.0
+  },
+  {
+   "condition_id": "0x3ee9b738b1a144ef87ad7ae0ce1a7228480bf8445e0ee8fa917e2c7da9684524",
+   "price": 0.5,
+   "side": "BUY",
+   "size": 100.0,
+   "timestamp": 1738627200,
+   "token_id": "69940378187051078853467670904802935742473133303134733385239977896450763486526",
+   "type": "TRADE",
+   "usdc_size": 50.0
+  },
+  {
+   "condition_id": "0x7ac0c6becc4807c81df8b3a64598bd37263625bc2b424c552dd807c31d28623a",
+   "price": 0.5,
+   "side": "BUY",
+   "size": 100.0,
+   "timestamp": 1738713600,
+   "token_id": "57297095379794794974845885482258577212971058579220570550030027840469308425299",
+   "type": "TRADE",
+   "usdc_size": 50.0
+  },
+  {
+   "condition_id": "0x7ac0c6becc4807c81df8b3a64598bd37263625bc2b424c552dd807c31d28623a",
+   "price": 0.25,
+   "side": "SELL",
+   "size": 100.0,
+   "timestamp": 1738756800,
+   "token_id": "57297095379794794974845885482258577212971058579220570550030027840469308425299",
+   "type": "TRADE",
+   "usdc_size": 25.0
+  },
+  {
+   "condition_id": "0x5099203a6ee6bfef0bd5a318d7b670d4becab9891b6ec470fb5bceb67a04011f",
+   "price": 0.5,
+   "side": "BUY",
+   "size": 100.0,
+   "timestamp": 1738800000,
+   "token_id": "100394179872182684047727799658177509647751537624409611770374702419138307940648",
+   "type": "TRADE",
+   "usdc_size": 50.0
+  },
+  {
+   "condition_id": "0x563630c8f5b7bad50efc42437b9269c621d4570e578ff653e23190c5f139e99b",
+   "price": 0.5,
+   "side": "BUY",
+   "size": 100.0,
+   "timestamp": 1738886400,
+   "token_id": "107123708931019627436480359369124395353920508600878804794166397468280778332375",
+   "type": "TRADE",
+   "usdc_size": 50.0
+  },
+  {
+   "condition_id": "0x563630c8f5b7bad50efc42437b9269c621d4570e578ff653e23190c5f139e99b",
+   "price": 0.25,
+   "side": "SELL",
+   "size": 100.0,
+   "timestamp": 1738929600,
+   "token_id": "107123708931019627436480359369124395353920508600878804794166397468280778332375",
+   "type": "TRADE",
+   "usdc_size": 25.0
+  },
+  {
+   "condition_id": "0x82a7a8abf850c8be9d923ad7d8e647bc733976fa0d2cff63242ffdb762693a7f",
+   "price": 0.5,
+   "side": "BUY",
+   "size": 100.0,
+   "timestamp": 1738972800,
+   "token_id": "66577424489436543575938467703323779943737265587438758201500484552285539404966",
+   "type": "TRADE",
+   "usdc_size": 50.0
+  },
+  {
+   "condition_id": "0x82a7a8abf850c8be9d923ad7d8e647bc733976fa0d2cff63242ffdb762693a7f",
+   "price": 0.25,
+   "side": "SELL",
+   "size": 100.0,
+   "timestamp": 1739016000,
+   "token_id": "66577424489436543575938467703323779943737265587438758201500484552285539404966",
+   "type": "TRADE",
+   "usdc_size": 25.0
+  },
+  {
+   "condition_id": "0xf85d302d339cf2f26523d7716ebe45d2885def7b6c5f309e1c463d65a616a8a8",
+   "price": 0.5,
+   "side": "BUY",
+   "size": 100.0,
+   "timestamp": 1739059200,
+   "token_id": "89024411893902802158390049440602481988116613349427650737777135852425750009378",
+   "type": "TRADE",
+   "usdc_size": 50.0
+  },
+  {
+   "condition_id": "0xf85d302d339cf2f26523d7716ebe45d2885def7b6c5f309e1c463d65a616a8a8",
+   "price": 0.25,
+   "side": "SELL",
+   "size": 100.0,
+   "timestamp": 1739102400,
+   "token_id": "89024411893902802158390049440602481988116613349427650737777135852425750009378",
+   "type": "TRADE",
+   "usdc_size": 25.0
+  },
+  {
+   "condition_id": "0xc15cc68ae66182c72fa18bb0726d299bd0f85df6fe7d432d04dfc74c3f3728bb",
+   "price": 0.5,
+   "side": "BUY",
+   "size": 100.0,
+   "timestamp": 1739145600,
+   "token_id": "115177201746054530214919343937242962391702300943985512875159276435353161115030",
+   "type": "TRADE",
+   "usdc_size": 50.0
+  },
+  {
+   "condition_id": "0xc15cc68ae66182c72fa18bb0726d299bd0f85df6fe7d432d04dfc74c3f3728bb",
+   "price": 0.25,
+   "side": "SELL",
+   "size": 100.0,
+   "timestamp": 1739188800,
+   "token_id": "115177201746054530214919343937242962391702300943985512875159276435353161115030",
+   "type": "TRADE",
+   "usdc_size": 25.0
+  },
+  {
+   "condition_id": "0x2095f125854d1a3f3328033528786c1cac12c0a72302ea042c8e31184935dd74",
+   "price": 0.5,
+   "side": "BUY",
+   "size": 100.0,
+   "timestamp": 1739232000,
+   "token_id": "46726785677259639025886171195710608262034697601532777502591872521486545838787",
+   "type": "TRADE",
+   "usdc_size": 50.0
+  },
+  {
+   "condition_id": "0x2095f125854d1a3f3328033528786c1cac12c0a72302ea042c8e31184935dd74",
+   "price": 0.25,
+   "side": "SELL",
+   "size": 100.0,
+   "timestamp": 1739275200,
+   "token_id": "46726785677259639025886171195710608262034697601532777502591872521486545838787",
+   "type": "TRADE",
+   "usdc_size": 25.0
+  },
+  {
+   "condition_id": "0x4618252ee22cf26e7a353d722d2bc27b71971e4eb3ebd604c79d1d15bd47b7ae",
+   "price": 0.5,
+   "side": "BUY",
+   "size": 100.0,
+   "timestamp": 1739318400,
+   "token_id": "70666704161611363878137483006263140440113533697398492451958644624696696055452",
+   "type": "TRADE",
+   "usdc_size": 50.0
+  },
+  {
+   "condition_id": "0x3125e77a6603430e5540143544c3238c389691280c962d22bc018d8deb702714",
+   "price": 0.5,
+   "side": "BUY",
+   "size": 100.0,
+   "timestamp": 1739404800,
+   "token_id": "48438390581207549715581674998143501396701749610398803581201292557775607945780",
+   "type": "TRADE",
+   "usdc_size": 50.0
+  },
+  {
+   "condition_id": "0x3125e77a6603430e5540143544c3238c389691280c962d22bc018d8deb702714",
+   "price": 0.25,
+   "side": "SELL",
+   "size": 100.0,
+   "timestamp": 1739448000,
+   "token_id": "48438390581207549715581674998143501396701749610398803581201292557775607945780",
+   "type": "TRADE",
+   "usdc_size": 25.0
+  },
+  {
+   "condition_id": "0xce72a6a1a30d4f4a4ba1aae924c170c9f06cbb48e79656202a1c20c1260c3dd4",
+   "price": 0.5,
+   "side": "BUY",
+   "size": 100.0,
+   "timestamp": 1739491200,
+   "token_id": "40638449481425838425062947848295479668444662654328650862114491596818784062181",
+   "type": "TRADE",
+   "usdc_size": 50.0
+  },
+  {
+   "condition_id": "0xce72a6a1a30d4f4a4ba1aae924c170c9f06cbb48e79656202a1c20c1260c3dd4",
+   "price": 0.25,
+   "side": "SELL",
+   "size": 100.0,
+   "timestamp": 1739534400,
+   "token_id": "40638449481425838425062947848295479668444662654328650862114491596818784062181",
+   "type": "TRADE",
+   "usdc_size": 25.0
+  },
+  {
+   "condition_id": "0xc2bf05323bb8f356689fba3a6c1fef9dd193a2d41309c054fd05faaa66d53444",
+   "price": 0.5,
+   "side": "BUY",
+   "size": 100.0,
+   "timestamp": 1739577600,
+   "token_id": "10427540151533163122406503478535446199384140775712794965785622085841876333778",
+   "type": "TRADE",
+   "usdc_size": 50.0
+  },
+  {
+   "condition_id": "0xc2bf05323bb8f356689fba3a6c1fef9dd193a2d41309c054fd05faaa66d53444",
+   "price": 0.25,
+   "side": "SELL",
+   "size": 100.0,
+   "timestamp": 1739620800,
+   "token_id": "10427540151533163122406503478535446199384140775712794965785622085841876333778",
+   "type": "TRADE",
+   "usdc_size": 25.0
+  },
+  {
+   "condition_id": "0x29757c41e871e154c5fd56e32ea6ddbf8d2d192b3479f84773b3a2c9e936f2db",
+   "price": 0.5,
+   "side": "BUY",
+   "size": 100.0,
+   "timestamp": 1739664000,
+   "token_id": "91177537542132216302762121837330300674123232829023245608365939762045485210205",
+   "type": "TRADE",
+   "usdc_size": 50.0
+  },
+  {
+   "condition_id": "0xaded132acfe6d8cf747147357a0f2369a3cc3bdd80e3017df45fd35fcc87deda",
+   "price": 0.5,
+   "side": "BUY",
+   "size": 100.0,
+   "timestamp": 1739750400,
+   "token_id": "64221462605591913490752385633852032965771227189134420433646100687118316762444",
+   "type": "TRADE",
+   "usdc_size": 50.0
+  },
+  {
+   "condition_id": "0xaded132acfe6d8cf747147357a0f2369a3cc3bdd80e3017df45fd35fcc87deda",
+   "price": 0.25,
+   "side": "SELL",
+   "size": 100.0,
+   "timestamp": 1739793600,
+   "token_id": "64221462605591913490752385633852032965771227189134420433646100687118316762444",
+   "type": "TRADE",
+   "usdc_size": 25.0
+  },
+  {
+   "condition_id": "0x4c9459f5ee71171c7d39b0c9d5d0f43b6f66ab1fef2caf96fbb23e2a0f2796fe",
+   "price": 0.5,
+   "side": "BUY",
+   "size": 100.0,
+   "timestamp": 1739836800,
+   "token_id": "53366320636176947235666630673758474123766046210752917512231402045523207259431",
+   "type": "TRADE",
+   "usdc_size": 50.0
+  },
+  {
+   "condition_id": "0x4c9459f5ee71171c7d39b0c9d5d0f43b6f66ab1fef2caf96fbb23e2a0f2796fe",
+   "price": 0.25,
+   "side": "SELL",
+   "size": 100.0,
+   "timestamp": 1739880000,
+   "token_id": "53366320636176947235666630673758474123766046210752917512231402045523207259431",
+   "type": "TRADE",
+   "usdc_size": 25.0
+  },
+  {
+   "condition_id": "0xa727c36ffb3c7adc9773c0c4cdeac96c72a2c58e0fad39f1872c685756516547",
+   "price": 0.5,
+   "side": "BUY",
+   "size": 100.0,
+   "timestamp": 1739923200,
+   "token_id": "114006236282776301032277193187512667523756360744846088054954107373440550388879",
+   "type": "TRADE",
+   "usdc_size": 50.0
+  },
+  {
+   "condition_id": "0xa727c36ffb3c7adc9773c0c4cdeac96c72a2c58e0fad39f1872c685756516547",
+   "price": 0.25,
+   "side": "SELL",
+   "size": 100.0,
+   "timestamp": 1739966400,
+   "token_id": "114006236282776301032277193187512667523756360744846088054954107373440550388879",
+   "type": "TRADE",
+   "usdc_size": 25.0
+  },
+  {
+   "condition_id": "0x51ca3abd6423a4a34f488d2c9c8afe42a966fd8fff9045fac9f6f2fd77728d40",
+   "price": 0.5,
+   "side": "BUY",
+   "size": 100.0,
+   "timestamp": 1740009600,
+   "token_id": "113100584098963163733737380929473975760156928114113802471313358623481881848996",
+   "type": "TRADE",
+   "usdc_size": 50.0
+  },
+  {
+   "condition_id": "0x51ca3abd6423a4a34f488d2c9c8afe42a966fd8fff9045fac9f6f2fd77728d40",
+   "price": 0.25,
+   "side": "SELL",
+   "size": 100.0,
+   "timestamp": 1740052800,
+   "token_id": "113100584098963163733737380929473975760156928114113802471313358623481881848996",
+   "type": "TRADE",
+   "usdc_size": 25.0
+  },
+  {
+   "condition_id": "0x721e496acd4af71d96076775cb198d95a8a3e16e0c5df2573c6f206bcc27c690",
+   "price": 0.5,
+   "side": "BUY",
+   "size": 100.0,
+   "timestamp": 1740096000,
+   "token_id": "87244101374588089944655380162242999725444495532965528637115419340621717624225",
+   "type": "TRADE",
+   "usdc_size": 50.0
+  },
+  {
+   "condition_id": "0x721e496acd4af71d96076775cb198d95a8a3e16e0c5df2573c6f206bcc27c690",
+   "price": 0.25,
+   "side": "SELL",
+   "size": 100.0,
+   "timestamp": 1740139200,
+   "token_id": "87244101374588089944655380162242999725444495532965528637115419340621717624225",
+   "type": "TRADE",
+   "usdc_size": 25.0
+  },
+  {
+   "condition_id": "0x043d635776f772557e55f14e1680932aff94cbcea13a364e98637b2fc250b19f",
+   "price": 0.5,
+   "side": "BUY",
+   "size": 100.0,
+   "timestamp": 1740182400,
+   "token_id": "103335122950955609436376810787028044983617554871759464740239410783370744449274",
+   "type": "TRADE",
+   "usdc_size": 50.0
+  },
+  {
+   "condition_id": "0x771d041ac53bb6a94b0325c405f478fb9fa8357add13b496858054c8688d66cc",
+   "price": 0.5,
+   "side": "BUY",
+   "size": 100.0,
+   "timestamp": 1740268800,
+   "token_id": "61580699529647147803919218266934370089054385579868143466011065743070657382872",
+   "type": "TRADE",
+   "usdc_size": 50.0
+  },
+  {
+   "condition_id": "0x77f00b48ccbead3ba5347c46f19f204edd88a00072e88c92f5ad1c79e6590097",
+   "price": 0.5,
+   "side": "BUY",
+   "size": 100.0,
+   "timestamp": 1740355200,
+   "token_id": "19461468469632606238173175958285144902802613118245209900277669506505251898953",
+   "type": "TRADE",
+   "usdc_size": 50.0
+  },
+  {
+   "condition_id": "0x77f00b48ccbead3ba5347c46f19f204edd88a00072e88c92f5ad1c79e6590097",
+   "price": 0.25,
+   "side": "SELL",
+   "size": 100.0,
+   "timestamp": 1740398400,
+   "token_id": "19461468469632606238173175958285144902802613118245209900277669506505251898953",
+   "type": "TRADE",
+   "usdc_size": 25.0
+  },
+  {
+   "condition_id": "0x321790580f870395ef649265056d4c4a3d8466c421cf0519c3e2c6584e9776b9",
+   "price": 0.5,
+   "side": "BUY",
+   "size": 100.0,
+   "timestamp": 1740441600,
+   "token_id": "96911589065936438870280567400241439763631188908144119652662396448422625164789",
+   "type": "TRADE",
+   "usdc_size": 50.0
+  },
+  {
+   "condition_id": "0x321790580f870395ef649265056d4c4a3d8466c421cf0519c3e2c6584e9776b9",
+   "price": 0.25,
+   "side": "SELL",
+   "size": 100.0,
+   "timestamp": 1740484800,
+   "token_id": "96911589065936438870280567400241439763631188908144119652662396448422625164789",
+   "type": "TRADE",
+   "usdc_size": 25.0
+  },
+  {
+   "condition_id": "0xfe6330b04069160d95262b1307017df177433aab32b57e53c77ea0cdb63959c6",
+   "price": 0.5,
+   "side": "BUY",
+   "size": 100.0,
+   "timestamp": 1740528000,
+   "token_id": "60258638342302225241885362603095673813833735363202228349787979631273564383778",
+   "type": "TRADE",
+   "usdc_size": 50.0
+  },
+  {
+   "condition_id": "0x37c389458b3a6f720fd6375cb828321a4d29497cc17a04ac5037eaf8459da98f",
+   "price": 0.5,
+   "side": "BUY",
+   "size": 100.0,
+   "timestamp": 1740614400,
+   "token_id": "38610110723489116192385784630430843557079218263632486881775777118347337574029",
+   "type": "TRADE",
+   "usdc_size": 50.0
+  },
+  {
+   "condition_id": "0xe0ff4944d24272f5bd2fef707503bc2af4ec3b70637eef9011dec577bb6f1a81",
+   "price": 0.5,
+   "side": "BUY",
+   "size": 100.0,
+   "timestamp": 1740700800,
+   "token_id": "24534888438167195736992034104339277993306069761320005040816556624903080873182",
+   "type": "TRADE",
+   "usdc_size": 50.0
+  },
+  {
+   "condition_id": "0xe0ff4944d24272f5bd2fef707503bc2af4ec3b70637eef9011dec577bb6f1a81",
+   "price": 0.25,
+   "side": "SELL",
+   "size": 100.0,
+   "timestamp": 1740744000,
+   "token_id": "24534888438167195736992034104339277993306069761320005040816556624903080873182",
+   "type": "TRADE",
+   "usdc_size": 25.0
+  },
+  {
+   "condition_id": "0x4a6e5a558dfbc22ff98673bc3d3cba5e7de9231f34c0eb3402a170b93ab40c55",
+   "price": 0.5,
+   "side": "BUY",
+   "size": 100.0,
+   "timestamp": 1740787200,
+   "token_id": "21518144533853064906293765772166567131295638804968203753676509612421027766748",
+   "type": "TRADE",
+   "usdc_size": 50.0
+  },
+  {
+   "condition_id": "0x4a6e5a558dfbc22ff98673bc3d3cba5e7de9231f34c0eb3402a170b93ab40c55",
+   "price": 0.25,
+   "side": "SELL",
+   "size": 100.0,
+   "timestamp": 1740830400,
+   "token_id": "21518144533853064906293765772166567131295638804968203753676509612421027766748",
+   "type": "TRADE",
+   "usdc_size": 25.0
+  },
+  {
+   "condition_id": "0xabb4f795da4dc925c7063d0627241d11afbaec054590bd5cd11c46a53d77ebda",
+   "price": 0.5,
+   "side": "BUY",
+   "size": 100.0,
+   "timestamp": 1740873600,
+   "token_id": "21418891916659483760232331025693704317481184135411313546637033181778878001358",
+   "type": "TRADE",
+   "usdc_size": 50.0
+  },
+  {
+   "condition_id": "0xabb4f795da4dc925c7063d0627241d11afbaec054590bd5cd11c46a53d77ebda",
+   "price": 0.25,
+   "side": "SELL",
+   "size": 100.0,
+   "timestamp": 1740916800,
+   "token_id": "21418891916659483760232331025693704317481184135411313546637033181778878001358",
+   "type": "TRADE",
+   "usdc_size": 25.0
+  },
+  {
+   "condition_id": "0x09e4ec61b871a4be867347ccf66cea544fbee94fff0c991c880d9e47ea125aa4",
+   "price": 0.5,
+   "side": "BUY",
+   "size": 100.0,
+   "timestamp": 1740960000,
+   "token_id": "67444725429465623577161306753369569128487333717343380480136455512205012981314",
+   "type": "TRADE",
+   "usdc_size": 50.0
+  },
+  {
+   "condition_id": "0x09e4ec61b871a4be867347ccf66cea544fbee94fff0c991c880d9e47ea125aa4",
+   "price": 0.25,
+   "side": "SELL",
+   "size": 100.0,
+   "timestamp": 1741003200,
+   "token_id": "67444725429465623577161306753369569128487333717343380480136455512205012981314",
+   "type": "TRADE",
+   "usdc_size": 25.0
+  },
+  {
+   "condition_id": "0x0fce41452f3b1b8a73b5bee3eed8ae5062c9950abe9a93172691d3d7686253e6",
+   "price": 0.5,
+   "side": "BUY",
+   "size": 100.0,
+   "timestamp": 1741046400,
+   "token_id": "69644741477318385971543424678943575124094522539508923348980749766277517360710",
+   "type": "TRADE",
+   "usdc_size": 50.0
+  },
+  {
+   "condition_id": "0x0fce41452f3b1b8a73b5bee3eed8ae5062c9950abe9a93172691d3d7686253e6",
+   "price": 0.25,
+   "side": "SELL",
+   "size": 100.0,
+   "timestamp": 1741089600,
+   "token_id": "69644741477318385971543424678943575124094522539508923348980749766277517360710",
+   "type": "TRADE",
+   "usdc_size": 25.0
+  },
+  {
+   "condition_id": "0x76793c246c70bcd3fcc714371684dd80e8c48a9452d9d220e7641866451a757e",
+   "price": 0.5,
+   "side": "BUY",
+   "size": 100.0,
+   "timestamp": 1741132800,
+   "token_id": "86609726354410132498944666161232429620180395055566727737345639180853253809349",
+   "type": "TRADE",
+   "usdc_size": 50.0
+  },
+  {
+   "condition_id": "0xa4d5de4321a803133de9afdd7012af386a76252560cd1a3f88c96b09608dce82",
+   "price": 0.5,
+   "side": "BUY",
+   "size": 100.0,
+   "timestamp": 1741219200,
+   "token_id": "11773443377921256396629446189324614478626743167907561504741345924892821188494",
+   "type": "TRADE",
+   "usdc_size": 50.0
+  },
+  {
+   "condition_id": "0xa4d5de4321a803133de9afdd7012af386a76252560cd1a3f88c96b09608dce82",
+   "price": 0.25,
+   "side": "SELL",
+   "size": 100.0,
+   "timestamp": 1741262400,
+   "token_id": "11773443377921256396629446189324614478626743167907561504741345924892821188494",
+   "type": "TRADE",
+   "usdc_size": 25.0
+  },
+  {
+   "condition_id": "0x014210ba49ed439752cdc7632b110c028cafb45002275e0e237234173b28d804",
+   "price": 0.5,
+   "side": "BUY",
+   "size": 100.0,
+   "timestamp": 1741305600,
+   "token_id": "104450687776665218816969814155951189225393624881515401280027402287054610297958",
+   "type": "TRADE",
+   "usdc_size": 50.0
+  },
+  {
+   "condition_id": "0x014210ba49ed439752cdc7632b110c028cafb45002275e0e237234173b28d804",
+   "price": 0.25,
+   "side": "SELL",
+   "size": 100.0,
+   "timestamp": 1741348800,
+   "token_id": "104450687776665218816969814155951189225393624881515401280027402287054610297958",
+   "type": "TRADE",
+   "usdc_size": 25.0
+  },
+  {
+   "condition_id": "0xd0451ddf3306f4bd535b2ea3052da9d3b317fa2fb0af127b6e65c1f272522968",
+   "price": 0.5,
+   "side": "BUY",
+   "size": 100.0,
+   "timestamp": 1741392000,
+   "token_id": "55908819532408473336952293050032843467910060038325165957434377189349037667663",
+   "type": "TRADE",
+   "usdc_size": 50.0
+  },
+  {
+   "condition_id": "0xd0451ddf3306f4bd535b2ea3052da9d3b317fa2fb0af127b6e65c1f272522968",
+   "price": 0.25,
+   "side": "SELL",
+   "size": 100.0,
+   "timestamp": 1741435200,
+   "token_id": "55908819532408473336952293050032843467910060038325165957434377189349037667663",
+   "type": "TRADE",
+   "usdc_size": 25.0
+  },
+  {
+   "condition_id": "0xb644aee968b609c783cb21603969520d20c51e9e79188bef28c9fcf7f07ee767",
+   "price": 0.5,
+   "side": "BUY",
+   "size": 100.0,
+   "timestamp": 1741478400,
+   "token_id": "23884739136976034827349058887618878380132025220128623915082616584227285287442",
+   "type": "TRADE",
+   "usdc_size": 50.0
+  },
+  {
+   "condition_id": "0x6265ffb30d16e6309483e7167cb6c2e48c4d69bf01f9537d621d17404c3f8a79",
+   "price": 0.5,
+   "side": "BUY",
+   "size": 100.0,
+   "timestamp": 1741564800,
+   "token_id": "42645692821306576487211367115296810357722012569643691525125688893743994319571",
+   "type": "TRADE",
+   "usdc_size": 50.0
+  },
+  {
+   "condition_id": "0x6265ffb30d16e6309483e7167cb6c2e48c4d69bf01f9537d621d17404c3f8a79",
+   "price": 0.25,
+   "side": "SELL",
+   "size": 100.0,
+   "timestamp": 1741608000,
+   "token_id": "42645692821306576487211367115296810357722012569643691525125688893743994319571",
+   "type": "TRADE",
+   "usdc_size": 25.0
+  },
+  {
+   "condition_id": "0x773bb472f99e161d7766ed67978efa1432b2983eb7b1971fd57908440588c324",
+   "price": 0.5,
+   "side": "BUY",
+   "size": 100.0,
+   "timestamp": 1741651200,
+   "token_id": "73420998275961569819435107285799390698670870919349451495167885323060250681000",
+   "type": "TRADE",
+   "usdc_size": 50.0
+  },
+  {
+   "condition_id": "0x773bb472f99e161d7766ed67978efa1432b2983eb7b1971fd57908440588c324",
+   "price": 0.25,
+   "side": "SELL",
+   "size": 100.0,
+   "timestamp": 1741694400,
+   "token_id": "73420998275961569819435107285799390698670870919349451495167885323060250681000",
+   "type": "TRADE",
+   "usdc_size": 25.0
+  },
+  {
+   "condition_id": "0x723eaa0f2d023768905e241b60804837195ecbb380da732751872546243fe80d",
+   "price": 0.5,
+   "side": "BUY",
+   "size": 100.0,
+   "timestamp": 1741737600,
+   "token_id": "58185444446231501436236968355307441268219005126142466023431735649139404188342",
+   "type": "TRADE",
+   "usdc_size": 50.0
+  },
+  {
+   "condition_id": "0x044b98b705d5d1f8e69e3e72beb698915dccd68947b50ae530d6203a82b2f4f0",
+   "price": 0.5,
+   "side": "BUY",
+   "size": 100.0,
+   "timestamp": 1741824000,
+   "token_id": "37474644755818260953550465198736603914074543388852562428450327221468614904843",
+   "type": "TRADE",
+   "usdc_size": 50.0
+  },
+  {
+   "condition_id": "0x044b98b705d5d1f8e69e3e72beb698915dccd68947b50ae530d6203a82b2f4f0",
+   "price": 0.25,
+   "side": "SELL",
+   "size": 100.0,
+   "timestamp": 1741867200,
+   "token_id": "37474644755818260953550465198736603914074543388852562428450327221468614904843",
+   "type": "TRADE",
+   "usdc_size": 25.0
+  },
+  {
+   "condition_id": "0x23e5db108ae589b524fa85bd2252071315239f3fa31cdcfbab00545f0509c503",
+   "price": 0.5,
+   "side": "BUY",
+   "size": 100.0,
+   "timestamp": 1741910400,
+   "token_id": "54377473701262201819816164061430843312927444814010872600729616863589169161801",
+   "type": "TRADE",
+   "usdc_size": 50.0
+  },
+  {
+   "condition_id": "0x23e5db108ae589b524fa85bd2252071315239f3fa31cdcfbab00545f0509c503",
+   "price": 0.25,
+   "side": "SELL",
+   "size": 100.0,
+   "timestamp": 1741953600,
+   "token_id": "54377473701262201819816164061430843312927444814010872600729616863589169161801",
+   "type": "TRADE",
+   "usdc_size": 25.0
+  },
+  {
+   "condition_id": "0x23831734b55fe8c5fa2f9bd60f6d5ed8e6144972132f4226c1db16b31df5fca4",
+   "price": 0.5,
+   "side": "BUY",
+   "size": 100.0,
+   "timestamp": 1741996800,
+   "token_id": "36654678071335291252238900030664686976998588524498850419669135760926138911418",
+   "type": "TRADE",
+   "usdc_size": 50.0
+  },
+  {
+   "condition_id": "0x23831734b55fe8c5fa2f9bd60f6d5ed8e6144972132f4226c1db16b31df5fca4",
+   "price": 0.25,
+   "side": "SELL",
+   "size": 100.0,
+   "timestamp": 1742040000,
+   "token_id": "36654678071335291252238900030664686976998588524498850419669135760926138911418",
+   "type": "TRADE",
+   "usdc_size": 25.0
+  },
+  {
+   "condition_id": "0x608c88f8ef92e2ae92f33723ad79918c3ef4cd8cff1481641db17cb79d2b767d",
+   "price": 0.5,
+   "side": "BUY",
+   "size": 100.0,
+   "timestamp": 1742083200,
+   "token_id": "56309573994461202156858070736179726817751299685429303336018121709654401264376",
+   "type": "TRADE",
+   "usdc_size": 50.0
+  },
+  {
+   "condition_id": "0xc32ceb3a438caf82f7040bd10dd0fe3da01bafacd224f63a0e45bcfc4842654c",
+   "price": 0.5,
+   "side": "BUY",
+   "size": 100.0,
+   "timestamp": 1742169600,
+   "token_id": "106557989862375097413649211799923105464090173270532910460983592274077533239360",
+   "type": "TRADE",
+   "usdc_size": 50.0
+  },
+  {
+   "condition_id": "0xc32ceb3a438caf82f7040bd10dd0fe3da01bafacd224f63a0e45bcfc4842654c",
+   "price": 0.25,
+   "side": "SELL",
+   "size": 100.0,
+   "timestamp": 1742212800,
+   "token_id": "106557989862375097413649211799923105464090173270532910460983592274077533239360",
+   "type": "TRADE",
+   "usdc_size": 25.0
+  },
+  {
+   "condition_id": "0x8c4a938455d9cec92d6c8540211c3583bb72d6d9a4649e40eb9f3222043aaee1",
+   "price": 0.5,
+   "side": "BUY",
+   "size": 100.0,
+   "timestamp": 1742256000,
+   "token_id": "71098499462466364737452121218042334392033455690868573363839763965533227675602",
+   "type": "TRADE",
+   "usdc_size": 50.0
+  },
+  {
+   "condition_id": "0x8c4a938455d9cec92d6c8540211c3583bb72d6d9a4649e40eb9f3222043aaee1",
+   "price": 0.25,
+   "side": "SELL",
+   "size": 100.0,
+   "timestamp": 1742299200,
+   "token_id": "71098499462466364737452121218042334392033455690868573363839763965533227675602",
+   "type": "TRADE",
+   "usdc_size": 25.0
+  },
+  {
+   "condition_id": "0x55216a1b5a3092e149a8a6fa4c8b6fcc0ef386fe2b889be006c8738926d95878",
+   "price": 0.5,
+   "side": "BUY",
+   "size": 100.0,
+   "timestamp": 1742342400,
+   "token_id": "25721418493281607344998541740525431812970926025791346764892029319932036719373",
+   "type": "TRADE",
+   "usdc_size": 50.0
+  },
+  {
+   "condition_id": "0x55216a1b5a3092e149a8a6fa4c8b6fcc0ef386fe2b889be006c8738926d95878",
+   "price": 0.25,
+   "side": "SELL",
+   "size": 100.0,
+   "timestamp": 1742385600,
+   "token_id": "25721418493281607344998541740525431812970926025791346764892029319932036719373",
+   "type": "TRADE",
+   "usdc_size": 25.0
+  },
+  {
+   "condition_id": "0xed9ca537ba7ae0551651dee37edc82bfba541bc90cdc41bcccd7b55038c1f085",
+   "price": 0.5,
+   "side": "BUY",
+   "size": 100.0,
+   "timestamp": 1742428800,
+   "token_id": "112663267026081702665923286369631933222535672079912708191630275474348276552889",
+   "type": "TRADE",
+   "usdc_size": 50.0
+  },
+  {
+   "condition_id": "0xed9ca537ba7ae0551651dee37edc82bfba541bc90cdc41bcccd7b55038c1f085",
+   "price": 0.25,
+   "side": "SELL",
+   "size": 100.0,
+   "timestamp": 1742472000,
+   "token_id": "112663267026081702665923286369631933222535672079912708191630275474348276552889",
+   "type": "TRADE",
+   "usdc_size": 25.0
+  },
+  {
+   "condition_id": "0x20329149991f513327d02f9b1a69eade599bbb6bf85d8e24cd82dd4affe6f5ae",
+   "price": 0.5,
+   "side": "BUY",
+   "size": 100.0,
+   "timestamp": 1742515200,
+   "token_id": "27268519084873085859523025757416504780497350601387590099361475456587967013062",
+   "type": "TRADE",
+   "usdc_size": 50.0
+  },
+  {
+   "condition_id": "0x20329149991f513327d02f9b1a69eade599bbb6bf85d8e24cd82dd4affe6f5ae",
+   "price": 0.25,
+   "side": "SELL",
+   "size": 100.0,
+   "timestamp": 1742558400,
+   "token_id": "27268519084873085859523025757416504780497350601387590099361475456587967013062",
+   "type": "TRADE",
+   "usdc_size": 25.0
+  },
+  {
+   "condition_id": "0x1b82b851d9301dfdb87d9661230f1e7561282c2a68ddb11544504dc72e2ff275",
+   "price": 0.5,
+   "side": "BUY",
+   "size": 100.0,
+   "timestamp": 1742601600,
+   "token_id": "93420273635925980308446261478473171316620843506861672579704399514303418417676",
+   "type": "TRADE",
+   "usdc_size": 50.0
+  },
+  {
+   "condition_id": "0x3a0f0296ab3a66433d6b66e805bcc3df90eb25baa6a019d03a3d6bfa9421fcf0",
+   "price": 0.5,
+   "side": "BUY",
+   "size": 100.0,
+   "timestamp": 1742688000,
+   "token_id": "21949777423399074265194742987672432339883740961662359812461898666184972329246",
+   "type": "TRADE",
+   "usdc_size": 50.0
+  },
+  {
+   "condition_id": "0x3a0f0296ab3a66433d6b66e805bcc3df90eb25baa6a019d03a3d6bfa9421fcf0",
+   "price": 0.25,
+   "side": "SELL",
+   "size": 100.0,
+   "timestamp": 1742731200,
+   "token_id": "21949777423399074265194742987672432339883740961662359812461898666184972329246",
+   "type": "TRADE",
+   "usdc_size": 25.0
+  },
+  {
+   "condition_id": "0xca9aa671cfdbb257cb92e2b516c10bedbb6c5f942630e29ab3cf1c04717afc31",
+   "price": 0.5,
+   "side": "BUY",
+   "size": 100.0,
+   "timestamp": 1742774400,
+   "token_id": "58536289289685555057020261459094462224470644069345987512008503711835139642760",
+   "type": "TRADE",
+   "usdc_size": 50.0
+  },
+  {
+   "condition_id": "0xca9aa671cfdbb257cb92e2b516c10bedbb6c5f942630e29ab3cf1c04717afc31",
+   "price": 0.25,
+   "side": "SELL",
+   "size": 100.0,
+   "timestamp": 1742817600,
+   "token_id": "58536289289685555057020261459094462224470644069345987512008503711835139642760",
+   "type": "TRADE",
+   "usdc_size": 25.0
+  },
+  {
+   "condition_id": "0x6c565f47c2846d1c8df0e6a9ee77f725d58774f8dabf90e2784bc6f56aa4c281",
+   "price": 0.5,
+   "side": "BUY",
+   "size": 100.0,
+   "timestamp": 1742860800,
+   "token_id": "88175210794734969609567685136184354399404619998106243934838468160617050318976",
+   "type": "TRADE",
+   "usdc_size": 50.0
+  },
+  {
+   "condition_id": "0x6c565f47c2846d1c8df0e6a9ee77f725d58774f8dabf90e2784bc6f56aa4c281",
+   "price": 0.25,
+   "side": "SELL",
+   "size": 100.0,
+   "timestamp": 1742904000,
+   "token_id": "88175210794734969609567685136184354399404619998106243934838468160617050318976",
+   "type": "TRADE",
+   "usdc_size": 25.0
+  },
+  {
+   "condition_id": "0xf2b218088bb526a5a9db8803eb71f9da431f336caf4ec8a3afe42b90ec87f534",
+   "price": 0.5,
+   "side": "BUY",
+   "size": 100.0,
+   "timestamp": 1742947200,
+   "token_id": "101392504633969812758842911965748392118951210641430805185617603636631493774597",
+   "type": "TRADE",
+   "usdc_size": 50.0
+  },
+  {
+   "condition_id": "0xbe897ca524cb748466a5900f656f77b4abb6edaa98969d60ed9cbcd0ac91238d",
+   "price": 0.5,
+   "side": "BUY",
+   "size": 100.0,
+   "timestamp": 1743033600,
+   "token_id": "80316216828809469711143427486009192735906555503330678531636855832892815873548",
+   "type": "TRADE",
+   "usdc_size": 50.0
+  },
+  {
+   "condition_id": "0xbe897ca524cb748466a5900f656f77b4abb6edaa98969d60ed9cbcd0ac91238d",
+   "price": 0.25,
+   "side": "SELL",
+   "size": 100.0,
+   "timestamp": 1743076800,
+   "token_id": "80316216828809469711143427486009192735906555503330678531636855832892815873548",
+   "type": "TRADE",
+   "usdc_size": 25.0
+  },
+  {
+   "condition_id": "0x7caab697046aa482f23f50297d0377b1fed7e4c154fe2da66fdbb3c714d69bb0",
+   "price": 0.5,
+   "side": "BUY",
+   "size": 100.0,
+   "timestamp": 1743120000,
+   "token_id": "42615597220589857942756690561874150988794083919534840453642176501210418897240",
+   "type": "TRADE",
+   "usdc_size": 50.0
+  },
+  {
+   "condition_id": "0x7caab697046aa482f23f50297d0377b1fed7e4c154fe2da66fdbb3c714d69bb0",
+   "price": 0.25,
+   "side": "SELL",
+   "size": 100.0,
+   "timestamp": 1743163200,
+   "token_id": "42615597220589857942756690561874150988794083919534840453642176501210418897240",
+   "type": "TRADE",
+   "usdc_size": 25.0
+  },
+  {
+   "condition_id": "0x6ee7583fef7154e6aea0ceb352e3d94b899c2725f94be7be149fbb02fae84ec3",
+   "price": 0.5,
+   "side": "BUY",
+   "size": 100.0,
+   "timestamp": 1743206400,
+   "token_id": "68641505747682990094471892888922049367646956532482018040430199517445850740117",
+   "type": "TRADE",
+   "usdc_size": 50.0
+  },
+  {
+   "condition_id": "0x6ee7583fef7154e6aea0ceb352e3d94b899c2725f94be7be149fbb02fae84ec3",
+   "price": 0.25,
+   "side": "SELL",
+   "size": 100.0,
+   "timestamp": 1743249600,
+   "token_id": "68641505747682990094471892888922049367646956532482018040430199517445850740117",
+   "type": "TRADE",
+   "usdc_size": 25.0
+  },
+  {
+   "condition_id": "0xa076269fb1634633b4c1e0c166b0fc764e2b71209dc4bbf90cc10c25b5e66125",
+   "price": 0.5,
+   "side": "BUY",
+   "size": 100.0,
+   "timestamp": 1743292800,
+   "token_id": "54247391119969175119164237119711356644232503907163108862691261823970373348422",
+   "type": "TRADE",
+   "usdc_size": 50.0
+  },
+  {
+   "condition_id": "0x5a33e9fbab219f36d8ba0a5bfdac0fd20bff441c0e63c60acfa7df98c6035ead",
+   "price": 0.5,
+   "side": "BUY",
+   "size": 100.0,
+   "timestamp": 1743379200,
+   "token_id": "93077340338181205769150841974609027971313805527178837406163382695153427697017",
+   "type": "TRADE",
+   "usdc_size": 50.0
+  },
+  {
+   "condition_id": "0x5a33e9fbab219f36d8ba0a5bfdac0fd20bff441c0e63c60acfa7df98c6035ead",
+   "price": 0.25,
+   "side": "SELL",
+   "size": 100.0,
+   "timestamp": 1743422400,
+   "token_id": "93077340338181205769150841974609027971313805527178837406163382695153427697017",
+   "type": "TRADE",
+   "usdc_size": 25.0
+  },
+  {
+   "condition_id": "0x67be612a6338ff408cf3e78c06827dbe6b431661474afa954c10b0e831ef98cb",
+   "price": 0.5,
+   "side": "BUY",
+   "size": 100.0,
+   "timestamp": 1743465600,
+   "token_id": "2966022555983942396872011665682861985777552611652653538548109808637147254981",
+   "type": "TRADE",
+   "usdc_size": 50.0
+  },
+  {
+   "condition_id": "0x67be612a6338ff408cf3e78c06827dbe6b431661474afa954c10b0e831ef98cb",
+   "price": 0.25,
+   "side": "SELL",
+   "size": 100.0,
+   "timestamp": 1743508800,
+   "token_id": "2966022555983942396872011665682861985777552611652653538548109808637147254981",
+   "type": "TRADE",
+   "usdc_size": 25.0
+  },
+  {
+   "condition_id": "0x21884aaf05d73095d3096f685bc575b4fcc2e9927a645cdf44e62b4f57451996",
+   "price": 0.5,
+   "side": "BUY",
+   "size": 100.0,
+   "timestamp": 1743552000,
+   "token_id": "111382363327867407492307036253699724350839205867507427363053337239978779139571",
+   "type": "TRADE",
+   "usdc_size": 50.0
+  },
+  {
+   "condition_id": "0x61121cca8e49e224a7ae5d76feb361fa0f2e3cc980328a8d4ea1d0c65dd45521",
+   "price": 0.5,
+   "side": "BUY",
+   "size": 100.0,
+   "timestamp": 1743638400,
+   "token_id": "65653784401589115917555682592107105711003803351406888572637713273665828242032",
+   "type": "TRADE",
+   "usdc_size": 50.0
+  },
+  {
+   "condition_id": "0x61121cca8e49e224a7ae5d76feb361fa0f2e3cc980328a8d4ea1d0c65dd45521",
+   "price": 0.25,
+   "side": "SELL",
+   "size": 100.0,
+   "timestamp": 1743681600,
+   "token_id": "65653784401589115917555682592107105711003803351406888572637713273665828242032",
+   "type": "TRADE",
+   "usdc_size": 25.0
+  },
+  {
+   "condition_id": "0x47342f2ddfc6ad226d7965f886edd7107e440f82b28cf9b46ee4d6e8ac41eaf9",
+   "price": 0.5,
+   "side": "BUY",
+   "size": 100.0,
+   "timestamp": 1743724800,
+   "token_id": "1510710924282596500240445740101881297662973618622228521164525780650879419253",
+   "type": "TRADE",
+   "usdc_size": 50.0
+  },
+  {
+   "condition_id": "0xc159beb424f9c92f86fc1933efb73e428b834cec7a4ad3c8cd0d28a3b2ca9433",
+   "price": 0.5,
+   "side": "BUY",
+   "size": 100.0,
+   "timestamp": 1743811200,
+   "token_id": "10127006322220033779635675184135813295322975865650841419778219654035804020946",
+   "type": "TRADE",
+   "usdc_size": 50.0
+  },
+  {
+   "condition_id": "0x2996106de8e306981539cb1b2ce0a32a561aa5da44076a33084617744c1ac93d",
+   "price": 0.5,
+   "side": "BUY",
+   "size": 100.0,
+   "timestamp": 1743897600,
+   "token_id": "20450529738057165520175871626389952259588828185173547626409370512605399732866",
+   "type": "TRADE",
+   "usdc_size": 50.0
+  },
+  {
+   "condition_id": "0x2996106de8e306981539cb1b2ce0a32a561aa5da44076a33084617744c1ac93d",
+   "price": 0.25,
+   "side": "SELL",
+   "size": 100.0,
+   "timestamp": 1743940800,
+   "token_id": "20450529738057165520175871626389952259588828185173547626409370512605399732866",
+   "type": "TRADE",
+   "usdc_size": 25.0
+  },
+  {
+   "condition_id": "0x7cec7aa854f0bafb4c423ffda132db02bb08277d02f5955800a4352ecacec51c",
+   "price": 0.5,
+   "side": "BUY",
+   "size": 100.0,
+   "timestamp": 1743984000,
+   "token_id": "13716632012034334814766405932333996927227672639756055214495776655193596577916",
+   "type": "TRADE",
+   "usdc_size": 50.0
+  },
+  {
+   "condition_id": "0xd33f39d8e1ab5893f1ddb7fb49c5126e67ef40b39f0ecbf59434b5e6f28b4b36",
+   "price": 0.5,
+   "side": "BUY",
+   "size": 100.0,
+   "timestamp": 1744070400,
+   "token_id": "97101877612378462162345049590469362975042258772819257462692353988107436648422",
+   "type": "TRADE",
+   "usdc_size": 50.0
+  },
+  {
+   "condition_id": "0xd33f39d8e1ab5893f1ddb7fb49c5126e67ef40b39f0ecbf59434b5e6f28b4b36",
+   "price": 0.25,
+   "side": "SELL",
+   "size": 100.0,
+   "timestamp": 1744113600,
+   "token_id": "97101877612378462162345049590469362975042258772819257462692353988107436648422",
+   "type": "TRADE",
+   "usdc_size": 25.0
+  },
+  {
+   "condition_id": "0xb55f5feea0459d646cc4aa622b58852b9c6ade52a928f9d0fba612d5c44b3618",
+   "price": 0.5,
+   "side": "BUY",
+   "size": 100.0,
+   "timestamp": 1744156800,
+   "token_id": "39571259138884991108078233116286285747564241302832110250278191464094326261774",
+   "type": "TRADE",
+   "usdc_size": 50.0
+  },
+  {
+   "condition_id": "0xb55f5feea0459d646cc4aa622b58852b9c6ade52a928f9d0fba612d5c44b3618",
+   "price": 0.25,
+   "side": "SELL",
+   "size": 100.0,
+   "timestamp": 1744200000,
+   "token_id": "39571259138884991108078233116286285747564241302832110250278191464094326261774",
+   "type": "TRADE",
+   "usdc_size": 25.0
+  },
+  {
+   "condition_id": "0xcc69b5cac4c89f0515c34182dade38e2cb40b05313620a11dff6b38083488d5a",
+   "price": 0.5,
+   "side": "BUY",
+   "size": 100.0,
+   "timestamp": 1744243200,
+   "token_id": "113946640278468732331805298253146482029008048934148163320464023849853127806726",
+   "type": "TRADE",
+   "usdc_size": 50.0
+  },
+  {
+   "condition_id": "0xcc69b5cac4c89f0515c34182dade38e2cb40b05313620a11dff6b38083488d5a",
+   "price": 0.25,
+   "side": "SELL",
+   "size": 100.0,
+   "timestamp": 1744286400,
+   "token_id": "113946640278468732331805298253146482029008048934148163320464023849853127806726",
+   "type": "TRADE",
+   "usdc_size": 25.0
+  }
+ ],
+ "address": "0x7c6ed87942989785de8d562e27348824e94592bd",
+ "markets": [
+  {
+   "closed": true,
+   "closed_time": 1735862400,
+   "condition_id": "0xfa6b6b327912a6c68c86876e0068705ecf2066d26391dc2d3e2277b26f8cf952",
+   "fees_enabled": false,
+   "outcome_prices": [
+    1.0,
+    0.0
+   ],
+   "token_ids": [
+    "66128829987676792075111956928278352159703165321014490646896276894167323790188",
+    "20458739300055671980668244143317179082989032178558208416785036249730030139475"
+   ]
+  },
+  {
+   "closed": true,
+   "closed_time": 1735948800,
+   "condition_id": "0x543a01176d3470fe77989d1d10eec50b39e31c6da32ff8d5406f9829b0880778",
+   "fees_enabled": false,
+   "outcome_prices": [
+    0.0,
+    1.0
+   ],
+   "token_ids": [
+    "75497701072906409699790694815404690041919230137817300312031644483989341698925",
+    "37043861602543367290132099381169999525828766056059481669747809878695486315676"
+   ]
+  },
+  {
+   "closed": true,
+   "closed_time": 1736035200,
+   "condition_id": "0xeb3a7c81cb1c39f6e65892bc9a51defa83f987f27d50898943ee9e31124dfdc9",
+   "fees_enabled": false,
+   "outcome_prices": [
+    1.0,
+    0.0
+   ],
+   "token_ids": [
+    "49903961174841230641937171022420965775715232561499068034300510327346260974872",
+    "17161106571277951898640737297140241797039375572520581707259955066757655415151"
+   ]
+  },
+  {
+   "closed": true,
+   "closed_time": 1736121600,
+   "condition_id": "0x8bb017bb786a999d64ba6476840973cf62a7e92570e2b1065d5ccfd90ea7f59f",
+   "fees_enabled": false,
+   "outcome_prices": [
+    1.0,
+    0.0
+   ],
+   "token_ids": [
+    "83092917796208310822429217183056531679214979320795424259735611174664456329348",
+    "1595554182020909316314922301278800955737595608666633221086398799201457574349"
+   ]
+  },
+  {
+   "closed": true,
+   "closed_time": 1736208000,
+   "condition_id": "0xcb6a52dadd26fd6aa608de6d89bb30853151dd0765111ceafdd746e3ca8d2515",
+   "fees_enabled": false,
+   "outcome_prices": [
+    0.0,
+    1.0
+   ],
+   "token_ids": [
+    "106962870718785311472301140532003921047932534766569222089778147008890622573077",
+    "35412597219250966724102208637824489192086305083689476874995006520883286035802"
+   ]
+  },
+  {
+   "closed": true,
+   "closed_time": 1736294400,
+   "condition_id": "0x1e7f5a751564b9efa83edeae9b7ba48c82e06a12f4a20cdc3912689702d4edff",
+   "fees_enabled": false,
+   "outcome_prices": [
+    0.0,
+    1.0
+   ],
+   "token_ids": [
+    "25420560870511224616194504164904252760108210140233148826178160734670735945151",
+    "59200711445107585482039877418607453282364253866190583259465056899618435078826"
+   ]
+  },
+  {
+   "closed": true,
+   "closed_time": 1736380800,
+   "condition_id": "0x605899cab27a909643812505e23ddca8bbf4bc64b6e8484871b4309909287043",
+   "fees_enabled": false,
+   "outcome_prices": [
+    1.0,
+    0.0
+   ],
+   "token_ids": [
+    "787049108981965596488456891398667784007925748179656834121381123555734054147",
+    "76640546301381316155596531717916000340034184942537579936828757646724328849526"
+   ]
+  },
+  {
+   "closed": true,
+   "closed_time": 1736467200,
+   "condition_id": "0x3465ac919605e2ba1087e869ef67f02439dc91b3795bbc3f9552d99612d6b81a",
+   "fees_enabled": false,
+   "outcome_prices": [
+    1.0,
+    0.0
+   ],
+   "token_ids": [
+    "67063817775777872674414215273567753175019464151124472314496821465483213598224",
+    "11502439790232135591162393098174913920668346472340536898425975271861567635977"
+   ]
+  },
+  {
+   "closed": true,
+   "closed_time": 1736553600,
+   "condition_id": "0xd2ff5a7d85df2a432f2ac01547b1be9cfc9216415e73d00e2ad4b90dedc8dd0a",
+   "fees_enabled": false,
+   "outcome_prices": [
+    0.0,
+    1.0
+   ],
+   "token_ids": [
+    "109134708627812254351305270336336900459346079967894451278934561345826975457005",
+    "17670249298804873404991626724140147397464515068269917755458137424434599846793"
+   ]
+  },
+  {
+   "closed": true,
+   "closed_time": 1736640000,
+   "condition_id": "0xf50757f3a8c8737748b075163a5221e311057bea888448ab1932da340dea55c2",
+   "fees_enabled": false,
+   "outcome_prices": [
+    1.0,
+    0.0
+   ],
+   "token_ids": [
+    "79395541981787583442034138725721363563631055910009343967431233640654334563243",
+    "112178251187322472624161132373577993702129867037777311613589545560187985417558"
+   ]
+  },
+  {
+   "closed": true,
+   "closed_time": 1736726400,
+   "condition_id": "0x16a0db2faab003bf5b16983cb4527173b4b28179b89364f6eda474018315816d",
+   "fees_enabled": false,
+   "outcome_prices": [
+    1.0,
+    0.0
+   ],
+   "token_ids": [
+    "100436726390878957235350621602667921128089609491968733638394180925840420204585",
+    "27016545508559407830224945611492092853094186737694053587662406842991028500514"
+   ]
+  },
+  {
+   "closed": true,
+   "closed_time": 1736812800,
+   "condition_id": "0xec62a5bfe3f4386f4a073af360c88a9d38501ea97ac46a2b665e2c3d1975b73d",
+   "fees_enabled": false,
+   "outcome_prices": [
+    0.0,
+    1.0
+   ],
+   "token_ids": [
+    "96875616685487590766342872920370906417021618960573019683952782665721175601459",
+    "58283552479669560591767669327904342991561944206943040048834943674586827788241"
+   ]
+  },
+  {
+   "closed": true,
+   "closed_time": 1736899200,
+   "condition_id": "0x4d81567c8e4255ef1d90d43d7aaad65ca172ab3da00e59a87c8843955d3b93c6",
+   "fees_enabled": false,
+   "outcome_prices": [
+    1.0,
+    0.0
+   ],
+   "token_ids": [
+    "37845762585058791023095585032077752438606832590873387045075382741532286996001",
+    "105118494898992358921699271887907100383624525276591601113466133033845105287819"
+   ]
+  },
+  {
+   "closed": true,
+   "closed_time": 1736985600,
+   "condition_id": "0x35f56539a72b4a0af6a7ad8d0b01f110ef1f4f41c01e4757e66dba3fb400e238",
+   "fees_enabled": false,
+   "outcome_prices": [
+    0.0,
+    1.0
+   ],
+   "token_ids": [
+    "488629973209890338723344394103365282313094331798389085849103815921453583942",
+    "49727188199599861664964327190601909154227366440620301843756846105358238898894"
+   ]
+  },
+  {
+   "closed": true,
+   "closed_time": 1737072000,
+   "condition_id": "0x0a8c6904d22331a36fcb1b4df02bb06604497c7ca6c7bda310b50bc7fc9cc468",
+   "fees_enabled": false,
+   "outcome_prices": [
+    0.0,
+    1.0
+   ],
+   "token_ids": [
+    "20672076687917503394644221997687778626669353799133412758996376704574024803320",
+    "55327628430165076942698503027904726140602375697032331928157065804628375291974"
+   ]
+  },
+  {
+   "closed": true,
+   "closed_time": 1737158400,
+   "condition_id": "0xa40281fdbde0bc0cc42412583ca290de10d6454f7b4491f17644484ef6f87422",
+   "fees_enabled": false,
+   "outcome_prices": [
+    0.0,
+    1.0
+   ],
+   "token_ids": [
+    "95263391126698505531752376757417014084275644459763315690825499771457924061107",
+    "53316796719045144139693619301294085501347945979103718645436841820006995205891"
+   ]
+  },
+  {
+   "closed": true,
+   "closed_time": 1737244800,
+   "condition_id": "0xf006ed7925f688ba82f4e09a37eaca27409cf9747f3bf8370ae9fb2b3882586f",
+   "fees_enabled": false,
+   "outcome_prices": [
+    1.0,
+    0.0
+   ],
+   "token_ids": [
+    "90850779514731387738417855528241911223879376091859148949206092441335793867100",
+    "115629878458401772629268753295787511792460672644608193891908698640287947602515"
+   ]
+  },
+  {
+   "closed": true,
+   "closed_time": 1737331200,
+   "condition_id": "0x0be924f51c00e5de44f1d4cdc855ebfde0c8203f2e5bbcad1652a48efa0b98cb",
+   "fees_enabled": false,
+   "outcome_prices": [
+    1.0,
+    0.0
+   ],
+   "token_ids": [
+    "98112554943799720922090266386676763778362444267061852914107460418984710244463",
+    "28861105915374270925786563749066663455985783058944406183429421260118144587182"
+   ]
+  },
+  {
+   "closed": true,
+   "closed_time": 1737417600,
+   "condition_id": "0x63583b6b77f00bfff28ce8417e812d2302149a877b514b9b4ade94868ec160c3",
+   "fees_enabled": false,
+   "outcome_prices": [
+    0.0,
+    1.0
+   ],
+   "token_ids": [
+    "34090402077547042372392098084937948424541157237889861366260270051041943696166",
+    "44403018185684832071161576294094351932003382498021997263281461530508069682727"
+   ]
+  },
+  {
+   "closed": true,
+   "closed_time": 1737504000,
+   "condition_id": "0x673c2fdd724a51b527afcaa73e55675be81cd53d32016ec2ebab00a5e1ad440e",
+   "fees_enabled": false,
+   "outcome_prices": [
+    1.0,
+    0.0
+   ],
+   "token_ids": [
+    "2627048804092446412294827842093607091717998368287754188317193719112362895907",
+    "86740553738106615916007452222256385898841853458417615712185106137932671638586"
+   ]
+  },
+  {
+   "closed": true,
+   "closed_time": 1737590400,
+   "condition_id": "0xa50def829e0c6e6f1f94b9079065fe979fd58b9ca44e37ef9298bc5f67b59b18",
+   "fees_enabled": false,
+   "outcome_prices": [
+    1.0,
+    0.0
+   ],
+   "token_ids": [
+    "51066046898370043758133470378126289944847396377824145797772209185349128253287",
+    "89990619987945071590905917093322893997380342049063838405129266491296688056510"
+   ]
+  },
+  {
+   "closed": true,
+   "closed_time": 1737676800,
+   "condition_id": "0xb5aec8aa8200ab48ee35002d1bddbd31bf5c2ba88d65981395f58c3e3c50c09a",
+   "fees_enabled": false,
+   "outcome_prices": [
+    0.0,
+    1.0
+   ],
+   "token_ids": [
+    "93512365612936571335770008526087149606456018579757512268591931669208203122266",
+    "114599347203441650438988982987588978237675416967614035576079783417630942621004"
+   ]
+  },
+  {
+   "closed": true,
+   "closed_time": 1737763200,
+   "condition_id": "0xd4199421b4ad8cbce6c92675248d293a0eb3d0cff68ee859e9d40ec471aa2455",
+   "fees_enabled": false,
+   "outcome_prices": [
+    1.0,
+    0.0
+   ],
+   "token_ids": [
+    "10451003741073020795084303869581801197881897785558656838598999923472057141473",
+    "5843471192856346359252811368817686674343905773086393116899683879620661169709"
+   ]
+  },
+  {
+   "closed": true,
+   "closed_time": 1737849600,
+   "condition_id": "0xc67f88c55cbedf78a007c07f0385c301bc53497fec81803f4899176e083bedf0",
+   "fees_enabled": false,
+   "outcome_prices": [
+    1.0,
+    0.0
+   ],
+   "token_ids": [
+    "64781373666125159820209808107784645574491553562165183018546188636044152512126",
+    "22815218084618728591231611195657558070633736291184628063535113286566241040996"
+   ]
+  },
+  {
+   "closed": true,
+   "closed_time": 1737936000,
+   "condition_id": "0x3834438ec89b2e9e18aeaa01fee79525bc7e1b87d637f12c433212fefac43dba",
+   "fees_enabled": false,
+   "outcome_prices": [
+    0.0,
+    1.0
+   ],
+   "token_ids": [
+    "108800880677953444051172418917401102395964933399571906840731655558428737065565",
+    "112454227790552653915634877652618917321007698636044616151527838506907698153422"
+   ]
+  },
+  {
+   "closed": true,
+   "closed_time": 1738022400,
+   "condition_id": "0x0d3fc02329b9e8bc7863a18968bfeb4cf877aa5bcd2547471e821ebca30a5b36",
+   "fees_enabled": false,
+   "outcome_prices": [
+    0.0,
+    1.0
+   ],
+   "token_ids": [
+    "95226745358809400440212832947118145574854442135980086576607772271422534781864",
+    "28604296360415082455005487457515603645538746830204281333899777881076605085023"
+   ]
+  },
+  {
+   "closed": true,
+   "closed_time": 1738108800,
+   "condition_id": "0x1ce4acff98be4e5f0b413f1b0fcd7f9c6acf96efbc4fe73393df15c4196a12d1",
+   "fees_enabled": false,
+   "outcome_prices": [
+    0.0,
+    1.0
+   ],
+   "token_ids": [
+    "12881697632685773333672846800322632707173945429335061139822844741894773477379",
+    "74089163081816416183091135300451410290602304204630207093857121185349205651026"
+   ]
+  },
+  {
+   "closed": true,
+   "closed_time": 1738195200,
+   "condition_id": "0x9ae2be7553fb0d4d0f168088ea36b42e5743f6460a3d60f8ac6a45ec95782fcd",
+   "fees_enabled": false,
+   "outcome_prices": [
+    1.0,
+    0.0
+   ],
+   "token_ids": [
+    "40994122866321048802564533789869355905089907679778211611270541672464823424448",
+    "18351887786222472165119266384212760358192543228105562884845215641203690230198"
+   ]
+  },
+  {
+   "closed": true,
+   "closed_time": 1738281600,
+   "condition_id": "0x69883074f31a689f63b14f1726c1b3c72a42188ec090870e375926eab1dd186c",
+   "fees_enabled": false,
+   "outcome_prices": [
+    0.0,
+    1.0
+   ],
+   "token_ids": [
+    "15313428223689368356890877782630759769767078866125745148319208908939923707151",
+    "93001728000196072550942624916856679267982403766040453307227494121628571648615"
+   ]
+  },
+  {
+   "closed": true,
+   "closed_time": 1738368000,
+   "condition_id": "0xff0c3e792303177a32da1e83946b5a7725ec8eb3e2bf80b58f598cc5dbb33443",
+   "fees_enabled": false,
+   "outcome_prices": [
+    0.0,
+    1.0
+   ],
+   "token_ids": [
+    "100066074531320176882885585964552940309737638986910191880797699321315394175019",
+    "8019154198997288255668290172178067259699700522292997906219750255012611652591"
+   ]
+  },
+  {
+   "closed": true,
+   "closed_time": 1738454400,
+   "condition_id": "0x0edde40eb7694abe14c4a668c989ee701b5edb79d18c8260fe90732824563cf2",
+   "fees_enabled": false,
+   "outcome_prices": [
+    1.0,
+    0.0
+   ],
+   "token_ids": [
+    "71795007002834977057441567106771270950235251494764421671656072695192320114758",
+    "39509385792879718278863623326251537225641912069658510030070557037259747620226"
+   ]
+  },
+  {
+   "closed": true,
+   "closed_time": 1738540800,
+   "condition_id": "0x66af6a34401434cd6ea426d91835394290a293e06a2b1eeaeaa945eb08ac8d7f",
+   "fees_enabled": false,
+   "outcome_prices": [
+    1.0,
+    0.0
+   ],
+   "token_ids": [
+    "43781660943167898070737550218334565811209514063451370094606353752800030042777",
+    "65640647673810560789432805396687257199729578389911464566865434995606667966908"
+   ]
+  },
+  {
+   "closed": true,
+   "closed_time": 1738627200,
+   "condition_id": "0x8004b2edb38263adbc15c9da918defa581c6ad395135764ee43fe798affe1992",
+   "fees_enabled": false,
+   "outcome_prices": [
+    0.0,
+    1.0
+   ],
+   "token_ids": [
+    "83956398129889667799938737724446878507969053538789799263207161545658380035627",
+    "96173273120362149894026802997009832959938095421438322889272471532899808210836"
+   ]
+  },
+  {
+   "closed": true,
+   "closed_time": 1738713600,
+   "condition_id": "0xb87f597f66f1a2e73313fb4cfcd7a51ecfe92c07c38c3143638cb8e1fdd5f624",
+   "fees_enabled": false,
+   "outcome_prices": [
+    1.0,
+    0.0
+   ],
+   "token_ids": [
+    "110199952934885089242101210610500216559325039206096691037283226925308311142073",
+    "61926916254696119604242552312634927616526739330713642373525083964503271234067"
+   ]
+  },
+  {
+   "closed": true,
+   "closed_time": 1738800000,
+   "condition_id": "0x3ee9b738b1a144ef87ad7ae0ce1a7228480bf8445e0ee8fa917e2c7da9684524",
+   "fees_enabled": false,
+   "outcome_prices": [
+    1.0,
+    0.0
+   ],
+   "token_ids": [
+    "69940378187051078853467670904802935742473133303134733385239977896450763486526",
+    "23622685470687449728750220077548674426699783358103090616830394027236267352855"
+   ]
+  },
+  {
+   "closed": true,
+   "closed_time": 1738886400,
+   "condition_id": "0x7ac0c6becc4807c81df8b3a64598bd37263625bc2b424c552dd807c31d28623a",
+   "fees_enabled": false,
+   "outcome_prices": [
+    0.0,
+    1.0
+   ],
+   "token_ids": [
+    "57297095379794794974845885482258577212971058579220570550030027840469308425299",
+    "26333122438728441475054411013498356930350177108585821385717300065263019698052"
+   ]
+  },
+  {
+   "closed": true,
+   "closed_time": 1738972800,
+   "condition_id": "0x5099203a6ee6bfef0bd5a318d7b670d4becab9891b6ec470fb5bceb67a04011f",
+   "fees_enabled": false,
+   "outcome_prices": [
+    1.0,
+    0.0
+   ],
+   "token_ids": [
+    "100394179872182684047727799658177509647751537624409611770374702419138307940648",
+    "68042737633405728693268645951936475861712875893551011694418246070689472745202"
+   ]
+  },
+  {
+   "closed": true,
+   "closed_time": 1739059200,
+   "condition_id": "0x563630c8f5b7bad50efc42437b9269c621d4570e578ff653e23190c5f139e99b",
+   "fees_enabled": false,
+   "outcome_prices": [
+    0.0,
+    1.0
+   ],
+   "token_ids": [
+    "107123708931019627436480359369124395353920508600878804794166397468280778332375",
+    "12823123039312904460650055687300921955719612528286913211819699195362993432707"
+   ]
+  },
+  {
+   "closed": true,
+   "closed_time": 1739145600,
+   "condition_id": "0x82a7a8abf850c8be9d923ad7d8e647bc733976fa0d2cff63242ffdb762693a7f",
+   "fees_enabled": false,
+   "outcome_prices": [
+    1.0,
+    0.0
+   ],
+   "token_ids": [
+    "66577424489436543575938467703323779943737265587438758201500484552285539404966",
+    "65514775334248329820448070991486586375831700681073804246108564729379096079791"
+   ]
+  },
+  {
+   "closed": true,
+   "closed_time": 1739232000,
+   "condition_id": "0xf85d302d339cf2f26523d7716ebe45d2885def7b6c5f309e1c463d65a616a8a8",
+   "fees_enabled": false,
+   "outcome_prices": [
+    0.0,
+    1.0
+   ],
+   "token_ids": [
+    "89024411893902802158390049440602481988116613349427650737777135852425750009378",
+    "926309034412158814176974980987647747628674672346031158868761990300479378765"
+   ]
+  },
+  {
+   "closed": true,
+   "closed_time": 1739318400,
+   "condition_id": "0xc15cc68ae66182c72fa18bb0726d299bd0f85df6fe7d432d04dfc74c3f3728bb",
+   "fees_enabled": false,
+   "outcome_prices": [
+    0.0,
+    1.0
+   ],
+   "token_ids": [
+    "115177201746054530214919343937242962391702300943985512875159276435353161115030",
+    "43779194659985493436502353953417445624636367203231437830214932948115436032001"
+   ]
+  },
+  {
+   "closed": true,
+   "closed_time": 1739404800,
+   "condition_id": "0x2095f125854d1a3f3328033528786c1cac12c0a72302ea042c8e31184935dd74",
+   "fees_enabled": false,
+   "outcome_prices": [
+    1.0,
+    0.0
+   ],
+   "token_ids": [
+    "46726785677259639025886171195710608262034697601532777502591872521486545838787",
+    "76493646699646600137480280852998608164815398771356538556689835449151243989543"
+   ]
+  },
+  {
+   "closed": true,
+   "closed_time": 1739491200,
+   "condition_id": "0x4618252ee22cf26e7a353d722d2bc27b71971e4eb3ebd604c79d1d15bd47b7ae",
+   "fees_enabled": false,
+   "outcome_prices": [
+    1.0,
+    0.0
+   ],
+   "token_ids": [
+    "70666704161611363878137483006263140440113533697398492451958644624696696055452",
+    "85578593974172797179033693632976609735357145441294514512605391104095379504297"
+   ]
+  },
+  {
+   "closed": true,
+   "closed_time": 1739577600,
+   "condition_id": "0x3125e77a6603430e5540143544c3238c389691280c962d22bc018d8deb702714",
+   "fees_enabled": false,
+   "outcome_prices": [
+    0.0,
+    1.0
+   ],
+   "token_ids": [
+    "48438390581207549715581674998143501396701749610398803581201292557775607945780",
+    "39929611695134611959053819730244109253752030853353108337237646549401351469374"
+   ]
+  },
+  {
+   "closed": true,
+   "closed_time": 1739664000,
+   "condition_id": "0xce72a6a1a30d4f4a4ba1aae924c170c9f06cbb48e79656202a1c20c1260c3dd4",
+   "fees_enabled": false,
+   "outcome_prices": [
+    0.0,
+    1.0
+   ],
+   "token_ids": [
+    "40638449481425838425062947848295479668444662654328650862114491596818784062181",
+    "51941457927719237670555592700519139346763231619181561228130102793870038897778"
+   ]
+  },
+  {
+   "closed": true,
+   "closed_time": 1739750400,
+   "condition_id": "0xc2bf05323bb8f356689fba3a6c1fef9dd193a2d41309c054fd05faaa66d53444",
+   "fees_enabled": false,
+   "outcome_prices": [
+    0.0,
+    1.0
+   ],
+   "token_ids": [
+    "10427540151533163122406503478535446199384140775712794965785622085841876333778",
+    "11291444142672998616676503860923110618708086560465155655094632003470971347219"
+   ]
+  },
+  {
+   "closed": true,
+   "closed_time": 1739836800,
+   "condition_id": "0x29757c41e871e154c5fd56e32ea6ddbf8d2d192b3479f84773b3a2c9e936f2db",
+   "fees_enabled": false,
+   "outcome_prices": [
+    1.0,
+    0.0
+   ],
+   "token_ids": [
+    "91177537542132216302762121837330300674123232829023245608365939762045485210205",
+    "87217029280212157795470262060575263767880721871292911763844668974270547778995"
+   ]
+  },
+  {
+   "closed": true,
+   "closed_time": 1739923200,
+   "condition_id": "0xaded132acfe6d8cf747147357a0f2369a3cc3bdd80e3017df45fd35fcc87deda",
+   "fees_enabled": false,
+   "outcome_prices": [
+    0.0,
+    1.0
+   ],
+   "token_ids": [
+    "64221462605591913490752385633852032965771227189134420433646100687118316762444",
+    "112689718394167452525298758220884063786460849252059248905417649241997878026227"
+   ]
+  },
+  {
+   "closed": true,
+   "closed_time": 1740009600,
+   "condition_id": "0x4c9459f5ee71171c7d39b0c9d5d0f43b6f66ab1fef2caf96fbb23e2a0f2796fe",
+   "fees_enabled": false,
+   "outcome_prices": [
+    1.0,
+    0.0
+   ],
+   "token_ids": [
+    "53366320636176947235666630673758474123766046210752917512231402045523207259431",
+    "87867895963853936032519715450029768838508964380932353383685573160037827775380"
+   ]
+  },
+  {
+   "closed": true,
+   "closed_time": 1740096000,
+   "condition_id": "0xa727c36ffb3c7adc9773c0c4cdeac96c72a2c58e0fad39f1872c685756516547",
+   "fees_enabled": false,
+   "outcome_prices": [
+    0.0,
+    1.0
+   ],
+   "token_ids": [
+    "114006236282776301032277193187512667523756360744846088054954107373440550388879",
+    "24258126970008996130331007578774267862784228144466842877609901857120774749616"
+   ]
+  },
+  {
+   "closed": true,
+   "closed_time": 1740182400,
+   "condition_id": "0x51ca3abd6423a4a34f488d2c9c8afe42a966fd8fff9045fac9f6f2fd77728d40",
+   "fees_enabled": false,
+   "outcome_prices": [
+    1.0,
+    0.0
+   ],
+   "token_ids": [
+    "113100584098963163733737380929473975760156928114113802471313358623481881848996",
+    "48435546584778988685594961735399524048836099957062132901118444907580551025368"
+   ]
+  },
+  {
+   "closed": true,
+   "closed_time": 1740268800,
+   "condition_id": "0x721e496acd4af71d96076775cb198d95a8a3e16e0c5df2573c6f206bcc27c690",
+   "fees_enabled": false,
+   "outcome_prices": [
+    0.0,
+    1.0
+   ],
+   "token_ids": [
+    "87244101374588089944655380162242999725444495532965528637115419340621717624225",
+    "92002249067855109392502377991743835541898763230391256496572263414619262656783"
+   ]
+  },
+  {
+   "closed": true,
+   "closed_time": 1740355200,
+   "condition_id": "0x043d635776f772557e55f14e1680932aff94cbcea13a364e98637b2fc250b19f",
+   "fees_enabled": false,
+   "outcome_prices": [
+    1.0,
+    0.0
+   ],
+   "token_ids": [
+    "103335122950955609436376810787028044983617554871759464740239410783370744449274",
+    "30341920045883042786245199480289298729979585663945563979631358558236065418204"
+   ]
+  },
+  {
+   "closed": true,
+   "closed_time": 1740441600,
+   "condition_id": "0x771d041ac53bb6a94b0325c405f478fb9fa8357add13b496858054c8688d66cc",
+   "fees_enabled": false,
+   "outcome_prices": [
+    1.0,
+    0.0
+   ],
+   "token_ids": [
+    "61580699529647147803919218266934370089054385579868143466011065743070657382872",
+    "98575755315387663564772345459123350079266656458229387487120811051402022472353"
+   ]
+  },
+  {
+   "closed": true,
+   "closed_time": 1740528000,
+   "condition_id": "0x77f00b48ccbead3ba5347c46f19f204edd88a00072e88c92f5ad1c79e6590097",
+   "fees_enabled": false,
+   "outcome_prices": [
+    0.0,
+    1.0
+   ],
+   "token_ids": [
+    "19461468469632606238173175958285144902802613118245209900277669506505251898953",
+    "115473378950217854222858775535349112376518845634645950973399327862892961556078"
+   ]
+  },
+  {
+   "closed": true,
+   "closed_time": 1740614400,
+   "condition_id": "0x321790580f870395ef649265056d4c4a3d8466c421cf0519c3e2c6584e9776b9",
+   "fees_enabled": false,
+   "outcome_prices": [
+    0.0,
+    1.0
+   ],
+   "token_ids": [
+    "96911589065936438870280567400241439763631188908144119652662396448422625164789",
+    "63778058908141336653273391647525429252377787398405491877048413203834691235699"
+   ]
+  },
+  {
+   "closed": true,
+   "closed_time": 1740700800,
+   "condition_id": "0xfe6330b04069160d95262b1307017df177433aab32b57e53c77ea0cdb63959c6",
+   "fees_enabled": false,
+   "outcome_prices": [
+    1.0,
+    0.0
+   ],
+   "token_ids": [
+    "60258638342302225241885362603095673813833735363202228349787979631273564383778",
+    "42134651352565892660352675937157928998520513157580851006365765763400619310307"
+   ]
+  },
+  {
+   "closed": true,
+   "closed_time": 1740787200,
+   "condition_id": "0x37c389458b3a6f720fd6375cb828321a4d29497cc17a04ac5037eaf8459da98f",
+   "fees_enabled": false,
+   "outcome_prices": [
+    1.0,
+    0.0
+   ],
+   "token_ids": [
+    "38610110723489116192385784630430843557079218263632486881775777118347337574029",
+    "81938863983079641960694081066776570144943257519673469748988318572653579060342"
+   ]
+  },
+  {
+   "closed": true,
+   "closed_time": 1740873600,
+   "condition_id": "0xe0ff4944d24272f5bd2fef707503bc2af4ec3b70637eef9011dec577bb6f1a81",
+   "fees_enabled": false,
+   "outcome_prices": [
+    0.0,
+    1.0
+   ],
+   "token_ids": [
+    "24534888438167195736992034104339277993306069761320005040816556624903080873182",
+    "77529554590136169731198429548369067611482598373788896056807632829868357496307"
+   ]
+  },
+  {
+   "closed": true,
+   "closed_time": 1740960000,
+   "condition_id": "0x4a6e5a558dfbc22ff98673bc3d3cba5e7de9231f34c0eb3402a170b93ab40c55",
+   "fees_enabled": false,
+   "outcome_prices": [
+    1.0,
+    0.0
+   ],
+   "token_ids": [
+    "21518144533853064906293765772166567131295638804968203753676509612421027766748",
+    "58274025135650046014619817646158530064005579423817441515729939438358678381529"
+   ]
+  },
+  {
+   "closed": true,
+   "closed_time": 1741046400,
+   "condition_id": "0xabb4f795da4dc925c7063d0627241d11afbaec054590bd5cd11c46a53d77ebda",
+   "fees_enabled": false,
+   "outcome_prices": [
+    0.0,
+    1.0
+   ],
+   "token_ids": [
+    "21418891916659483760232331025693704317481184135411313546637033181778878001358",
+    "104161649362483989174707007438336657018849687355184108328899088857890287488907"
+   ]
+  },
+  {
+   "closed": true,
+   "closed_time": 1741132800,
+   "condition_id": "0x09e4ec61b871a4be867347ccf66cea544fbee94fff0c991c880d9e47ea125aa4",
+   "fees_enabled": false,
+   "outcome_prices": [
+    0.0,
+    1.0
+   ],
+   "token_ids": [
+    "67444725429465623577161306753369569128487333717343380480136455512205012981314",
+    "79676982348799571526651814255839803243049162230769767175105544365767160289614"
+   ]
+  },
+  {
+   "closed": true,
+   "closed_time": 1741219200,
+   "condition_id": "0x0fce41452f3b1b8a73b5bee3eed8ae5062c9950abe9a93172691d3d7686253e6",
+   "fees_enabled": false,
+   "outcome_prices": [
+    0.0,
+    1.0
+   ],
+   "token_ids": [
+    "69644741477318385971543424678943575124094522539508923348980749766277517360710",
+    "33824058112103466371303218284719331445701039382906756438846848187366529469185"
+   ]
+  },
+  {
+   "closed": true,
+   "closed_time": 1741305600,
+   "condition_id": "0x76793c246c70bcd3fcc714371684dd80e8c48a9452d9d220e7641866451a757e",
+   "fees_enabled": false,
+   "outcome_prices": [
+    1.0,
+    0.0
+   ],
+   "token_ids": [
+    "86609726354410132498944666161232429620180395055566727737345639180853253809349",
+    "97790044334239797504736198825507648536097744946879298247118628523504297024504"
+   ]
+  },
+  {
+   "closed": true,
+   "closed_time": 1741392000,
+   "condition_id": "0xa4d5de4321a803133de9afdd7012af386a76252560cd1a3f88c96b09608dce82",
+   "fees_enabled": false,
+   "outcome_prices": [
+    1.0,
+    0.0
+   ],
+   "token_ids": [
+    "11773443377921256396629446189324614478626743167907561504741345924892821188494",
+    "114165511328107941706870361787911627149440166101182491241456177820604639978997"
+   ]
+  },
+  {
+   "closed": true,
+   "closed_time": 1741478400,
+   "condition_id": "0x014210ba49ed439752cdc7632b110c028cafb45002275e0e237234173b28d804",
+   "fees_enabled": false,
+   "outcome_prices": [
+    0.0,
+    1.0
+   ],
+   "token_ids": [
+    "104450687776665218816969814155951189225393624881515401280027402287054610297958",
+    "25959683529384787037867765849825363944596176043480730218007793681113999744974"
+   ]
+  },
+  {
+   "closed": true,
+   "closed_time": 1741564800,
+   "condition_id": "0xd0451ddf3306f4bd535b2ea3052da9d3b317fa2fb0af127b6e65c1f272522968",
+   "fees_enabled": false,
+   "outcome_prices": [
+    1.0,
+    0.0
+   ],
+   "token_ids": [
+    "55908819532408473336952293050032843467910060038325165957434377189349037667663",
+    "113759893838712564291718524616017583785364891115715924897582717674579839461670"
+   ]
+  },
+  {
+   "closed": true,
+   "closed_time": 1741651200,
+   "condition_id": "0xb644aee968b609c783cb21603969520d20c51e9e79188bef28c9fcf7f07ee767",
+   "fees_enabled": false,
+   "outcome_prices": [
+    1.0,
+    0.0
+   ],
+   "token_ids": [
+    "23884739136976034827349058887618878380132025220128623915082616584227285287442",
+    "66855437322161786329691381952069104421932549644732072505769376452488203375626"
+   ]
+  },
+  {
+   "closed": true,
+   "closed_time": 1741737600,
+   "condition_id": "0x6265ffb30d16e6309483e7167cb6c2e48c4d69bf01f9537d621d17404c3f8a79",
+   "fees_enabled": false,
+   "outcome_prices": [
+    0.0,
+    1.0
+   ],
+   "token_ids": [
+    "42645692821306576487211367115296810357722012569643691525125688893743994319571",
+    "72080245302377829772802543734079347785303095111155005468494133016748358776418"
+   ]
+  },
+  {
+   "closed": true,
+   "closed_time": 1741824000,
+   "condition_id": "0x773bb472f99e161d7766ed67978efa1432b2983eb7b1971fd57908440588c324",
+   "fees_enabled": false,
+   "outcome_prices": [
+    1.0,
+    0.0
+   ],
+   "token_ids": [
+    "73420998275961569819435107285799390698670870919349451495167885323060250681000",
+    "109298973079282826513137923218713531335698394738874671462585778511824154990385"
+   ]
+  },
+  {
+   "closed": true,
+   "closed_time": 1741910400,
+   "condition_id": "0x723eaa0f2d023768905e241b60804837195ecbb380da732751872546243fe80d",
+   "fees_enabled": false,
+   "outcome_prices": [
+    1.0,
+    0.0
+   ],
+   "token_ids": [
+    "58185444446231501436236968355307441268219005126142466023431735649139404188342",
+    "74416795764113696632251591856007107566282288864284513020173362378247355289265"
+   ]
+  },
+  {
+   "closed": true,
+   "closed_time": 1741996800,
+   "condition_id": "0x044b98b705d5d1f8e69e3e72beb698915dccd68947b50ae530d6203a82b2f4f0",
+   "fees_enabled": false,
+   "outcome_prices": [
+    0.0,
+    1.0
+   ],
+   "token_ids": [
+    "37474644755818260953550465198736603914074543388852562428450327221468614904843",
+    "79931287413182259054665083065500653977863586493455527100684001744486208676590"
+   ]
+  },
+  {
+   "closed": true,
+   "closed_time": 1742083200,
+   "condition_id": "0x23e5db108ae589b524fa85bd2252071315239f3fa31cdcfbab00545f0509c503",
+   "fees_enabled": false,
+   "outcome_prices": [
+    0.0,
+    1.0
+   ],
+   "token_ids": [
+    "54377473701262201819816164061430843312927444814010872600729616863589169161801",
+    "19297129534455621645676052090430427466706616488980967878058589591252768288838"
+   ]
+  },
+  {
+   "closed": true,
+   "closed_time": 1742169600,
+   "condition_id": "0x23831734b55fe8c5fa2f9bd60f6d5ed8e6144972132f4226c1db16b31df5fca4",
+   "fees_enabled": false,
+   "outcome_prices": [
+    1.0,
+    0.0
+   ],
+   "token_ids": [
+    "36654678071335291252238900030664686976998588524498850419669135760926138911418",
+    "16742441079596836595445670572532018000934538000871478841981129073208472064660"
+   ]
+  },
+  {
+   "closed": true,
+   "closed_time": 1742256000,
+   "condition_id": "0x608c88f8ef92e2ae92f33723ad79918c3ef4cd8cff1481641db17cb79d2b767d",
+   "fees_enabled": false,
+   "outcome_prices": [
+    1.0,
+    0.0
+   ],
+   "token_ids": [
+    "56309573994461202156858070736179726817751299685429303336018121709654401264376",
+    "105562148146990462050781600495674932800012003727948877732685470772247022190593"
+   ]
+  },
+  {
+   "closed": true,
+   "closed_time": 1742342400,
+   "condition_id": "0xc32ceb3a438caf82f7040bd10dd0fe3da01bafacd224f63a0e45bcfc4842654c",
+   "fees_enabled": false,
+   "outcome_prices": [
+    0.0,
+    1.0
+   ],
+   "token_ids": [
+    "106557989862375097413649211799923105464090173270532910460983592274077533239360",
+    "108926278801708538458544406684101634421261208555390752670970116656854072207209"
+   ]
+  },
+  {
+   "closed": true,
+   "closed_time": 1742428800,
+   "condition_id": "0x8c4a938455d9cec92d6c8540211c3583bb72d6d9a4649e40eb9f3222043aaee1",
+   "fees_enabled": false,
+   "outcome_prices": [
+    0.0,
+    1.0
+   ],
+   "token_ids": [
+    "71098499462466364737452121218042334392033455690868573363839763965533227675602",
+    "91341884772231375603955085596134482654189650915120666801726163852580832522370"
+   ]
+  },
+  {
+   "closed": true,
+   "closed_time": 1742515200,
+   "condition_id": "0x55216a1b5a3092e149a8a6fa4c8b6fcc0ef386fe2b889be006c8738926d95878",
+   "fees_enabled": false,
+   "outcome_prices": [
+    0.0,
+    1.0
+   ],
+   "token_ids": [
+    "25721418493281607344998541740525431812970926025791346764892029319932036719373",
+    "26565826300476500403470559253752792374069215112528941511506613334226724917612"
+   ]
+  },
+  {
+   "closed": true,
+   "closed_time": 1742601600,
+   "condition_id": "0xed9ca537ba7ae0551651dee37edc82bfba541bc90cdc41bcccd7b55038c1f085",
+   "fees_enabled": false,
+   "outcome_prices": [
+    0.0,
+    1.0
+   ],
+   "token_ids": [
+    "112663267026081702665923286369631933222535672079912708191630275474348276552889",
+    "22751752767400746542537794588118515142838666084716031179312378433475046774422"
+   ]
+  },
+  {
+   "closed": true,
+   "closed_time": 1742688000,
+   "condition_id": "0x20329149991f513327d02f9b1a69eade599bbb6bf85d8e24cd82dd4affe6f5ae",
+   "fees_enabled": false,
+   "outcome_prices": [
+    1.0,
+    0.0
+   ],
+   "token_ids": [
+    "27268519084873085859523025757416504780497350601387590099361475456587967013062",
+    "11405439962803650034976661272250716438948031571362365042987813009738172207985"
+   ]
+  },
+  {
+   "closed": true,
+   "closed_time": 1742774400,
+   "condition_id": "0x1b82b851d9301dfdb87d9661230f1e7561282c2a68ddb11544504dc72e2ff275",
+   "fees_enabled": false,
+   "outcome_prices": [
+    1.0,
+    0.0
+   ],
+   "token_ids": [
+    "93420273635925980308446261478473171316620843506861672579704399514303418417676",
+    "78928591127046376274459798133243078786996521766832385595878559124003042764809"
+   ]
+  },
+  {
+   "closed": true,
+   "closed_time": 1742860800,
+   "condition_id": "0x3a0f0296ab3a66433d6b66e805bcc3df90eb25baa6a019d03a3d6bfa9421fcf0",
+   "fees_enabled": false,
+   "outcome_prices": [
+    0.0,
+    1.0
+   ],
+   "token_ids": [
+    "21949777423399074265194742987672432339883740961662359812461898666184972329246",
+    "89444796557709922458291081078508173508210268825043595209586715020641688350243"
+   ]
+  },
+  {
+   "closed": true,
+   "closed_time": 1742947200,
+   "condition_id": "0xca9aa671cfdbb257cb92e2b516c10bedbb6c5f942630e29ab3cf1c04717afc31",
+   "fees_enabled": false,
+   "outcome_prices": [
+    0.0,
+    1.0
+   ],
+   "token_ids": [
+    "58536289289685555057020261459094462224470644069345987512008503711835139642760",
+    "30627353303394870273670241032357057392264965815346467622203957214838839507461"
+   ]
+  },
+  {
+   "closed": true,
+   "closed_time": 1743033600,
+   "condition_id": "0x6c565f47c2846d1c8df0e6a9ee77f725d58774f8dabf90e2784bc6f56aa4c281",
+   "fees_enabled": false,
+   "outcome_prices": [
+    1.0,
+    0.0
+   ],
+   "token_ids": [
+    "88175210794734969609567685136184354399404619998106243934838468160617050318976",
+    "48915136938553087976548124561232515614029804197096183959180333458282435988712"
+   ]
+  },
+  {
+   "closed": true,
+   "closed_time": 1743120000,
+   "condition_id": "0xf2b218088bb526a5a9db8803eb71f9da431f336caf4ec8a3afe42b90ec87f534",
+   "fees_enabled": false,
+   "outcome_prices": [
+    1.0,
+    0.0
+   ],
+   "token_ids": [
+    "101392504633969812758842911965748392118951210641430805185617603636631493774597",
+    "39958267933166065807773447225179045367846538695622239860384200146509920536473"
+   ]
+  },
+  {
+   "closed": true,
+   "closed_time": 1743206400,
+   "condition_id": "0xbe897ca524cb748466a5900f656f77b4abb6edaa98969d60ed9cbcd0ac91238d",
+   "fees_enabled": false,
+   "outcome_prices": [
+    0.0,
+    1.0
+   ],
+   "token_ids": [
+    "80316216828809469711143427486009192735906555503330678531636855832892815873548",
+    "82574816676080217510842502468741839221225477322917368112868117109574662171459"
+   ]
+  },
+  {
+   "closed": true,
+   "closed_time": 1743292800,
+   "condition_id": "0x7caab697046aa482f23f50297d0377b1fed7e4c154fe2da66fdbb3c714d69bb0",
+   "fees_enabled": false,
+   "outcome_prices": [
+    1.0,
+    0.0
+   ],
+   "token_ids": [
+    "42615597220589857942756690561874150988794083919534840453642176501210418897240",
+    "104812339215955132592387885513027107864753135928652170278553550017440764111580"
+   ]
+  },
+  {
+   "closed": true,
+   "closed_time": 1743379200,
+   "condition_id": "0x6ee7583fef7154e6aea0ceb352e3d94b899c2725f94be7be149fbb02fae84ec3",
+   "fees_enabled": false,
+   "outcome_prices": [
+    0.0,
+    1.0
+   ],
+   "token_ids": [
+    "68641505747682990094471892888922049367646956532482018040430199517445850740117",
+    "39274810944596158656566889049500652863997494219119996447063237585791658000537"
+   ]
+  },
+  {
+   "closed": true,
+   "closed_time": 1743465600,
+   "condition_id": "0xa076269fb1634633b4c1e0c166b0fc764e2b71209dc4bbf90cc10c25b5e66125",
+   "fees_enabled": false,
+   "outcome_prices": [
+    1.0,
+    0.0
+   ],
+   "token_ids": [
+    "54247391119969175119164237119711356644232503907163108862691261823970373348422",
+    "37827943991836619525712699066813208592403294302098900016132716432152699103015"
+   ]
+  },
+  {
+   "closed": true,
+   "closed_time": 1743552000,
+   "condition_id": "0x5a33e9fbab219f36d8ba0a5bfdac0fd20bff441c0e63c60acfa7df98c6035ead",
+   "fees_enabled": false,
+   "outcome_prices": [
+    0.0,
+    1.0
+   ],
+   "token_ids": [
+    "93077340338181205769150841974609027971313805527178837406163382695153427697017",
+    "566664186971384070532912103061081672983512383531310125923270763740513579695"
+   ]
+  },
+  {
+   "closed": true,
+   "closed_time": 1743638400,
+   "condition_id": "0x67be612a6338ff408cf3e78c06827dbe6b431661474afa954c10b0e831ef98cb",
+   "fees_enabled": false,
+   "outcome_prices": [
+    0.0,
+    1.0
+   ],
+   "token_ids": [
+    "2966022555983942396872011665682861985777552611652653538548109808637147254981",
+    "32360601935967509453721132186517512470373218979039472778179025269293831665361"
+   ]
+  },
+  {
+   "closed": true,
+   "closed_time": 1743724800,
+   "condition_id": "0x21884aaf05d73095d3096f685bc575b4fcc2e9927a645cdf44e62b4f57451996",
+   "fees_enabled": false,
+   "outcome_prices": [
+    1.0,
+    0.0
+   ],
+   "token_ids": [
+    "111382363327867407492307036253699724350839205867507427363053337239978779139571",
+    "92986304240043830835359777433853518134738599968992903486266911504126880756851"
+   ]
+  },
+  {
+   "closed": true,
+   "closed_time": 1743811200,
+   "condition_id": "0x61121cca8e49e224a7ae5d76feb361fa0f2e3cc980328a8d4ea1d0c65dd45521",
+   "fees_enabled": false,
+   "outcome_prices": [
+    0.0,
+    1.0
+   ],
+   "token_ids": [
+    "65653784401589115917555682592107105711003803351406888572637713273665828242032",
+    "63519177148512383817549637228169853325039482676631570774816487085181824562994"
+   ]
+  },
+  {
+   "closed": true,
+   "closed_time": 1743897600,
+   "condition_id": "0x47342f2ddfc6ad226d7965f886edd7107e440f82b28cf9b46ee4d6e8ac41eaf9",
+   "fees_enabled": false,
+   "outcome_prices": [
+    1.0,
+    0.0
+   ],
+   "token_ids": [
+    "1510710924282596500240445740101881297662973618622228521164525780650879419253",
+    "103412988580712050122817641807855857033863109857899729366593647295974569296252"
+   ]
+  },
+  {
+   "closed": true,
+   "closed_time": 1743984000,
+   "condition_id": "0xc159beb424f9c92f86fc1933efb73e428b834cec7a4ad3c8cd0d28a3b2ca9433",
+   "fees_enabled": false,
+   "outcome_prices": [
+    1.0,
+    0.0
+   ],
+   "token_ids": [
+    "10127006322220033779635675184135813295322975865650841419778219654035804020946",
+    "95562571620555442187727205960086246513967722967959014735468373830729299493067"
+   ]
+  },
+  {
+   "closed": true,
+   "closed_time": 1744070400,
+   "condition_id": "0x2996106de8e306981539cb1b2ce0a32a561aa5da44076a33084617744c1ac93d",
+   "fees_enabled": false,
+   "outcome_prices": [
+    0.0,
+    1.0
+   ],
+   "token_ids": [
+    "20450529738057165520175871626389952259588828185173547626409370512605399732866",
+    "93540706199995920243430203538680657238531843459566296839190167570437503533568"
+   ]
+  },
+  {
+   "closed": true,
+   "closed_time": 1744156800,
+   "condition_id": "0x7cec7aa854f0bafb4c423ffda132db02bb08277d02f5955800a4352ecacec51c",
+   "fees_enabled": false,
+   "outcome_prices": [
+    1.0,
+    0.0
+   ],
+   "token_ids": [
+    "13716632012034334814766405932333996927227672639756055214495776655193596577916",
+    "91152801351871738483877160741998942077440539876741728407722642414719670685502"
+   ]
+  },
+  {
+   "closed": true,
+   "closed_time": 1744243200,
+   "condition_id": "0xd33f39d8e1ab5893f1ddb7fb49c5126e67ef40b39f0ecbf59434b5e6f28b4b36",
+   "fees_enabled": false,
+   "outcome_prices": [
+    1.0,
+    0.0
+   ],
+   "token_ids": [
+    "97101877612378462162345049590469362975042258772819257462692353988107436648422",
+    "81466509069412648740668004671435805643429480625688354429207220630283429962822"
+   ]
+  },
+  {
+   "closed": true,
+   "closed_time": 1744329600,
+   "condition_id": "0xb55f5feea0459d646cc4aa622b58852b9c6ade52a928f9d0fba612d5c44b3618",
+   "fees_enabled": false,
+   "outcome_prices": [
+    0.0,
+    1.0
+   ],
+   "token_ids": [
+    "39571259138884991108078233116286285747564241302832110250278191464094326261774",
+    "18286968850194590265795918131783274340548670232940381556450374534964614609814"
+   ]
+  },
+  {
+   "closed": true,
+   "closed_time": 1744416000,
+   "condition_id": "0xcc69b5cac4c89f0515c34182dade38e2cb40b05313620a11dff6b38083488d5a",
+   "fees_enabled": false,
+   "outcome_prices": [
+    0.0,
+    1.0
+   ],
+   "token_ids": [
+    "113946640278468732331805298253146482029008048934148163320464023849853127806726",
+    "84171450478045191339864123967979274948481298851000727025509084046618237345945"
+   ]
+  }
+ ],
+ "name": "stop-loss-trader",
+ "positions": [
+  {
+   "condition_id": "0xfa6b6b327912a6c68c86876e0068705ecf2066d26391dc2d3e2277b26f8cf952",
+   "first_entry_at": 1735689600,
+   "shares_bought": 100.0,
+   "status": "CLOSED",
+   "token_id": "66128829987676792075111956928278352159703165321014490646896276894167323790188"
+  },
+  {
+   "condition_id": "0x543a01176d3470fe77989d1d10eec50b39e31c6da32ff8d5406f9829b0880778",
+   "first_entry_at": 1735776000,
+   "shares_bought": 100.0,
+   "status": "CLOSED",
+   "token_id": "75497701072906409699790694815404690041919230137817300312031644483989341698925"
+  },
+  {
+   "condition_id": "0xeb3a7c81cb1c39f6e65892bc9a51defa83f987f27d50898943ee9e31124dfdc9",
+   "first_entry_at": 1735862400,
+   "shares_bought": 100.0,
+   "status": "CLOSED",
+   "token_id": "49903961174841230641937171022420965775715232561499068034300510327346260974872"
+  },
+  {
+   "condition_id": "0x8bb017bb786a999d64ba6476840973cf62a7e92570e2b1065d5ccfd90ea7f59f",
+   "first_entry_at": 1735948800,
+   "shares_bought": 100.0,
+   "status": "CLOSED",
+   "token_id": "83092917796208310822429217183056531679214979320795424259735611174664456329348"
+  },
+  {
+   "condition_id": "0xcb6a52dadd26fd6aa608de6d89bb30853151dd0765111ceafdd746e3ca8d2515",
+   "first_entry_at": 1736035200,
+   "shares_bought": 100.0,
+   "status": "CLOSED",
+   "token_id": "106962870718785311472301140532003921047932534766569222089778147008890622573077"
+  },
+  {
+   "condition_id": "0x1e7f5a751564b9efa83edeae9b7ba48c82e06a12f4a20cdc3912689702d4edff",
+   "first_entry_at": 1736121600,
+   "shares_bought": 100.0,
+   "status": "CLOSED",
+   "token_id": "25420560870511224616194504164904252760108210140233148826178160734670735945151"
+  },
+  {
+   "condition_id": "0x605899cab27a909643812505e23ddca8bbf4bc64b6e8484871b4309909287043",
+   "first_entry_at": 1736208000,
+   "shares_bought": 100.0,
+   "status": "CLOSED",
+   "token_id": "787049108981965596488456891398667784007925748179656834121381123555734054147"
+  },
+  {
+   "condition_id": "0x3465ac919605e2ba1087e869ef67f02439dc91b3795bbc3f9552d99612d6b81a",
+   "first_entry_at": 1736294400,
+   "shares_bought": 100.0,
+   "status": "CLOSED",
+   "token_id": "67063817775777872674414215273567753175019464151124472314496821465483213598224"
+  },
+  {
+   "condition_id": "0xd2ff5a7d85df2a432f2ac01547b1be9cfc9216415e73d00e2ad4b90dedc8dd0a",
+   "first_entry_at": 1736380800,
+   "shares_bought": 100.0,
+   "status": "CLOSED",
+   "token_id": "109134708627812254351305270336336900459346079967894451278934561345826975457005"
+  },
+  {
+   "condition_id": "0xf50757f3a8c8737748b075163a5221e311057bea888448ab1932da340dea55c2",
+   "first_entry_at": 1736467200,
+   "shares_bought": 100.0,
+   "status": "CLOSED",
+   "token_id": "79395541981787583442034138725721363563631055910009343967431233640654334563243"
+  },
+  {
+   "condition_id": "0x16a0db2faab003bf5b16983cb4527173b4b28179b89364f6eda474018315816d",
+   "first_entry_at": 1736553600,
+   "shares_bought": 100.0,
+   "status": "CLOSED",
+   "token_id": "100436726390878957235350621602667921128089609491968733638394180925840420204585"
+  },
+  {
+   "condition_id": "0xec62a5bfe3f4386f4a073af360c88a9d38501ea97ac46a2b665e2c3d1975b73d",
+   "first_entry_at": 1736640000,
+   "shares_bought": 100.0,
+   "status": "CLOSED",
+   "token_id": "96875616685487590766342872920370906417021618960573019683952782665721175601459"
+  },
+  {
+   "condition_id": "0x4d81567c8e4255ef1d90d43d7aaad65ca172ab3da00e59a87c8843955d3b93c6",
+   "first_entry_at": 1736726400,
+   "shares_bought": 100.0,
+   "status": "CLOSED",
+   "token_id": "37845762585058791023095585032077752438606832590873387045075382741532286996001"
+  },
+  {
+   "condition_id": "0x35f56539a72b4a0af6a7ad8d0b01f110ef1f4f41c01e4757e66dba3fb400e238",
+   "first_entry_at": 1736812800,
+   "shares_bought": 100.0,
+   "status": "CLOSED",
+   "token_id": "488629973209890338723344394103365282313094331798389085849103815921453583942"
+  },
+  {
+   "condition_id": "0x0a8c6904d22331a36fcb1b4df02bb06604497c7ca6c7bda310b50bc7fc9cc468",
+   "first_entry_at": 1736899200,
+   "shares_bought": 100.0,
+   "status": "CLOSED",
+   "token_id": "20672076687917503394644221997687778626669353799133412758996376704574024803320"
+  },
+  {
+   "condition_id": "0xa40281fdbde0bc0cc42412583ca290de10d6454f7b4491f17644484ef6f87422",
+   "first_entry_at": 1736985600,
+   "shares_bought": 100.0,
+   "status": "CLOSED",
+   "token_id": "95263391126698505531752376757417014084275644459763315690825499771457924061107"
+  },
+  {
+   "condition_id": "0xf006ed7925f688ba82f4e09a37eaca27409cf9747f3bf8370ae9fb2b3882586f",
+   "first_entry_at": 1737072000,
+   "shares_bought": 100.0,
+   "status": "CLOSED",
+   "token_id": "90850779514731387738417855528241911223879376091859148949206092441335793867100"
+  },
+  {
+   "condition_id": "0x0be924f51c00e5de44f1d4cdc855ebfde0c8203f2e5bbcad1652a48efa0b98cb",
+   "first_entry_at": 1737158400,
+   "shares_bought": 100.0,
+   "status": "CLOSED",
+   "token_id": "98112554943799720922090266386676763778362444267061852914107460418984710244463"
+  },
+  {
+   "condition_id": "0x63583b6b77f00bfff28ce8417e812d2302149a877b514b9b4ade94868ec160c3",
+   "first_entry_at": 1737244800,
+   "shares_bought": 100.0,
+   "status": "CLOSED",
+   "token_id": "34090402077547042372392098084937948424541157237889861366260270051041943696166"
+  },
+  {
+   "condition_id": "0x673c2fdd724a51b527afcaa73e55675be81cd53d32016ec2ebab00a5e1ad440e",
+   "first_entry_at": 1737331200,
+   "shares_bought": 100.0,
+   "status": "CLOSED",
+   "token_id": "2627048804092446412294827842093607091717998368287754188317193719112362895907"
+  },
+  {
+   "condition_id": "0xa50def829e0c6e6f1f94b9079065fe979fd58b9ca44e37ef9298bc5f67b59b18",
+   "first_entry_at": 1737417600,
+   "shares_bought": 100.0,
+   "status": "CLOSED",
+   "token_id": "51066046898370043758133470378126289944847396377824145797772209185349128253287"
+  },
+  {
+   "condition_id": "0xb5aec8aa8200ab48ee35002d1bddbd31bf5c2ba88d65981395f58c3e3c50c09a",
+   "first_entry_at": 1737504000,
+   "shares_bought": 100.0,
+   "status": "CLOSED",
+   "token_id": "93512365612936571335770008526087149606456018579757512268591931669208203122266"
+  },
+  {
+   "condition_id": "0xd4199421b4ad8cbce6c92675248d293a0eb3d0cff68ee859e9d40ec471aa2455",
+   "first_entry_at": 1737590400,
+   "shares_bought": 100.0,
+   "status": "CLOSED",
+   "token_id": "10451003741073020795084303869581801197881897785558656838598999923472057141473"
+  },
+  {
+   "condition_id": "0xc67f88c55cbedf78a007c07f0385c301bc53497fec81803f4899176e083bedf0",
+   "first_entry_at": 1737676800,
+   "shares_bought": 100.0,
+   "status": "CLOSED",
+   "token_id": "64781373666125159820209808107784645574491553562165183018546188636044152512126"
+  },
+  {
+   "condition_id": "0x3834438ec89b2e9e18aeaa01fee79525bc7e1b87d637f12c433212fefac43dba",
+   "first_entry_at": 1737763200,
+   "shares_bought": 100.0,
+   "status": "CLOSED",
+   "token_id": "108800880677953444051172418917401102395964933399571906840731655558428737065565"
+  },
+  {
+   "condition_id": "0x0d3fc02329b9e8bc7863a18968bfeb4cf877aa5bcd2547471e821ebca30a5b36",
+   "first_entry_at": 1737849600,
+   "shares_bought": 100.0,
+   "status": "CLOSED",
+   "token_id": "95226745358809400440212832947118145574854442135980086576607772271422534781864"
+  },
+  {
+   "condition_id": "0x1ce4acff98be4e5f0b413f1b0fcd7f9c6acf96efbc4fe73393df15c4196a12d1",
+   "first_entry_at": 1737936000,
+   "shares_bought": 100.0,
+   "status": "CLOSED",
+   "token_id": "12881697632685773333672846800322632707173945429335061139822844741894773477379"
+  },
+  {
+   "condition_id": "0x9ae2be7553fb0d4d0f168088ea36b42e5743f6460a3d60f8ac6a45ec95782fcd",
+   "first_entry_at": 1738022400,
+   "shares_bought": 100.0,
+   "status": "CLOSED",
+   "token_id": "40994122866321048802564533789869355905089907679778211611270541672464823424448"
+  },
+  {
+   "condition_id": "0x69883074f31a689f63b14f1726c1b3c72a42188ec090870e375926eab1dd186c",
+   "first_entry_at": 1738108800,
+   "shares_bought": 100.0,
+   "status": "CLOSED",
+   "token_id": "15313428223689368356890877782630759769767078866125745148319208908939923707151"
+  },
+  {
+   "condition_id": "0xff0c3e792303177a32da1e83946b5a7725ec8eb3e2bf80b58f598cc5dbb33443",
+   "first_entry_at": 1738195200,
+   "shares_bought": 100.0,
+   "status": "CLOSED",
+   "token_id": "100066074531320176882885585964552940309737638986910191880797699321315394175019"
+  },
+  {
+   "condition_id": "0x0edde40eb7694abe14c4a668c989ee701b5edb79d18c8260fe90732824563cf2",
+   "first_entry_at": 1738281600,
+   "shares_bought": 100.0,
+   "status": "CLOSED",
+   "token_id": "71795007002834977057441567106771270950235251494764421671656072695192320114758"
+  },
+  {
+   "condition_id": "0x66af6a34401434cd6ea426d91835394290a293e06a2b1eeaeaa945eb08ac8d7f",
+   "first_entry_at": 1738368000,
+   "shares_bought": 100.0,
+   "status": "CLOSED",
+   "token_id": "43781660943167898070737550218334565811209514063451370094606353752800030042777"
+  },
+  {
+   "condition_id": "0x8004b2edb38263adbc15c9da918defa581c6ad395135764ee43fe798affe1992",
+   "first_entry_at": 1738454400,
+   "shares_bought": 100.0,
+   "status": "CLOSED",
+   "token_id": "83956398129889667799938737724446878507969053538789799263207161545658380035627"
+  },
+  {
+   "condition_id": "0xb87f597f66f1a2e73313fb4cfcd7a51ecfe92c07c38c3143638cb8e1fdd5f624",
+   "first_entry_at": 1738540800,
+   "shares_bought": 100.0,
+   "status": "CLOSED",
+   "token_id": "110199952934885089242101210610500216559325039206096691037283226925308311142073"
+  },
+  {
+   "condition_id": "0x3ee9b738b1a144ef87ad7ae0ce1a7228480bf8445e0ee8fa917e2c7da9684524",
+   "first_entry_at": 1738627200,
+   "shares_bought": 100.0,
+   "status": "CLOSED",
+   "token_id": "69940378187051078853467670904802935742473133303134733385239977896450763486526"
+  },
+  {
+   "condition_id": "0x7ac0c6becc4807c81df8b3a64598bd37263625bc2b424c552dd807c31d28623a",
+   "first_entry_at": 1738713600,
+   "shares_bought": 100.0,
+   "status": "CLOSED",
+   "token_id": "57297095379794794974845885482258577212971058579220570550030027840469308425299"
+  },
+  {
+   "condition_id": "0x5099203a6ee6bfef0bd5a318d7b670d4becab9891b6ec470fb5bceb67a04011f",
+   "first_entry_at": 1738800000,
+   "shares_bought": 100.0,
+   "status": "CLOSED",
+   "token_id": "100394179872182684047727799658177509647751537624409611770374702419138307940648"
+  },
+  {
+   "condition_id": "0x563630c8f5b7bad50efc42437b9269c621d4570e578ff653e23190c5f139e99b",
+   "first_entry_at": 1738886400,
+   "shares_bought": 100.0,
+   "status": "CLOSED",
+   "token_id": "107123708931019627436480359369124395353920508600878804794166397468280778332375"
+  },
+  {
+   "condition_id": "0x82a7a8abf850c8be9d923ad7d8e647bc733976fa0d2cff63242ffdb762693a7f",
+   "first_entry_at": 1738972800,
+   "shares_bought": 100.0,
+   "status": "CLOSED",
+   "token_id": "66577424489436543575938467703323779943737265587438758201500484552285539404966"
+  },
+  {
+   "condition_id": "0xf85d302d339cf2f26523d7716ebe45d2885def7b6c5f309e1c463d65a616a8a8",
+   "first_entry_at": 1739059200,
+   "shares_bought": 100.0,
+   "status": "CLOSED",
+   "token_id": "89024411893902802158390049440602481988116613349427650737777135852425750009378"
+  },
+  {
+   "condition_id": "0xc15cc68ae66182c72fa18bb0726d299bd0f85df6fe7d432d04dfc74c3f3728bb",
+   "first_entry_at": 1739145600,
+   "shares_bought": 100.0,
+   "status": "CLOSED",
+   "token_id": "115177201746054530214919343937242962391702300943985512875159276435353161115030"
+  },
+  {
+   "condition_id": "0x2095f125854d1a3f3328033528786c1cac12c0a72302ea042c8e31184935dd74",
+   "first_entry_at": 1739232000,
+   "shares_bought": 100.0,
+   "status": "CLOSED",
+   "token_id": "46726785677259639025886171195710608262034697601532777502591872521486545838787"
+  },
+  {
+   "condition_id": "0x4618252ee22cf26e7a353d722d2bc27b71971e4eb3ebd604c79d1d15bd47b7ae",
+   "first_entry_at": 1739318400,
+   "shares_bought": 100.0,
+   "status": "CLOSED",
+   "token_id": "70666704161611363878137483006263140440113533697398492451958644624696696055452"
+  },
+  {
+   "condition_id": "0x3125e77a6603430e5540143544c3238c389691280c962d22bc018d8deb702714",
+   "first_entry_at": 1739404800,
+   "shares_bought": 100.0,
+   "status": "CLOSED",
+   "token_id": "48438390581207549715581674998143501396701749610398803581201292557775607945780"
+  },
+  {
+   "condition_id": "0xce72a6a1a30d4f4a4ba1aae924c170c9f06cbb48e79656202a1c20c1260c3dd4",
+   "first_entry_at": 1739491200,
+   "shares_bought": 100.0,
+   "status": "CLOSED",
+   "token_id": "40638449481425838425062947848295479668444662654328650862114491596818784062181"
+  },
+  {
+   "condition_id": "0xc2bf05323bb8f356689fba3a6c1fef9dd193a2d41309c054fd05faaa66d53444",
+   "first_entry_at": 1739577600,
+   "shares_bought": 100.0,
+   "status": "CLOSED",
+   "token_id": "10427540151533163122406503478535446199384140775712794965785622085841876333778"
+  },
+  {
+   "condition_id": "0x29757c41e871e154c5fd56e32ea6ddbf8d2d192b3479f84773b3a2c9e936f2db",
+   "first_entry_at": 1739664000,
+   "shares_bought": 100.0,
+   "status": "CLOSED",
+   "token_id": "91177537542132216302762121837330300674123232829023245608365939762045485210205"
+  },
+  {
+   "condition_id": "0xaded132acfe6d8cf747147357a0f2369a3cc3bdd80e3017df45fd35fcc87deda",
+   "first_entry_at": 1739750400,
+   "shares_bought": 100.0,
+   "status": "CLOSED",
+   "token_id": "64221462605591913490752385633852032965771227189134420433646100687118316762444"
+  },
+  {
+   "condition_id": "0x4c9459f5ee71171c7d39b0c9d5d0f43b6f66ab1fef2caf96fbb23e2a0f2796fe",
+   "first_entry_at": 1739836800,
+   "shares_bought": 100.0,
+   "status": "CLOSED",
+   "token_id": "53366320636176947235666630673758474123766046210752917512231402045523207259431"
+  },
+  {
+   "condition_id": "0xa727c36ffb3c7adc9773c0c4cdeac96c72a2c58e0fad39f1872c685756516547",
+   "first_entry_at": 1739923200,
+   "shares_bought": 100.0,
+   "status": "CLOSED",
+   "token_id": "114006236282776301032277193187512667523756360744846088054954107373440550388879"
+  },
+  {
+   "condition_id": "0x51ca3abd6423a4a34f488d2c9c8afe42a966fd8fff9045fac9f6f2fd77728d40",
+   "first_entry_at": 1740009600,
+   "shares_bought": 100.0,
+   "status": "CLOSED",
+   "token_id": "113100584098963163733737380929473975760156928114113802471313358623481881848996"
+  },
+  {
+   "condition_id": "0x721e496acd4af71d96076775cb198d95a8a3e16e0c5df2573c6f206bcc27c690",
+   "first_entry_at": 1740096000,
+   "shares_bought": 100.0,
+   "status": "CLOSED",
+   "token_id": "87244101374588089944655380162242999725444495532965528637115419340621717624225"
+  },
+  {
+   "condition_id": "0x043d635776f772557e55f14e1680932aff94cbcea13a364e98637b2fc250b19f",
+   "first_entry_at": 1740182400,
+   "shares_bought": 100.0,
+   "status": "CLOSED",
+   "token_id": "103335122950955609436376810787028044983617554871759464740239410783370744449274"
+  },
+  {
+   "condition_id": "0x771d041ac53bb6a94b0325c405f478fb9fa8357add13b496858054c8688d66cc",
+   "first_entry_at": 1740268800,
+   "shares_bought": 100.0,
+   "status": "CLOSED",
+   "token_id": "61580699529647147803919218266934370089054385579868143466011065743070657382872"
+  },
+  {
+   "condition_id": "0x77f00b48ccbead3ba5347c46f19f204edd88a00072e88c92f5ad1c79e6590097",
+   "first_entry_at": 1740355200,
+   "shares_bought": 100.0,
+   "status": "CLOSED",
+   "token_id": "19461468469632606238173175958285144902802613118245209900277669506505251898953"
+  },
+  {
+   "condition_id": "0x321790580f870395ef649265056d4c4a3d8466c421cf0519c3e2c6584e9776b9",
+   "first_entry_at": 1740441600,
+   "shares_bought": 100.0,
+   "status": "CLOSED",
+   "token_id": "96911589065936438870280567400241439763631188908144119652662396448422625164789"
+  },
+  {
+   "condition_id": "0xfe6330b04069160d95262b1307017df177433aab32b57e53c77ea0cdb63959c6",
+   "first_entry_at": 1740528000,
+   "shares_bought": 100.0,
+   "status": "CLOSED",
+   "token_id": "60258638342302225241885362603095673813833735363202228349787979631273564383778"
+  },
+  {
+   "condition_id": "0x37c389458b3a6f720fd6375cb828321a4d29497cc17a04ac5037eaf8459da98f",
+   "first_entry_at": 1740614400,
+   "shares_bought": 100.0,
+   "status": "CLOSED",
+   "token_id": "38610110723489116192385784630430843557079218263632486881775777118347337574029"
+  },
+  {
+   "condition_id": "0xe0ff4944d24272f5bd2fef707503bc2af4ec3b70637eef9011dec577bb6f1a81",
+   "first_entry_at": 1740700800,
+   "shares_bought": 100.0,
+   "status": "CLOSED",
+   "token_id": "24534888438167195736992034104339277993306069761320005040816556624903080873182"
+  },
+  {
+   "condition_id": "0x4a6e5a558dfbc22ff98673bc3d3cba5e7de9231f34c0eb3402a170b93ab40c55",
+   "first_entry_at": 1740787200,
+   "shares_bought": 100.0,
+   "status": "CLOSED",
+   "token_id": "21518144533853064906293765772166567131295638804968203753676509612421027766748"
+  },
+  {
+   "condition_id": "0xabb4f795da4dc925c7063d0627241d11afbaec054590bd5cd11c46a53d77ebda",
+   "first_entry_at": 1740873600,
+   "shares_bought": 100.0,
+   "status": "CLOSED",
+   "token_id": "21418891916659483760232331025693704317481184135411313546637033181778878001358"
+  },
+  {
+   "condition_id": "0x09e4ec61b871a4be867347ccf66cea544fbee94fff0c991c880d9e47ea125aa4",
+   "first_entry_at": 1740960000,
+   "shares_bought": 100.0,
+   "status": "CLOSED",
+   "token_id": "67444725429465623577161306753369569128487333717343380480136455512205012981314"
+  },
+  {
+   "condition_id": "0x0fce41452f3b1b8a73b5bee3eed8ae5062c9950abe9a93172691d3d7686253e6",
+   "first_entry_at": 1741046400,
+   "shares_bought": 100.0,
+   "status": "CLOSED",
+   "token_id": "69644741477318385971543424678943575124094522539508923348980749766277517360710"
+  },
+  {
+   "condition_id": "0x76793c246c70bcd3fcc714371684dd80e8c48a9452d9d220e7641866451a757e",
+   "first_entry_at": 1741132800,
+   "shares_bought": 100.0,
+   "status": "CLOSED",
+   "token_id": "86609726354410132498944666161232429620180395055566727737345639180853253809349"
+  },
+  {
+   "condition_id": "0xa4d5de4321a803133de9afdd7012af386a76252560cd1a3f88c96b09608dce82",
+   "first_entry_at": 1741219200,
+   "shares_bought": 100.0,
+   "status": "CLOSED",
+   "token_id": "11773443377921256396629446189324614478626743167907561504741345924892821188494"
+  },
+  {
+   "condition_id": "0x014210ba49ed439752cdc7632b110c028cafb45002275e0e237234173b28d804",
+   "first_entry_at": 1741305600,
+   "shares_bought": 100.0,
+   "status": "CLOSED",
+   "token_id": "104450687776665218816969814155951189225393624881515401280027402287054610297958"
+  },
+  {
+   "condition_id": "0xd0451ddf3306f4bd535b2ea3052da9d3b317fa2fb0af127b6e65c1f272522968",
+   "first_entry_at": 1741392000,
+   "shares_bought": 100.0,
+   "status": "CLOSED",
+   "token_id": "55908819532408473336952293050032843467910060038325165957434377189349037667663"
+  },
+  {
+   "condition_id": "0xb644aee968b609c783cb21603969520d20c51e9e79188bef28c9fcf7f07ee767",
+   "first_entry_at": 1741478400,
+   "shares_bought": 100.0,
+   "status": "CLOSED",
+   "token_id": "23884739136976034827349058887618878380132025220128623915082616584227285287442"
+  },
+  {
+   "condition_id": "0x6265ffb30d16e6309483e7167cb6c2e48c4d69bf01f9537d621d17404c3f8a79",
+   "first_entry_at": 1741564800,
+   "shares_bought": 100.0,
+   "status": "CLOSED",
+   "token_id": "42645692821306576487211367115296810357722012569643691525125688893743994319571"
+  },
+  {
+   "condition_id": "0x773bb472f99e161d7766ed67978efa1432b2983eb7b1971fd57908440588c324",
+   "first_entry_at": 1741651200,
+   "shares_bought": 100.0,
+   "status": "CLOSED",
+   "token_id": "73420998275961569819435107285799390698670870919349451495167885323060250681000"
+  },
+  {
+   "condition_id": "0x723eaa0f2d023768905e241b60804837195ecbb380da732751872546243fe80d",
+   "first_entry_at": 1741737600,
+   "shares_bought": 100.0,
+   "status": "CLOSED",
+   "token_id": "58185444446231501436236968355307441268219005126142466023431735649139404188342"
+  },
+  {
+   "condition_id": "0x044b98b705d5d1f8e69e3e72beb698915dccd68947b50ae530d6203a82b2f4f0",
+   "first_entry_at": 1741824000,
+   "shares_bought": 100.0,
+   "status": "CLOSED",
+   "token_id": "37474644755818260953550465198736603914074543388852562428450327221468614904843"
+  },
+  {
+   "condition_id": "0x23e5db108ae589b524fa85bd2252071315239f3fa31cdcfbab00545f0509c503",
+   "first_entry_at": 1741910400,
+   "shares_bought": 100.0,
+   "status": "CLOSED",
+   "token_id": "54377473701262201819816164061430843312927444814010872600729616863589169161801"
+  },
+  {
+   "condition_id": "0x23831734b55fe8c5fa2f9bd60f6d5ed8e6144972132f4226c1db16b31df5fca4",
+   "first_entry_at": 1741996800,
+   "shares_bought": 100.0,
+   "status": "CLOSED",
+   "token_id": "36654678071335291252238900030664686976998588524498850419669135760926138911418"
+  },
+  {
+   "condition_id": "0x608c88f8ef92e2ae92f33723ad79918c3ef4cd8cff1481641db17cb79d2b767d",
+   "first_entry_at": 1742083200,
+   "shares_bought": 100.0,
+   "status": "CLOSED",
+   "token_id": "56309573994461202156858070736179726817751299685429303336018121709654401264376"
+  },
+  {
+   "condition_id": "0xc32ceb3a438caf82f7040bd10dd0fe3da01bafacd224f63a0e45bcfc4842654c",
+   "first_entry_at": 1742169600,
+   "shares_bought": 100.0,
+   "status": "CLOSED",
+   "token_id": "106557989862375097413649211799923105464090173270532910460983592274077533239360"
+  },
+  {
+   "condition_id": "0x8c4a938455d9cec92d6c8540211c3583bb72d6d9a4649e40eb9f3222043aaee1",
+   "first_entry_at": 1742256000,
+   "shares_bought": 100.0,
+   "status": "CLOSED",
+   "token_id": "71098499462466364737452121218042334392033455690868573363839763965533227675602"
+  },
+  {
+   "condition_id": "0x55216a1b5a3092e149a8a6fa4c8b6fcc0ef386fe2b889be006c8738926d95878",
+   "first_entry_at": 1742342400,
+   "shares_bought": 100.0,
+   "status": "CLOSED",
+   "token_id": "25721418493281607344998541740525431812970926025791346764892029319932036719373"
+  },
+  {
+   "condition_id": "0xed9ca537ba7ae0551651dee37edc82bfba541bc90cdc41bcccd7b55038c1f085",
+   "first_entry_at": 1742428800,
+   "shares_bought": 100.0,
+   "status": "CLOSED",
+   "token_id": "112663267026081702665923286369631933222535672079912708191630275474348276552889"
+  },
+  {
+   "condition_id": "0x20329149991f513327d02f9b1a69eade599bbb6bf85d8e24cd82dd4affe6f5ae",
+   "first_entry_at": 1742515200,
+   "shares_bought": 100.0,
+   "status": "CLOSED",
+   "token_id": "27268519084873085859523025757416504780497350601387590099361475456587967013062"
+  },
+  {
+   "condition_id": "0x1b82b851d9301dfdb87d9661230f1e7561282c2a68ddb11544504dc72e2ff275",
+   "first_entry_at": 1742601600,
+   "shares_bought": 100.0,
+   "status": "CLOSED",
+   "token_id": "93420273635925980308446261478473171316620843506861672579704399514303418417676"
+  },
+  {
+   "condition_id": "0x3a0f0296ab3a66433d6b66e805bcc3df90eb25baa6a019d03a3d6bfa9421fcf0",
+   "first_entry_at": 1742688000,
+   "shares_bought": 100.0,
+   "status": "CLOSED",
+   "token_id": "21949777423399074265194742987672432339883740961662359812461898666184972329246"
+  },
+  {
+   "condition_id": "0xca9aa671cfdbb257cb92e2b516c10bedbb6c5f942630e29ab3cf1c04717afc31",
+   "first_entry_at": 1742774400,
+   "shares_bought": 100.0,
+   "status": "CLOSED",
+   "token_id": "58536289289685555057020261459094462224470644069345987512008503711835139642760"
+  },
+  {
+   "condition_id": "0x6c565f47c2846d1c8df0e6a9ee77f725d58774f8dabf90e2784bc6f56aa4c281",
+   "first_entry_at": 1742860800,
+   "shares_bought": 100.0,
+   "status": "CLOSED",
+   "token_id": "88175210794734969609567685136184354399404619998106243934838468160617050318976"
+  },
+  {
+   "condition_id": "0xf2b218088bb526a5a9db8803eb71f9da431f336caf4ec8a3afe42b90ec87f534",
+   "first_entry_at": 1742947200,
+   "shares_bought": 100.0,
+   "status": "CLOSED",
+   "token_id": "101392504633969812758842911965748392118951210641430805185617603636631493774597"
+  },
+  {
+   "condition_id": "0xbe897ca524cb748466a5900f656f77b4abb6edaa98969d60ed9cbcd0ac91238d",
+   "first_entry_at": 1743033600,
+   "shares_bought": 100.0,
+   "status": "CLOSED",
+   "token_id": "80316216828809469711143427486009192735906555503330678531636855832892815873548"
+  },
+  {
+   "condition_id": "0x7caab697046aa482f23f50297d0377b1fed7e4c154fe2da66fdbb3c714d69bb0",
+   "first_entry_at": 1743120000,
+   "shares_bought": 100.0,
+   "status": "CLOSED",
+   "token_id": "42615597220589857942756690561874150988794083919534840453642176501210418897240"
+  },
+  {
+   "condition_id": "0x6ee7583fef7154e6aea0ceb352e3d94b899c2725f94be7be149fbb02fae84ec3",
+   "first_entry_at": 1743206400,
+   "shares_bought": 100.0,
+   "status": "CLOSED",
+   "token_id": "68641505747682990094471892888922049367646956532482018040430199517445850740117"
+  },
+  {
+   "condition_id": "0xa076269fb1634633b4c1e0c166b0fc764e2b71209dc4bbf90cc10c25b5e66125",
+   "first_entry_at": 1743292800,
+   "shares_bought": 100.0,
+   "status": "CLOSED",
+   "token_id": "54247391119969175119164237119711356644232503907163108862691261823970373348422"
+  },
+  {
+   "condition_id": "0x5a33e9fbab219f36d8ba0a5bfdac0fd20bff441c0e63c60acfa7df98c6035ead",
+   "first_entry_at": 1743379200,
+   "shares_bought": 100.0,
+   "status": "CLOSED",
+   "token_id": "93077340338181205769150841974609027971313805527178837406163382695153427697017"
+  },
+  {
+   "condition_id": "0x67be612a6338ff408cf3e78c06827dbe6b431661474afa954c10b0e831ef98cb",
+   "first_entry_at": 1743465600,
+   "shares_bought": 100.0,
+   "status": "CLOSED",
+   "token_id": "2966022555983942396872011665682861985777552611652653538548109808637147254981"
+  },
+  {
+   "condition_id": "0x21884aaf05d73095d3096f685bc575b4fcc2e9927a645cdf44e62b4f57451996",
+   "first_entry_at": 1743552000,
+   "shares_bought": 100.0,
+   "status": "CLOSED",
+   "token_id": "111382363327867407492307036253699724350839205867507427363053337239978779139571"
+  },
+  {
+   "condition_id": "0x61121cca8e49e224a7ae5d76feb361fa0f2e3cc980328a8d4ea1d0c65dd45521",
+   "first_entry_at": 1743638400,
+   "shares_bought": 100.0,
+   "status": "CLOSED",
+   "token_id": "65653784401589115917555682592107105711003803351406888572637713273665828242032"
+  },
+  {
+   "condition_id": "0x47342f2ddfc6ad226d7965f886edd7107e440f82b28cf9b46ee4d6e8ac41eaf9",
+   "first_entry_at": 1743724800,
+   "shares_bought": 100.0,
+   "status": "CLOSED",
+   "token_id": "1510710924282596500240445740101881297662973618622228521164525780650879419253"
+  },
+  {
+   "condition_id": "0xc159beb424f9c92f86fc1933efb73e428b834cec7a4ad3c8cd0d28a3b2ca9433",
+   "first_entry_at": 1743811200,
+   "shares_bought": 100.0,
+   "status": "CLOSED",
+   "token_id": "10127006322220033779635675184135813295322975865650841419778219654035804020946"
+  },
+  {
+   "condition_id": "0x2996106de8e306981539cb1b2ce0a32a561aa5da44076a33084617744c1ac93d",
+   "first_entry_at": 1743897600,
+   "shares_bought": 100.0,
+   "status": "CLOSED",
+   "token_id": "20450529738057165520175871626389952259588828185173547626409370512605399732866"
+  },
+  {
+   "condition_id": "0x7cec7aa854f0bafb4c423ffda132db02bb08277d02f5955800a4352ecacec51c",
+   "first_entry_at": 1743984000,
+   "shares_bought": 100.0,
+   "status": "CLOSED",
+   "token_id": "13716632012034334814766405932333996927227672639756055214495776655193596577916"
+  },
+  {
+   "condition_id": "0xd33f39d8e1ab5893f1ddb7fb49c5126e67ef40b39f0ecbf59434b5e6f28b4b36",
+   "first_entry_at": 1744070400,
+   "shares_bought": 100.0,
+   "status": "CLOSED",
+   "token_id": "97101877612378462162345049590469362975042258772819257462692353988107436648422"
+  },
+  {
+   "condition_id": "0xb55f5feea0459d646cc4aa622b58852b9c6ade52a928f9d0fba612d5c44b3618",
+   "first_entry_at": 1744156800,
+   "shares_bought": 100.0,
+   "status": "CLOSED",
+   "token_id": "39571259138884991108078233116286285747564241302832110250278191464094326261774"
+  },
+  {
+   "condition_id": "0xcc69b5cac4c89f0515c34182dade38e2cb40b05313620a11dff6b38083488d5a",
+   "first_entry_at": 1744243200,
+   "shares_bought": 100.0,
+   "status": "CLOSED",
+   "token_id": "113946640278468732331805298253146482029008048934148163320464023849853127806726"
+  }
+ ],
+ "prices": [
+  {
+   "price": 0.5,
+   "t": 1735689600,
+   "token_id": "66128829987676792075111956928278352159703165321014490646896276894167323790188"
+  },
+  {
+   "price": 1.0,
+   "t": 1735862400,
+   "token_id": "66128829987676792075111956928278352159703165321014490646896276894167323790188"
+  },
+  {
+   "price": 0.5,
+   "t": 1735776000,
+   "token_id": "75497701072906409699790694815404690041919230137817300312031644483989341698925"
+  },
+  {
+   "price": 0.25,
+   "t": 1735819200,
+   "token_id": "75497701072906409699790694815404690041919230137817300312031644483989341698925"
+  },
+  {
+   "price": 0.0,
+   "t": 1735948800,
+   "token_id": "75497701072906409699790694815404690041919230137817300312031644483989341698925"
+  },
+  {
+   "price": 0.5,
+   "t": 1735862400,
+   "token_id": "49903961174841230641937171022420965775715232561499068034300510327346260974872"
+  },
+  {
+   "price": 1.0,
+   "t": 1736035200,
+   "token_id": "49903961174841230641937171022420965775715232561499068034300510327346260974872"
+  },
+  {
+   "price": 0.5,
+   "t": 1735948800,
+   "token_id": "83092917796208310822429217183056531679214979320795424259735611174664456329348"
+  },
+  {
+   "price": 1.0,
+   "t": 1736121600,
+   "token_id": "83092917796208310822429217183056531679214979320795424259735611174664456329348"
+  },
+  {
+   "price": 0.5,
+   "t": 1736035200,
+   "token_id": "106962870718785311472301140532003921047932534766569222089778147008890622573077"
+  },
+  {
+   "price": 0.25,
+   "t": 1736078400,
+   "token_id": "106962870718785311472301140532003921047932534766569222089778147008890622573077"
+  },
+  {
+   "price": 0.0,
+   "t": 1736208000,
+   "token_id": "106962870718785311472301140532003921047932534766569222089778147008890622573077"
+  },
+  {
+   "price": 0.5,
+   "t": 1736121600,
+   "token_id": "25420560870511224616194504164904252760108210140233148826178160734670735945151"
+  },
+  {
+   "price": 0.25,
+   "t": 1736164800,
+   "token_id": "25420560870511224616194504164904252760108210140233148826178160734670735945151"
+  },
+  {
+   "price": 0.0,
+   "t": 1736294400,
+   "token_id": "25420560870511224616194504164904252760108210140233148826178160734670735945151"
+  },
+  {
+   "price": 0.5,
+   "t": 1736208000,
+   "token_id": "787049108981965596488456891398667784007925748179656834121381123555734054147"
+  },
+  {
+   "price": 1.0,
+   "t": 1736380800,
+   "token_id": "787049108981965596488456891398667784007925748179656834121381123555734054147"
+  },
+  {
+   "price": 0.5,
+   "t": 1736294400,
+   "token_id": "67063817775777872674414215273567753175019464151124472314496821465483213598224"
+  },
+  {
+   "price": 1.0,
+   "t": 1736467200,
+   "token_id": "67063817775777872674414215273567753175019464151124472314496821465483213598224"
+  },
+  {
+   "price": 0.5,
+   "t": 1736380800,
+   "token_id": "109134708627812254351305270336336900459346079967894451278934561345826975457005"
+  },
+  {
+   "price": 0.25,
+   "t": 1736424000,
+   "token_id": "109134708627812254351305270336336900459346079967894451278934561345826975457005"
+  },
+  {
+   "price": 0.0,
+   "t": 1736553600,
+   "token_id": "109134708627812254351305270336336900459346079967894451278934561345826975457005"
+  },
+  {
+   "price": 0.5,
+   "t": 1736467200,
+   "token_id": "79395541981787583442034138725721363563631055910009343967431233640654334563243"
+  },
+  {
+   "price": 1.0,
+   "t": 1736640000,
+   "token_id": "79395541981787583442034138725721363563631055910009343967431233640654334563243"
+  },
+  {
+   "price": 0.5,
+   "t": 1736553600,
+   "token_id": "100436726390878957235350621602667921128089609491968733638394180925840420204585"
+  },
+  {
+   "price": 0.25,
+   "t": 1736596800,
+   "token_id": "100436726390878957235350621602667921128089609491968733638394180925840420204585"
+  },
+  {
+   "price": 1.0,
+   "t": 1736726400,
+   "token_id": "100436726390878957235350621602667921128089609491968733638394180925840420204585"
+  },
+  {
+   "price": 0.5,
+   "t": 1736640000,
+   "token_id": "96875616685487590766342872920370906417021618960573019683952782665721175601459"
+  },
+  {
+   "price": 0.25,
+   "t": 1736683200,
+   "token_id": "96875616685487590766342872920370906417021618960573019683952782665721175601459"
+  },
+  {
+   "price": 0.0,
+   "t": 1736812800,
+   "token_id": "96875616685487590766342872920370906417021618960573019683952782665721175601459"
+  },
+  {
+   "price": 0.5,
+   "t": 1736726400,
+   "token_id": "37845762585058791023095585032077752438606832590873387045075382741532286996001"
+  },
+  {
+   "price": 1.0,
+   "t": 1736899200,
+   "token_id": "37845762585058791023095585032077752438606832590873387045075382741532286996001"
+  },
+  {
+   "price": 0.5,
+   "t": 1736812800,
+   "token_id": "488629973209890338723344394103365282313094331798389085849103815921453583942"
+  },
+  {
+   "price": 0.25,
+   "t": 1736856000,
+   "token_id": "488629973209890338723344394103365282313094331798389085849103815921453583942"
+  },
+  {
+   "price": 0.0,
+   "t": 1736985600,
+   "token_id": "488629973209890338723344394103365282313094331798389085849103815921453583942"
+  },
+  {
+   "price": 0.5,
+   "t": 1736899200,
+   "token_id": "20672076687917503394644221997687778626669353799133412758996376704574024803320"
+  },
+  {
+   "price": 0.25,
+   "t": 1736942400,
+   "token_id": "20672076687917503394644221997687778626669353799133412758996376704574024803320"
+  },
+  {
+   "price": 0.0,
+   "t": 1737072000,
+   "token_id": "20672076687917503394644221997687778626669353799133412758996376704574024803320"
+  },
+  {
+   "price": 0.5,
+   "t": 1736985600,
+   "token_id": "95263391126698505531752376757417014084275644459763315690825499771457924061107"
+  },
+  {
+   "price": 0.25,
+   "t": 1737028800,
+   "token_id": "95263391126698505531752376757417014084275644459763315690825499771457924061107"
+  },
+  {
+   "price": 0.0,
+   "t": 1737158400,
+   "token_id": "95263391126698505531752376757417014084275644459763315690825499771457924061107"
+  },
+  {
+   "price": 0.5,
+   "t": 1737072000,
+   "token_id": "90850779514731387738417855528241911223879376091859148949206092441335793867100"
+  },
+  {
+   "price": 1.0,
+   "t": 1737244800,
+   "token_id": "90850779514731387738417855528241911223879376091859148949206092441335793867100"
+  },
+  {
+   "price": 0.5,
+   "t": 1737158400,
+   "token_id": "98112554943799720922090266386676763778362444267061852914107460418984710244463"
+  },
+  {
+   "price": 0.25,
+   "t": 1737201600,
+   "token_id": "98112554943799720922090266386676763778362444267061852914107460418984710244463"
+  },
+  {
+   "price": 1.0,
+   "t": 1737331200,
+   "token_id": "98112554943799720922090266386676763778362444267061852914107460418984710244463"
+  },
+  {
+   "price": 0.5,
+   "t": 1737244800,
+   "token_id": "34090402077547042372392098084937948424541157237889861366260270051041943696166"
+  },
+  {
+   "price": 0.25,
+   "t": 1737288000,
+   "token_id": "34090402077547042372392098084937948424541157237889861366260270051041943696166"
+  },
+  {
+   "price": 0.0,
+   "t": 1737417600,
+   "token_id": "34090402077547042372392098084937948424541157237889861366260270051041943696166"
+  },
+  {
+   "price": 0.5,
+   "t": 1737331200,
+   "token_id": "2627048804092446412294827842093607091717998368287754188317193719112362895907"
+  },
+  {
+   "price": 1.0,
+   "t": 1737504000,
+   "token_id": "2627048804092446412294827842093607091717998368287754188317193719112362895907"
+  },
+  {
+   "price": 0.5,
+   "t": 1737417600,
+   "token_id": "51066046898370043758133470378126289944847396377824145797772209185349128253287"
+  },
+  {
+   "price": 1.0,
+   "t": 1737590400,
+   "token_id": "51066046898370043758133470378126289944847396377824145797772209185349128253287"
+  },
+  {
+   "price": 0.5,
+   "t": 1737504000,
+   "token_id": "93512365612936571335770008526087149606456018579757512268591931669208203122266"
+  },
+  {
+   "price": 0.25,
+   "t": 1737547200,
+   "token_id": "93512365612936571335770008526087149606456018579757512268591931669208203122266"
+  },
+  {
+   "price": 0.0,
+   "t": 1737676800,
+   "token_id": "93512365612936571335770008526087149606456018579757512268591931669208203122266"
+  },
+  {
+   "price": 0.5,
+   "t": 1737590400,
+   "token_id": "10451003741073020795084303869581801197881897785558656838598999923472057141473"
+  },
+  {
+   "price": 0.25,
+   "t": 1737633600,
+   "token_id": "10451003741073020795084303869581801197881897785558656838598999923472057141473"
+  },
+  {
+   "price": 1.0,
+   "t": 1737763200,
+   "token_id": "10451003741073020795084303869581801197881897785558656838598999923472057141473"
+  },
+  {
+   "price": 0.5,
+   "t": 1737676800,
+   "token_id": "64781373666125159820209808107784645574491553562165183018546188636044152512126"
+  },
+  {
+   "price": 1.0,
+   "t": 1737849600,
+   "token_id": "64781373666125159820209808107784645574491553562165183018546188636044152512126"
+  },
+  {
+   "price": 0.5,
+   "t": 1737763200,
+   "token_id": "108800880677953444051172418917401102395964933399571906840731655558428737065565"
+  },
+  {
+   "price": 0.25,
+   "t": 1737806400,
+   "token_id": "108800880677953444051172418917401102395964933399571906840731655558428737065565"
+  },
+  {
+   "price": 0.0,
+   "t": 1737936000,
+   "token_id": "108800880677953444051172418917401102395964933399571906840731655558428737065565"
+  },
+  {
+   "price": 0.5,
+   "t": 1737849600,
+   "token_id": "95226745358809400440212832947118145574854442135980086576607772271422534781864"
+  },
+  {
+   "price": 0.25,
+   "t": 1737892800,
+   "token_id": "95226745358809400440212832947118145574854442135980086576607772271422534781864"
+  },
+  {
+   "price": 0.0,
+   "t": 1738022400,
+   "token_id": "95226745358809400440212832947118145574854442135980086576607772271422534781864"
+  },
+  {
+   "price": 0.5,
+   "t": 1737936000,
+   "token_id": "12881697632685773333672846800322632707173945429335061139822844741894773477379"
+  },
+  {
+   "price": 0.25,
+   "t": 1737979200,
+   "token_id": "12881697632685773333672846800322632707173945429335061139822844741894773477379"
+  },
+  {
+   "price": 0.0,
+   "t": 1738108800,
+   "token_id": "12881697632685773333672846800322632707173945429335061139822844741894773477379"
+  },
+  {
+   "price": 0.5,
+   "t": 1738022400,
+   "token_id": "40994122866321048802564533789869355905089907679778211611270541672464823424448"
+  },
+  {
+   "price": 1.0,
+   "t": 1738195200,
+   "token_id": "40994122866321048802564533789869355905089907679778211611270541672464823424448"
+  },
+  {
+   "price": 0.5,
+   "t": 1738108800,
+   "token_id": "15313428223689368356890877782630759769767078866125745148319208908939923707151"
+  },
+  {
+   "price": 0.25,
+   "t": 1738152000,
+   "token_id": "15313428223689368356890877782630759769767078866125745148319208908939923707151"
+  },
+  {
+   "price": 0.0,
+   "t": 1738281600,
+   "token_id": "15313428223689368356890877782630759769767078866125745148319208908939923707151"
+  },
+  {
+   "price": 0.5,
+   "t": 1738195200,
+   "token_id": "100066074531320176882885585964552940309737638986910191880797699321315394175019"
+  },
+  {
+   "price": 0.25,
+   "t": 1738238400,
+   "token_id": "100066074531320176882885585964552940309737638986910191880797699321315394175019"
+  },
+  {
+   "price": 0.0,
+   "t": 1738368000,
+   "token_id": "100066074531320176882885585964552940309737638986910191880797699321315394175019"
+  },
+  {
+   "price": 0.5,
+   "t": 1738281600,
+   "token_id": "71795007002834977057441567106771270950235251494764421671656072695192320114758"
+  },
+  {
+   "price": 1.0,
+   "t": 1738454400,
+   "token_id": "71795007002834977057441567106771270950235251494764421671656072695192320114758"
+  },
+  {
+   "price": 0.5,
+   "t": 1738368000,
+   "token_id": "43781660943167898070737550218334565811209514063451370094606353752800030042777"
+  },
+  {
+   "price": 0.25,
+   "t": 1738411200,
+   "token_id": "43781660943167898070737550218334565811209514063451370094606353752800030042777"
+  },
+  {
+   "price": 1.0,
+   "t": 1738540800,
+   "token_id": "43781660943167898070737550218334565811209514063451370094606353752800030042777"
+  },
+  {
+   "price": 0.5,
+   "t": 1738454400,
+   "token_id": "83956398129889667799938737724446878507969053538789799263207161545658380035627"
+  },
+  {
+   "price": 0.25,
+   "t": 1738497600,
+   "token_id": "83956398129889667799938737724446878507969053538789799263207161545658380035627"
+  },
+  {
+   "price": 0.0,
+   "t": 1738627200,
+   "token_id": "83956398129889667799938737724446878507969053538789799263207161545658380035627"
+  },
+  {
+   "price": 0.5,
+   "t": 1738540800,
+   "token_id": "110199952934885089242101210610500216559325039206096691037283226925308311142073"
+  },
+  {
+   "price": 1.0,
+   "t": 1738713600,
+   "token_id": "110199952934885089242101210610500216559325039206096691037283226925308311142073"
+  },
+  {
+   "price": 0.5,
+   "t": 1738627200,
+   "token_id": "69940378187051078853467670904802935742473133303134733385239977896450763486526"
+  },
+  {
+   "price": 1.0,
+   "t": 1738800000,
+   "token_id": "69940378187051078853467670904802935742473133303134733385239977896450763486526"
+  },
+  {
+   "price": 0.5,
+   "t": 1738713600,
+   "token_id": "57297095379794794974845885482258577212971058579220570550030027840469308425299"
+  },
+  {
+   "price": 0.25,
+   "t": 1738756800,
+   "token_id": "57297095379794794974845885482258577212971058579220570550030027840469308425299"
+  },
+  {
+   "price": 0.0,
+   "t": 1738886400,
+   "token_id": "57297095379794794974845885482258577212971058579220570550030027840469308425299"
+  },
+  {
+   "price": 0.5,
+   "t": 1738800000,
+   "token_id": "100394179872182684047727799658177509647751537624409611770374702419138307940648"
+  },
+  {
+   "price": 1.0,
+   "t": 1738972800,
+   "token_id": "100394179872182684047727799658177509647751537624409611770374702419138307940648"
+  },
+  {
+   "price": 0.5,
+   "t": 1738886400,
+   "token_id": "107123708931019627436480359369124395353920508600878804794166397468280778332375"
+  },
+  {
+   "price": 0.25,
+   "t": 1738929600,
+   "token_id": "107123708931019627436480359369124395353920508600878804794166397468280778332375"
+  },
+  {
+   "price": 0.0,
+   "t": 1739059200,
+   "token_id": "107123708931019627436480359369124395353920508600878804794166397468280778332375"
+  },
+  {
+   "price": 0.5,
+   "t": 1738972800,
+   "token_id": "66577424489436543575938467703323779943737265587438758201500484552285539404966"
+  },
+  {
+   "price": 0.25,
+   "t": 1739016000,
+   "token_id": "66577424489436543575938467703323779943737265587438758201500484552285539404966"
+  },
+  {
+   "price": 1.0,
+   "t": 1739145600,
+   "token_id": "66577424489436543575938467703323779943737265587438758201500484552285539404966"
+  },
+  {
+   "price": 0.5,
+   "t": 1739059200,
+   "token_id": "89024411893902802158390049440602481988116613349427650737777135852425750009378"
+  },
+  {
+   "price": 0.25,
+   "t": 1739102400,
+   "token_id": "89024411893902802158390049440602481988116613349427650737777135852425750009378"
+  },
+  {
+   "price": 0.0,
+   "t": 1739232000,
+   "token_id": "89024411893902802158390049440602481988116613349427650737777135852425750009378"
+  },
+  {
+   "price": 0.5,
+   "t": 1739145600,
+   "token_id": "115177201746054530214919343937242962391702300943985512875159276435353161115030"
+  },
+  {
+   "price": 0.25,
+   "t": 1739188800,
+   "token_id": "115177201746054530214919343937242962391702300943985512875159276435353161115030"
+  },
+  {
+   "price": 0.0,
+   "t": 1739318400,
+   "token_id": "115177201746054530214919343937242962391702300943985512875159276435353161115030"
+  },
+  {
+   "price": 0.5,
+   "t": 1739232000,
+   "token_id": "46726785677259639025886171195710608262034697601532777502591872521486545838787"
+  },
+  {
+   "price": 0.25,
+   "t": 1739275200,
+   "token_id": "46726785677259639025886171195710608262034697601532777502591872521486545838787"
+  },
+  {
+   "price": 1.0,
+   "t": 1739404800,
+   "token_id": "46726785677259639025886171195710608262034697601532777502591872521486545838787"
+  },
+  {
+   "price": 0.5,
+   "t": 1739318400,
+   "token_id": "70666704161611363878137483006263140440113533697398492451958644624696696055452"
+  },
+  {
+   "price": 1.0,
+   "t": 1739491200,
+   "token_id": "70666704161611363878137483006263140440113533697398492451958644624696696055452"
+  },
+  {
+   "price": 0.5,
+   "t": 1739404800,
+   "token_id": "48438390581207549715581674998143501396701749610398803581201292557775607945780"
+  },
+  {
+   "price": 0.25,
+   "t": 1739448000,
+   "token_id": "48438390581207549715581674998143501396701749610398803581201292557775607945780"
+  },
+  {
+   "price": 0.0,
+   "t": 1739577600,
+   "token_id": "48438390581207549715581674998143501396701749610398803581201292557775607945780"
+  },
+  {
+   "price": 0.5,
+   "t": 1739491200,
+   "token_id": "40638449481425838425062947848295479668444662654328650862114491596818784062181"
+  },
+  {
+   "price": 0.25,
+   "t": 1739534400,
+   "token_id": "40638449481425838425062947848295479668444662654328650862114491596818784062181"
+  },
+  {
+   "price": 0.0,
+   "t": 1739664000,
+   "token_id": "40638449481425838425062947848295479668444662654328650862114491596818784062181"
+  },
+  {
+   "price": 0.5,
+   "t": 1739577600,
+   "token_id": "10427540151533163122406503478535446199384140775712794965785622085841876333778"
+  },
+  {
+   "price": 0.25,
+   "t": 1739620800,
+   "token_id": "10427540151533163122406503478535446199384140775712794965785622085841876333778"
+  },
+  {
+   "price": 0.0,
+   "t": 1739750400,
+   "token_id": "10427540151533163122406503478535446199384140775712794965785622085841876333778"
+  },
+  {
+   "price": 0.5,
+   "t": 1739664000,
+   "token_id": "91177537542132216302762121837330300674123232829023245608365939762045485210205"
+  },
+  {
+   "price": 1.0,
+   "t": 1739836800,
+   "token_id": "91177537542132216302762121837330300674123232829023245608365939762045485210205"
+  },
+  {
+   "price": 0.5,
+   "t": 1739750400,
+   "token_id": "64221462605591913490752385633852032965771227189134420433646100687118316762444"
+  },
+  {
+   "price": 0.25,
+   "t": 1739793600,
+   "token_id": "64221462605591913490752385633852032965771227189134420433646100687118316762444"
+  },
+  {
+   "price": 0.0,
+   "t": 1739923200,
+   "token_id": "64221462605591913490752385633852032965771227189134420433646100687118316762444"
+  },
+  {
+   "price": 0.5,
+   "t": 1739836800,
+   "token_id": "53366320636176947235666630673758474123766046210752917512231402045523207259431"
+  },
+  {
+   "price": 0.25,
+   "t": 1739880000,
+   "token_id": "53366320636176947235666630673758474123766046210752917512231402045523207259431"
+  },
+  {
+   "price": 1.0,
+   "t": 1740009600,
+   "token_id": "53366320636176947235666630673758474123766046210752917512231402045523207259431"
+  },
+  {
+   "price": 0.5,
+   "t": 1739923200,
+   "token_id": "114006236282776301032277193187512667523756360744846088054954107373440550388879"
+  },
+  {
+   "price": 0.25,
+   "t": 1739966400,
+   "token_id": "114006236282776301032277193187512667523756360744846088054954107373440550388879"
+  },
+  {
+   "price": 0.0,
+   "t": 1740096000,
+   "token_id": "114006236282776301032277193187512667523756360744846088054954107373440550388879"
+  },
+  {
+   "price": 0.5,
+   "t": 1740009600,
+   "token_id": "113100584098963163733737380929473975760156928114113802471313358623481881848996"
+  },
+  {
+   "price": 0.25,
+   "t": 1740052800,
+   "token_id": "113100584098963163733737380929473975760156928114113802471313358623481881848996"
+  },
+  {
+   "price": 1.0,
+   "t": 1740182400,
+   "token_id": "113100584098963163733737380929473975760156928114113802471313358623481881848996"
+  },
+  {
+   "price": 0.5,
+   "t": 1740096000,
+   "token_id": "87244101374588089944655380162242999725444495532965528637115419340621717624225"
+  },
+  {
+   "price": 0.25,
+   "t": 1740139200,
+   "token_id": "87244101374588089944655380162242999725444495532965528637115419340621717624225"
+  },
+  {
+   "price": 0.0,
+   "t": 1740268800,
+   "token_id": "87244101374588089944655380162242999725444495532965528637115419340621717624225"
+  },
+  {
+   "price": 0.5,
+   "t": 1740182400,
+   "token_id": "103335122950955609436376810787028044983617554871759464740239410783370744449274"
+  },
+  {
+   "price": 1.0,
+   "t": 1740355200,
+   "token_id": "103335122950955609436376810787028044983617554871759464740239410783370744449274"
+  },
+  {
+   "price": 0.5,
+   "t": 1740268800,
+   "token_id": "61580699529647147803919218266934370089054385579868143466011065743070657382872"
+  },
+  {
+   "price": 1.0,
+   "t": 1740441600,
+   "token_id": "61580699529647147803919218266934370089054385579868143466011065743070657382872"
+  },
+  {
+   "price": 0.5,
+   "t": 1740355200,
+   "token_id": "19461468469632606238173175958285144902802613118245209900277669506505251898953"
+  },
+  {
+   "price": 0.25,
+   "t": 1740398400,
+   "token_id": "19461468469632606238173175958285144902802613118245209900277669506505251898953"
+  },
+  {
+   "price": 0.0,
+   "t": 1740528000,
+   "token_id": "19461468469632606238173175958285144902802613118245209900277669506505251898953"
+  },
+  {
+   "price": 0.5,
+   "t": 1740441600,
+   "token_id": "96911589065936438870280567400241439763631188908144119652662396448422625164789"
+  },
+  {
+   "price": 0.25,
+   "t": 1740484800,
+   "token_id": "96911589065936438870280567400241439763631188908144119652662396448422625164789"
+  },
+  {
+   "price": 0.0,
+   "t": 1740614400,
+   "token_id": "96911589065936438870280567400241439763631188908144119652662396448422625164789"
+  },
+  {
+   "price": 0.5,
+   "t": 1740528000,
+   "token_id": "60258638342302225241885362603095673813833735363202228349787979631273564383778"
+  },
+  {
+   "price": 1.0,
+   "t": 1740700800,
+   "token_id": "60258638342302225241885362603095673813833735363202228349787979631273564383778"
+  },
+  {
+   "price": 0.5,
+   "t": 1740614400,
+   "token_id": "38610110723489116192385784630430843557079218263632486881775777118347337574029"
+  },
+  {
+   "price": 1.0,
+   "t": 1740787200,
+   "token_id": "38610110723489116192385784630430843557079218263632486881775777118347337574029"
+  },
+  {
+   "price": 0.5,
+   "t": 1740700800,
+   "token_id": "24534888438167195736992034104339277993306069761320005040816556624903080873182"
+  },
+  {
+   "price": 0.25,
+   "t": 1740744000,
+   "token_id": "24534888438167195736992034104339277993306069761320005040816556624903080873182"
+  },
+  {
+   "price": 0.0,
+   "t": 1740873600,
+   "token_id": "24534888438167195736992034104339277993306069761320005040816556624903080873182"
+  },
+  {
+   "price": 0.5,
+   "t": 1740787200,
+   "token_id": "21518144533853064906293765772166567131295638804968203753676509612421027766748"
+  },
+  {
+   "price": 0.25,
+   "t": 1740830400,
+   "token_id": "21518144533853064906293765772166567131295638804968203753676509612421027766748"
+  },
+  {
+   "price": 1.0,
+   "t": 1740960000,
+   "token_id": "21518144533853064906293765772166567131295638804968203753676509612421027766748"
+  },
+  {
+   "price": 0.5,
+   "t": 1740873600,
+   "token_id": "21418891916659483760232331025693704317481184135411313546637033181778878001358"
+  },
+  {
+   "price": 0.25,
+   "t": 1740916800,
+   "token_id": "21418891916659483760232331025693704317481184135411313546637033181778878001358"
+  },
+  {
+   "price": 0.0,
+   "t": 1741046400,
+   "token_id": "21418891916659483760232331025693704317481184135411313546637033181778878001358"
+  },
+  {
+   "price": 0.5,
+   "t": 1740960000,
+   "token_id": "67444725429465623577161306753369569128487333717343380480136455512205012981314"
+  },
+  {
+   "price": 0.25,
+   "t": 1741003200,
+   "token_id": "67444725429465623577161306753369569128487333717343380480136455512205012981314"
+  },
+  {
+   "price": 0.0,
+   "t": 1741132800,
+   "token_id": "67444725429465623577161306753369569128487333717343380480136455512205012981314"
+  },
+  {
+   "price": 0.5,
+   "t": 1741046400,
+   "token_id": "69644741477318385971543424678943575124094522539508923348980749766277517360710"
+  },
+  {
+   "price": 0.25,
+   "t": 1741089600,
+   "token_id": "69644741477318385971543424678943575124094522539508923348980749766277517360710"
+  },
+  {
+   "price": 0.0,
+   "t": 1741219200,
+   "token_id": "69644741477318385971543424678943575124094522539508923348980749766277517360710"
+  },
+  {
+   "price": 0.5,
+   "t": 1741132800,
+   "token_id": "86609726354410132498944666161232429620180395055566727737345639180853253809349"
+  },
+  {
+   "price": 1.0,
+   "t": 1741305600,
+   "token_id": "86609726354410132498944666161232429620180395055566727737345639180853253809349"
+  },
+  {
+   "price": 0.5,
+   "t": 1741219200,
+   "token_id": "11773443377921256396629446189324614478626743167907561504741345924892821188494"
+  },
+  {
+   "price": 0.25,
+   "t": 1741262400,
+   "token_id": "11773443377921256396629446189324614478626743167907561504741345924892821188494"
+  },
+  {
+   "price": 1.0,
+   "t": 1741392000,
+   "token_id": "11773443377921256396629446189324614478626743167907561504741345924892821188494"
+  },
+  {
+   "price": 0.5,
+   "t": 1741305600,
+   "token_id": "104450687776665218816969814155951189225393624881515401280027402287054610297958"
+  },
+  {
+   "price": 0.25,
+   "t": 1741348800,
+   "token_id": "104450687776665218816969814155951189225393624881515401280027402287054610297958"
+  },
+  {
+   "price": 0.0,
+   "t": 1741478400,
+   "token_id": "104450687776665218816969814155951189225393624881515401280027402287054610297958"
+  },
+  {
+   "price": 0.5,
+   "t": 1741392000,
+   "token_id": "55908819532408473336952293050032843467910060038325165957434377189349037667663"
+  },
+  {
+   "price": 0.25,
+   "t": 1741435200,
+   "token_id": "55908819532408473336952293050032843467910060038325165957434377189349037667663"
+  },
+  {
+   "price": 1.0,
+   "t": 1741564800,
+   "token_id": "55908819532408473336952293050032843467910060038325165957434377189349037667663"
+  },
+  {
+   "price": 0.5,
+   "t": 1741478400,
+   "token_id": "23884739136976034827349058887618878380132025220128623915082616584227285287442"
+  },
+  {
+   "price": 1.0,
+   "t": 1741651200,
+   "token_id": "23884739136976034827349058887618878380132025220128623915082616584227285287442"
+  },
+  {
+   "price": 0.5,
+   "t": 1741564800,
+   "token_id": "42645692821306576487211367115296810357722012569643691525125688893743994319571"
+  },
+  {
+   "price": 0.25,
+   "t": 1741608000,
+   "token_id": "42645692821306576487211367115296810357722012569643691525125688893743994319571"
+  },
+  {
+   "price": 0.0,
+   "t": 1741737600,
+   "token_id": "42645692821306576487211367115296810357722012569643691525125688893743994319571"
+  },
+  {
+   "price": 0.5,
+   "t": 1741651200,
+   "token_id": "73420998275961569819435107285799390698670870919349451495167885323060250681000"
+  },
+  {
+   "price": 0.25,
+   "t": 1741694400,
+   "token_id": "73420998275961569819435107285799390698670870919349451495167885323060250681000"
+  },
+  {
+   "price": 1.0,
+   "t": 1741824000,
+   "token_id": "73420998275961569819435107285799390698670870919349451495167885323060250681000"
+  },
+  {
+   "price": 0.5,
+   "t": 1741737600,
+   "token_id": "58185444446231501436236968355307441268219005126142466023431735649139404188342"
+  },
+  {
+   "price": 1.0,
+   "t": 1741910400,
+   "token_id": "58185444446231501436236968355307441268219005126142466023431735649139404188342"
+  },
+  {
+   "price": 0.5,
+   "t": 1741824000,
+   "token_id": "37474644755818260953550465198736603914074543388852562428450327221468614904843"
+  },
+  {
+   "price": 0.25,
+   "t": 1741867200,
+   "token_id": "37474644755818260953550465198736603914074543388852562428450327221468614904843"
+  },
+  {
+   "price": 0.0,
+   "t": 1741996800,
+   "token_id": "37474644755818260953550465198736603914074543388852562428450327221468614904843"
+  },
+  {
+   "price": 0.5,
+   "t": 1741910400,
+   "token_id": "54377473701262201819816164061430843312927444814010872600729616863589169161801"
+  },
+  {
+   "price": 0.25,
+   "t": 1741953600,
+   "token_id": "54377473701262201819816164061430843312927444814010872600729616863589169161801"
+  },
+  {
+   "price": 0.0,
+   "t": 1742083200,
+   "token_id": "54377473701262201819816164061430843312927444814010872600729616863589169161801"
+  },
+  {
+   "price": 0.5,
+   "t": 1741996800,
+   "token_id": "36654678071335291252238900030664686976998588524498850419669135760926138911418"
+  },
+  {
+   "price": 0.25,
+   "t": 1742040000,
+   "token_id": "36654678071335291252238900030664686976998588524498850419669135760926138911418"
+  },
+  {
+   "price": 1.0,
+   "t": 1742169600,
+   "token_id": "36654678071335291252238900030664686976998588524498850419669135760926138911418"
+  },
+  {
+   "price": 0.5,
+   "t": 1742083200,
+   "token_id": "56309573994461202156858070736179726817751299685429303336018121709654401264376"
+  },
+  {
+   "price": 1.0,
+   "t": 1742256000,
+   "token_id": "56309573994461202156858070736179726817751299685429303336018121709654401264376"
+  },
+  {
+   "price": 0.5,
+   "t": 1742169600,
+   "token_id": "106557989862375097413649211799923105464090173270532910460983592274077533239360"
+  },
+  {
+   "price": 0.25,
+   "t": 1742212800,
+   "token_id": "106557989862375097413649211799923105464090173270532910460983592274077533239360"
+  },
+  {
+   "price": 0.0,
+   "t": 1742342400,
+   "token_id": "106557989862375097413649211799923105464090173270532910460983592274077533239360"
+  },
+  {
+   "price": 0.5,
+   "t": 1742256000,
+   "token_id": "71098499462466364737452121218042334392033455690868573363839763965533227675602"
+  },
+  {
+   "price": 0.25,
+   "t": 1742299200,
+   "token_id": "71098499462466364737452121218042334392033455690868573363839763965533227675602"
+  },
+  {
+   "price": 0.0,
+   "t": 1742428800,
+   "token_id": "71098499462466364737452121218042334392033455690868573363839763965533227675602"
+  },
+  {
+   "price": 0.5,
+   "t": 1742342400,
+   "token_id": "25721418493281607344998541740525431812970926025791346764892029319932036719373"
+  },
+  {
+   "price": 0.25,
+   "t": 1742385600,
+   "token_id": "25721418493281607344998541740525431812970926025791346764892029319932036719373"
+  },
+  {
+   "price": 0.0,
+   "t": 1742515200,
+   "token_id": "25721418493281607344998541740525431812970926025791346764892029319932036719373"
+  },
+  {
+   "price": 0.5,
+   "t": 1742428800,
+   "token_id": "112663267026081702665923286369631933222535672079912708191630275474348276552889"
+  },
+  {
+   "price": 0.25,
+   "t": 1742472000,
+   "token_id": "112663267026081702665923286369631933222535672079912708191630275474348276552889"
+  },
+  {
+   "price": 0.0,
+   "t": 1742601600,
+   "token_id": "112663267026081702665923286369631933222535672079912708191630275474348276552889"
+  },
+  {
+   "price": 0.5,
+   "t": 1742515200,
+   "token_id": "27268519084873085859523025757416504780497350601387590099361475456587967013062"
+  },
+  {
+   "price": 0.25,
+   "t": 1742558400,
+   "token_id": "27268519084873085859523025757416504780497350601387590099361475456587967013062"
+  },
+  {
+   "price": 1.0,
+   "t": 1742688000,
+   "token_id": "27268519084873085859523025757416504780497350601387590099361475456587967013062"
+  },
+  {
+   "price": 0.5,
+   "t": 1742601600,
+   "token_id": "93420273635925980308446261478473171316620843506861672579704399514303418417676"
+  },
+  {
+   "price": 1.0,
+   "t": 1742774400,
+   "token_id": "93420273635925980308446261478473171316620843506861672579704399514303418417676"
+  },
+  {
+   "price": 0.5,
+   "t": 1742688000,
+   "token_id": "21949777423399074265194742987672432339883740961662359812461898666184972329246"
+  },
+  {
+   "price": 0.25,
+   "t": 1742731200,
+   "token_id": "21949777423399074265194742987672432339883740961662359812461898666184972329246"
+  },
+  {
+   "price": 0.0,
+   "t": 1742860800,
+   "token_id": "21949777423399074265194742987672432339883740961662359812461898666184972329246"
+  },
+  {
+   "price": 0.5,
+   "t": 1742774400,
+   "token_id": "58536289289685555057020261459094462224470644069345987512008503711835139642760"
+  },
+  {
+   "price": 0.25,
+   "t": 1742817600,
+   "token_id": "58536289289685555057020261459094462224470644069345987512008503711835139642760"
+  },
+  {
+   "price": 0.0,
+   "t": 1742947200,
+   "token_id": "58536289289685555057020261459094462224470644069345987512008503711835139642760"
+  },
+  {
+   "price": 0.5,
+   "t": 1742860800,
+   "token_id": "88175210794734969609567685136184354399404619998106243934838468160617050318976"
+  },
+  {
+   "price": 0.25,
+   "t": 1742904000,
+   "token_id": "88175210794734969609567685136184354399404619998106243934838468160617050318976"
+  },
+  {
+   "price": 1.0,
+   "t": 1743033600,
+   "token_id": "88175210794734969609567685136184354399404619998106243934838468160617050318976"
+  },
+  {
+   "price": 0.5,
+   "t": 1742947200,
+   "token_id": "101392504633969812758842911965748392118951210641430805185617603636631493774597"
+  },
+  {
+   "price": 1.0,
+   "t": 1743120000,
+   "token_id": "101392504633969812758842911965748392118951210641430805185617603636631493774597"
+  },
+  {
+   "price": 0.5,
+   "t": 1743033600,
+   "token_id": "80316216828809469711143427486009192735906555503330678531636855832892815873548"
+  },
+  {
+   "price": 0.25,
+   "t": 1743076800,
+   "token_id": "80316216828809469711143427486009192735906555503330678531636855832892815873548"
+  },
+  {
+   "price": 0.0,
+   "t": 1743206400,
+   "token_id": "80316216828809469711143427486009192735906555503330678531636855832892815873548"
+  },
+  {
+   "price": 0.5,
+   "t": 1743120000,
+   "token_id": "42615597220589857942756690561874150988794083919534840453642176501210418897240"
+  },
+  {
+   "price": 0.25,
+   "t": 1743163200,
+   "token_id": "42615597220589857942756690561874150988794083919534840453642176501210418897240"
+  },
+  {
+   "price": 1.0,
+   "t": 1743292800,
+   "token_id": "42615597220589857942756690561874150988794083919534840453642176501210418897240"
+  },
+  {
+   "price": 0.5,
+   "t": 1743206400,
+   "token_id": "68641505747682990094471892888922049367646956532482018040430199517445850740117"
+  },
+  {
+   "price": 0.25,
+   "t": 1743249600,
+   "token_id": "68641505747682990094471892888922049367646956532482018040430199517445850740117"
+  },
+  {
+   "price": 0.0,
+   "t": 1743379200,
+   "token_id": "68641505747682990094471892888922049367646956532482018040430199517445850740117"
+  },
+  {
+   "price": 0.5,
+   "t": 1743292800,
+   "token_id": "54247391119969175119164237119711356644232503907163108862691261823970373348422"
+  },
+  {
+   "price": 1.0,
+   "t": 1743465600,
+   "token_id": "54247391119969175119164237119711356644232503907163108862691261823970373348422"
+  },
+  {
+   "price": 0.5,
+   "t": 1743379200,
+   "token_id": "93077340338181205769150841974609027971313805527178837406163382695153427697017"
+  },
+  {
+   "price": 0.25,
+   "t": 1743422400,
+   "token_id": "93077340338181205769150841974609027971313805527178837406163382695153427697017"
+  },
+  {
+   "price": 0.0,
+   "t": 1743552000,
+   "token_id": "93077340338181205769150841974609027971313805527178837406163382695153427697017"
+  },
+  {
+   "price": 0.5,
+   "t": 1743465600,
+   "token_id": "2966022555983942396872011665682861985777552611652653538548109808637147254981"
+  },
+  {
+   "price": 0.25,
+   "t": 1743508800,
+   "token_id": "2966022555983942396872011665682861985777552611652653538548109808637147254981"
+  },
+  {
+   "price": 0.0,
+   "t": 1743638400,
+   "token_id": "2966022555983942396872011665682861985777552611652653538548109808637147254981"
+  },
+  {
+   "price": 0.5,
+   "t": 1743552000,
+   "token_id": "111382363327867407492307036253699724350839205867507427363053337239978779139571"
+  },
+  {
+   "price": 1.0,
+   "t": 1743724800,
+   "token_id": "111382363327867407492307036253699724350839205867507427363053337239978779139571"
+  },
+  {
+   "price": 0.5,
+   "t": 1743638400,
+   "token_id": "65653784401589115917555682592107105711003803351406888572637713273665828242032"
+  },
+  {
+   "price": 0.25,
+   "t": 1743681600,
+   "token_id": "65653784401589115917555682592107105711003803351406888572637713273665828242032"
+  },
+  {
+   "price": 0.0,
+   "t": 1743811200,
+   "token_id": "65653784401589115917555682592107105711003803351406888572637713273665828242032"
+  },
+  {
+   "price": 0.5,
+   "t": 1743724800,
+   "token_id": "1510710924282596500240445740101881297662973618622228521164525780650879419253"
+  },
+  {
+   "price": 1.0,
+   "t": 1743897600,
+   "token_id": "1510710924282596500240445740101881297662973618622228521164525780650879419253"
+  },
+  {
+   "price": 0.5,
+   "t": 1743811200,
+   "token_id": "10127006322220033779635675184135813295322975865650841419778219654035804020946"
+  },
+  {
+   "price": 1.0,
+   "t": 1743984000,
+   "token_id": "10127006322220033779635675184135813295322975865650841419778219654035804020946"
+  },
+  {
+   "price": 0.5,
+   "t": 1743897600,
+   "token_id": "20450529738057165520175871626389952259588828185173547626409370512605399732866"
+  },
+  {
+   "price": 0.25,
+   "t": 1743940800,
+   "token_id": "20450529738057165520175871626389952259588828185173547626409370512605399732866"
+  },
+  {
+   "price": 0.0,
+   "t": 1744070400,
+   "token_id": "20450529738057165520175871626389952259588828185173547626409370512605399732866"
+  },
+  {
+   "price": 0.5,
+   "t": 1743984000,
+   "token_id": "13716632012034334814766405932333996927227672639756055214495776655193596577916"
+  },
+  {
+   "price": 1.0,
+   "t": 1744156800,
+   "token_id": "13716632012034334814766405932333996927227672639756055214495776655193596577916"
+  },
+  {
+   "price": 0.5,
+   "t": 1744070400,
+   "token_id": "97101877612378462162345049590469362975042258772819257462692353988107436648422"
+  },
+  {
+   "price": 0.25,
+   "t": 1744113600,
+   "token_id": "97101877612378462162345049590469362975042258772819257462692353988107436648422"
+  },
+  {
+   "price": 1.0,
+   "t": 1744243200,
+   "token_id": "97101877612378462162345049590469362975042258772819257462692353988107436648422"
+  },
+  {
+   "price": 0.5,
+   "t": 1744156800,
+   "token_id": "39571259138884991108078233116286285747564241302832110250278191464094326261774"
+  },
+  {
+   "price": 0.25,
+   "t": 1744200000,
+   "token_id": "39571259138884991108078233116286285747564241302832110250278191464094326261774"
+  },
+  {
+   "price": 0.0,
+   "t": 1744329600,
+   "token_id": "39571259138884991108078233116286285747564241302832110250278191464094326261774"
+  },
+  {
+   "price": 0.5,
+   "t": 1744243200,
+   "token_id": "113946640278468732331805298253146482029008048934148163320464023849853127806726"
+  },
+  {
+   "price": 0.25,
+   "t": 1744286400,
+   "token_id": "113946640278468732331805298253146482029008048934148163320464023849853127806726"
+  },
+  {
+   "price": 0.0,
+   "t": 1744416000,
+   "token_id": "113946640278468732331805298253146482029008048934148163320464023849853127806726"
+  }
+ ]
+}
