@@ -142,3 +142,47 @@ class PositionSet:
                 raise ValueError(f"left-out Position {position.token_id} has no reason")
             counts[position.reason] += 1
         return counts
+
+
+class Verdict(StrEnum):
+    """The four Verdicts (PRD Glossary, FR-6). The text is what the user reads."""
+
+    SKILLED = "Skilled (high confidence)"
+    LIKELY_SKILLED = "Likely skilled"
+    NO_EVIDENCE = "No evidence of skill"
+    NOT_ENOUGH_DATA = "Not enough data"
+
+
+@dataclass(frozen=True, slots=True)
+class ChartBin:
+    """One bar of the luck chart, in USD (FR-9, AD-25).
+
+    A bar holds the Simulations from `low` (included) up to `high` (not included). The two end
+    bars hold everything beyond the axis: the first has `low` None, the last has `high` None.
+    """
+
+    low: float | None
+    high: float | None
+    count: int
+
+
+@dataclass(frozen=True, slots=True)
+class SkillTestResult:
+    """One Skill Test result and the set it was computed on (FR-4 to FR-7, AD-22, AD-25).
+
+    `real_pnl` is the exact sum, Own Fees included (FR-4). For *Not enough data*, `p_value`
+    and `at_or_above` are None, `simulations` is 0 and there are no `bins` (FR-6, FR-10).
+    `at_or_above` is the exact count of Simulations at or above the Real PnL (FR-5).
+    """
+
+    scope: str
+    seed: int
+    verdict: Verdict
+    tested_count: int
+    sliver_count: int
+    real_pnl: float
+    own_fees: float
+    simulations: int
+    at_or_above: int | None
+    p_value: float | None
+    bins: tuple[ChartBin, ...]
