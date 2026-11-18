@@ -1,0 +1,84 @@
+"""The number phrases the user reads, in one place (AD-25, UX-DR14; Story 1.5).
+
+Templates, the FR-24 check and the tests all call these functions, so the Verdict card, the
+chart text and the Explanation can never phrase the same number two ways. Story 1.5 adds the
+odds phrase, money and the *Not enough data* sentence; later stories add theirs here (Copy Test
+phrase, Minimum Luck Passes, Follower Return, the largest-bet sentence). A test fails if an odds
+phrase, the *Not enough data* sentence or a minus-sign amount is written elsewhere under `src/`.
+No scan can spot every hand-made money format, so pages must call `money()`.
+
+Rounding is decimal and takes halves away from zero, never Python's round-half-to-even.
+"""
+
+from __future__ import annotations
+
+import math
+from decimal import ROUND_HALF_UP, Decimal
+from numbers import Integral, Real
+
+from liquidoracle.core.skilltest import MIN_RESOLVED, SIMULATIONS
+
+MINUS = "−"  # UX-DR14: a real minus sign, not the hyphen "-"
+
+FLOOR_PHRASE = f"fewer than 1 time in {SIMULATIONS:,}"  # FR-8: 10,000 Simulations cannot show less
+MORE_THAN_HALF_PHRASE = "more than half the time"  # FR-8: p above 0.5
+
+_ONE = Decimal(1)
+
+
+def odds(p_value: float) -> str:
+    """The p-value in plain words (FR-8): "about 1 time in 300".
+
+    N = 1/p, to 2 significant figures, and to a whole number below 10, so never a decimal.
+    "fewer than 1 time in 10,000" when no Simulation reached the Real PnL (p = 1/10,001) and
+    whenever N would round to 10,000 or more, so "about 1 time in 10,000" never appears.
+    "more than half the time" above 0.5. The p-value is taken as given, so a Domain Verdict can
+    pass its Bonferroni-adjusted p (FR-20).
+    """
+    p = _real(p_value, "p-value")
+    if not 0.0 < p <= 1.0:
+        raise ValueError(f"a p-value must be above 0 and at most 1, got {p_value!r}")
+    if p > 0.5:
+        return MORE_THAN_HALF_PHRASE
+    if p <= 1.0 / (SIMULATIONS + 1):
+        return FLOOR_PHRASE
+    n = _ONE / Decimal(repr(p))  # decimal division: 1/0.00016 is 6,250 exactly, not 6,249.999…
+    if n < 10:
+        rounded = n.quantize(_ONE, rounding=ROUND_HALF_UP)
+    else:
+        step = _ONE.scaleb(n.adjusted() - 1)  # 2 significant figures: 303 -> step 10
+        rounded = (n / step).quantize(_ONE, rounding=ROUND_HALF_UP) * step
+    if rounded >= SIMULATIONS:
+        return FLOOR_PHRASE
+    return f"about 1 time in {int(rounded):,}"
+
+
+def money(amount: float) -> str:
+    """USD in whole dollars (UX-DR14; Edvard, 2026-11-18): "$12,340", "−$1,240", never "−$0".
+
+    Only the display rounds; stored and tested amounts stay exact to the cent (Conventions › Money).
+    """
+    value = _real(amount, "amount")
+    dollars = int(Decimal(repr(value)).to_integral_value(rounding=ROUND_HALF_UP))  # no 28-digit limit
+    sign = MINUS if dollars < 0 else ""
+    return f"{sign}${abs(dollars):,}"
+
+
+def not_enough_data(tested_count: int) -> str:
+    """The *Not enough data* sentence (FR-10): "12 resolved bets; at least 30 are needed for a Verdict (18 more)"."""
+    if isinstance(tested_count, bool) or not isinstance(tested_count, Integral):
+        raise ValueError(f"a count must be a whole number, got {tested_count!r}")
+    count = int(tested_count)
+    if not 0 <= count < MIN_RESOLVED:
+        raise ValueError(f"Not enough data needs 0 to {MIN_RESOLVED - 1} resolved bets, got {count}")
+    bets = "bet" if count == 1 else "bets"
+    return f"{count} resolved {bets}; at least {MIN_RESOLVED} are needed for a Verdict ({MIN_RESOLVED - count} more)"
+
+
+def _real(value: object, name: str) -> float:
+    if isinstance(value, bool) or not isinstance(value, Real):
+        raise ValueError(f"the {name} must be a number, got {value!r}")
+    number = float(value)
+    if not math.isfinite(number):
+        raise ValueError(f"the {name} must be finite, got {value!r}")
+    return number
