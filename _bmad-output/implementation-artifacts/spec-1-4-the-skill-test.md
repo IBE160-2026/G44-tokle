@@ -2,7 +2,7 @@
 title: 'Story 1.4: The Skill Test'
 type: 'feature'
 created: '2026-11-18'
-status: 'in-review'
+status: 'done'
 route: 'dispatch'
 review_loop_iteration: 0
 baseline_commit: 'e6a35b5ed22a0a67b9e9967939374ef621d2fc2a'
