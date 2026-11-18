@@ -157,8 +157,9 @@ class Verdict(StrEnum):
 class ChartBin:
     """One bar of the luck chart, in USD (FR-9, AD-25).
 
-    A bar holds the Simulations from `low` (included) up to `high` (not included). The two end
-    bars hold everything beyond the axis: the first has `low` None, the last has `high` None.
+    A bar holds the Simulations from `low` (included) up to `high` (not included); the last bar
+    on the axis also holds `high` itself. The two end bars hold everything strictly beyond the
+    axis: the first has `low` None, the last has `high` None.
     """
 
     low: float | None
@@ -168,7 +169,9 @@ class ChartBin:
 
 @dataclass(frozen=True, slots=True)
 class SkillTestResult:
-    """One Skill Test result and the set it was computed on (FR-4 to FR-7, AD-22, AD-25).
+    """One Skill Test result: its scope, Seed and counts (FR-4 to FR-7, AD-22, AD-25).
+
+    The Wallet and `fetch_id` it belongs to are the store's key (Story 1.6), not fields here.
 
     `real_pnl` is the exact sum, Own Fees included (FR-4). For *Not enough data*, `p_value`
     and `at_or_above` are None, `simulations` is 0 and there are no `bins` (FR-6, FR-10).

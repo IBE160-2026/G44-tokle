@@ -80,13 +80,8 @@ def _engine(bets: Sequence[Position], *, seed: int, unit_id: str) -> _Run:
         raise ValueError("the Skill Test needs at least one Position")
     ordered = sorted(bets, key=lambda b: (b.condition_id, b.token_id))  # AD-15
 
-    # AD-20: one U per Market; in each Market the smaller token_id wins on U < p, the other on U > 1 - p.
-    tokens: dict[str, set[str]] = {}
-    for bet in ordered:
-        tokens.setdefault(bet.condition_id, set()).add(bet.token_id)
-    for condition_id, ids in tokens.items():
-        if len(ids) > 2:
-            raise ValueError(f"Market {condition_id} has {len(ids)} outcomes in one test; only two are supported")
+    # AD-20: one U per Market; in each Market the smaller token_id (as text) wins on U < p, the other on U > 1 - p.
+    tokens = _tokens_per_market(ordered)
     markets = sorted(tokens)
     column = {condition_id: i for i, condition_id in enumerate(markets)}
     market_of = np.array([column[b.condition_id] for b in ordered], dtype=np.intp)
@@ -123,13 +118,27 @@ def _engine(bets: Sequence[Position], *, seed: int, unit_id: str) -> _Run:
 
 
 def _check(bets: Sequence[Position]) -> None:
+    """Refuse Positions the Skill Test cannot judge, whatever their number (FR-4, AD-20)."""
     for bet in bets:
         if bet.outcome not in (0.0, 1.0):
             raise ValueError(f"Position {bet.token_id} has no clear outcome ({bet.outcome!r})")
         if bet.entry_price is None or not 0.0 <= bet.entry_price <= 1.0:
             raise ValueError(f"Position {bet.token_id} has no Entry Price between 0 and 1 ({bet.entry_price!r})")
-        if not bet.shares_held > 0:
+        if not (math.isfinite(bet.shares_held) and bet.shares_held > 0):
             raise ValueError(f"Position {bet.token_id} holds no shares ({bet.shares_held!r})")
+        if bet.own_fees is None or not math.isfinite(bet.own_fees):
+            raise ValueError(f"Position {bet.token_id} has no Own Fees amount ({bet.own_fees!r})")
+    _tokens_per_market(bets)
+
+
+def _tokens_per_market(bets: Sequence[Position]) -> dict[str, set[str]]:
+    tokens: dict[str, set[str]] = {}
+    for bet in bets:
+        tokens.setdefault(bet.condition_id, set()).add(bet.token_id)
+    for condition_id, ids in tokens.items():
+        if len(ids) > 2:
+            raise ValueError(f"Market {condition_id} has {len(ids)} outcomes in one test; only two are supported")
+    return tokens
 
 
 def _real_pnl(bets: Sequence[Position]) -> float:
@@ -142,30 +151,37 @@ def _own_fees(bets: Sequence[Position]) -> float:
 
 
 def _bins(totals: np.ndarray, real_pnl: float) -> tuple[ChartBin, ...]:
-    """AD-25: 40 equal bars on a round axis centred on $0, plus the two end bars."""
+    """AD-25: 40 equal bars on a round axis centred on $0, plus the two end bars.
+
+    Simulations are sorted against the stored edges themselves, so a total that sits on an edge
+    always lands in the bar that starts there. The last bar on the axis also holds its top edge,
+    so a value at exactly the edge (the Real PnL or the 99.9% point) is on the axis, not beyond it.
+    """
     low, high = np.quantile(totals, [CHART_TAIL, 1.0 - CHART_TAIL])
     reach = max(abs(real_pnl), abs(float(low)), abs(float(high)))
     width = _nice(max(2.0 * reach / CHART_BARS, _MIN_BAR_WIDTH))
     half = CHART_BARS // 2
-    index = np.floor(totals / width).astype(np.int64) + half  # bar 0 starts at -half * width
+    edges = np.array([round((i - half) * width, 2) for i in range(CHART_BARS + 1)])
+    index = np.searchsorted(edges, totals, side="right") - 1  # -1 below the axis, CHART_BARS beyond it
+    index[totals == edges[-1]] = CHART_BARS - 1
     below = int(np.count_nonzero(index < 0))
     above = int(np.count_nonzero(index >= CHART_BARS))
     inside = np.bincount(index[(index >= 0) & (index < CHART_BARS)], minlength=CHART_BARS)
-    edge = round(half * width, 2)
-    bars = [ChartBin(low=None, high=-edge, count=below)]
-    bars += [
-        ChartBin(low=round((i - half) * width, 2), high=round((i + 1 - half) * width, 2), count=int(inside[i]))
-        for i in range(CHART_BARS)
-    ]
-    bars.append(ChartBin(low=edge, high=None, count=above))
+    bars = [ChartBin(low=None, high=float(edges[0]), count=below)]
+    bars += [ChartBin(low=float(edges[i]), high=float(edges[i + 1]), count=int(inside[i])) for i in range(CHART_BARS)]
+    bars.append(ChartBin(low=float(edges[-1]), high=None, count=above))
     return tuple(bars)
 
 
 def _nice(width: float) -> float:
-    """The smallest round bar width (1, 2, 2.5 or 5 times a power of ten) at least `width`."""
+    """The smallest round bar width (1, 2, 2.5 or 5 times a power of ten) at least `width`.
+
+    Widths are whole cents (2.5 cents is skipped), so every edge is exact when stored in cents.
+    """
     power = math.floor(math.log10(width))
     for step in _NICE_STEPS:
         candidate = round(step * 10.0**power, 10)
-        if candidate >= width:
+        whole_cents = abs(candidate * 100 - round(candidate * 100)) < 1e-6
+        if candidate >= width and whole_cents:
             return candidate
     raise AssertionError("unreachable: 10 * 10**power always covers width")

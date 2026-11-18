@@ -45,6 +45,7 @@ GOLDEN = {
     "coin-flipper-0000": 7356,
     "coin-flipper-0001": 8207,
     "coin-flipper-0002": 3270,
+    "two-sided-40": 495,
 }
 
 
@@ -69,6 +70,17 @@ def wallet_named(name: str) -> SampleWallet:
     if name in SMALL:
         return SMALL[name]
     return synthetic.coin_flipper(int(name.rsplit("-", 1)[1]))
+
+
+def golden_bets(name: str) -> tuple[list[Position], str]:
+    """The Positions and random unit behind a golden count. `two-sided-40` pins the AD-20 side rule."""
+    if name == "two-sided-40":
+        bets = [b for i in range(40)
+                for b in (bet(i, 0.2 + 0.01 * i, i % 3 == 0, side=0), bet(i, 0.35, i % 3 != 0, shares=50.0, side=1))]
+        return bets, name
+    wallet = wallet_named(name)
+    built = positions(wallet)
+    return [*built.tested, *built.slivers], wallet.address
 
 
 # --- Real PnL (FR-4) --------------------------------------------------------------------------
@@ -155,6 +167,18 @@ def test_a_fixed_fee_lowers_real_pnl_and_leaves_the_p_value() -> None:
     assert (after.at_or_above, after.p_value, after.verdict) == (before.at_or_above, before.p_value, before.verdict)
 
 
+def test_chart_bins_count_the_simulations_after_own_fees() -> None:
+    """AD-25, Conventions › Money: $2 on each of 100 Positions moves every Simulation down $200, two $100 bars, on the same axis."""
+    wallet = SMALL["sharp-trader"]
+    built = positions(wallet)
+    with_fees = replace(built, tested=tuple(replace(p, own_fees=2.0) for p in built.tested))
+    before = skilltest.skill_test(built, seed=SEED, unit_id=wallet.address).bins
+    after = skilltest.skill_test(with_fees, seed=SEED, unit_id=wallet.address).bins
+    assert [(b.low, b.high) for b in after] == [(b.low, b.high) for b in before]
+    assert before[1].high - before[1].low == 100.0
+    assert [b.count for b in after[1:-3]] == [b.count for b in before[3:-1]]
+
+
 def test_all_won_near_1_gives_the_product_of_the_prices() -> None:
     """FR-5, Conventions › Money (the tie test): bets all won at 0.97 to 0.99 tie only when all win, so p is about the product of the prices."""
     prices = [0.97 + 0.01 * (i % 3) for i in range(30)]
@@ -187,30 +211,43 @@ def test_both_sides_of_one_market_share_the_draw() -> None:
     assert run.at_or_above == skilltest.SIMULATIONS
 
 
-@pytest.mark.parametrize("side", [0, 1])
-def test_each_side_wins_at_its_entry_price(side: int) -> None:
-    """AD-20, FR-5: whichever side of the Market it is, a Position at 0.30 wins in about 30% of Simulations."""
-    run = skilltest._engine([bet(1, 0.3, True, side=side)], seed=SEED, unit_id=f"side-{side}")
+def two_sided(low_won: bool) -> list[Position]:
+    """One Market, both sides held: side 0 (the smaller token_id) 1 share at 0.60, side 1 100 shares at 0.30."""
+    return [bet(1, 0.6, low_won, shares=1.0, side=0), bet(1, 0.3, not low_won, side=1)]
+
+
+def test_each_side_of_one_market_wins_at_its_own_price() -> None:
+    """AD-20, FR-5: side 1 (wins on U > 1 - p) wins in about 30% of Simulations, and side 0 or side 1 in about 90%: never both."""
     sd = math.sqrt(0.3 * 0.7 * skilltest.SIMULATIONS)
-    assert abs(run.at_or_above - 0.3 * skilltest.SIMULATIONS) < 4 * sd
+    # Real result: side 1 won ($69.40). Only Simulations where side 1 wins reach it.
+    side_1 = skilltest._engine(two_sided(low_won=False), seed=SEED, unit_id="two-sided")
+    assert abs(side_1.at_or_above - 0.3 * skilltest.SIMULATIONS) < 4 * sd
+    # Real result: side 0 won (-$29.60). Every Simulation where either side wins reaches it.
+    side_0 = skilltest._engine(two_sided(low_won=True), seed=SEED, unit_id="two-sided")
+    assert abs(side_0.at_or_above - 0.9 * skilltest.SIMULATIONS) < 4 * math.sqrt(0.9 * 0.1 * skilltest.SIMULATIONS)
 
 
-@pytest.mark.parametrize(
-    "bad",
-    [
-        [bet(1, 0.5, True, side=0), bet(1, 0.5, True, side=1), bet(1, 0.5, True, side=2)],
-        [replace(bet(1, 0.5, True), outcome=None)],
-        [replace(bet(1, 0.5, True), entry_price=None)],
-        [replace(bet(1, 0.5, True), entry_price=1.5)],
-        [replace(bet(1, 0.5, True), shares_held=0.0)],
-        [],
-    ],
-    ids=["three outcomes", "no outcome", "no price", "price above 1", "no shares", "no Positions"],
-)
-def test_bad_input_is_refused(bad: list[Position]) -> None:
-    """AD-20, FR-4: a Market with three outcomes, a missing outcome or price, no shares or no Positions raise ValueError."""
+BAD_INPUT = {
+    "three outcomes": [bet(1, 0.5, True, side=0), bet(1, 0.5, True, side=1), bet(1, 0.5, True, side=2)],
+    "no outcome": [replace(bet(1, 0.5, True), outcome=None)],
+    "no price": [replace(bet(1, 0.5, True), entry_price=None)],
+    "price above 1": [replace(bet(1, 0.5, True), entry_price=1.5)],
+    "no shares": [replace(bet(1, 0.5, True), shares_held=0.0)],
+    "endless shares": [replace(bet(1, 0.5, True), shares_held=math.inf)],
+    "no fee amount": [replace(bet(1, 0.5, True), own_fees=None)],
+    "fee not a number": [replace(bet(1, 0.5, True), own_fees=math.nan)],
+}
+
+
+@pytest.mark.parametrize("name", sorted(BAD_INPUT))
+def test_bad_input_is_refused_by_both_functions(name: str) -> None:
+    """AD-20, FR-4, FR-6: bad Positions raise ValueError from skill_test (also below 30 bets) and from the engine."""
     with pytest.raises(ValueError):
-        skilltest._engine(bad, seed=SEED, unit_id="bad")
+        skilltest.skill_test(position_set(*BAD_INPUT[name]), seed=SEED, unit_id="bad")
+    with pytest.raises(ValueError):
+        skilltest._engine(BAD_INPUT[name], seed=SEED, unit_id="bad")
+    with pytest.raises(ValueError):
+        skilltest._engine([], seed=SEED, unit_id="bad")
 
 
 # --- Verdict (FR-6) ---------------------------------------------------------------------------
@@ -287,22 +324,21 @@ def test_position_order_does_not_change_the_result() -> None:
 
 @pytest.mark.parametrize("name", sorted(GOLDEN))
 def test_golden_count_is_reproduced(name: str) -> None:
-    """AD-17: the stored count of Simulations at or above the Real PnL is reproduced exactly on every system."""
-    wallet = wallet_named(name)
-    built = positions(wallet)
-    run = skilltest._engine((*built.tested, *built.slivers), seed=SEED, unit_id=wallet.address)
+    """AD-17, AD-20: the stored count of Simulations at or above the Real PnL is reproduced exactly on every system."""
+    bets, unit_id = golden_bets(name)
+    run = skilltest._engine(bets, seed=SEED, unit_id=unit_id)
     assert run.at_or_above == GOLDEN[name]
 
 
-SUBPROCESS_SCRIPT = """
+SUBPROCESS_SCRIPT = f"""
 import json
 from liquidoracle.core import skilltest
 from liquidoracle.core.positions import build_positions
 from liquidoracle.data import synthetic
-out = {}
+out = {{}}
 for w in synthetic.small_wallets():
-    built = build_positions(w.activity, {m.condition_id: m for m in w.markets})
-    r = skilltest.skill_test(built, seed=44, unit_id=w.address)
+    built = build_positions(w.activity, {{m.condition_id: m for m in w.markets}})
+    r = skilltest.skill_test(built, seed={SEED}, unit_id=w.address)
     out[w.name] = [r.p_value, str(r.verdict), r.at_or_above]
 print(json.dumps(out, sort_keys=True))
 """
@@ -330,23 +366,56 @@ def test_spawn_key_is_fixed_by_purpose_and_id() -> None:
 RANDOM_ALLOWED = {"SeedSequence", "PCG64", "Generator"}
 
 
+def randomness_problems(source: str) -> list[str]:
+    """AD-15: uses of `random`, numpy's global random state or `hash()` in one module's source."""
+    problems = []
+    for node in ast.walk(ast.parse(source)):
+        if isinstance(node, ast.Import):
+            for alias in node.names:
+                if alias.name.split(".")[0] == "random" or alias.name.startswith("numpy.random"):
+                    problems.append(f"import {alias.name}")
+        elif isinstance(node, ast.ImportFrom):
+            module = node.module or ""
+            if module.split(".")[0] == "random":
+                problems.append(f"from {module} import")
+            elif module == "numpy" and any(a.name == "random" for a in node.names):
+                problems.append("from numpy import random")
+            elif module == "numpy.random":
+                problems += [f"numpy.random.{a.name}" for a in node.names if a.name not in RANDOM_ALLOWED]
+        elif isinstance(node, ast.Name) and node.id in {"hash", "__import__"}:
+            problems.append(node.id)
+        elif (isinstance(node, ast.Attribute) and isinstance(node.value, ast.Attribute)
+              and node.value.attr == "random" and node.attr not in RANDOM_ALLOWED):
+            problems.append(f".random.{node.attr}")
+    return problems
+
+
 def test_core_uses_no_global_or_hidden_randomness() -> None:
     """AD-15: no core module uses `random`, numpy's global random state or `hash()`."""
-    problems = []
-    for path in sorted((SRC / "core").glob("*.py")):
-        for node in ast.walk(ast.parse(path.read_text(encoding="utf-8"))):
-            if isinstance(node, ast.Import) and any(a.name.split(".")[0] == "random" for a in node.names):
-                problems.append(f"{path.name}: import random")
-            elif isinstance(node, ast.ImportFrom) and (node.module or "").split(".")[0] == "random":
-                problems.append(f"{path.name}: from random import")
-            elif isinstance(node, ast.ImportFrom) and node.module == "numpy.random":
-                problems += [f"{path.name}: numpy.random.{a.name}" for a in node.names if a.name not in RANDOM_ALLOWED]
-            elif isinstance(node, ast.Name) and node.id in {"hash", "__import__"}:
-                problems.append(f"{path.name}: {node.id}")
-            elif (isinstance(node, ast.Attribute) and isinstance(node.value, ast.Attribute)
-                  and node.value.attr == "random" and node.attr not in RANDOM_ALLOWED):
-                problems.append(f"{path.name}: .random.{node.attr}")
-    assert problems == []
+    problems = {path.name: randomness_problems(path.read_text(encoding="utf-8"))
+                for path in sorted((SRC / "core").glob("*.py"))}
+    assert {name: found for name, found in problems.items() if found} == {}
+
+
+@pytest.mark.parametrize("source", [
+    "import random\n",
+    "from random import random\n",
+    "from numpy import random\n",
+    "import numpy.random as npr\nnpr.seed(1)\n",
+    "import numpy as np\nnp.random.seed(1)\n",
+    "import numpy as np\nrng = np.random.default_rng()\n",
+    "from numpy.random import default_rng\n",
+    "key = hash('0xabc')\n",
+])
+def test_planted_randomness_is_caught(source: str) -> None:
+    """AD-15: the ban catches each planted form of hidden randomness."""
+    assert randomness_problems(source) != []
+
+
+def test_seeded_generators_are_allowed() -> None:
+    """AD-15: SeedSequence, PCG64 and Generator are the allowed way in."""
+    source = "import numpy as np\ng = np.random.Generator(np.random.PCG64(np.random.SeedSequence(1)))\n"
+    assert randomness_problems(source) == []
 
 
 # --- the stored result (AD-22, AD-25, NFR-10) ---------------------------------------------------
@@ -369,6 +438,38 @@ def test_result_carries_its_seed_scope_counts_and_bins(name: str) -> None:
     assert -edge <= result.real_pnl <= edge  # FR-9: the axis includes the Real PnL
     tail = skilltest.CHART_TAIL * skilltest.SIMULATIONS
     assert bins[0].count <= tail and bins[-1].count <= tail
+    if result.at_or_above <= tail:  # the Real PnL sets the axis, so it is as tight as a round width allows
+        assert edge <= 2.5 * abs(result.real_pnl)
+
+
+@pytest.mark.parametrize("bets", range(30, 61, 3))
+@pytest.mark.parametrize("shares", [0.03, 0.2, 1.0, 100.0])
+def test_bins_keep_their_contract_for_small_and_large_stakes(bets: int, shares: float) -> None:
+    """AD-25, FR-9: for tiny to large stakes the bars are equal whole-cent widths, each end bar holds at most 0.1%, and the Real PnL is on the axis."""
+    run = skilltest._engine([bet(i, 0.5, i % 4 == 0, shares=shares) for i in range(bets)], seed=SEED, unit_id=f"{bets}")
+    inner = run.bins[1:-1]
+    widths = {round(b.high - b.low, 9) for b in inner}
+    assert len(widths) == 1 and round(widths.pop() * 100, 9).is_integer()
+    tail = skilltest.CHART_TAIL * skilltest.SIMULATIONS
+    assert run.bins[0].count <= tail and run.bins[-1].count <= tail
+    assert run.bins[0].high <= run.real_pnl <= run.bins[-1].low
+    assert sum(b.count for b in run.bins) == skilltest.SIMULATIONS
+
+
+def test_a_total_on_a_bar_edge_lands_in_the_bar_that_starts_there() -> None:
+    """AD-25: totals in steps of $0.20 on $0.10 bars fill only the bars that start on an even tenth (floor(0.6 / 0.1) is 5)."""
+    run = skilltest._engine([bet(i, 0.5, i % 2 == 0, shares=0.2) for i in range(30)], seed=SEED, unit_id="edges")
+    inner = run.bins[1:-1]
+    assert inner[0].high - inner[0].low == pytest.approx(0.1)
+    odd = [b for b in inner[:-1] if round(b.low * 10) % 2 != 0]  # the last bar also holds its top edge
+    assert sum(b.count for b in odd) == 0 and sum(b.count for b in inner) > 0
+
+
+@pytest.mark.parametrize(("needed", "width"), [(0.001, 0.01), (0.013, 0.02), (0.021, 0.05), (0.21, 0.25),
+                                               (3.1, 5.0), (7.0, 10.0), (100.0, 100.0), (101.0, 200.0)])
+def test_bar_width_is_the_smallest_round_whole_cent_width(needed: float, width: float) -> None:
+    """AD-25: the bar width is the smallest of 1, 2, 2.5 or 5 times a power of ten that is at least what is needed, in whole cents."""
+    assert skilltest._nice(max(needed, skilltest._MIN_BAR_WIDTH)) == width
 
 
 def test_real_pnl_above_every_simulation_stays_on_the_axis() -> None:
