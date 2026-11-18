@@ -27,5 +27,7 @@
 - [ ] 2026-11-18 [prd-feedback](993-2026-11-18-12-35-27-prd-feedback.md) — Edvard answers the PRD feedback's two reflection questions in the reflection report
 - [ ] 2026-11-18 [prd-feedback](993-2026-11-18-12-35-27-prd-feedback.md) — Story 5.2: write the offline Hold-up result for the 10 real Sample Wallets into the README, whichever way it comes out (closes the stage 2 minimum)
 - [ ] 2026-11-18 [prd-feedback](993-2026-11-18-12-35-27-prd-feedback.md) — Story 7.2: README states the model calls the Sample Dataset needs and their estimated cost (FR-19)
-- [ ] 2026-11-18 [story-1-4-the-skill-test](992-2026-11-18-17-00-40-story-1-4-the-skill-test.md) — set Story 1.4 to `done` in `sprint-status.yaml` when its PR is merged
+- [x] 2026-11-18 [story-1-4-the-skill-test](992-2026-11-18-17-00-40-story-1-4-the-skill-test.md) — set Story 1.4 to `done` in `sprint-status.yaml` when its PR is merged (løst 2026-11-19: 0a467aa)
 - [ ] 2026-11-18 [story-1-4-the-skill-test](992-2026-11-18-17-00-40-story-1-4-the-skill-test.md) — Story 2.2: the fee-schedule check must also handle a negative Own Fee, which the Skill Test still accepts (`deferred-work.md`)
+- [ ] 2026-11-19 [story-1-5-number-phrases](991-2026-11-19-00-06-18-story-1-5-number-phrases.md) — set Story 1.5 to `done` in `sprint-status.yaml` when its PR is merged
+- [ ] 2026-11-19 [story-1-5-number-phrases](991-2026-11-19-00-06-18-story-1-5-number-phrases.md) — Story 1.7: every number on the Verdict card, chart axis labels and text alternative included, comes from `core/phrases` (the scan can't catch every hand-made money format)
