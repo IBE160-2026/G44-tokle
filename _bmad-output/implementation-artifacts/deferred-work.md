@@ -11,3 +11,6 @@ Findings and goals set aside by `bmad-build`, each with where it came from.
 - source_spec: `_bmad-output/implementation-artifacts/spec-1-2-positions-from-fills.md`
   summary: No test can show that `core/positions` sorts fills before summing.
   evidence: Review finding 21. Python's `sum()` is compensated since 3.12, so no realistic input differs. Revisit only if the sums move to numpy or another summation.
+- source_spec: `_bmad-output/implementation-artifacts/spec-1-4-the-skill-test.md`
+  summary: The Skill Test accepts a negative Own Fee, which adds money to Real PnL.
+  evidence: Review finding 7 (low). Own Fees are cash paid minus shares x price on buys (AD-12), so a rounding gap in real data can make one slightly negative; refusing it would crash a real lookup. The fee-schedule check that Epic 2 adds (Story 2.2, FR-4: a fee that fails the check counts as 0) is the place to catch it.
