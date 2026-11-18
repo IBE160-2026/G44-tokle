@@ -75,6 +75,7 @@ development_status:
   epic-5: backlog
   5-1-the-two-groups-and-their-test: backlog
   5-2-the-hold-up-test-page: backlog
+  5-3-hold-up-test-on-a-live-scan: backlog
   epic-5-retrospective: optional
 
   epic-6: backlog

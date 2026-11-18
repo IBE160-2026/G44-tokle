@@ -15,13 +15,14 @@ inputDocuments:
 
 This document provides the complete epic and story breakdown for LiquidOracle, decomposing the requirements from the PRD, UX Design if it exists, and Architecture requirements into implementable stories.
 
-Requirement IDs are the PRD's own (FR-1 to FR-24; FR-15 keeps its old number and belongs to stage 3). Architecture rules keep their spine IDs (AD-1 to AD-25). Stage marks S1, S2, S3 follow PRD §6.1.
+Requirement IDs are the PRD's own (FR-1 to FR-24; FR-15 keeps its old number and belongs to stage 3; FR-18 has three parts, FR-18a to FR-18c, since 2026-11-18). Architecture rules keep their spine IDs (AD-1 to AD-25). Stage marks S1, S2, S3 follow PRD §6.1.
 
 **Timing and slipping rules** (Edvard, 2026-10-23 and 2026-10-24):
 - Build window: 5 November to 1 December 2026, moved from 2 November because no code had been started by then; nothing is built 14 to 16 November (Edvard, 2026-11-05). **1 December is a hard stop for code**: after it, only fixes that make the README commands or the tests run, each logged, and nothing new. 1 to 15 December is for the reflection report (30% of the grade), the README check and repository tidying; the repositories lock on 15 December.
 - Stage 1 must stand alone as a working app and never slips. If time runs short, work is cut from stage 3 first, never from stage 1.
 - Checkpoint 20 November: if stage 1 is not done by then, stage 3 is dropped entirely and the time goes to stages 1 and 2. The targets below finish stage 1 on 23 November, so this rule applies unless stage 1 finishes early (2026-11-05).
 - Inside Epic 1, only the visual polish of Story 1.7 moves later (dark theme, hover states, responsive details), staying inside stage 1; Story 1.5 stays before 1.7 because the card needs its phrases, and Story 1.4's checks are never cut (Edvard, 2026-10-24, after the final validation).
+- **Stage 2 minimum** (PRD §6.1; Edvard, 2026-11-18): Epics 4 and 5 passing their checks offline on the Sample Dataset, closed by Story 5.2 with the 10 real Sample Wallets' Hold-up result in the README. Story 5.3 (a live Hold-up run) and Epic 6 (Copy Test) come on top if time allows; whatever is not reached is stated in the README with the reason.
 - Inside stage 3, Epic 8 slips before Epic 7. A partial stage 3 is fine; whatever is left out is stated in the README and logged with the reason. Because stage 3 can stop after any story, each stage 3 story ends with all tests passing and the README updated (NFR-12).
 - Edvard's five Domain definitions and 50 blind hand labels (Story 7.2's first step) are done early, in the Epic 1 week, and committed before any labeller runs on those Markets (Edvard, 2026-10-24).
 
@@ -50,17 +51,20 @@ Requirement IDs are the PRD's own (FR-1 to FR-24; FR-15 keeps its old number and
 
 - FR-16 (S2): Scan and Watchlist. Choose a Cut-off Date and size (default 200 `[ASSUMPTION]`), Scan the top Wallets by Real PnL before the date, see the Watchlist sorted by p-value with Minimum Luck Passes. Ranking uses only Positions resolved before the date. Candidates come from Market-anchored position lists (closed and open) of the funnel: Markets resolved in the 90 days before the date, top 100 by volume, shortlist 3 × size `[ASSUMPTION: 90, 100, 3×]`, then full fetch and ranking. The page states the population, "N of 100 Markets used", and that the shortlist is approximate. Partly read Markets give no candidates ("not used: partial"); Wallets not fully read are kept and marked everywhere. Big Wallets ranked and tested on their latest 2,000 before the date. A new date means a new Scan; stored data reused. Offline Scan with the default date puts at least sharp trader, steady sharp, forecaster and speed trader on the Watchlist. Progress shown; interrupted Scans resume without refetching. The Watchlist is stored with Scan date and Cut-off Date, never sent anywhere.
 - FR-17 (S2): Hold-up Test. Before-Cut-off Passers vs Comparison Group, both picked from the same Scan by the same rule on the before part only, both tested on the after part (first 2,000 per Wallet): Resolved Positions, Real PnL, p-value, Verdict per group. Minimum After-bets 10 `[ASSUMPTION]` in both groups; dropped counts shown; >20 pp `[ASSUMPTION]` difference in dropped share gives the warning (planted 60% vs 10% shows it). Steady-sharp Wallets pass after; lucky-streak Wallets show *No evidence of skill* after. Groups under 30 show *Not enough data*. The pooled after part shares one draw per Market (planted 7 Passers × 40 shared Markets: p < 0.05 in at most 7% of 1,000 runs). Not-fully-read counts shown.
-- FR-18 (S2): Copy Test. Per Passer, over its Copy Sample (≤ 100 after Positions `[ASSUMPTION]`, drawn with the Seed), Follower PnL and Follower Return at 1, 5 and 30 minutes next to own Real PnL; Random Group Check at the Main Copy Delay (5 min) with Copy p-value phrase and Copy Verdict. Checks: speed trader ≤ 0 at 5 min; forecaster > 0 at 30 min; hand-calculated three-Position set with a fee, the Spread Allowance and a multi-fill Position matches to the cent; planted 10 forecasters + 100 coin-flippers p < 0.01; 1,000 planted coin-flipper Scans p < 0.05 in at most 7%; Pool of 6 with 3 Passers shows *Not enough data*; same Seed same p; "no random group did as well in 10,000 draws" wording; Copy Verdict only from 5 min; per-Wallet numbers marked not luck-checked; positions with no price left out and counted; "priced N of M"; Spread Allowance 0.5 c `[ASSUMPTION]` and its limits stated; each fill copied at its own time; shared-Markets count shown, planted gate (10 Passers × 40 shared Markets ≤ 7%); price history from the old route while it answers with 1-minute data, never silently coarser, kept for good.
+- FR-18 (S2): Copy Test, in three parts. The page shows the Random Group Check first, then the per-Wallet numbers.
+- FR-18a (S2): Follower PnL and Follower Return. Per Passer, over its Copy Sample (≤ 100 after Positions `[ASSUMPTION]`, drawn with the Seed), Follower PnL and Follower Return at 1, 5 and 30 minutes next to own Real PnL; each fill copied at its own time; positions with no price left out and counted; "priced N of M"; Spread Allowance 0.5 c `[ASSUMPTION]` and its limits stated (upper bound); per-Wallet numbers marked not luck-checked, 1 and 30 min marked extra with no Copy Verdict. Checks: speed trader ≤ 0 at 5 min; forecaster > 0 at 30 min; hand-calculated three-Position set with a fee, the Spread Allowance and a multi-fill Position matches to the cent.
+- FR-18b (S2): Random Group Check at the Main Copy Delay (5 min): Passers' average Follower Return against 10,000 random groups from the Copy Pool; Copy p-value and Copy Verdict; *Not enough data* with no Passer in the Pool or fewer than 1,000 `[ASSUMPTION]` groups; only 5 min gives a Copy Verdict; "no random group did as well in 10,000 draws" wording; shared-Markets count shown. Checks: planted 10 forecasters + 100 coin-flippers p < 0.01; 1,000 planted coin-flipper Scans p < 0.05 in at most 7%; shared-Markets gate (10 Passers × 40 shared Markets ≤ 7%); Pool of 6 with 3 Passers shows *Not enough data*; same Seed same p.
+- FR-18c (S2): Price history and fallback. One-minute prices only, never silently coarser, kept for good; the source checked daily; if one-minute prices for the default date are gone at the real-data run, the frozen 50-Wallet insurance pool is used, with its limits stated.
 
 **Stage 3: Domains, Flags, Explanations**
 
 - FR-15 (S3): Mock LLM Mode. One setting replaces the model with tag rules (a fixed map from Polymarket's event tags to Domains) and templates; on by default without a key; FR-19 and FR-23 tests pass without a key.
-- FR-19 (S3): Classify Markets into politics, sports, crypto, macro, other. Each Market classified once, stored with source and date, reused; re-classifying is deliberate. 50 hand labels committed before any model output, never edited; ≥ 80% agreement `[ASSUMPTION]` for the model (if Haiku 5.5 misses, a larger model is tried and both reported); tag rules checked on other Markets.
+- FR-19 (S3): Classify Markets into politics, sports, crypto, macro, other. Each Market classified once, stored with source and date, reused; re-classifying is deliberate. 50 hand labels committed before any model output, never edited; ≥ 80% agreement `[ASSUMPTION]` for the model (if Haiku 5.5 misses, a larger model is tried and both reported); tag rules checked on other Markets. Failures: at most 3 tries per Market; an answer outside the five Domains is never stored; a Wallet with an unlabelled Market gets "Domains are not available: the language model did not answer." instead of the table (never *Other* by default; Edvard, 2026-11-18). Cost: one call per Market, stored; README shows the count and a cost estimate.
 - FR-20 (S3): Domain Verdicts. Skill Test per Domain with ≥ 30 Resolved Positions, Bonferroni-corrected (× number of Domains tested, capped at 1). Split-domain Synthetic Wallet: crypto *Skilled (high confidence)*, sports *No evidence of skill*.
 - FR-21 (S3): Domain table on the Verdict page: Domain, Resolved Positions, Domain Verdict.
 - FR-22 (S3): Bot and market-maker Flag when at least 2 of 3 rules hold (both outcomes in ≥ 30% of Markets; sold ≥ 80% of shares bought; median buy-to-sell under 1 hour) `[ASSUMPTION]`; shown as "Likely market maker (heuristic, may be wrong)", never changes the Verdict. Synthetic market maker flagged; coin-flipper and sharp trader not.
-- FR-23 (S3): Explanation of at most 60 words `[ASSUMPTION]` under the Verdict card, from the model or a template.
-- FR-24 (S3): Explanation check. Same Verdict and odds phrase as the card, no banned words; a failing Explanation is replaced by the template and counted (SM-7). Check: a planted wrong Verdict is replaced.
+- FR-23 (S3): Explanation of at most 60 words `[ASSUMPTION]` under the Verdict card, from the model or a template; the template if the model does not answer.
+- FR-24 (S3): Explanation check. Same Verdict and odds phrase as the card, no banned words; a failing Explanation is replaced by the template and counted (SM-7). The words are the banned and "also avoided" lists in EXPERIENCE.md *Voice and Tone*, kept as one list in the code. Checks: a planted wrong Verdict is replaced; a planted Explanation with any listed word is replaced.
 
 ### NonFunctional Requirements
 
@@ -76,7 +80,7 @@ Requirement IDs are the PRD's own (FR-1 to FR-24; FR-15 keeps its old number and
 - NFR-10 Speed (SM-3): a lookup of a Wallet with up to 1,000 Resolved Positions from stored data returns a Verdict within 10 seconds on an ordinary laptop.
 - NFR-11 Read-only (PRD §5, CLAUDE.md): only GET requests to public endpoints; no orders, no keys, nothing touching funds; no Copy or Follow buttons, alerts or advice.
 - NFR-12 Each stage deliverable (PRD §6.1): a stage ends with all its tests passing and the README updated, so the project can be handed in after any stage.
-- NFR-13 Honest reporting (SM-5, SM-C1 to SM-C3): a Hold-up Test and Copy Test on real data are run and reported in the README whichever way they come out; the share of Wallets rated skilled, Watchlist size and Explanation tone are never optimised.
+- NFR-13 Honest reporting (SM-5, SM-C1 to SM-C3): every real-data result that is run (the stage 2 minimum's 10 Sample Wallets, and a live Hold-up Test and Copy Test if reached) is reported in the README whichever way it comes out; the share of Wallets rated skilled, Watchlist size and Explanation tone are never optimised.
 
 ### Additional Requirements
 
@@ -189,7 +193,9 @@ Stage marks as in EXPERIENCE.md. A page or element of a later stage is absent un
 | FR-15 | 7 | Mock LLM Mode |
 | FR-16 | 4 | Scan and Watchlist |
 | FR-17 | 5 | Hold-up Test |
-| FR-18 | 6 | Copy Test |
+| FR-18a | 6 | Follower PnL and Follower Return |
+| FR-18b | 6 | Random Group Check |
+| FR-18c | 6 | Price history and the insurance-pool fallback |
 | FR-19 | 7 | Classify Markets |
 | FR-20 | 7 | Domain Verdicts |
 | FR-21 | 7 | Domain table |
@@ -216,12 +222,12 @@ The user chooses a Cut-off Date, runs a Scan that can be left, interrupted and r
 **FRs covered:** FR-16, FR-13 (S2 types)
 
 ### Epic 5: Does the skill last? Hold-up Test (S2, target 27 to 28 Nov)
-The user compares the Before-Cut-off Passers with the Comparison Group on the bets after the Cut-off Date.
+The user compares the Before-Cut-off Passers with the Comparison Group on the bets after the Cut-off Date. Epics 4 and 5 are the stage 2 minimum (PRD §6.1).
 **FRs covered:** FR-17
 
 ### Epic 6: Could a late follower have profited? Copy Test (S2, target 29 Nov to 1 Dec)
-The user sees Follower PnL and Follower Return at 1, 5 and 30 minutes and the Random Group Check; a Hold-up Test and Copy Test on real data are run and reported (SM-5). Stage 2 is done.
-**FRs covered:** FR-18
+The user sees Follower PnL and Follower Return at 1, 5 and 30 minutes and the Random Group Check; a Copy Test on real data is run and reported (SM-5). Stage 2 is done. Beyond the stage 2 minimum (PRD §6.1).
+**FRs covered:** FR-18a, FR-18b, FR-18c
 
 ### Epic 7: Where is the edge? Domain Verdicts (S3, no dates: only if stage 1 finishes by 20 Nov and time is left)
 The user sees a Domain table on the Verdict page, with or without a model key.
@@ -953,7 +959,7 @@ So that I can check the Scan without the network.
 
 ## Epic 5: Does the skill last? Hold-up Test
 
-The user compares the Before-Cut-off Passers with the Comparison Group on the bets after the Cut-off Date. Nothing in this epic slips; if it runs late, Epic 6 starts later and stage 3 shrinks (Edvard, 2026-10-24).
+The user compares the Before-Cut-off Passers with the Comparison Group on the bets after the Cut-off Date. Stories 5.1 and 5.2 close the stage 2 minimum (PRD §6.1; Edvard, 2026-11-18) and never slip; if they run late, Epic 6 starts later and stage 3 shrinks (Edvard, 2026-10-24). Story 5.3, a live Hold-up run, is beyond the minimum.
 
 ### Story 5.1: The two groups and their test
 
@@ -1010,9 +1016,33 @@ So that I can judge the comparison myself.
 **Then** no Passers shows "No Wallet passed on its bets before the Cut-off Date, so the Hold-up Test and Copy Test have nothing to test."; an empty Comparison Group card says "No Wallets in this group: every scanned Wallet passed or had *Not enough data* before the Cut-off Date."; a group too small shows *Not enough data* with its count (UX-DR35)
 **And** the page title is "Hold-up Test · {Cut-off Date} · LiquidOracle" and the page works without JavaScript (UX-DR8, AD-18).
 
+**Given** an offline Scan of the Sample Dataset with the default Cut-off Date
+**When** this story is done
+**Then** the Hold-up result that covers the 10 real Sample Wallets is written into the README whichever way it comes out, with its limits: only 10 Wallets, picked for the Sample Dataset, not a full Scan (PRD §6.1; Edvard, 2026-11-18)
+**And** the stage 2 minimum is closed: all tests pass in CI on the three systems and the README covers the Scan and the Hold-up Test (PRD §6.1, NFR-12).
+
+### Story 5.3: Hold-up Test on a live Scan
+
+Beyond the stage 2 minimum (PRD §6.1): done only if time allows. Moved out of Story 6.6 on 2026-11-18 so a real-data Hold-up result does not depend on the Copy Test, which needs price history.
+
+As the examiner,
+I want to see what the Hold-up Test says on a full Scan of real Wallets, whatever it is,
+So that I can judge the method on reality, not only on made-up Wallets and the 10 Sample Wallets.
+
+**Acceptance Criteria:**
+
+**Given** the app online
+**When** a real Scan with the default Cut-off Date runs
+**Then** its Hold-up Test result, the Scan size, Markets used and Wallets not fully read are written into the README and the reflection notes, whichever way they come out (SM-5 for the Hold-up Test, NFR-13, SM-C2)
+**And** the Scan is kept, so Story 6.6 can run the Copy Test on the same Scan.
+
+**Given** the 1 December hard stop
+**When** this story runs after it
+**Then** that is allowed, because it runs the app and writes up results and adds no new code (same rule as Story 6.6).
+
 ## Epic 6: Could a late follower have profited? Copy Test
 
-The user sees Follower PnL and Follower Return at 1, 5 and 30 minutes and the Random Group Check; a Hold-up Test and Copy Test on real data are run and reported (SM-5). Stage 2 is done. If the epic runs late, Story 6.4's table polish slips first; Story 6.6 may run after 1 December, because it is running the app and writing up, not new code; the checks in Stories 6.2 and 6.3 are never cut (Edvard, 2026-10-24). The old price route is checked daily by a scheduled workflow, and a 50-Wallet insurance pool was captured in advance (spine AD-24, PRD FR-18).
+The user sees Follower PnL and Follower Return at 1, 5 and 30 minutes and the Random Group Check; a Copy Test on real data is run and reported (SM-5). Stage 2 is done. Beyond the stage 2 minimum (PRD §6.1). If the epic runs late, Story 6.4's table polish slips first; Story 6.6 may run after 1 December, because it is running the app and writing up, not new code; the checks in Stories 6.2 and 6.3 are never cut (Edvard, 2026-10-24). The old price route is checked daily by a scheduled workflow, and a 50-Wallet insurance pool was captured in advance (spine AD-24, PRD FR-18c).
 
 ### Story 6.1: Price history
 
@@ -1024,13 +1054,13 @@ So that the Copy Test can price what a late follower would have paid.
 
 **Given** one client function for price history (AD-24)
 **When** it is asked for a token and window
-**Then** it uses the old CLOB `/prices-history` route at `fidelity=1` while that route answers with one-minute points, else `/v2/prices-history` with `bucket_seconds=60` sent explicitly, and never silently returns a coarser grain (FR-18)
+**Then** it uses the old CLOB `/prices-history` route at `fidelity=1` while that route answers with one-minute points, else `/v2/prices-history` with `bucket_seconds=60` sent explicitly, and never silently returns a coarser grain (FR-18c)
 **And** windows of one token are packed into requests of at most 14 days, only the points inside the short windows [t − 2 min, t + 32 min] are stored, and stored windows never expire (AD-14, AD-4).
 
 **Given** `price_at(points, t)` (pure, in `core`)
 **When** a Copy Delay is priced
 **Then** it returns the last point at or before t that is at most 2 minutes old, the same rule live and offline (AD-24)
-**And** a buy with no such point is left out of that Copy Delay and counted (FR-18).
+**And** a buy with no such point is left out of that Copy Delay and counted (FR-18a, FR-18c).
 
 **Given** the daily route-check workflow
 **When** this story is done
@@ -1046,19 +1076,19 @@ So that I can tell forecasters from speed traders.
 
 **Given** a Wallet's after part
 **When** its Copy Sample is drawn
-**Then** it is all Resolved Positions if at most 100 `[ASSUMPTION]`, otherwise 100 drawn with the Seed by one rule for every Wallet; the same Seed gives the same sample, and a Wallet with 250 after Positions shows "priced 100 of 250" (FR-18, AD-15).
+**Then** it is all Resolved Positions if at most 100 `[ASSUMPTION]`, otherwise 100 drawn with the Seed by one rule for every Wallet; the same Seed gives the same sample, and a Wallet with 250 after Positions shows "priced 100 of 250" (FR-18a, AD-15).
 
 **Given** each buy fill of a Copy Sample Position
 **When** it is copied at its own time plus the Copy Delay
-**Then** Follower PnL = Σ (s · (o − p_delay) − Follower Fee), where s is that fill's share of the shares held at resolution and p_delay is `price_at` plus the Spread Allowance of half a cent (capped at 1); the Follower Fee is s · rate · p · (1 − p) from the Market's fee schedule, 0 where none; Follower Return = Follower PnL ÷ Σ (s · p_delay + Follower Fee) (Glossary, FR-18).
+**Then** Follower PnL = Σ (s · (o − p_delay) − Follower Fee), where s is that fill's share of the shares held at resolution and p_delay is `price_at` plus the Spread Allowance of half a cent (capped at 1); the Follower Fee is s · rate · p · (1 − p) from the Market's fee schedule, 0 where none; Follower Return = Follower PnL ÷ Σ (s · p_delay + Follower Fee) (Glossary, FR-18a).
 
 **Given** the Synthetic Wallets from Epic 4
 **When** they are copied
-**Then** the speed trader has Follower PnL ≤ 0 at 5 minutes and the forecaster Follower PnL > 0 at 30 minutes (FR-18).
+**Then** the speed trader has Follower PnL ≤ 0 at 5 minutes and the forecaster Follower PnL > 0 at 30 minutes (FR-18a).
 
 **Given** a hand-made set of three Positions in a Market with a fee, including a Position bought in more than one fill
 **When** Edvard calculates its Follower PnL and Follower Return by hand from the PRD definitions, including the Spread Allowance (same rule as FR-4: his calculation is committed before the test compares it)
-**Then** the app's numbers equal his to the cent, and the test file says the reference values are his hand calculation (FR-18; Edvard, 2026-10-24).
+**Then** the app's numbers equal his to the cent, and the test file says the reference values are his hand calculation (FR-18a; Edvard, 2026-10-24).
 
 ### Story 6.3: The Random Group Check
 
@@ -1070,14 +1100,14 @@ So that I know whether following them beat picking at random, or was luck.
 
 **Given** a Scan's Copy Pool (every Wallet with at least the Minimum After-bets priced at the Main Copy Delay, Passers included)
 **When** the Random Group Check runs at 5 minutes
-**Then** the Passers' score is their average Follower Return, each Wallet counting equally; 10,000 random groups of the same size are drawn from the Pool with no Wallet twice in one group; Copy p-value = (1 + groups scoring ≥ the Passers) / 10,001; Copy Verdict *Beat random picks* below 0.05, else *No better than random picks* (Glossary, FR-18)
-**And** *Not enough data* when no Passer is in the Pool or fewer than 1,000 `[ASSUMPTION]` different groups can be drawn; a Pool of 6 with 3 Passers (20 groups) shows it (FR-18)
-**And** the same data and Seed give the identical Copy p-value, and only the Main Copy Delay gives a Copy Verdict (FR-18, AD-15).
+**Then** the Passers' score is their average Follower Return, each Wallet counting equally; 10,000 random groups of the same size are drawn from the Pool with no Wallet twice in one group; Copy p-value = (1 + groups scoring ≥ the Passers) / 10,001; Copy Verdict *Beat random picks* below 0.05, else *No better than random picks* (FR-18b)
+**And** *Not enough data* when no Passer is in the Pool or fewer than 1,000 `[ASSUMPTION]` different groups can be drawn; a Pool of 6 with 3 Passers (20 groups) shows it (FR-18b)
+**And** the same data and Seed give the identical Copy p-value, and only the Main Copy Delay gives a Copy Verdict (FR-18b, AD-15).
 
 **Given** the planted checks
 **When** they run
-**Then** a Scan of 10 forecaster Passers and 100 coin-flippers gets a Copy p-value < 0.01, and across 1,000 planted Scans of 110 coin-flippers with 10 picked at random as Passers the Copy p-value is < 0.05 in at most 7% (FR-18)
-**And** the shared-Markets gate holds: across 1,000 planted Scans where 10 coin-flipper Passers hold the same side of the same 40 Markets, the Copy p-value is < 0.05 in at most 7%; if it fails, no Copy Verdict is shown and the Random Group Check goes back to the plan (FR-18, AD-20)
+**Then** a Scan of 10 forecaster Passers and 100 coin-flippers gets a Copy p-value < 0.01, and across 1,000 planted Scans of 110 coin-flippers with 10 picked at random as Passers the Copy p-value is < 0.05 in at most 7% (FR-18b)
+**And** the shared-Markets gate holds: across 1,000 planted Scans where 10 coin-flipper Passers hold the same side of the same 40 Markets, the Copy p-value is < 0.05 in at most 7%; if it fails, no Copy Verdict is shown and the Random Group Check goes back to the plan (FR-18b, AD-20)
 **And** both 1,000-run checks are marked `slow`: in full on Linux 3.14, 100 runs elsewhere, determinism checks unchanged on every job (AD-17).
 
 ### Story 6.4: The Copy Test page
@@ -1090,12 +1120,12 @@ So that I do not mistake a single lucky Wallet for evidence.
 
 **Given** a finished Scan
 **When** the user opens the *Copy Test* tab (now shown in the Scan tabs)
-**Then** the top shows the Random Group Check at 5 minutes: the Copy Verdict pill (no dots) and "random groups did as well in X% of draws" (one decimal under 10%), or "no random group did as well in 10,000 draws" when none did, never a percentage (FR-18, UX-DR36, AD-25)
+**Then** the top shows the Random Group Check at 5 minutes: the Copy Verdict pill (no dots) and "random groups did as well in X% of draws" (one decimal under 10%), or "no random group did as well in 10,000 draws" when none did, never a percentage (FR-18b, UX-DR36, AD-25)
 **And** under it "N of the Passers' Markets are shared by two or more Passers." and how many Pool Wallets are not fully read; a *Not enough data* Copy Verdict gives its reason.
 
 **Given** the per-Wallet table
 **When** it renders
-**Then** it shows Follower PnL and Follower Return at 1, 5 and 30 minutes next to the Wallet's own Real PnL on the same Positions, the 1- and 30-minute columns tagged "Extra information", the caption "These per-Wallet numbers are not luck-checked. Only the Random Group Check above is.", "priced N of M" per Wallet, positions left out per delay, and "Follower PnL ignores the spread and the follower's own price impact, so it is an upper bound." with the Spread Allowance's limits (FR-18, UX-DR36)
+**Then** it shows Follower PnL and Follower Return at 1, 5 and 30 minutes next to the Wallet's own Real PnL on the same Positions, the 1- and 30-minute columns tagged "Extra information", the caption "These per-Wallet numbers are not luck-checked. Only the Random Group Check above is.", "priced N of M" per Wallet, positions left out per delay, and "Follower PnL ignores the spread and the follower's own price impact, so it is an upper bound." with the Spread Allowance's limits (FR-18a, UX-DR36)
 **And** a Wallet opens its Verdict page with "← Back to Copy Test (Cut-off Date …)" (UX-DR37), and the page shows the Seed (FR-11); the table polish is what slips first.
 
 ### Story 6.5: Copy windows in the Sample Dataset
@@ -1116,19 +1146,21 @@ So that I can check it without the network.
 ### Story 6.6: Real data, reported either way
 
 As the examiner,
-I want to see what the Hold-up Test and Copy Test say about real Wallets, whatever it is,
+I want to see what the Copy Test says about real Wallets, whatever it is,
 So that I can judge the method on reality, not only on made-up Wallets.
+
+Beyond the stage 2 minimum (PRD §6.1). The live Hold-up run moved to Story 5.3 (2026-11-18).
 
 **Acceptance Criteria:**
 
 **Given** the old price route still answers (the daily check says one-minute)
-**When** a real Scan with the default Cut-off Date runs online
-**Then** its Hold-up Test and Copy Test results, the Scan size, Markets used and Wallets not fully read are written into the README and the reflection notes, whichever way they come out (SM-5, NFR-13, SM-C2).
+**When** the Copy Test runs on Story 5.3's real Scan with the default Cut-off Date (or a new one, if Story 5.3 was not done)
+**Then** its Copy Test results, the Scan size, Markets used and Wallets not fully read are written into the README and the reflection notes, whichever way they come out (SM-5, NFR-13, SM-C2).
 
 **Given** the old route is gone at that time
 **When** the real-data run is made
-**Then** the Copy Test runs on the frozen 50-Wallet insurance pool (`spike/INSURANCE-RULE.md`, captured October 2026) with the app computing Passers, Copy Samples and the Random Group Check as usual, and the page and README state its limits: a pool of 50 fixed in advance, not the app's Scan; ranked by the spike's estimate, not the app's final Real PnL; *Not enough data* with fewer than 2 Passers, reported as it comes out (PRD FR-18 fallback)
-**And** the Hold-up Test still runs on a real Scan, because it needs no prices.
+**Then** the Copy Test runs on the frozen 50-Wallet insurance pool (`spike/INSURANCE-RULE.md`, captured October 2026) with the app computing Passers, Copy Samples and the Random Group Check as usual, and the page and README state its limits: a pool of 50 fixed in advance, not the app's Scan; ranked by the spike's estimate, not the app's final Real PnL; *Not enough data* with fewer than 2 Passers, reported as it comes out (PRD FR-18c fallback)
+**And** the Hold-up Test still runs on a real Scan (Story 5.3), because it needs no prices.
 
 **Given** the 1 December hard stop
 **When** this story runs after it
@@ -1199,6 +1231,12 @@ So that the Domain table is trustworthy when a key is set.
 **When** the Domain table renders
 **Then** its tag reads "Labels: Claude Haiku 5.5" (or the model actually used); if the model does not answer, the table is replaced by "Domains are not available: the language model did not answer." (UX-DR40); with no key, Story 7.1's tag labels are used and tagged as such.
 
+**Given** a model call for a Market's Domain
+**When** it fails or answers with anything other than one of the five Domains
+**Then** it is tried at most 3 times in all; an answer outside the five Domains is never stored and counts as a failure; a Wallet with any Market still unlabelled gets the "Domains are not available" message instead of the table, and no Market is put in *Other* by default (FR-19; Edvard, 2026-11-18, rejecting the feedback's "Other with source fallback" because it would skew the *Other* Domain)
+**And** a test with a fake model that answers "finance" checks that nothing is stored and the message is shown (FR-19)
+**And** the README states how many model calls the Sample Dataset needs (one per Market, stored and reused) and an estimate of their cost (FR-19).
+
 **If stage 3 stops here:** the same table with model labels and a measured agreement rate; without a key it falls back to Story 7.1.
 
 ## Epic 8: Bots and plain-language explanations
@@ -1242,6 +1280,7 @@ So that I understand it without reading the statistics.
 **Given** the Explanation check in `services` (FR-24, AD-16)
 **When** any Explanation is about to be shown
 **Then** code checks that it names the same Verdict and the same odds phrase as the card and contains none of the banned or avoided words; a failing Explanation is replaced by the template and the replacement is counted (FR-24)
+**And** the words come from the one list in the code, copied from EXPERIENCE.md *Voice and Tone* (banned plus "also avoided"), and the test plants each word on the list in an Explanation and checks it is replaced (FR-24)
 **And** across every Sample Dataset Wallet and Domain Verdict the template replacement count is 0, because a template that fails the check is a bug (SM-7).
 
 **If stage 3 stops here:** every Verdict has a checked Explanation, with no key.

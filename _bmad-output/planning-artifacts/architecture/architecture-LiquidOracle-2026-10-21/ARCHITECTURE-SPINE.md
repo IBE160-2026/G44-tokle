@@ -233,7 +233,8 @@ Arrows are the only allowed imports. `core` imports only `records`, the standard
   - **Model.** The setting `LLM_MODEL`, default `claude-haiku-5-5`, pinned as written, with `effort` set to `low` and stored with the model ID.
   - **Labels.** Structured outputs limited to the fixed Domain list. Labels are compared case-insensitively and stored under the canonical name, keyed by (Market, source), where the source is a model ID or `tag-rules`. They are reused, and classifying again is an explicit action. `TemplateModel` labels from the event tags on the stored Market record, so it makes no request of its own (AI's proposal, Edvard confirmed, 2026-11-05).
   - **The gate.** The FR-19 hand labels are made blind (Edvard sees only the 50 questions: no tag-rule label, model label, category or tag field) and committed before either labeller runs on those 50, and never edited (Edvard, 2026-10-24). The 80% check applies to a real model: if it fails, the model setting is raised and the check re-run, and both results are logged. Tag rules are written from Edvard's committed Domain definitions and checked on other Markets than the 50 hand-labelled ones. No tag is read for the events behind those 50 until his definitions and labels are committed (Edvard, 2026-11-05).
-  - **The FR-24 check** runs in `services` on every Explanation from either implementation.
+  - **Failures** (PRD FR-19, 2026-11-18). A Market's Domain call is tried at most 3 times in all; an answer outside the Domain list is never stored and counts as a failure; a Wallet with any Market still unlabelled gets no Domain table, only the UX message. A failed Market is never put in *Other* by default.
+  - **The FR-24 check** runs in `services` on every Explanation from either implementation, with the one banned-words list (EXPERIENCE.md *Voice and Tone*, banned plus "also avoided").
 
 ### AD-17 — Tests run network-blocked, and CI proves the README [ADOPTED]
 
