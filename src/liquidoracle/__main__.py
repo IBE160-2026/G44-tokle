@@ -11,8 +11,12 @@ import argparse
 import logging
 import socket
 import sys
+import time
+from dataclasses import dataclass
 from pathlib import Path
 
+from liquidoracle.data.client import WalletClient
+from liquidoracle.data.store import LIVE_DB, OFFLINE_DB, Store, StoreError
 from liquidoracle.settings import Settings, SettingsError, load_settings
 
 HOST = "127.0.0.1"  # AD-23: bound to this laptop only, never to the network
@@ -38,7 +42,10 @@ def build_parser() -> argparse.ArgumentParser:
     run.add_argument("--port", type=int, default=None, help="port to serve on (default 8044)")
     run.add_argument("--seed", type=int, default=None, help="random Seed for the tests (default 44)")
 
-    commands.add_parser("load-sample", help="load the Sample Dataset (not built yet)")
+    commands.add_parser(
+        "load-sample",
+        help="load the Sample Dataset into instance/offline.db (run from the repository folder; takes under a minute)",
+    )
     commands.add_parser("make-synthetic", help="generate the Synthetic Wallets (run from the repository folder)")
     return parser
 
@@ -48,8 +55,7 @@ def main(argv: list[str] | None = None) -> int:
     args = build_parser().parse_args(argv)
 
     if args.command == "load-sample":
-        print("load-sample is not built yet (Story 1.6).")
-        return 0
+        return load_sample(Path.cwd())
     if args.command == "make-synthetic":
         return make_synthetic(Path.cwd())
     if args.command != "run":  # argparse allows only the three commands; never start by accident
@@ -76,18 +82,80 @@ def make_synthetic(root: Path) -> int:
     """FR-13, AD-14: write the small Synthetic Wallets (committed) and the coin-flippers (git-ignored)."""
     from liquidoracle.data import synthetic
 
-    if not ((root / "sample_data").is_dir() and (root / "pyproject.toml").is_file()):
-        print(
-            f"make-synthetic must run from the LiquidOracle repository folder ({root} has no sample_data/ "
-            "and pyproject.toml).",
-            file=sys.stderr,
-        )
+    if not in_repository(root, "make-synthetic"):
         return 2
     small = synthetic.write_small(root)
     folder = synthetic.write_coin_flippers(root)
     print(f"Wrote {len(small)} Synthetic Wallets to {root / synthetic.SMALL_DIR}")
     print(f"Wrote {synthetic.COIN_FLIPPERS} coin-flippers to {folder} (not committed)")
     return 0
+
+
+def load_sample(root: Path) -> int:
+    """FR-12, FR-14, AD-14: regenerate the coin-flippers and load every Sample Wallet into offline.db.
+
+    Always writes `instance/offline.db`, whatever the flags or `.env` say, through the same
+    fetch pipeline a live lookup uses, with `OfflineClient` as the client.
+    """
+    from liquidoracle.data import offline, synthetic
+    from liquidoracle.services import fetch
+
+    if not in_repository(root, "load-sample"):
+        return 2
+    started = time.monotonic()
+    try:
+        print(f"Writing {synthetic.COIN_FLIPPERS:,} coin-flippers to {root / synthetic.COIN_FLIPPER_DIR} ...")
+        synthetic.write_coin_flippers(root, synthetic.COIN_FLIPPERS)
+        client = offline.OfflineClient(offline.sample_files(root))
+        addresses = client.addresses()
+        database = Store(root / OFFLINE_DB)
+        try:
+            print(f"Loading {len(addresses):,} Sample Wallets into {database.path} ...")
+            for done, address in enumerate(addresses, start=1):
+                fetch.fetch_wallet(client, database, address)
+                if done % 100 == 0 or done == len(addresses):
+                    print(f"  {done:,} of {len(addresses):,}")
+            loaded = database.wallet_count()
+        finally:
+            database.close()
+    except (OSError, ValueError, LookupError, StoreError) as error:  # LookupError: NotAvailableOffline
+        print(f"load-sample stopped: {error}", file=sys.stderr)
+        return 2
+    print(f"Done: {loaded:,} Sample Wallets in {root / OFFLINE_DB} ({time.monotonic() - started:.0f} s).")
+    return 0
+
+
+def in_repository(root: Path, command: str) -> bool:
+    """True when `root` is the LiquidOracle repository folder; otherwise says so on stderr."""
+    if (root / "sample_data").is_dir() and (root / "pyproject.toml").is_file():
+        return True
+    print(
+        f"{command} must run from the LiquidOracle repository folder ({root} has no sample_data/ "
+        "and pyproject.toml).",
+        file=sys.stderr,
+    )
+    return False
+
+
+@dataclass(frozen=True)
+class Sources:
+    """The client and database a run uses (AD-13). `client` is None in live runs until Story 2.1."""
+
+    client: WalletClient | None
+    store: Store
+
+
+def open_sources(settings: Settings, root: Path) -> Sources:
+    """AD-13: the one place the mode picks the client and the database file.
+
+    Offline Mode gets `OfflineClient` and `instance/offline.db`; a live run gets `instance/live.db`.
+    Nothing else branches on the mode. Story 1.7 hands the result to the pages.
+    """
+    from liquidoracle.data.offline import OfflineClient, sample_files
+
+    if settings.offline:
+        return Sources(OfflineClient(sample_files(root)), Store(root / OFFLINE_DB))
+    return Sources(None, Store(root / LIVE_DB))
 
 
 def serve(settings: Settings) -> int:

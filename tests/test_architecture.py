@@ -206,6 +206,51 @@ def test_planted_environment_read_is_caught(source: str) -> None:
     assert env_read_violations(Path("services/lookup.py"), source) != []
 
 
+SQL_MODULE = Path("data/store.py")
+MODE_READERS = {"settings", "__main__", "web"}  # where it is built, the swap, and the Offline pill (AD-13)
+
+
+def sql_violations(rel: Path, source: str) -> list[str]:
+    """AD-6 rule: only data/store.py imports sqlite3."""
+    if rel == SQL_MODULE:
+        return []
+    tree = ast.parse(source, filename=str(rel))
+    return [f"{rel}: imports sqlite3" for module in imported_modules(tree, rel) if module.split(".")[0] == "sqlite3"]
+
+
+def mode_read_violations(rel: Path, source: str) -> list[str]:
+    """AD-13 rule: only settings, the swap in __main__ and the pages' mode indicator read `.offline`."""
+    if layer_of(rel) in MODE_READERS:
+        return []
+    tree = ast.parse(source, filename=str(rel))
+    return [f"{rel}: reads .offline" for node in ast.walk(tree) if isinstance(node, ast.Attribute) and node.attr == "offline"]
+
+
+def test_only_the_store_runs_sql() -> None:
+    """AD-6: no module but data/store.py imports sqlite3."""
+    problems = [p for rel, src in app_modules() for p in sql_violations(rel, src)]
+    assert problems == []
+    assert (SRC / SQL_MODULE).is_file()
+
+
+@pytest.mark.parametrize("source", ["import sqlite3\n", "from sqlite3 import connect\n"])
+def test_planted_sql_outside_the_store_is_caught(source: str) -> None:
+    """AD-6: the rule fails on sqlite3 in another data module or in the shell."""
+    assert sql_violations(Path("data/offline.py"), source) != []
+    assert sql_violations(Path("__main__.py"), source) != []
+
+
+def test_nothing_else_branches_on_the_mode() -> None:
+    """AD-13: only settings (which builds it), __main__ (the swap) and web (the Offline pill) read `.offline`."""
+    problems = [p for rel, src in app_modules() for p in mode_read_violations(rel, src)]
+    assert problems == []
+
+
+def test_planted_mode_branch_is_caught() -> None:
+    """AD-13: the rule fails on `if settings.offline:` in services."""
+    assert mode_read_violations(Path("services/fetch.py"), "if settings.offline:\n    pass\n") != []
+
+
 @pytest.mark.filterwarnings("ignore:A test tried to use socket")
 def test_opening_a_socket_fails() -> None:
     """AD-17: every test runs with sockets blocked, so a test that opens a socket fails."""

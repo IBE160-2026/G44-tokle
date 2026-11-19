@@ -27,7 +27,9 @@ uv run liquidoracle run
 
 Then open **http://127.0.0.1:8044** in your browser. Stop the app with `Ctrl+C`.
 
-The app runs only on your own computer (it listens on 127.0.0.1, not on the network). `uv run liquidoracle load-sample` (the Sample Dataset) exists but isn't built yet.
+The app runs only on your own computer (it listens on 127.0.0.1, not on the network).
+
+`uv run liquidoracle load-sample` loads the Sample Dataset for Offline Mode: it regenerates the 1,000 coin-flipper Wallets in `instance/synthetic/coin-flippers/` and loads them and the Synthetic Wallets into the database `instance/offline.db` (about 75 MB, never committed). Run it from the repository folder; it takes about 15 to 30 seconds. It always writes `instance/offline.db`, never the live database, and running it again replaces each Wallet's stored data. The pages that show the results come in Story 1.7.
 
 `uv run liquidoracle make-synthetic` rebuilds the Synthetic Wallets: made-up Wallets whose correct answers are known in advance, used to check the Skill Test. Run it from the repository folder. It rewrites the five small Wallets in `sample_data/synthetic/` (committed; the output is identical every time, so `git status` stays clean) and writes 1,000 coin-flipper Wallets (about 90 MB) to `instance/synthetic/coin-flippers/`, which is never committed. You don't need it to run the app or the tests.
 

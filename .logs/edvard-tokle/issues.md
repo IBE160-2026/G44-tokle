@@ -21,7 +21,7 @@
 - [ ] 2026-11-11 [story-1-2-positions-from-fills](995-2026-11-11-19-43-35-story-1-2-positions-from-fills.md) — Story 2.3: count tokens that sell before they buy (running balance below zero) on the Sample Wallets; if any, an AD-11 rule change goes to Edvard
 - [ ] 2026-11-11 [story-1-2-positions-from-fills](995-2026-11-11-19-43-35-story-1-2-positions-from-fills.md) — Story 1.7: decide whether split-or-merged Positions count in the Exit PnL total and whether sell fees count
 - [x] 2026-11-13 [story-1-3-synthetic-wallets](994-2026-11-13-18-21-42-story-1-3-synthetic-wallets.md) — Story 1.4: the Skill Test must meet `sample_data/synthetic/expected.json`, including the stop-loss trader reading *Skilled (high confidence)* (FR-11 limit, on purpose) (løst 2026-11-18: e554625, 89eb37b)
-- [ ] 2026-11-13 [story-1-3-synthetic-wallets](994-2026-11-13-18-21-42-story-1-3-synthetic-wallets.md) — Story 1.6: `load-sample` regenerates the coin-flippers with `synthetic.write_coin_flippers`
+- [x] 2026-11-13 [story-1-3-synthetic-wallets](994-2026-11-13-18-21-42-story-1-3-synthetic-wallets.md) — Story 1.6: `load-sample` regenerates the coin-flippers with `synthetic.write_coin_flippers` (løst 2026-11-19: be01433)
 - [x] 2026-11-13 [story-1-3-synthetic-wallets](994-2026-11-13-18-21-42-story-1-3-synthetic-wallets.md) — handle the teacher's PRD feedback (`tilbakemelding-prd.md`, 12 Nov): stage 2 minimum version, FR-24 word list, FR-19 error handling, tidy §9 (løst 2026-11-18: 59c4c38, 9750800)
 - [ ] 2026-11-13 [story-1-3-synthetic-wallets](994-2026-11-13-18-21-42-story-1-3-synthetic-wallets.md) — ask the teacher whether `technology.md` (on `main` since 12 Nov, about another project) was meant for this repository
 - [ ] 2026-11-18 [prd-feedback](993-2026-11-18-12-35-27-prd-feedback.md) — Edvard answers the PRD feedback's two reflection questions in the reflection report
@@ -29,5 +29,7 @@
 - [ ] 2026-11-18 [prd-feedback](993-2026-11-18-12-35-27-prd-feedback.md) — Story 7.2: README states the model calls the Sample Dataset needs and their estimated cost (FR-19)
 - [x] 2026-11-18 [story-1-4-the-skill-test](992-2026-11-18-17-00-40-story-1-4-the-skill-test.md) — set Story 1.4 to `done` in `sprint-status.yaml` when its PR is merged (løst 2026-11-19: 0a467aa)
 - [ ] 2026-11-18 [story-1-4-the-skill-test](992-2026-11-18-17-00-40-story-1-4-the-skill-test.md) — Story 2.2: the fee-schedule check must also handle a negative Own Fee, which the Skill Test still accepts (`deferred-work.md`)
-- [ ] 2026-11-19 [story-1-5-number-phrases](991-2026-11-19-00-06-18-story-1-5-number-phrases.md) — set Story 1.5 to `done` in `sprint-status.yaml` when its PR is merged
+- [x] 2026-11-19 [story-1-5-number-phrases](991-2026-11-19-00-06-18-story-1-5-number-phrases.md) — set Story 1.5 to `done` in `sprint-status.yaml` when its PR is merged (løst 2026-11-19: c53e43c)
 - [ ] 2026-11-19 [story-1-5-number-phrases](991-2026-11-19-00-06-18-story-1-5-number-phrases.md) — Story 1.7: every number on the Verdict card, chart axis labels and text alternative included, comes from `core/phrases` (the scan can't catch every hand-made money format)
+- [ ] 2026-11-19 [story-1-6-offline-mode](990-2026-11-19-22-59-03-story-1-6-offline-mode.md) — set Story 1.6 to `done` in `sprint-status.yaml` when its PR is merged
+- [ ] 2026-11-19 [story-1-6-offline-mode](990-2026-11-19-22-59-03-story-1-6-offline-mode.md) — Story 1.7: pass `open_sources` to the pages, handle an empty or missing `offline.db`, and let `OfflineClient` see Sample files written after the app started

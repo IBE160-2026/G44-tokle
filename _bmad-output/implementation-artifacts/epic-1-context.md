@@ -40,9 +40,9 @@ An examiner clones the repository, runs three README commands (`uv sync`, `uv ru
 - **Serving:** `liquidoracle run` binds to 127.0.0.1 on `PORT`, with no debug, no reloader and `load_dotenv=False`. It is the only place the worker thread starts.
 - **Tests:** `addopts = "--disable-socket"`, so every test runs network-blocked. Online tests are marked and excluded. CI runs `uv sync --locked` and `uv run pytest` on 3 operating systems × 2 Python versions, plus one job that runs the README commands. 1,000-repetition checks carry a `slow` marker: they run in full on Linux with Python 3.14 and with 100 repetitions elsewhere, set by one option. Determinism checks and a golden result run on every job.
 - **Randomness:** an explicit Seed, positions sorted before drawing, and per-unit generators from `SeedSequence` with a sha256 spawn key. Never `random`, numpy's global state or `hash()`.
-- **Money:** a `float` in USD, rounded only for display, and tests compare to the cent. The Skill Test's tie count alone uses whole-cent integers. The Real PnL that is shown is the exact sum.
+- **Money:** a `float` in USD, stored and tested to the cent, shown in whole dollars (`$12,340`, `−$1,240`) only through `core/phrases.py` (Edvard, 2026-11-18). The Skill Test's tie count alone uses whole-cent integers. The Real PnL is the exact sum; only its display rounds.
 - **Data access:** only `data/store.py` runs SQL, with WAL, a busy timeout, one connection per thread and `BEGIN IMMEDIATE`. One `schema.sql` with `PRAGMA user_version`. Snapshots carry a `fetch_id` and become visible in one final step.
-- **Number phrases** all come from `core/phrases.py`.
+- **Number phrases** all come from `core/phrases.py`: odds, money, the *Not enough data* sentence.
 - **Pages** are rendered on the server with Jinja2 and work without JavaScript. Plain JS files only enhance them. IBM Plex Serif is bundled, and nothing is loaded from the internet.
 
 ## UX & Interaction Patterns

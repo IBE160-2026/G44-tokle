@@ -58,6 +58,22 @@ def write_wallet(path: Path, wallet: SampleWallet, *, compact: bool = False) -> 
     path.write_bytes(dumps(wallet, compact=compact).encode("utf-8"))
 
 
+def read_ids(path: Path) -> tuple[str, tuple[str, ...]]:
+    """The Wallet address and Market ids in one file, without building its records.
+
+    Used by `data/offline.py` to index the Sample Dataset quickly; `read_wallet` still checks
+    the whole file strictly when the Wallet is read.
+    """
+    try:
+        document = json.loads(path.read_bytes().decode("utf-8"), parse_constant=_refuse_constant)
+        _check_keys(document, {"address", "name", "activity", "positions", "markets", "prices"}, "wallet")
+        address = _str(document["address"])
+        markets = tuple(_str(market["condition_id"]) for market in _list(document["markets"]))
+        return address, markets
+    except (ValueError, KeyError, TypeError, AttributeError, UnicodeDecodeError) as error:
+        raise ValueError(f"{path}: not a Sample Dataset Wallet file: {error}") from error
+
+
 def read_wallet(path: Path) -> SampleWallet:
     """Read one Wallet file. A malformed file gives a ValueError that names it."""
     try:
