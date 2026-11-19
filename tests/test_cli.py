@@ -9,6 +9,8 @@ import pytest
 from flask import Flask
 
 import liquidoracle.__main__ as cli
+from liquidoracle.data import synthetic
+from liquidoracle.data.store import LIVE_DB, OFFLINE_DB, Store
 from liquidoracle.settings import Settings
 
 
@@ -32,10 +34,55 @@ def fake_server(monkeypatch: pytest.MonkeyPatch) -> dict[str, Any]:
     return calls
 
 
-def test_load_sample_says_not_built_yet(capsys: pytest.CaptureFixture[str]) -> None:
-    """AD-14: the load-sample command exists and says it is not built yet."""
-    assert cli.main(["load-sample"]) == 0
-    assert "not built yet (Story 1.6)" in capsys.readouterr().out
+def fake_repository(root: Path) -> Path:
+    """A folder that looks like the repository: pyproject.toml and the committed Synthetic Wallets."""
+    (root / "pyproject.toml").write_text("", encoding="utf-8")
+    synthetic.write_small(root)
+    return root
+
+
+def test_load_sample_fills_offline_db_whatever_the_flags(
+    in_empty_dir: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """AD-14, FR-14: load-sample regenerates the coin-flippers and loads every Sample Wallet into offline.db.
+
+    `.env` says OFFLINE=false; load-sample still writes offline.db and never live.db. A second run
+    gives the same count, one snapshot per Wallet (Edvard, 2026-11-19).
+    """
+    monkeypatch.setattr(synthetic, "COIN_FLIPPERS", 2)
+    fake_repository(in_empty_dir)
+    (in_empty_dir / ".env").write_text("OFFLINE=false\n", encoding="utf-8")
+    for _ in range(2):
+        assert cli.main(["load-sample"]) == 0
+        assert "Done: 7 Sample Wallets" in capsys.readouterr().out
+    assert len(list((in_empty_dir / synthetic.COIN_FLIPPER_DIR).glob("*.json"))) == 2
+    assert not (in_empty_dir / LIVE_DB).exists()
+    db = Store(in_empty_dir / OFFLINE_DB)
+    try:
+        assert db.wallet_count() == 7
+        assert db._connection().execute("SELECT COUNT(*) FROM snapshot").fetchone() == (7,)
+    finally:
+        db.close()
+
+
+def test_load_sample_outside_the_repository_writes_nothing(
+    in_empty_dir: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """AD-14: load-sample run from the wrong folder stops with a plain message and writes nothing."""
+    assert cli.main(["load-sample"]) == 2
+    assert "must run from the LiquidOracle repository folder" in capsys.readouterr().err
+    assert not (in_empty_dir / "instance").exists()
+
+
+def test_load_sample_stops_plainly_on_a_broken_wallet_file(
+    in_empty_dir: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """AD-14: a malformed Sample Dataset file stops load-sample with its name, not a traceback."""
+    monkeypatch.setattr(synthetic, "COIN_FLIPPERS", 1)
+    fake_repository(in_empty_dir)
+    (in_empty_dir / synthetic.SMALL_DIR / "broken.json").write_text("{", encoding="utf-8")
+    assert cli.main(["load-sample"]) == 2
+    assert "broken.json" in capsys.readouterr().err
 
 
 def test_run_uses_the_serving_rules(in_empty_dir: Path, fake_server: dict[str, Any]) -> None:
@@ -135,3 +182,15 @@ def test_port_in_use_is_false_when_nothing_answers(monkeypatch: pytest.MonkeyPat
 
     monkeypatch.setattr(cli.socket, "create_connection", refuse)
     assert cli.port_in_use("127.0.0.1", 8044) is False
+
+
+def test_load_sample_stops_plainly_on_a_broken_database(
+    in_empty_dir: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """AD-14, AD-6: an offline.db that is not a database stops load-sample with a plain message, not a traceback."""
+    monkeypatch.setattr(synthetic, "COIN_FLIPPERS", 1)
+    fake_repository(in_empty_dir)
+    (in_empty_dir / OFFLINE_DB).parent.mkdir(parents=True, exist_ok=True)
+    (in_empty_dir / OFFLINE_DB).write_text("this is not a database " * 100, encoding="utf-8")
+    assert cli.main(["load-sample"]) == 2
+    assert "load-sample stopped:" in capsys.readouterr().err
