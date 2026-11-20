@@ -180,6 +180,13 @@ class Store:
             if db.in_transaction:
                 db.execute("COMMIT")
 
+    def has_snapshot(self, wallet: str) -> bool:
+        """True when the Wallet has a complete snapshot (Story 1.7's Lookup page), without reading its rows."""
+        row = self._connection().execute(
+            "SELECT 1 FROM snapshot WHERE wallet = ? AND completed_at IS NOT NULL LIMIT 1", (wallet,)
+        ).fetchone()
+        return row is not None
+
     def wallet_count(self) -> int:
         """How many Wallets have a complete snapshot."""
         row = self._connection().execute(

@@ -1,7 +1,7 @@
 # The test suite on Windows, macOS and Linux x Python 3.12 and 3.14, on every push (NFR-2, AD-17).
 # Every test runs with the network blocked. Slow checks repeat 1,000 times on Linux / Python 3.14
 # and 100 times on the other five jobs; any failing job fails the build.
-# The job that runs the README's three commands is added with Story 1.7, when load-sample exists.
+# A second job runs the README's three commands on a fresh checkout and checks one Verdict page (Story 1.7).
 name: Tests
 
 on:
@@ -50,4 +50,40 @@ jobs:
             uv run pytest --repetitions 1000
           else
             uv run pytest
+          fi
+
+  readme:
+    # NFR-1, AD-17: the README's three commands, exactly as written there, then the sharp trader's
+    # Verdict page must say "Skilled (high confidence)".
+    name: README commands · Offline Mode
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7.0.1
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v10.3.0
+        with:
+          version: "0.13.4"
+
+      - name: "README command 1: uv sync"
+        run: uv sync
+
+      - name: "README command 2: uv run liquidoracle load-sample"
+        run: uv run liquidoracle load-sample
+
+      - name: "README command 3: uv run liquidoracle run --offline, then open the sharp trader"
+        shell: bash
+        run: |
+          uv run liquidoracle run --offline > server.log 2>&1 &
+          for _ in $(seq 1 60); do
+            curl -sf http://127.0.0.1:8044/ > /dev/null && break
+            sleep 1
+          done
+          address=$(uv run python -c "from liquidoracle.data.synthetic import address_of; print(address_of('sharp-trader'))")
+          curl -sf "http://127.0.0.1:8044/wallet/$address" > verdict.html || { cat server.log; exit 1; }
+          if grep -q "Skilled (high confidence)" verdict.html; then
+            echo "The sharp trader's Verdict page says Skilled (high confidence)."
+          else
+            echo "Expected 'Skilled (high confidence)' on the sharp trader's page."; cat verdict.html; cat server.log; exit 1
           fi

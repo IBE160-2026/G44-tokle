@@ -1,0 +1,9 @@
+{% extends "base.html" %}
+{% block title %}Something went wrong · LiquidOracle{% endblock %}
+{% block content %}
+    <div class="narrow">
+      <h1 class="page-title-small">Something went wrong</h1>
+      <p class="message">This page could not be shown. Reload it in a moment. If it keeps happening, stop the app with Ctrl+C and start it again.</p>
+      <p><a href="{{ url_for('check_a_wallet') }}">Check a wallet</a></p>
+    </div>
+{% endblock %}

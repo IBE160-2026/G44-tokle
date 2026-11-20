@@ -2,7 +2,8 @@
 
 Templates, the FR-24 check and the tests all call these functions, so the Verdict card, the
 chart text and the Explanation can never phrase the same number two ways. Story 1.5 adds the
-odds phrase, money and the *Not enough data* sentence; later stories add theirs here (Copy Test
+odds phrase, money and the *Not enough data* sentence; Story 1.7 the odds sentence, counts and the
+"Data stored" date; later stories add theirs here (Copy Test
 phrase, Minimum Luck Passes, Follower Return, the largest-bet sentence). A test fails if an odds
 phrase, the *Not enough data* sentence or a minus-sign amount is written elsewhere under `src/`.
 No scan can spot every hand-made money format, so pages must call `money()`.
@@ -13,6 +14,7 @@ Rounding is decimal and takes halves away from zero, never Python's round-half-t
 from __future__ import annotations
 
 import math
+from datetime import datetime, timezone, tzinfo
 from decimal import ROUND_HALF_UP, Decimal
 from numbers import Integral, Real
 
@@ -73,6 +75,41 @@ def not_enough_data(tested_count: int) -> str:
         raise ValueError(f"Not enough data needs 0 to {MIN_RESOLVED - 1} resolved bets, got {count}")
     bets = "bet" if count == 1 else "bets"
     return f"{count} resolved {bets}; at least {MIN_RESOLVED} are needed for a Verdict ({MIN_RESOLVED - count} more)"
+
+
+def odds_sentence(p_value: float) -> str:
+    """The odds line under the Verdict (UX-DR20), ending in a full stop: a trader with no edge would do this well about 1 time in 4."""
+    return f"a trader with no edge would do this well {odds(p_value)}."
+
+
+def count(number: int) -> str:
+    """A whole count with comma groups (UX-DR14): "1,000"."""
+    return f"{_whole(number, 'count'):,}"
+
+
+def resolved_bets_word(number: int) -> str:
+    """The words after a count of Resolved Positions (UX-DR15): "resolved bet" for 1, else "resolved bets"."""
+    return "resolved bet" if _whole(number, "count") == 1 else "resolved bets"
+
+
+_MONTHS = ("Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec")
+
+
+def stored_at(epoch_seconds: int, tz: tzinfo | None = None) -> str:
+    """When the Wallet's data was stored (FR-2, UX-DR20): "Data stored 15 Oct 2026, 14:02".
+
+    In the computer's own time zone unless `tz` is given. English month names, whatever the locale.
+    """
+    moment = datetime.fromtimestamp(_whole(epoch_seconds, "time"), tz=tz or timezone.utc)
+    if tz is None:
+        moment = moment.astimezone()  # the laptop's local time
+    return f"Data stored {moment.day} {_MONTHS[moment.month - 1]} {moment.year}, {moment:%H:%M}"
+
+
+def _whole(value: object, name: str) -> int:
+    if isinstance(value, bool) or not isinstance(value, Integral) or value < 0:
+        raise ValueError(f"a {name} must be a whole number of at least 0, got {value!r}")
+    return int(value)
 
 
 def _real(value: object, name: str) -> float:

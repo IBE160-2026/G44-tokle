@@ -9,7 +9,7 @@ from __future__ import annotations
 
 import re
 import threading
-from collections.abc import Iterable, Sequence
+from collections.abc import Callable, Iterable, Sequence
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -42,10 +42,15 @@ class _Index:
 
 
 class OfflineClient:
-    """Serves the Wallets in `files`. Safe to share between threads."""
+    """Serves the Wallets in `files`. Safe to share between threads.
 
-    def __init__(self, files: Sequence[Path]) -> None:
+    With `list_files`, a miss lists the files again and rebuilds the index when the list has
+    changed, so Sample files written after the app started (by `load-sample`) are found (Story 1.7).
+    """
+
+    def __init__(self, files: Sequence[Path], *, list_files: Callable[[], Sequence[Path]] | None = None) -> None:
         self._files = tuple(files)
+        self._list_files = list_files
         self._index: _Index | None = None
         self._cached: tuple[Path, SampleWallet, dict[str, Market]] | None = None
         self._lock = threading.Lock()
@@ -65,13 +70,19 @@ class OfflineClient:
         found: list[Market] = []
         for condition_id in dict.fromkeys(condition_ids):  # each id once, in the order asked
             path = index.markets.get(condition_id)
+            if path is None and self._refresh():
+                index = self._get_index()
+                path = index.markets.get(condition_id)
             if path is None:
                 raise NotAvailableOffline(f"Market {condition_id} is not in the Sample Dataset")
             found.append(self._read(path)[1][condition_id])
         return tuple(found)
 
     def _wallet(self, wallet: str) -> SampleWallet:
-        path = self._get_index().wallets.get(wallet.strip().lower())
+        address = wallet.strip().lower()
+        path = self._get_index().wallets.get(address)
+        if path is None and self._refresh():
+            path = self._get_index().wallets.get(address)
         if path is None:
             raise NotAvailableOffline(f"Wallet {wallet} is not in the Sample Dataset")
         return self._read(path)[0]
@@ -83,6 +94,18 @@ class OfflineClient:
                 wallet = sample_json.read_wallet(path)
                 self._cached = (path, wallet, {m.condition_id: m for m in wallet.markets})
             return self._cached[1], self._cached[2]
+
+    def _refresh(self) -> bool:
+        """On a miss: list the files again and drop the index if the list changed. True when it is worth
+        looking again, also when another thread has just swapped in the new list (review, Story 1.7)."""
+        if self._list_files is None:
+            return False
+        files = tuple(self._list_files())
+        with self._lock:
+            if files != self._files:
+                self._files = files
+                self._index = None
+            return True
 
     def _get_index(self) -> _Index:
         with self._lock:

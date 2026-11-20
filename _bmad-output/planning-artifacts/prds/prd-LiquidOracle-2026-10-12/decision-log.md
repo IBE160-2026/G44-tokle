@@ -2,6 +2,10 @@
 
 Why the PRD says what it says. The PRD itself keeps only the requirements (`prd.md`); this file keeps the reasons, dates and earlier wording that used to sit inside it. The full audit trail of the BMAD workflow, one line per decision, is `.memlog.md` in this folder; git history has every earlier version of `prd.md`.
 
+## 2026-11-20: stage 3 parked at the checkpoint
+
+The plan's rule (Edvard, 2026-11-05) was that stage 3 is dropped if stage 1 is not done by 20 November. On that day Epic 1 had just been built and Epics 2 and 3 (also stage 1) had not started. Edvard decided that stage 3 is **parked, not deleted**: FR-15 and FR-19 to FR-24 stay in the PRD, Epics 7 and 8 stay in the epics, and they are picked back up if all of stage 2, the Copy Test (2c) included, is done before the code freeze on 1 December (the AI recommended the whole of stage 2 rather than the minimum, since stage 3 is the first thing cut; Edvard agreed). If they are not reached, the README says so with this reason (NFR-12).
+
 ## 2026-11-18: update from the teacher's PRD feedback
 
 Source: `tilbakemelding-prd.md` (Bård, 2026-11-12). The AI proposed a change for each point; Edvard approved, changed or rejected it before any edit.

@@ -194,3 +194,39 @@ def test_load_sample_stops_plainly_on_a_broken_database(
     (in_empty_dir / OFFLINE_DB).write_text("this is not a database " * 100, encoding="utf-8")
     assert cli.main(["load-sample"]) == 2
     assert "load-sample stopped:" in capsys.readouterr().err
+
+
+def test_run_offline_serves_the_sample_pages(in_empty_dir: Path, fake_server: dict[str, Any], monkeypatch: pytest.MonkeyPatch) -> None:
+    """AD-13, FR-14 (Story 1.7): `run --offline` from the repository folder hands the pages the
+    OfflineClient and offline.db, so a loaded Sample Wallet's Verdict page is served."""
+    monkeypatch.setattr(synthetic, "COIN_FLIPPERS", 1)
+    fake_repository(in_empty_dir)
+    assert cli.main(["load-sample"]) == 0
+    apps: list[Flask] = []
+    monkeypatch.setattr(Flask, "run", lambda self, **kwargs: apps.append(self))
+    assert cli.main(["run", "--offline"]) == 0
+    page = apps[0].test_client().get(f"/wallet/{synthetic.address_of('sharp-trader')}").get_data(as_text=True)
+    assert "Skilled (high confidence)" in page
+    assert not (in_empty_dir / LIVE_DB).exists()
+
+
+def test_run_offline_outside_the_repository_stops(
+    in_empty_dir: Path, fake_server: dict[str, Any], capsys: pytest.CaptureFixture[str]
+) -> None:
+    """FR-14: Offline Mode needs the Sample Dataset, so `run --offline` elsewhere stops with a plain message."""
+    assert cli.main(["run", "--offline"]) == 2
+    assert "must run from the LiquidOracle repository folder" in capsys.readouterr().err
+    assert fake_server == {}
+
+
+def test_run_with_a_broken_database_stops_plainly(
+    in_empty_dir: Path, fake_server: dict[str, Any], capsys: pytest.CaptureFixture[str]
+) -> None:
+    """AD-6: an offline.db that is not a database stops the start with a sentence, not a traceback."""
+    fake_repository(in_empty_dir)
+    (in_empty_dir / OFFLINE_DB).parent.mkdir(parents=True, exist_ok=True)
+    (in_empty_dir / OFFLINE_DB).write_text("this is not a database " * 100, encoding="utf-8")
+    assert cli.main(["run", "--offline"]) == 2
+    err = capsys.readouterr().err
+    assert "cannot be opened" in err and "Delete that file" in err and "Traceback" not in err
+    assert fake_server == {}

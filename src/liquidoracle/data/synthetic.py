@@ -45,6 +45,9 @@ def uniform(wallet: str, bet: int, purpose: str) -> float:
     return (int.from_bytes(digest[:8], "big") >> 11) / 2**53
 
 
+SMALL_NAMES = ("hand-check", "favourite-buyer", "sharp-trader", "thin-wallet", "stop-loss-trader")
+
+
 def small_wallets() -> tuple[SampleWallet, ...]:
     """The committed stage 1 Synthetic Wallets, in a fixed order."""
     return (
@@ -56,9 +59,14 @@ def small_wallets() -> tuple[SampleWallet, ...]:
     )
 
 
+def coin_flipper_name(index: int) -> str:
+    """The name of coin-flipper number `index`: "coin-flipper-0000"."""
+    return f"coin-flipper-{index:04d}"
+
+
 def coin_flipper(index: int) -> SampleWallet:
     """Coin-flipper number `index`: prices uniform in whole cents 0.10-0.90, won when a draw < price."""
-    name = f"coin-flipper-{index:04d}"
+    name = coin_flipper_name(index)
     bets = []
     for i in range(COIN_FLIPPER_BETS):
         cents = 10 + int(uniform(name, i, "price") * 81)  # 10..90, each equally likely
@@ -113,7 +121,15 @@ def _stop_loss_bets() -> list[_Bet]:
     ]
 
 
-def _address(name: str) -> str:
+def all_addresses(coin_flippers: int = COIN_FLIPPERS) -> frozenset[str]:
+    """Every Synthetic Wallet's address, also before its file is written (Story 1.7: such a Wallet is
+    "not loaded yet", never "not available offline")."""
+    names = [*SMALL_NAMES, *(coin_flipper_name(i) for i in range(coin_flippers))]
+    return frozenset(address_of(name) for name in names)
+
+
+def address_of(name: str) -> str:
+    """The fixed address of the Synthetic Wallet called `name`, without generating it (Story 1.7's Sample list)."""
     return "0x" + hashlib.sha256(f"liquidoracle synthetic wallet {name}".encode()).hexdigest()[:40]
 
 
@@ -162,7 +178,7 @@ def _wallet(name: str, bets: list[_Bet], *, with_prices: bool = False) -> Sample
         positions.append(ListedPosition(condition_id, bought, status, shares_bought, first_buy))
 
     return SampleWallet(
-        address=_address(name),
+        address=address_of(name),
         name=name,
         activity=tuple(activity),
         positions=tuple(positions),

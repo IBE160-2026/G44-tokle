@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block title %}Verdict · {{ page.short_address }} · LiquidOracle{% endblock %}
+{% block content %}
+    {% set card = page.card %}
+    <section class="verdict-card" aria-labelledby="verdict-heading">
+      <div class="verdict-head">
+        <div>
+          <p class="eyebrow">Wallet analysis</p>
+          {% if card.filled_dots is none %}
+          <h1 class="verdict verdict-none" id="verdict-heading"><span class="visually-hidden">Verdict: </span>{{ card.verdict }}</h1>
+          {% else %}
+          <h1 class="verdict" id="verdict-heading">
+            <span class="dots" aria-hidden="true">{% for i in range(3) %}<span class="dot{% if i < card.filled_dots %} is-filled{% endif %}"></span>{% endfor %}</span>
+            <span><span class="visually-hidden">Verdict: </span>{{ card.verdict }}</span>
+          </h1>
+          {% endif %}
+          <p class="odds">{{ card.odds_line }}</p>
+        </div>
+        <div class="address-card">
+          <p class="label">Wallet address</p>
+          <code class="address">{{ page.address }}</code>
+        </div>
+      </div>
+
+      <hr class="rule">
+
+      <div class="stats">
+        <p class="label">Stats</p>
+        <p class="line"><strong>{{ card.bets }}</strong> {{ card.bets_word }}<span class="sep" aria-hidden="true">·</span><span class="visually-hidden">, </span>Real PnL <strong>{{ card.real_pnl }}</strong></p>
+        <p class="stored">{{ card.stored }}</p>
+      </div>
+    </section>
+{% endblock %}

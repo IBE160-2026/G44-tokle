@@ -149,19 +149,25 @@ def open_sources(settings: Settings, root: Path) -> Sources:
     """AD-13: the one place the mode picks the client and the database file.
 
     Offline Mode gets `OfflineClient` and `instance/offline.db`; a live run gets `instance/live.db`.
-    Nothing else branches on the mode. Story 1.7 hands the result to the pages.
+    Nothing else branches on the mode. `serve` hands the result to the pages through `Lookup`.
     """
     from liquidoracle.data.offline import OfflineClient, sample_files
 
     if settings.offline:
-        return Sources(OfflineClient(sample_files(root)), Store(root / OFFLINE_DB))
+        # list_files: Sample files written after the start (a load-sample run) are still found.
+        client = OfflineClient(sample_files(root), list_files=lambda: sample_files(root))
+        return Sources(client, Store(root / OFFLINE_DB))
     return Sources(None, Store(root / LIVE_DB))
 
 
 def serve(settings: Settings) -> int:
     """Start the web app with the AD-23 serving rules. Blocks until Ctrl+C."""
+    from liquidoracle.services.lookup import Lookup
     from liquidoracle.web import create_app
 
+    root = Path.cwd()
+    if settings.offline and not in_repository(root, "run --offline"):
+        return 2
     if port_in_use(HOST, settings.port):
         print(
             f"LiquidOracle cannot start: port {settings.port} is already in use "
@@ -171,7 +177,17 @@ def serve(settings: Settings) -> int:
         )
         return 2
 
-    app = create_app(settings)
+    try:
+        sources = open_sources(settings, root)
+    except (StoreError, OSError) as error:  # OSError: e.g. `instance` is a file, or the folder is read-only
+        database = root / (OFFLINE_DB if settings.offline else LIVE_DB)
+        print(
+            f"LiquidOracle cannot start: the database {database} cannot be opened ({error}). "
+            "Delete that file and start again; in Offline Mode, run `uv run liquidoracle load-sample` first.",
+            file=sys.stderr,
+        )
+        return 2
+    app = create_app(settings, Lookup(sources.client, sources.store, seed=settings.seed))
     log.info("LiquidOracle is running at http://%s:%d (press Ctrl+C to stop)", HOST, settings.port)
     # If binding still fails (no permission, or another program took the port after the
     # check above), Werkzeug prints a plain message itself and exits with code 1.
