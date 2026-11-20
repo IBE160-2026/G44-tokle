@@ -240,6 +240,42 @@ def test_planted_sql_outside_the_store_is_caught(source: str) -> None:
     assert sql_violations(Path("__main__.py"), source) != []
 
 
+# AD-2: one client per outside system. Only these modules may import that system's library.
+CLIENT_MODULES = {"requests": Path("data/polymarket.py"), "anthropic": Path("data/model.py")}
+
+
+def client_violations(rel: Path, source: str) -> list[str]:
+    """AD-2 rule: only data/polymarket.py imports requests, only data/model.py imports anthropic."""
+    tree = ast.parse(source, filename=str(rel))
+    problems = []
+    for module in imported_modules(tree, rel):
+        owner = CLIENT_MODULES.get(module.split(".")[0])
+        if owner is not None and rel != owner:
+            problems.append(f"{rel}: imports {module}; only {owner} may")
+    return problems
+
+
+def test_only_the_polymarket_client_imports_requests() -> None:
+    """AD-2: no module but data/polymarket.py imports requests (and none but data/model.py imports anthropic)."""
+    problems = [p for rel, src in app_modules() for p in client_violations(rel, src)]
+    assert problems == []
+    assert (SRC / CLIENT_MODULES["requests"]).is_file()
+
+
+@pytest.mark.parametrize(
+    ("path", "source"),
+    [
+        ("data/offline.py", "import requests\n"),
+        ("data/store.py", "from requests import Session\n"),
+        ("data/polymarket.py", "import anthropic\n"),
+        ("__main__.py", "import requests.adapters\n"),
+    ],
+)
+def test_planted_second_client_is_caught(path: str, source: str) -> None:
+    """AD-2: the rule fails on requests outside data/polymarket.py, or anthropic outside data/model.py."""
+    assert client_violations(Path(path), source) != []
+
+
 def test_nothing_else_branches_on_the_mode() -> None:
     """AD-13: only settings (which builds it), __main__ (the swap) and web (the Offline pill) read `.offline`."""
     problems = [p for rel, src in app_modules() for p in mode_read_violations(rel, src)]
@@ -263,9 +299,9 @@ def test_online_tests_are_deselected_by_default() -> None:
     command = [sys.executable, "-m", "pytest", "--collect-only", "-q", "-p", "no:cacheprovider", "tests/online"]
     default = subprocess.run(command, cwd=REPO, capture_output=True, text=True, timeout=120)
     assert re.search(r"\b[1-9]\d* deselected", default.stdout), default.stdout + default.stderr
-    assert "test_online_marker.py::" not in default.stdout, default.stdout
+    assert "test_polymarket_live.py::" not in default.stdout, default.stdout
     chosen = subprocess.run([*command, "-m", "online"], cwd=REPO, capture_output=True, text=True, timeout=120)
-    assert "test_online_marker.py::test_online_tests_are_marked" in chosen.stdout, chosen.stdout + chosen.stderr
+    assert "test_polymarket_live.py::test_first_closed_page_of_a_sample_wallet" in chosen.stdout, chosen.stdout + chosen.stderr
 
 
 def test_repetitions_option_sets_the_slow_count(repetitions: int, request: pytest.FixtureRequest) -> None:

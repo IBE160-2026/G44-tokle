@@ -72,7 +72,7 @@ No key is needed to run the app or the tests. A bad value, such as a pace above 
 uv run pytest
 ```
 
-Every test runs with the network blocked. Tests that need the real network live in `tests/online/` and are skipped unless you ask for them: `uv run pytest -m online --force-enable-socket tests/online`.
+Every test runs with the network blocked. Tests that need the real network live in `tests/online/` and are skipped unless you ask for them: `uv run pytest -m online --force-enable-socket tests/online`. Today that is one smoke test: it reads the first page of one Sample Wallet's closed positions from Polymarket's public API (one request, or three if Polymarket is busy; no key).
 
 Checks marked `slow` repeat a whole test 100 times by default. `uv run pytest --repetitions 1000` runs them in full, as CI does on Linux with Python 3.14.
 
