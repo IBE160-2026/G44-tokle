@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% block title %}{{ page.notice.heading }} · {{ page.short_address }} · LiquidOracle{% endblock %}
+{% block content %}
+    <div class="narrow">
+      <p class="eyebrow">Wallet analysis</p>
+      <h1 class="page-title-small">{{ page.notice.heading }}</h1>
+      <p class="message{% if page.notice.error %} message-error{% endif %}">
+        {% if page.notice.error %}<span class="visually-hidden">Error: </span>{% endif %}{% with notice = page.notice %}{% include "notice.html" %}{% endwith %}
+      </p>
+      <p class="address-line">Wallet address <code class="address">{{ page.address }}</code></p>
+      <p><a href="{{ url_for('check_a_wallet') }}">Check a wallet</a></p>
+      {% if samples %}{% include "samples.html" %}{% endif %}
+    </div>
+{% endblock %}
