@@ -229,3 +229,41 @@ def test_size_check_catches_a_large_dataset(tmp_path: Path) -> None:
     with open(tmp_path / "big.json", "wb") as big:
         big.truncate(MAX_SAMPLE_BYTES + 1)
     assert sample_data_bytes(tmp_path) >= MAX_SAMPLE_BYTES
+
+
+def test_client_finds_sample_files_written_after_it_started(tmp_path: Path) -> None:
+    """FR-14, Story 1.7: with `list_files`, a Wallet whose file appears after the index was built
+    (load-sample run while the app is open) is found; an unknown address still raises."""
+    synthetic.write_small(tmp_path)
+    client = OfflineClient(sample_files(tmp_path), list_files=lambda: sample_files(tmp_path))
+    late = synthetic.coin_flipper(0)
+    with pytest.raises(NotAvailableOffline):
+        client.positions(late.address)  # builds the index without the coin-flipper
+    synthetic.write_coin_flippers(tmp_path, 1)
+    assert client.positions(late.address) == late.positions
+    assert client.markets([late.markets[0].condition_id]) == (late.markets[0],)
+    with pytest.raises(NotAvailableOffline):
+        client.positions(UNKNOWN)
+
+
+def test_client_without_list_files_keeps_its_first_files(tmp_path: Path) -> None:
+    """AD-14: a client built from a fixed file list (load-sample's) never looks for new files."""
+    synthetic.write_small(tmp_path)
+    client = OfflineClient(sample_files(tmp_path))
+    client.addresses()
+    synthetic.write_coin_flippers(tmp_path, 1)
+    with pytest.raises(NotAvailableOffline):
+        client.positions(synthetic.coin_flipper(0).address)
+
+
+
+def test_open_sources_client_finds_files_written_after_start(tmp_path: Path) -> None:
+    """AD-13, FR-14 (review): the client Offline Mode's pages get from `open_sources` sees Sample files
+    that load-sample writes after the app started."""
+    synthetic.write_small(tmp_path)
+    sources = cli.open_sources(Settings(offline=True), tmp_path)
+    assert len(sources.client.addresses()) == len(synthetic.small_wallets())  # index built now
+    synthetic.write_coin_flippers(tmp_path, 1)
+    late = synthetic.coin_flipper(0)
+    assert sources.client.positions(late.address) == late.positions
+    sources.store.close()

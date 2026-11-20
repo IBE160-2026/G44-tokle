@@ -226,3 +226,49 @@ def test_ad25_scan_catches_a_planted_phrase(tmp_path, planted, content):
     target.write_text(content, encoding="utf-8")
     assert phrase_offenders(tmp_path) != []
     assert all(line.startswith(planted) for line in phrase_offenders(tmp_path))
+
+
+# --- Story 1.7: the odds sentence, counts and the stored date (UX-DR14, UX-DR20) ----------------
+
+
+@pytest.mark.parametrize(
+    ("p_value", "sentence"),
+    [
+        (0.25, "a trader with no edge would do this well about 1 time in 4."),
+        (1 / 10_001, "a trader with no edge would do this well fewer than 1 time in 10,000."),
+        (0.7, "a trader with no edge would do this well more than half the time."),
+    ],
+)
+def test_ux_dr20_odds_sentence(p_value, sentence):
+    """UX-DR20, FR-8: the line under the Verdict wraps the FR-8 phrase (EXPERIENCE.md, UJ-1)."""
+    assert phrases.odds_sentence(p_value) == sentence
+
+
+@pytest.mark.parametrize(
+    ("number", "digits", "word"),
+    [(0, "0", "resolved bets"), (1, "1", "resolved bet"), (212, "212", "resolved bets"), (1000, "1,000", "resolved bets")],
+)
+def test_ux_dr14_counts(number, digits, word):
+    """UX-DR14, UX-DR15: counts have comma groups; one bet is "resolved bet"."""
+    assert (phrases.count(number), phrases.resolved_bets_word(number)) == (digits, word)
+
+
+@pytest.mark.parametrize("number", [-1, 1.5, True, "3", None])
+def test_ux_dr14_bad_count_is_refused(number):
+    """UX-DR14: a count is a whole number of at least 0."""
+    with pytest.raises(ValueError):
+        phrases.count(number)
+    with pytest.raises(ValueError):
+        phrases.resolved_bets_word(number)
+
+
+def test_fr2_stored_at():
+    """FR-2, UX-DR20: "Data stored 15 Oct 2026, 14:02", English month names, no leading zero on the day."""
+    from datetime import datetime, timedelta, timezone
+
+    moment = 1_792_065_720  # 2026-10-15 12:02 UTC
+    assert phrases.stored_at(moment, timezone.utc) == "Data stored 15 Oct 2026, 12:02"
+    assert phrases.stored_at(moment, timezone(timedelta(hours=2))) == "Data stored 15 Oct 2026, 14:02"
+    assert phrases.stored_at(1_767_232_800, timezone.utc) == "Data stored 1 Jan 2026, 02:00"
+    local = datetime.fromtimestamp(moment).astimezone()  # the computer's own time zone
+    assert phrases.stored_at(moment) == phrases.stored_at(moment, local.tzinfo)

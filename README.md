@@ -6,7 +6,7 @@ The app only reads public data. It never places orders, holds keys or touches a 
 
 Course project in **IBE160 Programmering med KI** at Høgskolen i Molde, autumn 2026. Group G44: Edvard Tokle.
 
-> **Status (Story 1.1):** the project skeleton. The app starts and shows a placeholder *Check a wallet* page. The wallet check itself is built in the next stories (plan: [`_bmad-output/planning-artifacts/epics.md`](_bmad-output/planning-artifacts/epics.md)).
+> **Status (Story 1.7):** stage 1's core works in Offline Mode. You can check the Synthetic Wallets (made-up Wallets whose right answers are known) and see their Verdict cards. Looking up a live Polymarket Wallet comes in Epic 2; the luck chart and the honesty notes come in Epic 3 (plan: [`_bmad-output/planning-artifacts/epics.md`](_bmad-output/planning-artifacts/epics.md)).
 
 ## Prerequisites
 
@@ -21,15 +21,25 @@ Course project in **IBE160 Programmering med KI** at Høgskolen i Molde, autumn 
 ```sh
 git clone https://github.com/IBE160-2026/G44-tokle.git
 cd G44-tokle
-uv sync
-uv run liquidoracle run
 ```
 
-Then open **http://127.0.0.1:8044** in your browser. Stop the app with `Ctrl+C`.
+Then the three commands, from the repository folder:
 
-The app runs only on your own computer (it listens on 127.0.0.1, not on the network).
+```sh
+uv sync
+uv run liquidoracle load-sample
+uv run liquidoracle run --offline
+```
 
-`uv run liquidoracle load-sample` loads the Sample Dataset for Offline Mode: it regenerates the 1,000 coin-flipper Wallets in `instance/synthetic/coin-flippers/` and loads them and the Synthetic Wallets into the database `instance/offline.db` (about 75 MB, never committed). Run it from the repository folder; it takes about 15 to 30 seconds. It always writes `instance/offline.db`, never the live database, and running it again replaces each Wallet's stored data. The pages that show the results come in Story 1.7.
+1. `uv sync` installs Python and the packages.
+2. `uv run liquidoracle load-sample` loads the Sample Dataset into the database `instance/offline.db` (about 75 MB, never committed). It regenerates the 1,000 coin-flipper Wallets in `instance/synthetic/coin-flippers/`, then loads them and the other Synthetic Wallets. It takes about 15 to 30 seconds. It always writes `instance/offline.db`, never the live database, and running it again replaces each Wallet's stored data.
+3. `uv run liquidoracle run --offline` starts the app in Offline Mode: sample data only, no network.
+
+Then open **http://127.0.0.1:8044** in your browser. Under *Sample Wallets*, pick **Sharp trader**: its Verdict card says *Skilled (high confidence)*. The thin wallet shows *Not enough data*, and a coin-flipper shows *No evidence of skill*. The list shows one of the 1,000 coin-flippers; to check another, open any file in `instance/synthetic/coin-flippers/`, copy the value after `"address":` (0x and 40 characters) and paste it into the address field. Stop the app with `Ctrl+C`.
+
+The app starts in the dark theme. The round button at the top right switches to the light theme and back, and the browser remembers your pick. That button is the app's only JavaScript, `src/liquidoracle/web/static/js/theme.js`; every page also works without JavaScript, in the dark theme.
+
+The app runs only on your own computer (it listens on 127.0.0.1, not on the network). Without `--offline`, the app starts but can't look up Wallets yet: live lookups come in Epic 2.
 
 `uv run liquidoracle make-synthetic` rebuilds the Synthetic Wallets: made-up Wallets whose correct answers are known in advance, used to check the Skill Test. Run it from the repository folder. It rewrites the five small Wallets in `sample_data/synthetic/` (committed; the output is identical every time, so `git status` stays clean) and writes 1,000 coin-flipper Wallets (about 90 MB) to `instance/synthetic/coin-flippers/`, which is never committed. You don't need it to run the app or the tests.
 
@@ -66,13 +76,14 @@ Every test runs with the network blocked. Tests that need the real network live 
 
 Checks marked `slow` repeat a whole test 100 times by default. `uv run pytest --repetitions 1000` runs them in full, as CI does on Linux with Python 3.14.
 
-GitHub Actions runs the tests on every push on Windows, macOS and Linux with Python 3.12 and 3.14 ([`.github/workflows/tests.yml`](.github/workflows/tests.yml)).
+GitHub Actions runs the tests on every push on Windows, macOS and Linux with Python 3.12 and 3.14 ([`.github/workflows/tests.yml`](.github/workflows/tests.yml)). One more job runs the three commands above on a fresh checkout and checks that the sharp trader's page says *Skilled (high confidence)*.
 
 ## Project layout
 
 ```text
 src/liquidoracle/   the app: __main__.py (commands), settings.py, records.py,
-                    web/ (pages), services/ (workflows), core/ (pure maths), data/ (outside systems)
+                    web/ (pages, templates, CSS, the bundled IBM Plex Serif font under the SIL Open Font License),
+                    services/ (workflows), core/ (pure maths), data/ (outside systems)
 tests/              automated tests; tests/online/ never runs in CI
 sample_data/        Sample Dataset and the hand labels
 spike/              data spike and architecture probes (historical, not used by the app)
