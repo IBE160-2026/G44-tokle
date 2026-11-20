@@ -7,7 +7,7 @@ one retry policy of AD-3 and end as typed errors from `data/errors.py`. Replies 
 `records` types here, so nothing above `data/` sees raw JSON.
 
 The app builds one client per process (Story 2.5, in `open_sources`), which makes its limiter
-the process-wide one. Story 2.2 builds the Wallet window (`positions_near`) on these reads.
+the process-wide one. `data/window.positions_near` builds the Wallet window on these reads.
 """
 
 from __future__ import annotations
@@ -184,12 +184,15 @@ class PolymarketClient:
         *,
         sort_by: str | None = None,
         sort_direction: str | None = None,
+        until: Callable[[tuple[ListedPosition, ...]], bool] | None = None,
         limit: int = PAGE_LIMIT,
     ) -> Read[ListedPosition]:
         """One of the Wallet's positions lists, CLOSED or OPEN, every page (AD-10).
 
         `status` on each record is the list asked for: rows of the OPEN list may say
         REDEEMABLE, but they are still the open list (unredeemed losers live there, FR-3).
+        `until` sees each page's rows once it is read; when it says True the walk stops there
+        and the read counts as complete (AD-7's stop rule).
         """
         _check_wallet(wallet)
         if status not in LIST_STATUSES:
@@ -199,7 +202,9 @@ class PolymarketClient:
             params.append(("sort_by", sort_by))
         if sort_direction is not None:
             params.append(("sort_direction", sort_direction))
-        return self._walk(f"{DATA_API}/v2/positions", params, limit, lambda raw: _listed_position(raw, status))
+        return self._walk(
+            f"{DATA_API}/v2/positions", params, limit, lambda raw: _listed_position(raw, status), until=until
+        )
 
     def activity_rows(
         self,
@@ -208,21 +213,26 @@ class PolymarketClient:
         start: int,
         end: int | None = None,
         sort_direction: str = "ASC",
+        row_cap: int | None = None,
         limit: int = PAGE_LIMIT,
     ) -> Read[ActivityRow]:
         """The Wallet's activity rows of the five types, from `start` (sent explicitly), every page (AD-10).
 
         `is_combo` rows are dropped. Rows that look identical are kept: they are separate fills.
+        With `row_cap`, the walk stops once that many rows are read and the read is incomplete
+        (AD-7, `ACTIVITY_ROW_CAP`).
         """
         _check_wallet(wallet)
         params: list[tuple[str, str]] = [("user", wallet), ("type", ACTIVITY_TYPES), ("start", str(int(start)))]
         if end is not None:
             params.append(("end", str(int(end))))
         params.append(("sort_direction", sort_direction))
-        return self._walk(f"{DATA_API}/v2/activity", params, limit, _activity_row)
+        return self._walk(f"{DATA_API}/v2/activity", params, limit, _activity_row, row_cap=row_cap)
 
     def markets(self, condition_ids: Iterable[str]) -> tuple[Market, ...]:
         """Gamma's records for these Markets, at most 20 per request, in the order asked (AD-7, AD-10).
+
+        Every request sends `include_tag=true`, so the event tags come with the Market (AD-10).
 
         Gamma filters on `closed`, and without it returns only open Markets (checked live,
         2026-11-20), so each batch is asked with `closed=true` first and the ids still missing
@@ -237,7 +247,11 @@ class PolymarketClient:
                 ask = [c for c in batch if c not in found]
                 if not ask:
                     break
-                params = [("condition_ids", c) for c in ask] + [("closed", closed), ("limit", str(len(ask)))]
+                params = [("condition_ids", c) for c in ask] + [
+                    ("closed", closed),
+                    ("include_tag", "true"),
+                    ("limit", str(len(ask))),
+                ]
                 document = self._get_json(f"{GAMMA_API}/markets", params)
                 if not isinstance(document, list):
                     raise _unreadable("Gamma /markets", "expected a list")
@@ -255,6 +269,9 @@ class PolymarketClient:
         params: Sequence[tuple[str, str]],
         limit: int,
         parse: Callable[[Any], Any | None],
+        *,
+        until: Callable[[tuple[Any, ...]], bool] | None = None,
+        row_cap: int | None = None,
     ) -> Read[Any]:
         """Walk a cursor-paged Data API list (AD-2, AD-3).
 
@@ -262,9 +279,15 @@ class PolymarketClient:
         out after its 3 tries, the walk restarts once from the start with half the `limit`; if
         that also fails mid-walk, the rows read so far come back marked incomplete. A first page
         that fails raises, because nothing at all was read.
+
+        `until(page_rows)` True stops the walk as complete; reaching `row_cap` rows stops it as
+        incomplete, keeping exactly `row_cap` rows (AD-7). A restarted walk asks `until` again
+        from its first page.
         """
         if limit < 1:
             raise ValueError(f"limit must be 1 or more, not {limit}")
+        if row_cap is not None and row_cap < 1:
+            raise ValueError(f"row_cap must be 1 or more, not {row_cap}")
         what = urlsplit(url).path
         for page_limit, last_attempt in ((limit, False), (max(1, limit // 2), True)):
             fixed = [*params, ("limit", str(page_limit))]
@@ -277,14 +300,21 @@ class PolymarketClient:
                     document = self._get_json(url, query)
                     if not isinstance(document, dict) or not isinstance(document.get("data"), list):
                         raise _unreadable(what, "expected an object with a data list")
+                    page_rows: list[Any] = []
                     for raw in document["data"]:
                         record = _parse(parse, raw, what)
                         if record is not None:
-                            rows.append(record)
+                            page_rows.append(record)
+                    rows.extend(page_rows)
                     paging = document.get("pagination")
                     if not isinstance(paging, dict) or not isinstance(paging.get("has_more"), bool):
                         raise _unreadable(what, "no pagination with a true or false has_more")
-                    if not paging["has_more"]:
+                    if row_cap is not None and len(rows) >= row_cap:
+                        complete = len(rows) == row_cap and not paging["has_more"]
+                        if not complete:
+                            log.info("Polymarket %s reached the cap of %d rows", what, row_cap)
+                        return Read(tuple(rows[:row_cap]), complete)
+                    if not paging["has_more"] or (until is not None and self._ask_until(until, page_rows)):
                         return Read(tuple(rows), True)
                     cursor = paging.get("next_cursor")
                     if not isinstance(cursor, str) or not cursor or cursor in seen:
@@ -300,6 +330,15 @@ class PolymarketClient:
                     return Read(tuple(rows), False)
                 log.info("Polymarket %s timed out mid-walk; restarting with limit %d", what, max(1, limit // 2))
         raise AssertionError("unreachable")  # pragma: no cover
+
+    @staticmethod
+    def _ask_until(until: Callable[[tuple[Any, ...]], bool], page_rows: list[Any]) -> bool:
+        """Run `until`. A request it makes itself (the window asks Gamma there) that keeps timing
+        out is an outage, never this list's page timing out, so it must not restart the walk (review, Story 2.2)."""
+        try:
+            return until(tuple(page_rows))
+        except _PageTimedOut as error:
+            raise PolymarketUnavailable(str(error)) from error
 
     # One request, with the one retry policy ---------------------------------------------------
 
@@ -453,6 +492,7 @@ def _listed_position(raw: Mapping[str, Any], status: str) -> ListedPosition:
         status=status,
         shares_bought=_number(raw, "total_size"),
         first_entry_at=_whole(raw, "first_entry_at"),
+        last_event_at=_whole(raw, "last_event_at"),
     )
 
 
@@ -490,17 +530,49 @@ def _market(raw: Mapping[str, Any]) -> Market:
     fees_enabled = raw.get("feesEnabled", False)
     if not isinstance(closed, bool) or not isinstance(fees_enabled, bool):
         raise ValueError("closed or feesEnabled is not true or false")
-    closed_time = raw.get("closedTime")
-    if closed_time is not None and not isinstance(closed_time, str):
-        raise ValueError("closedTime is not text")
+    fee_rate, fee_exponent = _fee_schedule(raw.get("feeSchedule"))
     return Market(
         condition_id=_text(raw, "conditionId"),
         closed=closed,
-        closed_time=parse_time(closed_time) if closed_time else None,
+        closed_time=_optional_time(raw, "closedTime"),
         token_ids=tuple(str(t) for t in token_ids),
         outcome_prices=tuple(prices),
         fees_enabled=fees_enabled,
+        start_time=_optional_time(raw, "startDate"),
+        fee_rate=fee_rate,
+        fee_exponent=fee_exponent,
+        tags=_tag_labels(raw.get("tags")),
     )
+
+
+def _optional_time(raw: Mapping[str, Any], key: str) -> int | None:
+    value = raw.get(key)
+    if value is not None and not isinstance(value, str):
+        raise ValueError(f"{key} is not text")
+    return parse_time(value) if value else None
+
+
+def _fee_schedule(value: Any) -> tuple[float | None, float | None]:
+    """Gamma's `feeSchedule` {rate, exponent, ...} as (rate, exponent); (None, None) when absent (AD-12)."""
+    if value is None:
+        return None, None
+    if not isinstance(value, Mapping):
+        raise ValueError("feeSchedule is not an object")
+    return _number(value, "rate"), _number(value, "exponent")
+
+
+def _tag_labels(value: Any) -> tuple[str, ...]:
+    """The labels of the Market's event tags (`include_tag=true`), in Gamma's order; () when absent."""
+    if value is None:
+        return ()
+    if not isinstance(value, list):
+        raise ValueError("tags is not a list")
+    labels: list[str] = []
+    for tag in value:
+        if not isinstance(tag, Mapping):
+            raise ValueError("a tag is not an object")
+        labels.append(_text(tag, "label"))
+    return tuple(labels)
 
 
 def _json_list(value: Any, key: str) -> list[Any]:
