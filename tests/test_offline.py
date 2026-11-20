@@ -20,7 +20,7 @@ from liquidoracle.data import sample_json, synthetic
 from liquidoracle.data.errors import NotAvailableOffline
 from liquidoracle.data.offline import OfflineClient, sample_files
 from liquidoracle.data.store import LIVE_DB, OFFLINE_DB, Store
-from liquidoracle.records import Verdict
+from liquidoracle.records import ListedPosition, Read, Verdict
 from liquidoracle.services.fetch import fetch_wallet, skill_result
 from liquidoracle.settings import Settings
 
@@ -59,6 +59,11 @@ def generated() -> list:
 # --- OfflineClient (AD-2, FR-14) ---------------------------------------------------------------
 
 
+def listed(client: OfflineClient, address: str) -> set[ListedPosition]:
+    """Both positions lists of a Wallet, as one set."""
+    return {*client.positions_list(address, "OPEN").rows, *client.positions_list(address, "CLOSED").rows}
+
+
 def test_sample_files_are_the_wallets_and_skip_the_hand_answers(sample_root: Path) -> None:
     """AD-14: the client serves every Wallet file; expected.json is not a Wallet."""
     names = [p.name for p in sample_files(sample_root)]
@@ -70,8 +75,8 @@ def test_client_returns_the_generators_records(sample_root: Path) -> None:
     """AD-2, AD-14: OfflineClient returns the same `records` the generator wrote, through the client methods."""
     client = OfflineClient(sample_files(sample_root))
     for wallet in generated():
-        assert client.positions(wallet.address) == wallet.positions
-        assert client.activity(wallet.address) == wallet.activity
+        assert listed(client, wallet.address) == set(wallet.positions)
+        assert client.activity_rows(wallet.address, start=0) == Read(tuple(sorted(wallet.activity, key=lambda r: r.timestamp)), True)
         ids = [m.condition_id for m in wallet.markets]
         assert client.markets(reversed(ids)) == tuple(reversed(wallet.markets))
 
@@ -80,16 +85,16 @@ def test_client_lower_cases_the_address(sample_root: Path) -> None:
     """FR-1: an address in capitals or with spaces finds the same Wallet."""
     wallet = synthetic.small_wallets()[0]
     client = OfflineClient(sample_files(sample_root))
-    assert client.activity("  " + wallet.address.upper().replace("0X", "0x") + " ") == wallet.activity
+    assert listed(client, "  " + wallet.address.upper().replace("0X", "0x") + " ") == set(wallet.positions)
 
 
 def test_unknown_wallet_or_market_is_not_available_offline(sample_root: Path) -> None:
     """FR-14: anything outside the Sample Dataset raises NotAvailableOffline."""
     client = OfflineClient(sample_files(sample_root))
     with pytest.raises(NotAvailableOffline):
-        client.positions(UNKNOWN)
+        client.positions_list(UNKNOWN, "OPEN")
     with pytest.raises(NotAvailableOffline):
-        client.activity(UNKNOWN)
+        client.activity_rows(UNKNOWN, start=0)
     with pytest.raises(NotAvailableOffline):
         client.markets(["0xnot-a-market"])
 
@@ -139,8 +144,8 @@ def test_round_trip_stores_exactly_the_generated_records(loaded: Store) -> None:
     for wallet in generated():
         snapshot = loaded.latest_snapshot(wallet.address)
         assert snapshot is not None, wallet.name
-        assert snapshot.positions == wallet.positions
-        assert snapshot.activity == wallet.activity
+        assert set(snapshot.positions) == set(wallet.positions)  # every Synthetic Wallet fits one window
+        assert sorted(snapshot.activity, key=repr) == sorted(wallet.activity, key=repr)
         assert set(snapshot.markets) == set(wallet.markets)
 
 
@@ -238,12 +243,12 @@ def test_client_finds_sample_files_written_after_it_started(tmp_path: Path) -> N
     client = OfflineClient(sample_files(tmp_path), list_files=lambda: sample_files(tmp_path))
     late = synthetic.coin_flipper(0)
     with pytest.raises(NotAvailableOffline):
-        client.positions(late.address)  # builds the index without the coin-flipper
+        listed(client, late.address)  # builds the index without the coin-flipper
     synthetic.write_coin_flippers(tmp_path, 1)
-    assert client.positions(late.address) == late.positions
+    assert listed(client, late.address) == set(late.positions)
     assert client.markets([late.markets[0].condition_id]) == (late.markets[0],)
     with pytest.raises(NotAvailableOffline):
-        client.positions(UNKNOWN)
+        listed(client, UNKNOWN)
 
 
 def test_client_without_list_files_keeps_its_first_files(tmp_path: Path) -> None:
@@ -253,7 +258,7 @@ def test_client_without_list_files_keeps_its_first_files(tmp_path: Path) -> None
     client.addresses()
     synthetic.write_coin_flippers(tmp_path, 1)
     with pytest.raises(NotAvailableOffline):
-        client.positions(synthetic.coin_flipper(0).address)
+        listed(client, synthetic.coin_flipper(0).address)
 
 
 
@@ -265,5 +270,39 @@ def test_open_sources_client_finds_files_written_after_start(tmp_path: Path) -> 
     assert len(sources.client.addresses()) == len(synthetic.small_wallets())  # index built now
     synthetic.write_coin_flippers(tmp_path, 1)
     late = synthetic.coin_flipper(0)
-    assert sources.client.positions(late.address) == late.positions
+    assert listed(sources.client, late.address) == set(late.positions)
     sources.store.close()
+
+
+def test_offline_lists_come_in_live_sized_pages_and_stop_where_until_says(
+    sample_root: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """AD-7, AD-13 (review): OfflineClient sorts by last event like the live list, serves pages of the live
+    size, and stops after the page `until` accepts; the last page is never put to `until`."""
+    import liquidoracle.data.offline as offline_module
+
+    monkeypatch.setattr(offline_module, "PAGE_LIMIT", 3)
+    wallet = synthetic.small_wallets()[0]
+    client = OfflineClient(sample_files(sample_root))
+    every = client.positions_list(wallet.address, "CLOSED", sort_by="TIMESTAMP", sort_direction="DESC").rows
+    assert len(every) > 6
+    assert [r.last_event_at for r in every] == sorted((r.last_event_at for r in every), reverse=True)
+    pages: list[int] = []
+    read = client.positions_list(
+        wallet.address, "CLOSED", sort_by="TIMESTAMP", sort_direction="DESC",
+        until=lambda page: pages.append(len(page)) or len(pages) == 2,
+    )
+    assert pages == [3, 3] and read.rows == every[:6] and read.complete
+
+
+def test_offline_activity_cap_keeps_the_oldest_rows_and_says_so(sample_root: Path) -> None:
+    """AD-7, AD-13 (review): a capped offline read keeps exactly the oldest `row_cap` rows and is incomplete;
+    a cap below 1 is refused like the live client's."""
+    wallet = synthetic.small_wallets()[0]
+    client = OfflineClient(sample_files(sample_root))
+    every = client.activity_rows(wallet.address, start=0).rows
+    capped = client.activity_rows(wallet.address, start=0, row_cap=5)
+    assert capped == Read(every[:5], False)
+    assert client.activity_rows(wallet.address, start=0, row_cap=len(every)).complete
+    with pytest.raises(ValueError, match="row_cap"):
+        client.activity_rows(wallet.address, start=0, row_cap=0)

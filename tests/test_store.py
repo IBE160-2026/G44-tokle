@@ -16,9 +16,11 @@ from liquidoracle.records import ActivityRow, ListedPosition, Market
 
 WALLET = "0x" + "ab" * 20
 MARKET = Market("0xm1", closed=True, closed_time=1_700_000_000, token_ids=("11", "22"),
-                outcome_prices=(1.0, 0.0), fees_enabled=True)
+                outcome_prices=(1.0, 0.0), fees_enabled=True, start_time=1_698_000_000, fee_rate=0.04,
+                fee_exponent=1.0, tags=("Politics", "Elections"))
 FILL = ActivityRow("TRADE", "0xm1", 1_699_000_000, 10.0, 4.37, 0.43, token_id="11", side="BUY")
-LISTED = ListedPosition("0xm1", "11", "CLOSED", 10.0, 1_699_000_000)
+LISTED = ListedPosition("0xm1", "11", "CLOSED", 10.0, 1_699_000_000, 1_700_050_000)
+LIMIT = 2_000
 
 
 @pytest.fixture
@@ -29,7 +31,7 @@ def store(tmp_path: Path) -> Iterator[Store]:
 
 
 def write(db: Store, wallet: str = WALLET, *, fills: tuple[ActivityRow, ...] = (FILL,), finish: bool = True) -> int:
-    fetch_id = db.begin_snapshot(wallet)
+    fetch_id = db.begin_snapshot(wallet, window_limit=LIMIT)
     db.add_positions(fetch_id, (LISTED,))
     db.add_activity(fetch_id, fills)
     db.save_markets((MARKET,))
@@ -50,7 +52,7 @@ def test_connection_uses_wal_busy_timeout_and_foreign_keys(store: Store) -> None
 
 
 def test_new_file_gets_the_schema_and_its_version(store: Store) -> None:
-    """AD-6: schema.sql creates only Epic 1's tables, and user_version records the schema."""
+    """AD-6: schema.sql creates the four fetched-data tables, and user_version records the schema."""
     tables = {name for (name,) in raw(store, "SELECT name FROM sqlite_master WHERE type='table'")}
     assert tables - {"sqlite_sequence"} == {"snapshot", "listed_position", "activity_row", "market"}
     assert raw(store, "PRAGMA user_version") == [(SCHEMA_VERSION,)]
@@ -100,6 +102,7 @@ def test_snapshot_round_trips_its_records_exactly(store: Store) -> None:
     assert snapshot.positions == (LISTED,)
     assert snapshot.activity == fills
     assert snapshot.markets == (MARKET,)
+    assert (snapshot.window_limit, snapshot.activity_read_until) == (LIMIT, None)
 
 
 def test_identical_rows_stay_separate_fills(store: Store) -> None:
@@ -112,7 +115,7 @@ def test_identical_rows_stay_separate_fills(store: Store) -> None:
 def test_rows_added_in_pages_keep_their_order(store: Store) -> None:
     """AD-19: a fetch may add rows in several steps; they come back in the order added."""
     second = ActivityRow("TRADE", "0xm1", 1_699_000_100, 5.0, 2.0, 0.4, token_id="11", side="SELL")
-    fetch_id = store.begin_snapshot(WALLET)
+    fetch_id = store.begin_snapshot(WALLET, window_limit=LIMIT)
     store.add_activity(fetch_id, (FILL,))
     store.add_activity(fetch_id, (second,))
     store.add_positions(fetch_id, (LISTED,))
@@ -158,7 +161,7 @@ def test_finished_snapshot_cannot_change(store: Store) -> None:
 
 def test_snapshot_naming_an_unstored_market_cannot_finish(store: Store) -> None:
     """AD-19: a snapshot whose rows name a Market that is not stored is incomplete and stays invisible."""
-    fetch_id = store.begin_snapshot(WALLET)
+    fetch_id = store.begin_snapshot(WALLET, window_limit=LIMIT)
     store.add_activity(fetch_id, (FILL,))
     with pytest.raises(ValueError, match="0xm1"):
         store.finish_snapshot(fetch_id)
@@ -167,7 +170,7 @@ def test_snapshot_naming_an_unstored_market_cannot_finish(store: Store) -> None:
 
 def test_a_failed_write_is_rolled_back(store: Store) -> None:
     """AD-6: a write that fails part-way leaves nothing behind."""
-    fetch_id = store.begin_snapshot(WALLET)
+    fetch_id = store.begin_snapshot(WALLET, window_limit=LIMIT)
     bad = ActivityRow("TRADE", "0xm1", 1, 1.0, 1.0, 1.0, token_id="11", side="BUY")
     with pytest.raises(sqlite3.Error):
         store.add_activity(fetch_id, (bad, ActivityRow(None, "0xm1", 1, 1.0, 1.0, 1.0)))  # type: ignore[arg-type]
@@ -209,7 +212,7 @@ def test_every_write_opens_begin_immediate() -> None:
 def test_a_synthetic_wallet_round_trips_through_the_store(store: Store) -> None:
     """AD-14, AD-19: a generated Wallet's lists come back from the store unchanged."""
     wallet = synthetic.small_wallets()[-1]  # the stop-loss trader: buys and sells
-    fetch_id = store.begin_snapshot(wallet.address)
+    fetch_id = store.begin_snapshot(wallet.address, window_limit=LIMIT)
     store.add_positions(fetch_id, wallet.positions)
     store.add_activity(fetch_id, wallet.activity)
     store.save_markets(wallet.markets)
@@ -239,7 +242,7 @@ def test_a_write_waits_for_another_writer_instead_of_failing(store: Store) -> No
     other = sqlite3.connect(store.path, isolation_level=None)
     other.execute("BEGIN IMMEDIATE")
     done: list[int] = []
-    writer = threading.Thread(target=lambda: done.append(store.begin_snapshot(WALLET)))
+    writer = threading.Thread(target=lambda: done.append(store.begin_snapshot(WALLET, window_limit=LIMIT)))
     writer.start()
     writer.join(timeout=0.3)
     assert done == [] and writer.is_alive()  # still waiting for the lock
@@ -254,7 +257,7 @@ def test_a_failed_commit_leaves_the_connection_usable(store: Store) -> None:
     with pytest.raises(sqlite3.IntegrityError):
         with store._write() as db:
             db.execute("PRAGMA defer_foreign_keys = ON")  # the orphan row below fails at COMMIT, not at INSERT
-            db.execute("INSERT INTO listed_position VALUES (999, 0, 'c', 't', 'OPEN', 1.0, 1)")
+            db.execute("INSERT INTO listed_position VALUES (999, 0, 'c', 't', 'OPEN', 1.0, 1, 1)")
     assert not store._connection().in_transaction
     assert raw(store, "SELECT COUNT(*) FROM listed_position") == [(0,)]
     write(store)
@@ -272,3 +275,103 @@ def test_connections_of_ended_threads_are_closed(store: Store) -> None:
     # this thread's and the last thread's remain: 2, not 6.
     assert len(store._connections) == 2
     assert all(thread.is_alive() for thread, _ in store._connections[:1])
+
+
+def test_a_capped_read_is_stored_and_names_its_unread_positions(store: Store) -> None:
+    """AD-7, AD-11: the snapshot keeps where a capped activity read stopped; Positions resolved later are unread."""
+    later = Market("0xm2", closed=True, closed_time=1_700_200_000, token_ids=("33", "44"), outcome_prices=(0.0, 1.0))
+    listed_later = ListedPosition("0xm2", "33", "OPEN", 5.0, 1_699_500_000, 1_699_500_000)
+    fetch_id = store.begin_snapshot(WALLET, window_limit=LIMIT)
+    store.add_positions(fetch_id, (LISTED, listed_later))
+    store.add_activity(fetch_id, (FILL,))
+    store.save_markets((MARKET, later))
+    store.finish_snapshot(fetch_id, activity_read_until=1_700_000_001)
+    snapshot = store.latest_snapshot(WALLET)
+    assert snapshot is not None and snapshot.activity_read_until == 1_700_000_001
+    assert snapshot.not_fully_read() == (listed_later,)  # MARKET resolved a second before the last row: read
+
+
+def test_a_market_resolved_in_the_cap_second_is_not_fully_read(store: Store) -> None:
+    """AD-7 (review, Story 2.2): a cap can cut inside a second, so a Market resolved in the last row's
+    second counts as not fully read."""
+    fetch_id = store.begin_snapshot(WALLET, window_limit=LIMIT)
+    store.add_positions(fetch_id, (LISTED,))
+    store.add_activity(fetch_id, (FILL,))
+    store.save_markets((MARKET,))
+    store.finish_snapshot(fetch_id, activity_read_until=MARKET.closed_time)
+    snapshot = store.latest_snapshot(WALLET)
+    assert snapshot is not None and snapshot.not_fully_read() == (LISTED,)
+
+
+def test_only_resolved_markets_are_served_from_the_store(store: Store) -> None:
+    """AD-4: stored resolved Markets never expire; open or unclear ones are fetched again."""
+    open_market = Market("0xopen", closed=False, closed_time=None, token_ids=("1", "2"), outcome_prices=(0.4, 0.6))
+    unclear = Market("0xhalf", closed=True, closed_time=1_700_000_000, token_ids=("3", "4"), outcome_prices=(0.5, 0.5))
+    store.save_markets((MARKET, open_market, unclear))
+    assert store.resolved_markets(["0xm1", "0xopen", "0xhalf", "0xnever"]) == {"0xm1": MARKET}
+    many = [f"0x{i:04x}" for i in range(1_200)] + ["0xm1"]  # more ids than one statement takes
+    assert store.resolved_markets(many) == {"0xm1": MARKET}
+
+
+def test_the_wallet_lock_lets_one_fetch_of_a_wallet_run_at_a_time(store: Store) -> None:
+    """AD-19: a second fetch of the same Wallet waits for the first; another Wallet does not wait."""
+    inside = threading.Event()
+    release = threading.Event()
+    order: list[str] = []
+
+    def first() -> None:
+        with store.wallet_lock(WALLET):
+            order.append("first in")
+            inside.set()
+            release.wait(5)
+            order.append("first out")
+
+    def second() -> None:
+        with store.wallet_lock(WALLET):
+            order.append("second in")
+
+    one = threading.Thread(target=first)
+    one.start()
+    assert inside.wait(5)
+    two = threading.Thread(target=second)
+    two.start()
+    two.join(timeout=0.2)
+    assert two.is_alive()  # waiting for the first fetch
+    with store.wallet_lock("0x" + "cd" * 20):  # another Wallet is not held up
+        order.append("other")
+    release.set()
+    one.join(5)
+    two.join(5)
+    assert order == ["first in", "other", "first out", "second in"]
+
+
+EPIC_1_SCHEMA = """
+CREATE TABLE snapshot (fetch_id INTEGER PRIMARY KEY AUTOINCREMENT, wallet TEXT NOT NULL,
+    started_at INTEGER NOT NULL, completed_at INTEGER);
+CREATE TABLE listed_position (fetch_id INTEGER NOT NULL REFERENCES snapshot (fetch_id) ON DELETE CASCADE,
+    seq INTEGER NOT NULL, condition_id TEXT NOT NULL, token_id TEXT NOT NULL, status TEXT NOT NULL,
+    shares_bought REAL NOT NULL, first_entry_at INTEGER NOT NULL, PRIMARY KEY (fetch_id, seq));
+CREATE TABLE market (condition_id TEXT PRIMARY KEY, closed INTEGER NOT NULL, closed_time INTEGER,
+    token_ids TEXT NOT NULL, outcome_prices TEXT NOT NULL, fees_enabled INTEGER NOT NULL, fetched_at INTEGER NOT NULL);
+INSERT INTO snapshot VALUES (1, 'w', 1, 2);
+INSERT INTO market VALUES ('0xold', 1, 1, '["1","2"]', '[1.0,0.0]', 0, 1);
+PRAGMA user_version = 1;
+"""
+
+
+def test_an_epic_1_database_is_rebuilt_and_takes_a_window_snapshot(tmp_path: Path) -> None:
+    """AD-6 (review, Story 2.2): a database from Epic 1 (schema version 1) gets the new tables, keeps none of
+    its fetched rows, and a window snapshot can be written and read back."""
+    path = tmp_path / "epic1.db"
+    with sqlite3.connect(path) as old:
+        old.executescript(EPIC_1_SCHEMA)
+    old.close()
+    db = Store(path)
+    try:
+        assert raw(db, "PRAGMA user_version") == [(SCHEMA_VERSION,)] and SCHEMA_VERSION == 2
+        assert db.latest_snapshot("w") is None and db.resolved_markets(["0xold"]) == {}
+        write(db)
+        snapshot = db.latest_snapshot(WALLET)
+        assert snapshot is not None and snapshot.positions == (LISTED,) and snapshot.markets == (MARKET,)
+    finally:
+        db.close()

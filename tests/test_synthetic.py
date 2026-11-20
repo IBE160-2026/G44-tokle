@@ -367,3 +367,19 @@ def test_changing_a_wallet_changes_its_file() -> None:
     wallet = SMALL["hand-check"]
     edited = replace(wallet, activity=(replace(wallet.activity[0], price=0.51), *wallet.activity[1:]))
     assert sample_json.dumps(edited) != sample_json.dumps(wallet)
+
+
+def test_last_event_times_follow_the_fills_and_markets_open_before_the_first_buy() -> None:
+    """AD-7, AD-14: a sold Position's last event is its sell, a held winner's is its redemption at
+    resolution, a held loser's (OPEN) is its buy; every Market starts before the Wallet's first buy."""
+    for wallet in synthetic.small_wallets():
+        markets = {m.condition_id: m for m in wallet.markets}
+        for row in wallet.positions:
+            fills = [a for a in wallet.activity if a.token_id == row.token_id]
+            sold = any(a.side == "SELL" for a in fills)
+            market = markets[row.condition_id]
+            assert market.start_time is not None and market.start_time < row.first_entry_at
+            if row.status == "CLOSED" and not sold:
+                assert row.last_event_at == market.closed_time
+            else:
+                assert row.last_event_at == max(a.timestamp for a in fills)
