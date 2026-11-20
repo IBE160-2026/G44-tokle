@@ -203,7 +203,7 @@ class Lookup:
         if address in self._synthetic:
             return Outcome.NOT_LOADED  # a Synthetic Wallet whose file or snapshot load-sample has not written yet
         try:
-            self._client.positions(address)  # asks the Sample Dataset whether it has this Wallet
+            self._client.positions_list(address, "CLOSED")  # asks the Sample Dataset whether it has this Wallet
         except NotAvailableOffline:
             return Outcome.NOT_AVAILABLE_OFFLINE
         except (OSError, ValueError):  # a Sample file still being written by load-sample

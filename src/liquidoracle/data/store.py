@@ -7,7 +7,8 @@ its version is `PRAGMA user_version`.
 A Wallet is written as a snapshot (AD-19): `begin_snapshot` gives a `fetch_id`, rows are added
 under it, and `finish_snapshot` makes it visible in one final step, deleting that Wallet's older
 snapshots in the same transaction (Edvard, 2026-11-19, Story 1.6). Readers see only complete
-snapshots.
+snapshots. `wallet_lock` lets one fetch of a Wallet run at a time, across every thread that
+shares this Store (AD-19).
 """
 
 from __future__ import annotations
@@ -21,9 +22,9 @@ from contextlib import contextmanager
 from dataclasses import dataclass
 from pathlib import Path
 
-from liquidoracle.records import ActivityRow, ListedPosition, Market
+from liquidoracle.records import ActivityRow, ListedPosition, Market, unread_positions
 
-SCHEMA_VERSION = 1
+SCHEMA_VERSION = 2  # 2: the Wallet window (Story 2.2)
 BUSY_TIMEOUT_SECONDS = 5.0  # [ASSUMPTION] AD-6: long enough for the worker's short writes
 SCHEMA_FILE = Path(__file__).with_name("schema.sql")
 
@@ -38,7 +39,10 @@ StoreError = sqlite3.Error
 
 @dataclass(frozen=True, slots=True)
 class Snapshot:
-    """One complete fetch of one Wallet (AD-19), with the Markets its rows refer to."""
+    """One complete fetch of one Wallet's window (AD-8, AD-19), with the Markets its rows refer to.
+
+    `activity_read_until` is None when the activity read was complete (AD-7).
+    """
 
     fetch_id: int
     wallet: str
@@ -46,6 +50,12 @@ class Snapshot:
     positions: tuple[ListedPosition, ...]
     activity: tuple[ActivityRow, ...]
     markets: tuple[Market, ...]
+    window_limit: int
+    activity_read_until: int | None
+
+    def not_fully_read(self) -> tuple[ListedPosition, ...]:
+        """The window's Positions whose Market resolved in or after the last activity row's second (AD-7, AD-11)."""
+        return unread_positions(self.positions, self.markets, self.activity_read_until)
 
 
 class Store:
@@ -57,16 +67,29 @@ class Store:
         self._local = threading.local()
         self._connections: list[tuple[threading.Thread, sqlite3.Connection]] = []
         self._lock = threading.Lock()
+        self._wallet_locks: dict[str, threading.Lock] = {}
         self.path.parent.mkdir(parents=True, exist_ok=True)
         self._prepare_schema()
 
     # --- writing a snapshot (AD-19) -------------------------------------------------------------
 
-    def begin_snapshot(self, wallet: str) -> int:
-        """Start a snapshot of `wallet`; it stays invisible until `finish_snapshot`."""
+    @contextmanager
+    def wallet_lock(self, wallet: str) -> Iterator[None]:
+        """Hold the Wallet's lock: one fetch of a Wallet at a time, for web threads and the worker alike (AD-19).
+
+        The locks belong to this Store object; the app opens one Store per database file (AD-13).
+        """
+        with self._lock:
+            lock = self._wallet_locks.setdefault(wallet, threading.Lock())
+        with lock:
+            yield
+
+    def begin_snapshot(self, wallet: str, *, window_limit: int) -> int:
+        """Start a snapshot of `wallet`'s window; it stays invisible until `finish_snapshot`."""
         with self._write() as db:
             cursor = db.execute(
-                "INSERT INTO snapshot (wallet, started_at) VALUES (?, ?)", (wallet, self._now())
+                "INSERT INTO snapshot (wallet, window_limit, started_at) VALUES (?, ?, ?)",
+                (wallet, window_limit, self._now()),
             )
             return int(cursor.lastrowid)
 
@@ -75,9 +98,10 @@ class Store:
             seq = self._next_seq(db, "listed_position", fetch_id)
             db.executemany(
                 "INSERT INTO listed_position (fetch_id, seq, condition_id, token_id, status, shares_bought,"
-                " first_entry_at) VALUES (?, ?, ?, ?, ?, ?, ?)",
+                " first_entry_at, last_event_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
                 (
-                    (fetch_id, seq + i, r.condition_id, r.token_id, r.status, r.shares_bought, r.first_entry_at)
+                    (fetch_id, seq + i, r.condition_id, r.token_id, r.status, r.shares_bought, r.first_entry_at,
+                     r.last_event_at)
                     for i, r in enumerate(rows)
                 ),
             )
@@ -101,20 +125,40 @@ class Store:
         now = self._now()
         with self._write() as db:
             db.executemany(
-                "INSERT OR REPLACE INTO market (condition_id, closed, closed_time, token_ids, outcome_prices,"
-                " fees_enabled, fetched_at) VALUES (?, ?, ?, ?, ?, ?, ?)",
+                f"INSERT OR REPLACE INTO market ({_MARKET_COLUMNS}, fetched_at)"
+                " VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
                 (
                     (m.condition_id, int(m.closed), m.closed_time, json.dumps(list(m.token_ids)),
-                     json.dumps(list(m.outcome_prices)), int(m.fees_enabled), now)
+                     json.dumps(list(m.outcome_prices)), int(m.fees_enabled), m.start_time, m.fee_rate,
+                     m.fee_exponent, json.dumps(list(m.tags)), now)
                     for m in markets
                 ),
             )
 
-    def finish_snapshot(self, fetch_id: int) -> None:
+    def resolved_markets(self, condition_ids: Sequence[str]) -> dict[str, Market]:
+        """The stored records of those Markets that are resolved; they never expire (AD-4).
+
+        Open or unclear Markets are left out, so the caller fetches them again.
+        """
+        found: dict[str, Market] = {}
+        db = self._connection()
+        ids = list(dict.fromkeys(condition_ids))
+        for i in range(0, len(ids), 500):  # SQLite allows a limited number of ? per statement
+            chunk = ids[i : i + 500]
+            marks = ", ".join("?" for _ in chunk)
+            for row in db.execute(f"SELECT {_MARKET_COLUMNS} FROM market WHERE condition_id IN ({marks})", chunk):
+                market = _market(row)
+                if market.resolved:
+                    found[market.condition_id] = market
+        return found
+
+    def finish_snapshot(self, fetch_id: int, *, activity_read_until: int | None = None) -> None:
         """Make the snapshot visible and delete the Wallet's older snapshots, in one transaction.
 
-        Refused when the snapshot is unknown or already finished, or when one of its rows names a
-        Market that is not stored, so a visible snapshot is always complete.
+        `activity_read_until` is the time of the last activity row read when the read was capped
+        or cut short (AD-7), None when it was complete. Refused when the snapshot is unknown or
+        already finished, or when one of its rows names a Market that is not stored, so a visible
+        snapshot is always complete.
         """
         with self._write() as db:
             row = db.execute(
@@ -130,7 +174,10 @@ class Store:
             ).fetchone()
             if missing is not None:
                 raise ValueError(f"snapshot {fetch_id} refers to Market {missing[0]}, which is not stored")
-            db.execute("UPDATE snapshot SET completed_at = ? WHERE fetch_id = ?", (self._now(), fetch_id))
+            db.execute(
+                "UPDATE snapshot SET completed_at = ?, activity_read_until = ? WHERE fetch_id = ?",
+                (self._now(), activity_read_until, fetch_id),
+            )
             # Older snapshots of this Wallet, finished or abandoned, go; their rows follow (ON DELETE CASCADE).
             # Epic 4 keeps any snapshot a Scan refers to (AD-6, AD-19).
             db.execute("DELETE FROM snapshot WHERE wallet = ? AND fetch_id < ?", (row[0], fetch_id))
@@ -143,17 +190,18 @@ class Store:
         db.execute("BEGIN")  # one read transaction, so a finish in another thread cannot cut it in half
         try:
             head = db.execute(
-                "SELECT fetch_id, completed_at FROM snapshot WHERE wallet = ? AND completed_at IS NOT NULL"
-                " ORDER BY fetch_id DESC LIMIT 1",
+                "SELECT fetch_id, completed_at, window_limit, activity_read_until FROM snapshot"
+                " WHERE wallet = ? AND completed_at IS NOT NULL ORDER BY fetch_id DESC LIMIT 1",
                 (wallet,),
             ).fetchone()
             if head is None:
                 return None
-            fetch_id, completed_at = head
+            fetch_id, completed_at, window_limit, activity_read_until = head
             positions = tuple(
                 ListedPosition(*row)
                 for row in db.execute(
-                    "SELECT condition_id, token_id, status, shares_bought, first_entry_at FROM listed_position"
+                    "SELECT condition_id, token_id, status, shares_bought, first_entry_at, last_event_at"
+                    " FROM listed_position"
                     " WHERE fetch_id = ? ORDER BY seq",
                     (fetch_id,),
                 )
@@ -169,13 +217,15 @@ class Store:
             markets = tuple(
                 _market(row)
                 for row in db.execute(
-                    "SELECT condition_id, closed, closed_time, token_ids, outcome_prices, fees_enabled FROM market"
+                    f"SELECT {_MARKET_COLUMNS} FROM market"
                     " WHERE condition_id IN (SELECT condition_id FROM listed_position WHERE fetch_id = ?"
                     " UNION SELECT condition_id FROM activity_row WHERE fetch_id = ?) ORDER BY condition_id",
                     (fetch_id, fetch_id),
                 )
             )
-            return Snapshot(fetch_id, wallet, completed_at, positions, activity, markets)
+            return Snapshot(
+                fetch_id, wallet, completed_at, positions, activity, markets, window_limit, activity_read_until
+            )
         finally:
             if db.in_transaction:
                 db.execute("COMMIT")
@@ -240,7 +290,7 @@ class Store:
     def _prepare_schema(self) -> None:
         """Create the tables, or rebuild them when the file has another schema version (AD-6).
 
-        Every Epic 1 table holds fetched data that `load-sample` or a lookup can fetch again.
+        Every table so far holds fetched data that `load-sample` or a lookup can fetch again.
         """
         with self._write() as db:
             if db.execute("PRAGMA user_version").fetchone()[0] == SCHEMA_VERSION:
@@ -280,8 +330,14 @@ def _statements(script: str) -> Iterator[str]:
             buffer = ""
 
 
+_MARKET_COLUMNS = (
+    "condition_id, closed, closed_time, token_ids, outcome_prices, fees_enabled, start_time, fee_rate,"
+    " fee_exponent, tags"
+)
+
+
 def _market(row: tuple) -> Market:
-    condition_id, closed, closed_time, token_ids, outcome_prices, fees_enabled = row
+    condition_id, closed, closed_time, token_ids, outcome_prices, fees_enabled, start, rate, exponent, tags = row
     return Market(
         condition_id=condition_id,
         closed=bool(closed),
@@ -289,4 +345,8 @@ def _market(row: tuple) -> Market:
         token_ids=tuple(json.loads(token_ids)),
         outcome_prices=tuple(float(p) for p in json.loads(outcome_prices)),
         fees_enabled=bool(fees_enabled),
+        start_time=start,
+        fee_rate=rate,
+        fee_exponent=exponent,
+        tags=tuple(json.loads(tags)),
     )

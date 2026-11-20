@@ -266,6 +266,7 @@ def test_open_list_rows_keep_the_list_name() -> None:
             status="OPEN",
             shares_bought=333.3333,
             first_entry_at=1730151965,
+            last_event_at=1730595609,
         ),
     )
 
@@ -815,6 +816,12 @@ def test_a_row_that_is_not_an_object_is_unreadable(row: object) -> None:
         {"clobTokenIds": '["1"]', "outcomePrices": '["1"]'},  # one outcome
         {"outcomePrices": '["NaN", "1"]'},
         {"outcomePrices": "[NaN, 1]"},
+        {"startDate": 1744879879},  # a number, not text
+        {"feeSchedule": "0.04"},  # not an object
+        {"feeSchedule": {"rate": 0.04}},  # no exponent
+        {"feeSchedule": {"rate": "0.04", "exponent": 1}},
+        {"tags": "Politics"},  # not a list
+        {"tags": [{"slug": "politics"}]},  # a tag without a label
     ],
 )
 def test_gamma_market_not_as_expected_is_unreadable(bad: dict[str, object]) -> None:
@@ -878,3 +885,74 @@ def test_gamma_403_without_cloudfront_fails_after_3_tries() -> None:
     with pytest.raises(PolymarketUnavailable):
         client(transport).markets(["0xabc"])
     assert len(transport.calls) == 3
+
+
+# --- Story 2.2: the window's stop rule, the activity cap and Gamma's extra fields --------------
+
+
+def test_until_stops_the_walk_after_the_page_it_accepts() -> None:
+    """AD-7: `until` sees each page's rows; True stops the walk there, and the read counts as complete."""
+    transport = FakeTransport([page([position_row(1), position_row(2)], "c1"), page([position_row(3)], "c2")])
+    seen: list[int] = []
+
+    def until(rows: tuple[ListedPosition, ...]) -> bool:
+        seen.append(len(rows))
+        return True
+
+    read = client(transport).positions_list(WALLET, "CLOSED", until=until)
+    assert (len(read.rows), read.complete, seen, len(transport.calls)) == (2, True, [2], 1)
+
+
+def test_until_is_not_asked_about_the_last_page() -> None:
+    """AD-7: a list that ends by itself never needs the stop rule."""
+    transport = FakeTransport([page([position_row(1)])])
+    read = client(transport).positions_list(WALLET, "CLOSED", until=lambda rows: pytest.fail("asked"))
+    assert read.complete and len(read.rows) == 1
+
+
+def test_row_cap_keeps_exactly_the_cap_and_marks_the_read_incomplete() -> None:
+    """AD-7: on `ACTIVITY_ROW_CAP` the walk stops, keeps the first `row_cap` rows and says it is not complete."""
+    transport = FakeTransport([page([trade_row(i) for i in range(3)], "c1"), page([trade_row(i) for i in range(3, 6)], "c2")])
+    read = client(transport).activity_rows(WALLET, start=0, row_cap=4)
+    assert [r.timestamp for r in read.rows] == [trade_row(i)["timestamp"] for i in range(4)]
+    assert read.complete is False and len(transport.calls) == 2
+
+
+def test_row_cap_not_reached_is_a_complete_read() -> None:
+    """AD-7: a read that ends at or under the cap is whole."""
+    transport = FakeTransport([page([trade_row(i) for i in range(3)])])
+    read = client(transport).activity_rows(WALLET, start=0, row_cap=3)
+    assert read.complete is True and len(read.rows) == 3
+
+
+def test_row_cap_below_one_is_refused() -> None:
+    """AD-7: a cap of no rows is a programming error, refused before any request."""
+    with pytest.raises(ValueError, match="row_cap"):
+        client(FakeTransport()).activity_rows(WALLET, start=0, row_cap=0)
+
+
+def test_gamma_is_asked_with_include_tag() -> None:
+    """AD-10: every Gamma request asks for the event tags."""
+    transport = FakeTransport(answer=gamma_like())
+    client(transport).markets(["0xa"])
+    assert all(call.query["include_tag"] == "true" for call in transport.calls)
+
+
+def test_gamma_start_fee_schedule_and_tags_are_read() -> None:
+    """AD-7, AD-10, AD-12: start date, fee schedule (rate and exponent) and tag labels come from Gamma."""
+    row = gamma_market(
+        "0xabc",
+        feesEnabled=True,
+        startDate="2025-09-19T21:22:55.165261Z",
+        feeSchedule={"exponent": 1, "rate": 0.04, "takerOnly": True, "rebateRate": 0.25},
+        tags=[{"id": "2", "label": "Politics", "slug": "politics"}, {"id": "9", "label": "Trump"}],
+    )
+    (market,) = client(FakeTransport([ok([row])])).markets(["0xabc"])
+    assert (market.start_time, market.fee_rate, market.fee_exponent, market.tags) == (
+        1758316975, 0.04, 1.0, ("Politics", "Trump"))
+
+
+def test_gamma_market_without_start_fees_or_tags() -> None:
+    """AD-12: a Market with no schedule, start date or tags has None, None and none."""
+    (market,) = client(FakeTransport([ok([gamma_market("0xabc", feeSchedule=None, tags=[])])])).markets(["0xabc"])
+    assert (market.start_time, market.fee_rate, market.fee_exponent, market.tags) == (None, None, None, ())

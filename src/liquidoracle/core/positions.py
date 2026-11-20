@@ -7,8 +7,9 @@ fills and Markets always give the same result, whatever order the fills come in.
 from __future__ import annotations
 
 from collections.abc import Iterable, Mapping
+from dataclasses import replace
 
-from liquidoracle.records import ActivityRow, ExclusionReason, Market, Position, PositionSet
+from liquidoracle.records import ActivityRow, ExclusionReason, ListedPosition, Market, Position, PositionSet
 
 # Polymarket keeps shares to 6 decimals; rounding there removes float noise such as 3e-15
 # left by bought - sold (found on the Sample Wallets, 2026-11-11).
@@ -24,21 +25,27 @@ _KNOWN_TYPES = _MARKET_ROWS | {"TRADE", "REDEEM"}
 
 
 def is_resolved(market: Market) -> bool:
-    """AD-7: closed, outcome prices exactly {0, 1}, and a resolution time."""
-    return (
-        market.closed
-        and market.closed_time is not None
-        and len(market.token_ids) == len(market.outcome_prices)
-        and sorted(market.outcome_prices) == [0.0, 1.0]
-    )
+    """AD-7: closed, outcome prices exactly {0, 1}, and a resolution time (`Market.resolved`)."""
+    return market.resolved
 
 
-def build_positions(fills: Iterable[ActivityRow], markets: Mapping[str, Market]) -> PositionSet:
+def build_positions(
+    fills: Iterable[ActivityRow],
+    markets: Mapping[str, Market],
+    *,
+    not_fully_read: Iterable[ListedPosition] = (),
+) -> PositionSet:
     """Combine a Wallet's activity rows into Positions and sort them into tested, Slivers and left out.
 
     `markets` maps condition_id to Market. The window is the Positions in closed Markets
     (AD-7); fills in Markets that are not closed, or have no Market record, are outside it.
+
+    `not_fully_read` are the window's Positions whose Market resolved in or after the second of the
+    last activity row read (AD-7). Every Position in their Markets is left out as "not fully read", also one with
+    no fill read at all, so it is still counted (AD-11).
     """
+    unread = {row.token_id: row for row in not_fully_read}
+    unread_markets = {row.condition_id for row in unread.values()}
     split_markets: set[str] = set()
     trades: dict[tuple[str, str], list[ActivityRow]] = {}
     for row in fills:
@@ -60,13 +67,37 @@ def build_positions(fills: Iterable[ActivityRow], markets: Mapping[str, Market])
         if market is None or not market.closed:
             continue
         position = _build_one(market, condition_id, token_id, trades[(condition_id, token_id)], condition_id in split_markets)
+        if condition_id in unread_markets:
+            position = replace(position, reason=ExclusionReason.NOT_FULLY_READ)
         if position.reason is not None:
             left_out.append(position)
         elif _is_sliver(position):
             slivers.append(position)
         else:
             tested.append(position)
+    for token_id, row in sorted(unread.items(), key=lambda item: (item[1].condition_id, item[0])):
+        if (row.condition_id, token_id) not in trades:  # no fill of it was read before the cap
+            left_out.append(_unread(row, markets.get(row.condition_id)))
     return PositionSet(tested=tuple(tested), slivers=tuple(slivers), left_out=tuple(left_out))
+
+
+def _unread(row: ListedPosition, market: Market | None) -> Position:
+    """A Position the activity read never reached: counted, with what the positions list says (AD-11)."""
+    outcome = None
+    if market is not None and is_resolved(market) and row.token_id in market.token_ids:
+        outcome = market.outcome_prices[market.token_ids.index(row.token_id)]
+    return Position(
+        condition_id=row.condition_id,
+        token_id=row.token_id,
+        outcome=outcome,
+        entry_price=None,
+        shares_bought=round(row.shares_bought, SHARE_DECIMALS),
+        shares_sold=0.0,
+        shares_held=0.0,
+        own_fees=0.0,
+        exit_pnl=None,
+        reason=ExclusionReason.NOT_FULLY_READ,
+    )
 
 
 def _build_one(market: Market, condition_id: str, token_id: str, rows: list[ActivityRow], split: bool) -> Position:

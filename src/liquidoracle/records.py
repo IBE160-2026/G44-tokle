@@ -12,8 +12,9 @@ from enum import StrEnum
 
 
 class ExclusionReason(StrEnum):
-    """Why a Position is left out of the Skill Test (AD-11). Stories 2.2 and 2.3 add the rest."""
+    """Why a Position is left out of the Skill Test (AD-11). Story 2.3 adds the rest."""
 
+    NOT_FULLY_READ = "not fully read"
     UNCLEAR_RESOLUTION = "unclear resolution"
     SPLIT_OR_MERGED = "split or merged"
     SOLD_BEFORE_RESOLUTION = "sold before resolution"
@@ -44,7 +45,10 @@ class Market:
     """One Market as Gamma describes it (AD-7, AD-10).
 
     `token_ids` and `outcome_prices` are aligned: the i-th price belongs to the i-th outcome.
-    After resolution the winner's price is 1 and the loser's 0.
+    After resolution the winner's price is 1 and the loser's 0. `start_time` is Gamma's start date
+    (where the window's activity read begins, AD-7); `fee_rate` and `fee_exponent` are its
+    `feeSchedule` (checked in Story 2.3, AD-12), None when Gamma gives none; `tags` are the
+    event tag labels (used from Story 7.1).
     """
 
     condition_id: str
@@ -53,6 +57,20 @@ class Market:
     token_ids: tuple[str, ...]
     outcome_prices: tuple[float, ...]
     fees_enabled: bool = False
+    start_time: int | None = None
+    fee_rate: float | None = None
+    fee_exponent: float | None = None
+    tags: tuple[str, ...] = ()
+
+    @property
+    def resolved(self) -> bool:
+        """AD-7: closed, outcome prices exactly {0, 1}, and a resolution time."""
+        return (
+            self.closed
+            and self.closed_time is not None
+            and len(self.token_ids) == len(self.outcome_prices)
+            and sorted(self.outcome_prices) == [0.0, 1.0]
+        )
 
 
 @dataclass(frozen=True, slots=True)
@@ -70,7 +88,8 @@ class ListedPosition:
 
     `status` is CLOSED (sold, or redeemed after resolution) or OPEN (still held, which includes
     settled losers nobody redeemed). `first_entry_at` is the first buy time (AD-7).
-    Story 2.1 may add fields as the live client needs them.
+    `last_event_at` is the Wallet's last event on it (a sell or a redemption), which is NOT the
+    resolution time; it only tells the window when to stop reading the CLOSED list (AD-7).
     """
 
     condition_id: str
@@ -78,6 +97,7 @@ class ListedPosition:
     status: str
     shares_bought: float
     first_entry_at: int
+    last_event_at: int
 
 
 @dataclass(frozen=True, slots=True)
@@ -202,3 +222,40 @@ class Read[T]:
 
     rows: tuple[T, ...]
     complete: bool
+
+
+@dataclass(frozen=True, slots=True)
+class Window:
+    """One Wallet's window as `data/window.positions_near` returns it (AD-7, AD-8).
+
+    `positions` are the positions-list rows in the window, `markets` their Gamma records and
+    `activity` every activity row of those Markets. `activity_read_until` is None when the
+    activity read was complete; otherwise it is the time of the last row read, and the
+    Positions whose Market resolved in that second or later are "not fully read" (AD-7, AD-11).
+    """
+
+    wallet: str
+    limit: int
+    positions: tuple[ListedPosition, ...]
+    markets: tuple[Market, ...]
+    activity: tuple[ActivityRow, ...]
+    activity_read_until: int | None
+
+    def not_fully_read(self) -> tuple[ListedPosition, ...]:
+        """The window's Positions whose Market resolved in or after the second of the last activity row read."""
+        return unread_positions(self.positions, self.markets, self.activity_read_until)
+
+
+def unread_positions(
+    positions: tuple[ListedPosition, ...], markets: tuple[Market, ...], read_until: int | None
+) -> tuple[ListedPosition, ...]:
+    """AD-7: exactly the Positions whose Market `closed_time` is at or after `read_until` (None: none).
+
+    "At" too: a cap can cut inside a second, so rows of that second may be unread (review, Story 2.2).
+    """
+    if read_until is None:
+        return ()
+    closed_at = {m.condition_id: m.closed_time for m in markets}
+    return tuple(
+        p for p in positions if (closed_at.get(p.condition_id) or 0) >= read_until
+    )

@@ -1,4 +1,4 @@
-"""The fetch pipeline: one Wallet from a client into the store, and its Skill Test (AD-14, AD-19).
+"""The fetch pipeline: one Wallet's window from a client into the store, and its Skill Test (AD-8, AD-14, AD-19).
 
 Offline and live runs take this same path; only the client and the database file differ (AD-13).
 """
@@ -11,26 +11,25 @@ from liquidoracle.core.positions import build_positions
 from liquidoracle.core.skilltest import skill_test
 from liquidoracle.data.client import WalletClient
 from liquidoracle.data.store import Store
+from liquidoracle.data.window import WINDOW_LIMIT, positions_near
 from liquidoracle.records import SkillTestResult
 
 
-def fetch_wallet(client: WalletClient, store: Store, wallet: str) -> int:
-    """Fetch one Wallet and save it as one complete snapshot; returns its `fetch_id`.
+def fetch_wallet(client: WalletClient, store: Store, wallet: str, *, limit: int = WINDOW_LIMIT) -> int:
+    """Fetch one Wallet's window and save it as one complete snapshot; returns its `fetch_id` (AD-8, AD-19).
 
-    Everything is read from the client before anything is written, so a Wallet the client does
-    not have (`NotAvailableOffline`, FR-14) leaves no snapshot behind.
+    The Wallet's lock is held throughout, so a web thread and the worker never fetch the same
+    Wallet at once. Everything is read before anything is written, so a Wallet the client does
+    not have (`NotAvailableOffline`, FR-14) or a read Polymarket cuts short leaves no snapshot.
     """
     wallet = wallet.strip().lower()  # FR-1: addresses are lower case
-    positions = client.positions(wallet)
-    activity = client.activity(wallet)
-    condition_ids = sorted({row.condition_id for row in positions} | {row.condition_id for row in activity})
-    markets = client.markets(condition_ids)
-
-    fetch_id = store.begin_snapshot(wallet)
-    store.add_positions(fetch_id, positions)
-    store.add_activity(fetch_id, activity)
-    store.save_markets(markets)
-    store.finish_snapshot(fetch_id)
+    with store.wallet_lock(wallet):
+        window = positions_near(client, wallet, limit=limit, stored_markets=store.resolved_markets)
+        fetch_id = store.begin_snapshot(wallet, window_limit=window.limit)
+        store.add_positions(fetch_id, window.positions)
+        store.add_activity(fetch_id, window.activity)
+        store.save_markets(window.markets)
+        store.finish_snapshot(fetch_id, activity_read_until=window.activity_read_until)
     return fetch_id
 
 
@@ -56,5 +55,9 @@ def stored_result(store: Store, wallet: str, *, seed: int) -> StoredResult | Non
     snapshot = store.latest_snapshot(wallet.strip().lower())
     if snapshot is None:
         return None
-    position_set = build_positions(snapshot.activity, {m.condition_id: m for m in snapshot.markets})
+    position_set = build_positions(
+        snapshot.activity,
+        {m.condition_id: m for m in snapshot.markets},
+        not_fully_read=snapshot.not_fully_read(),
+    )
     return StoredResult(skill_test(position_set, seed=seed, unit_id=snapshot.wallet), snapshot.completed_at)

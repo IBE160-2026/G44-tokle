@@ -159,6 +159,7 @@ def _listed_position(row: Any) -> ListedPosition:
         status=_one_of(row["status"], ("CLOSED", "OPEN")),
         shares_bought=_float(row["shares_bought"]),
         first_entry_at=_int(row["first_entry_at"]),
+        last_event_at=_int(row["last_event_at"]),
     )
 
 
@@ -171,6 +172,10 @@ def _market(row: Any) -> Market:
         token_ids=tuple(_str(token) for token in _list(row["token_ids"])),
         outcome_prices=tuple(_float(price) for price in _list(row["outcome_prices"])),
         fees_enabled=_bool(row["fees_enabled"]),
+        start_time=None if row["start_time"] is None else _int(row["start_time"]),
+        fee_rate=None if row["fee_rate"] is None else _float(row["fee_rate"]),
+        fee_exponent=None if row["fee_exponent"] is None else _float(row["fee_exponent"]),
+        tags=tuple(_str(tag) for tag in _list(row["tags"])),
     )
 
 

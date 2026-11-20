@@ -15,7 +15,8 @@ from pathlib import Path
 
 from liquidoracle.data import sample_json, synthetic
 from liquidoracle.data.errors import NotAvailableOffline
-from liquidoracle.records import ActivityRow, ListedPosition, Market, SampleWallet
+from liquidoracle.data.polymarket import LIST_STATUSES, PAGE_LIMIT
+from liquidoracle.records import ActivityRow, ListedPosition, Market, Read, SampleWallet
 
 # Folders that hold Sample Wallet files, relative to the repository folder. Story 2.6 adds the real Wallets.
 SAMPLE_DIRS = (synthetic.SMALL_DIR, synthetic.COIN_FLIPPER_DIR)
@@ -59,11 +60,55 @@ class OfflineClient:
         """Every Sample Wallet's address, in file order. Offline only: `load-sample` and the Sample list."""
         return tuple(self._get_index().wallets)
 
-    def positions(self, wallet: str) -> tuple[ListedPosition, ...]:
-        return self._wallet(wallet).positions
+    def positions_list(
+        self,
+        wallet: str,
+        status: str,
+        *,
+        sort_by: str | None = None,
+        sort_direction: str | None = None,
+        until: Callable[[tuple[ListedPosition, ...]], bool] | None = None,
+    ) -> Read[ListedPosition]:
+        """One positions list, served in pages of the live size so `until` stops at the same page (AD-7, AD-13).
 
-    def activity(self, wallet: str) -> tuple[ActivityRow, ...]:
-        return self._wallet(wallet).activity
+        `sort_by="TIMESTAMP"` orders by `last_event_at`, as the live list does; ties keep file order.
+        """
+        if status not in LIST_STATUSES:
+            raise ValueError(f"status must be CLOSED or OPEN, not {status!r}")
+        rows = [row for row in self._wallet(wallet).positions if row.status == status]
+        if sort_by == "TIMESTAMP":
+            rows.sort(key=lambda row: row.last_event_at, reverse=sort_direction == "DESC")
+        elif sort_by is not None:
+            raise ValueError(f"OfflineClient sorts only by TIMESTAMP, not {sort_by!r}")
+        read: list[ListedPosition] = []
+        for i in range(0, len(rows), PAGE_LIMIT):
+            page = tuple(rows[i : i + PAGE_LIMIT])
+            read.extend(page)
+            if until is not None and i + PAGE_LIMIT < len(rows) and until(page):
+                break
+        return Read(tuple(read), True)
+
+    def activity_rows(
+        self,
+        wallet: str,
+        *,
+        start: int,
+        end: int | None = None,
+        row_cap: int | None = None,
+    ) -> Read[ActivityRow]:
+        """The Wallet's activity rows from `start` to `end` (both included), oldest first, at most `row_cap`.
+
+        Rows with the same time keep their file order; identical rows stay separate fills.
+        """
+        if row_cap is not None and row_cap < 1:  # as the live client (AD-13)
+            raise ValueError(f"row_cap must be 1 or more, not {row_cap}")
+        rows = sorted(
+            (row for row in self._wallet(wallet).activity if row.timestamp >= start and (end is None or row.timestamp <= end)),
+            key=lambda row: row.timestamp,
+        )
+        if row_cap is not None and len(rows) > row_cap:
+            return Read(tuple(rows[:row_cap]), False)
+        return Read(tuple(rows), True)
 
     def markets(self, condition_ids: Iterable[str]) -> tuple[Market, ...]:
         index = self._get_index()

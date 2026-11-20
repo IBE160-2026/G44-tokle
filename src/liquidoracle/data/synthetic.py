@@ -161,21 +161,27 @@ def _wallet(name: str, bets: list[_Bet], *, with_prices: bool = False) -> Sample
     for condition_id, rows in rows_of.items():
         (bought, other), won = outcome_of[condition_id]
         first_buy = min(row.timestamp for row in rows if row.side == "BUY")
+        resolved_at = _resolved_at(first_buy)
         markets.append(
             Market(
                 condition_id=condition_id,
                 closed=True,
-                closed_time=_resolved_at(first_buy),
+                closed_time=resolved_at,
                 token_ids=(bought, other),
                 outcome_prices=(1.0, 0.0) if won else (0.0, 1.0),
                 fees_enabled=False,
+                start_time=first_buy - DAY,  # the Market opened a day before the Wallet's buy (AD-7)
             )
         )
         shares_bought = sum((row.size for row in rows if row.side == "BUY"), 0.0)
         shares_held = shares_bought - sum((row.size for row in rows if row.side == "SELL"), 0.0)
         # Sold, or held and redeemed after a win: CLOSED. Held losers stay unredeemed: OPEN.
         status = "OPEN" if shares_held > 0 and not won else "CLOSED"
-        positions.append(ListedPosition(condition_id, bought, status, shares_bought, first_buy))
+        # The Wallet's last event (AD-7): its last fill, or the redemption at resolution of a held winner.
+        last_event = max(row.timestamp for row in rows)
+        if status == "CLOSED" and shares_held > 0:
+            last_event = resolved_at
+        positions.append(ListedPosition(condition_id, bought, status, shares_bought, first_buy, last_event))
 
     return SampleWallet(
         address=address_of(name),

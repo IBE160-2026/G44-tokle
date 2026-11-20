@@ -324,3 +324,25 @@ def test_malformed_rows_are_refused(bad: ActivityRow) -> None:
     """AD-2, AD-10: a TRADE row without token or side, or an unknown row type, raises ValueError instead of a silent wrong count."""
     with pytest.raises(ValueError):
         build([bad])
+
+
+def test_not_fully_read_positions_are_left_out_and_counted() -> None:
+    """AD-7, AD-11: every Position in a Market the capped activity read did not finish is left out as
+    "not fully read": one with fills read keeps its numbers, one with none read is still counted."""
+    from liquidoracle.records import ListedPosition
+
+    later = "0xlater"
+    unread_with_fill = ListedPosition(later, YES, "CLOSED", 10.0, 1, 5)
+    unread_without = ListedPosition(later, NO, "OPEN", 4.0, 1, 5)
+    result = build_positions(
+        [buy(10, 0.4), buy(10, 0.3, cid=later)],
+        {M: market(), later: market(later)},
+        not_fully_read=[unread_with_fill, unread_without],
+    )
+    assert len(result.tested) == 1  # the fully read Market is untouched
+    reasons = {(p.token_id, p.reason) for p in result.left_out}
+    assert reasons == {(YES, ExclusionReason.NOT_FULLY_READ), (NO, ExclusionReason.NOT_FULLY_READ)}
+    assert result.excluded_counts[ExclusionReason.NOT_FULLY_READ] == 2
+    assert result.window_size == 3
+    bare = next(p for p in result.left_out if p.token_id == NO)
+    assert (bare.shares_bought, bare.entry_price, bare.outcome) == (4.0, None, 0.0)
