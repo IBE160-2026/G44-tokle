@@ -498,9 +498,9 @@ So that lookups work, outages are handled, and the app never touches a wallet or
 **When** they run at the same time
 **Then** one process-wide limiter guarded by a lock keeps the combined pace at or below `POLYMARKET_REQUESTS_PER_SECOND` (AD-3, NFR-6, tested with a fake clock).
 
-**Given** a timeout, 429, 503, a Gamma or CloudFront 403, or an empty Gamma 404 on a list route
+**Given** a timeout, 429, 503, a Gamma or CloudFront 403, or an empty Gamma 404 on a list route, or a 500, 502, 504 or failed connection (Edvard, 2026-11-20)
 **When** it happens
-**Then** the request is retried at most 3 tries in all; a `Retry-After` header is waited out exactly instead of the client's own back-off; after the third try `PolymarketUnavailable` is raised (AD-3, the one retry policy)
+**Then** the request is retried at most 3 tries in all; a `Retry-After` header is waited out exactly instead of the client's own back-off, unless it is longer than 60 s, which raises `PolymarketUnavailable` at once (Edvard, 2026-11-20); after the third try `PolymarketUnavailable` is raised (AD-3, the one retry policy)
 **And** any other 4xx raises `PolymarketBadRequest` and is logged; a 400 "protocol contract address" is raised as its own kind, for the Scan in Epic 4 (AD-9)
 **And** all of this is tested against a fake transport, with sockets blocked.
 
