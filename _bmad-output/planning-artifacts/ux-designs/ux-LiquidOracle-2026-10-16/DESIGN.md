@@ -294,7 +294,7 @@ What it must never look like: a trading terminal with green "buy" and red "sell"
 
 **Logo.** A ring around the luck curve, with a marker line where the wallet sits on the chart: two thirds of a spread right of the middle, as at odds of about 1 in 4. It says what the product does: put one result against what luck alone would give. Edvard chose the idea from a ChatGPT image (`imports/round-3-logo/logo-reference.webp`). It was redrawn from scratch as SVG, with the marker moved right into the curve's tail (his change) and the strokes sized to read at 16 px; he picked marker position A of three (`.working/logo-variants.png`). Files: `mockups/logo/liquidoracle-logo.svg` (master, accent blue) and `mockups/logo/favicon.svg` (switches to the dark-theme blue when the browser is dark). Reference page with the logo at all sizes and the tab behaviour: `mockups/logo-and-tab.html`.
 
-**Light and dark.** Both themes exist. The app starts on the computer's system setting; a toggle in the top bar switches theme, and the pick is remembered in that browser (Edvard, 2026-10-16). In the dark theme every colour token resolves to its `-dark` twin; where a component differs by theme, its token says so (`border-dark-theme`, `shadow-light-theme`).
+**Light and dark.** Both themes exist. The app starts in the dark theme; a toggle in the top bar switches theme, and the pick is remembered in that browser (Edvard, 2026-10-16; dark first instead of the system setting, Edvard, 2026-11-20). In the dark theme every colour token resolves to its `-dark` twin; where a component differs by theme, its token says so (`border-dark-theme`, `shadow-light-theme`).
 
 ## Colors
 

@@ -126,7 +126,7 @@ Stage marks as in EXPERIENCE.md. A page or element of a later stage is absent un
 
 **Foundation (S1)**
 - UX-DR1: Design tokens from DESIGN.md as CSS custom properties: every colour with its dark twin, typography roles, spacing scale, radii, breakpoints (900, 640, 400 px), component tokens; no other breakpoints; no green, no red for losses, no gradients.
-- UX-DR2: Light and dark theme: starts on the system setting; toggle button named "Dark theme" with a pressed state, 40 px round, moon/sun icon; the choice stored in the browser; still switches if storage is blocked (`theme.js`).
+- UX-DR2: Light and dark theme: starts in the dark theme (Edvard, 2026-11-20; was: the system setting); toggle button named "Dark theme" with a pressed state, 40 px round, moon/sun icon; the choice stored in the browser; still switches if storage is blocked (`theme.js`).
 - UX-DR3: Bundled IBM Plex Serif (600, 700, WOFF2, OFL file beside it), first in the serif stack with the system serif fallbacks; nothing loaded from the internet.
 - UX-DR4: Top bar on every page: logo and serif brand linking to *Check a wallet*; section links *Check a wallet* (S1) and *Scan wallets* (S2, absent until built), active one in accent with underline; theme toggle; Offline pill when Offline Mode is on. Below 640 px links wrap and tools move to their own row.
 - UX-DR5: "Skip to content" as the first Tab stop on every page.
@@ -470,7 +470,7 @@ So that I can see the app's answer for a Wallet whose correct answer I know.
 **Then** the page contains "Skilled (high confidence)" (NFR-1, AD-17)
 **And** the README lists these commands, the prerequisites and the address to open.
 
-**Polish that may move later within stage 1 if Epic 1 runs late:** the dark theme and its toggle (UX-DR2), hover and lift states (UX-DR9), and the responsive details (UX-DR10). They are then done in Epic 3.
+**Polish that may move later within stage 1 if Epic 1 runs late:** the dark theme and its toggle (UX-DR2), hover and lift states (UX-DR9), and the responsive details (UX-DR10). They are then done in Epic 3. **Moved to Story 3.4** (Edvard, 2026-11-20, at the stage 1 checkpoint: Epic 1 ran late). Story 1.7 keeps a plain focus ring, because that is accessibility, not polish. **Later the same day Edvard pulled the dark theme and its toggle (UX-DR2) back into Story 1.7**, dark by default: no dark theme was a dealbreaker for him. Hover and lift (UX-DR9) and the responsive details (UX-DR10) stay in Story 3.4.
 
 ## Epic 2: Check a real Wallet
 
@@ -756,9 +756,7 @@ So that it is pleasant to use and works on any screen.
 
 **Acceptance Criteria:**
 
-**Given** `theme.js` and the theme toggle
-**When** the app is first opened
-**Then** it follows the system setting; the toggle "Dark theme" (pressed or not) switches at once and is remembered in the browser, and still switches for the page if storage is blocked; both themes meet the DESIGN.md contrast table (UX-DR2).
+The theme and its toggle (UX-DR2) were built in Story 1.7 (Edvard, 2026-11-20); this story keeps only the hover and focus states of the toggle.
 
 **Given** the address card's copy button (`copy-address.js`)
 **When** the user copies
