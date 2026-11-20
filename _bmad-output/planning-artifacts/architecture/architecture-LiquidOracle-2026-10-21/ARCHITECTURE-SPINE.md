@@ -7,7 +7,7 @@ paradigm: 'layered, functional core / imperative shell'
 scope: 'LiquidOracle v1, stages 1-3: the whole local app (FR-1 to FR-24, PRD s8)'
 status: final
 created: '2026-10-21'
-updated: '2026-11-11'
+updated: '2026-11-20'
 binds: [FR-1, FR-2, FR-3, FR-4, FR-5, FR-6, FR-7, FR-8, FR-9, FR-10, FR-11, FR-12, FR-13, FR-14, FR-15, FR-16, FR-17, FR-18, FR-19, FR-20, FR-21, FR-22, FR-23, FR-24]
 sources:
   - _bmad-output/planning-artifacts/prds/prd-LiquidOracle-2026-10-12/prd.md
@@ -120,7 +120,7 @@ Arrows are the only allowed imports. `core` imports only `records`, the standard
   - **Fetching the before part.** Read the OPEN list in full. Read CLOSED newest-first by `TIMESTAMP` with no `end` bound, and stop when a page's oldest `last_event_at` is earlier than the 2,000th-latest resolution time collected.
   - **Fetching the after part.** Read activity oldest-first from the cut-off until 2,000 Positions in resolved Markets have their first buy.
   - **Activity covers the whole window.** Once the window is chosen, its activity read runs from the earliest Gamma start date among its Markets to the latest `closedTime` among them (no fill can come after resolution), so every buy and sell of every Position in the window is read.
-  - The per-Wallet activity read has one cap, the setting `ACTIVITY_ROW_CAP` `[ASSUMPTION]`. On a cap, exactly the Positions whose Market `closedTime` lies after the last row read are left out (AD-11).
+  - The per-Wallet activity read has one cap, the setting `ACTIVITY_ROW_CAP`, 150,000 rows `[ASSUMPTION]`: the same cap as the Sample Dataset capture, so live and offline Wallets are cut the same way (about 30 s at 5 requests per second; Edvard, 2026-11-20, Story 2.2). A read that ends early because pages kept timing out (AD-3) is treated the same as a cap. On a cap, exactly the Positions whose Market `closedTime` lies in or after the second of the last row read are left out (AD-11); that second counts too, because a cap can cut inside a second (review, Story 2.2).
 
 ### AD-8 — Big Wallets: a window of 2,000 Resolved Positions on each side, capped before exclusions [ADOPTED]
 
@@ -128,8 +128,8 @@ Arrows are the only allowed imports. `core` imports only `records`, the standard
 - **Prevents:** Scan, lookup and Hold-up Test capping differently; counts with two denominators.
 - **Rule:**
   - Before part = the latest 2,000 Resolved Positions before the cut-off, by resolution time. After part = the first 2,000 after it, by first-buy time. A lookup with no cut-off = the latest 2,000 overall. `[ASSUMPTION: 2,000]`
-  - One client function implements this: `positions_near(wallet, cutoff, side, limit)`.
-  - The cap applies first, then exclusions (AD-11).
+  - One client function implements this: `positions_near(wallet, cutoff, side, limit)`. It lives in `data/window.py` and runs on any client's three raw reads (positions list, activity rows, Markets), so the live client and `OfflineClient` take the same path (AD-13; Story 2.2).
+  - The cap applies first, then exclusions (AD-11). A Market whose Positions straddle the 2,000th place is left out of the window whole, so the window never splits a Market (AD-20 couples its sides) and never exceeds 2,000 (Story 2.2).
   - When the cap applies, the Verdict card says the result rests on a window: "latest 2,000" for the before part and lookups, "first 2,000" for the after part. A `scan_whole` result (AD-22) says it rests on both windows, and that Positions bought before the cut-off and resolved after it are in neither.
 
 ### AD-9 — Scan candidates come only from complete Market reads, sorted by time [ADOPTED]

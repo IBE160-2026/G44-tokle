@@ -530,7 +530,7 @@ So that the Verdict never rests on a half-finished fetch or on bets from the wro
 **Given** the window
 **When** its activity is read
 **Then** the read uses types TRADE, REDEEM, SPLIT, MERGE, CONVERSION, sends `start` and `limit` explicitly, drops `is_combo` rows, and covers the earliest Gamma start date to the latest `closedTime` among the window's Markets (AD-7, AD-10)
-**And** on reaching `ACTIVITY_ROW_CAP`, exactly the Positions whose Market `closedTime` lies after the last row read are left out as "not fully read" (AD-7, AD-11)
+**And** on reaching `ACTIVITY_ROW_CAP` (150,000 rows, the Sample Dataset capture's cap; Edvard, 2026-11-20), exactly the Positions whose Market `closedTime` lies after the last row read are left out as "not fully read" (AD-7, AD-11)
 **And** identical-looking rows are kept as separate fills, never de-duplicated.
 
 **Given** a fetch
@@ -554,7 +554,7 @@ So that the Verdict is honest about what it rests on.
 
 **Given** a buy fill in a Market with fees enabled
 **When** its Own Fee is checked against the Market's Gamma `feeSchedule` (rate and exponent) with a rounding tolerance
-**Then** a fee that passes counts in Real PnL; a maker fill's fee of 0 passes; a fee that fails is stored with its value, counts as 0, keeps its Position in the test, and is counted with its recorded total for the card (AD-12)
+**Then** a fee that passes counts in Real PnL; a maker fill's fee of 0 passes; a negative Own Fee fails (moved here from Story 2.2: the Skill Test still accepts one; Edvard, 2026-11-20); a fee that fails is stored with its value, counts as 0, keeps its Position in the test, and is counted with its recorded total for the card (AD-12)
 **And** v2's `entry_fees_usdc` is never used.
 
 **Given** fixtures cut from the real capture
