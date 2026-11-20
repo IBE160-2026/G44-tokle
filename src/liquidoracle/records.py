@@ -189,3 +189,16 @@ class SkillTestResult:
     at_or_above: int | None
     p_value: float | None
     bins: tuple[ChartBin, ...]
+
+
+@dataclass(frozen=True, slots=True)
+class Read[T]:
+    """The rows of one list read from Polymarket, and whether every page was read (AD-3).
+
+    `complete` is False when a page kept timing out even after the walk restarted with a
+    smaller `limit`, or when Polymarket said there was more but gave no cursor. The rows read
+    so far are kept, so a partial read stays visible instead of passing as whole.
+    """
+
+    rows: tuple[T, ...]
+    complete: bool
