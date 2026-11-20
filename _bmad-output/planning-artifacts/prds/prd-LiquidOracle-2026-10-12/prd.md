@@ -379,7 +379,7 @@ Checks:
   - **2b Hold-up Test** (FR-17): FR-17's checks pass, and the README reports the offline Hold-up result for the 10 real Sample Wallets whichever way it comes out, with its limits (only 10 Wallets, picked for the Sample Dataset, not a full Scan).
   - **2c Copy Test** (FR-18a to FR-18c): their checks pass.
   - **Minimum (good enough): 2a + 2b, offline.** Everything they need runs on the Sample Dataset. The Copy Test (2c) and a live real-data Scan (SM-5) come on top if time allows; whatever is not reached is stated in the README with the reason.
-- **Stage 3:** FR-15 and FR-19 to FR-24 (Mock LLM Mode, Domains, Flags, Explanations). Trimmed first if time runs short.
+- **Stage 3:** FR-15 and FR-19 to FR-24 (Mock LLM Mode, Domains, Flags, Explanations). Trimmed first if time runs short. **Parked, not deleted** (Edvard, 2026-11-20): stage 1 was not done by the 20 November checkpoint, so stage 3 is not started now; it is picked back up if all of stage 2, the Copy Test (2c) included, is done before the code freeze on 1 December.
 
 Each stage ends with all its tests passing and the README updated, so the project is deliverable after any stage, or after the stage 2 minimum.
 

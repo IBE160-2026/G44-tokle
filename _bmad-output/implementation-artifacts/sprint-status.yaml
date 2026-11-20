@@ -87,12 +87,12 @@ development_status:
   6-6-real-data-reported-either-way: backlog
   epic-6-retrospective: optional
 
-  epic-7: backlog
+  epic-7: backlog  # parked 2026-11-20 (Edvard): picked back up only if all of stage 2 (Epics 4-6) is done before 1 Dec
   7-1-domain-verdicts-with-tag-labels: backlog
   7-2-model-labels-with-the-80-gate: backlog
   epic-7-retrospective: optional
 
-  epic-8: backlog
+  epic-8: backlog  # parked 2026-11-20 (Edvard): after Epic 7, same condition
   8-1-the-market-maker-flag: backlog
   8-2-template-explanation-checked: backlog
   8-3-model-written-explanations: backlog

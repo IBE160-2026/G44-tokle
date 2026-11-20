@@ -20,7 +20,7 @@ Requirement IDs are the PRD's own (FR-1 to FR-24; FR-15 keeps its old number and
 **Timing and slipping rules** (Edvard, 2026-10-23 and 2026-10-24):
 - Build window: 5 November to 1 December 2026, moved from 2 November because no code had been started by then; nothing is built 14 to 16 November (Edvard, 2026-11-05). **1 December is a hard stop for code**: after it, only fixes that make the README commands or the tests run, each logged, and nothing new. 1 to 15 December is for the reflection report (30% of the grade), the README check and repository tidying; the repositories lock on 15 December.
 - Stage 1 must stand alone as a working app and never slips. If time runs short, work is cut from stage 3 first, never from stage 1.
-- Checkpoint 20 November: if stage 1 is not done by then, stage 3 is dropped entirely and the time goes to stages 1 and 2. The targets below finish stage 1 on 23 November, so this rule applies unless stage 1 finishes early (2026-11-05).
+- Checkpoint 20 November: if stage 1 is not done by then, stage 3 is dropped entirely and the time goes to stages 1 and 2. The targets below finish stage 1 on 23 November, so this rule applies unless stage 1 finishes early (2026-11-05). **Applied on 20 November:** stage 1 was not done, and Edvard **parked stage 3, not deleted it**: Epics 7 and 8 stay here and are picked back up if all of stage 2 (Epics 4 to 6, the Copy Test included) is done before the code freeze on 1 December (Edvard, 2026-11-20).
 - Inside Epic 1, only the visual polish of Story 1.7 moves later (dark theme, hover states, responsive details), staying inside stage 1; Story 1.5 stays before 1.7 because the card needs its phrases, and Story 1.4's checks are never cut (Edvard, 2026-10-24, after the final validation).
 - **Stage 2 minimum** (PRD §6.1; Edvard, 2026-11-18): Epics 4 and 5 passing their checks offline on the Sample Dataset, closed by Story 5.2 with the 10 real Sample Wallets' Hold-up result in the README. Story 5.3 (a live Hold-up run) and Epic 6 (Copy Test) come on top if time allows; whatever is not reached is stated in the README with the reason.
 - Inside stage 3, Epic 8 slips before Epic 7. A partial stage 3 is fine; whatever is left out is stated in the README and logged with the reason. Because stage 3 can stop after any story, each stage 3 story ends with all tests passing and the README updated (NFR-12).
@@ -229,11 +229,11 @@ The user compares the Before-Cut-off Passers with the Comparison Group on the be
 The user sees Follower PnL and Follower Return at 1, 5 and 30 minutes and the Random Group Check; a Copy Test on real data is run and reported (SM-5). Stage 2 is done. Beyond the stage 2 minimum (PRD §6.1).
 **FRs covered:** FR-18a, FR-18b, FR-18c
 
-### Epic 7: Where is the edge? Domain Verdicts (S3, no dates: only if stage 1 finishes by 20 Nov and time is left)
+### Epic 7: Where is the edge? Domain Verdicts (S3, parked 20 Nov: picked back up only if all of stage 2 is done before 1 Dec)
 The user sees a Domain table on the Verdict page, with or without a model key.
 **FRs covered:** FR-15, FR-19, FR-20, FR-21
 
-### Epic 8: Bots and plain-language explanations (S3, no dates: only after Epic 7, if time is left)
+### Epic 8: Bots and plain-language explanations (S3, parked 20 Nov: only after Epic 7, if all of stage 2 is done before 1 Dec)
 The user sees a market-maker Flag where it applies and a checked Explanation of at most 60 words.
 **FRs covered:** FR-22, FR-23, FR-24
 
