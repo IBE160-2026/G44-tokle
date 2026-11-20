@@ -5,6 +5,8 @@ Offline and live runs take this same path; only the client and the database file
 
 from __future__ import annotations
 
+from dataclasses import dataclass
+
 from liquidoracle.core.positions import build_positions
 from liquidoracle.core.skilltest import skill_test
 from liquidoracle.data.client import WalletClient
@@ -32,8 +34,22 @@ def fetch_wallet(client: WalletClient, store: Store, wallet: str) -> int:
     return fetch_id
 
 
+@dataclass(frozen=True, slots=True)
+class StoredResult:
+    """A Skill Test result and when the snapshot it rests on was completed (epoch seconds)."""
+
+    result: SkillTestResult
+    stored_at: int
+
+
 def skill_result(store: Store, wallet: str, *, seed: int) -> SkillTestResult | None:
-    """The Skill Test on the Wallet's latest complete snapshot, or None when none is stored.
+    """The Skill Test on the Wallet's latest complete snapshot, or None when none is stored."""
+    stored = stored_result(store, wallet, seed=seed)
+    return None if stored is None else stored.result
+
+
+def stored_result(store: Store, wallet: str, *, seed: int) -> StoredResult | None:
+    """The Skill Test on the Wallet's latest complete snapshot, with its time, or None when none is stored.
 
     The random unit is the Wallet's address (AD-15), the scope `lookup` (AD-22).
     """
@@ -41,4 +57,4 @@ def skill_result(store: Store, wallet: str, *, seed: int) -> SkillTestResult | N
     if snapshot is None:
         return None
     position_set = build_positions(snapshot.activity, {m.condition_id: m for m in snapshot.markets})
-    return skill_test(position_set, seed=seed, unit_id=snapshot.wallet)
+    return StoredResult(skill_test(position_set, seed=seed, unit_id=snapshot.wallet), snapshot.completed_at)
