@@ -326,6 +326,14 @@ def test_ad18_readme_lists_every_javascript_file() -> None:
         assert f"`{script.name}`:" in readme, script.name
 
 
+def test_ux_dr22_fetching_dots_stand_still_with_reduce_motion() -> None:
+    """UX-DR22, EXPERIENCE.md (Motion): the fetching dots pulse, and with *reduce motion* on they do not."""
+    css = (WEB / "static" / "css" / "app.css").read_text(encoding="utf-8")
+    assert re.search(r"\.fetch-dots span \{[^}]*animation: fetch-pulse", css)
+    reduced = re.search(r"@media \(prefers-reduced-motion: reduce\) \{(.*?)\n\}", css, re.S)
+    assert reduced and re.search(r"\.fetch-dots span \{[^}]*animation: none", reduced.group(1))
+
+
 def test_ux_dr3_fonts_are_bundled_and_local(offline: FlaskClient) -> None:
     """UX-DR3, AD-18: IBM Plex Serif 600 and 700 as WOFF2 with the OFL licence, served by the app,
     and no stylesheet or page loading anything from the internet."""

@@ -152,10 +152,13 @@ def test_fr2_worker_fetches_then_the_page_shows_the_verdict(run: Live) -> None:
 def test_fr2_second_lookup_within_24_hours_makes_no_network_call(run: Live) -> None:
     """FR-2, AD-4: within 24 hours of a complete snapshot, the lookup shows the card at once:
     no job, and 0 calls through the fake transport."""
+    assert FRESH_FOR == 24 * HOUR  # AD-4's 24 hours
     open_page(run)
     run.worker.run_once()
     calls = len(run.transport.calls)
-    run.clock.now += FRESH_FOR - 1
+    run.clock.now += 3 * HOUR
+    assert html(run.web, f"/wallet/{run.wallet}").count("Data stored") == 1
+    run.clock.now = START + 24 * HOUR - 1
     text = html(run.web, f"/wallet/{run.wallet}")
     assert h1s(text)[0].startswith("Verdict: ") and phrases.stored_at(START) in text
     assert run.store.claim_next_job() is None  # no job was queued
@@ -167,12 +170,12 @@ def test_ad4_a_snapshot_25_hours_old_is_fetched_again_and_replaced(run: Live) ->
     open_page(run)
     run.worker.run_once()
     first = run.store.latest_snapshot(run.wallet)
-    run.clock.now += FRESH_FOR + HOUR
+    run.clock.now += 25 * HOUR
     job_id, _ = open_page(run)
     run.worker.run_once()
     second = run.store.latest_snapshot(run.wallet)
     assert first is not None and second is not None and second.fetch_id > first.fetch_id
-    assert second.completed_at == START + FRESH_FOR + HOUR
+    assert second.completed_at == START + 25 * HOUR
     assert phrases.stored_at(second.completed_at) in html(run.web, f"/wallet/{run.wallet}?job={job_id}")
     rows = sqlite3.connect(run.store.path).execute("SELECT COUNT(*) FROM snapshot").fetchone()
     assert rows == (1,)  # the old snapshot is gone (Story 1.6's rule)
