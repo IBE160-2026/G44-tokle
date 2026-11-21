@@ -26,11 +26,14 @@ from liquidoracle.data.store import NO_HISTORY, JobStatus, Store
 from liquidoracle.data.window import WINDOW_LIMIT
 from liquidoracle.records import Verdict
 from liquidoracle.services.fetch import StoredResult, result_of, stored_result
-from liquidoracle.services.jobs import Jobs
+from liquidoracle.services.jobs import FETCHING, NO_HISTORY_MESSAGE, Jobs
 
 ADDRESS = re.compile(r"0x[0-9a-fA-F]{40}")  # FR-1: 0x and 40 hex characters, any case
 
 FRESH_FOR = 24 * 60 * 60  # [ASSUMPTION] AD-4: a stored snapshot under 24 hours old is used without a fetch
+# [ASSUMPTION] Story 2.5 review: an outage or error page is shown again on reload for this many seconds after its
+# job ended; after that, reloading it tries again ("Try again in a few minutes.").
+RETRY_AFTER = 60
 
 # Messages, word for word from EXPERIENCE.md (FR-1, FR-14) and Story 1.7's decisions (Edvard, 2026-11-20).
 EMPTY_ADDRESS = "Enter a wallet address."
@@ -40,8 +43,8 @@ LOOKUP_LEDE = (  # UX-DR16, from mockups/lookup.html; the count comes from the S
     f"Paste a Polymarket Wallet address. LiquidOracle replays its resolved bets {phrases.count(SIMULATIONS)} "
     "times to see how often luck alone would do as well."
 )
-# The fetching state (UX-DR22, EXPERIENCE.md).
-FETCHING_LINE = "Fetching trades from Polymarket…"
+# The fetching state (UX-DR22, EXPERIENCE.md); defined once in services/jobs.py, where the progress JSON uses it.
+FETCHING_LINE = FETCHING
 # The no-history hint: PRD FR-1's sentence (Story 2.5).
 PROFILE_HINT = (
     "Use the address shown on the Polymarket profile page. An address from a wallet app may show no history."
@@ -98,7 +101,7 @@ NOT_LOADED = Notice(
 )
 NOT_OFFLINE = Notice("Not available offline", NOT_AVAILABLE_OFFLINE, error=True)
 NO_HISTORY_NOTICE = Notice(  # UX-DR23, EXPERIENCE.md
-    "No Polymarket history found", "No Polymarket history found for this address.", hint=PROFILE_HINT
+    NO_HISTORY_MESSAGE, "No Polymarket history found for this address.", hint=PROFILE_HINT
 )
 UNAVAILABLE_HEADING = "Polymarket did not answer"  # UX-DR23
 TRY_AGAIN = "Try again in a few minutes."  # UX-DR23: when no stored data of this view exists
@@ -206,21 +209,25 @@ class Lookup:
             snapshot = self._store.serving_snapshot(address, window_limit=WINDOW_LIMIT)
             if snapshot is not None:
                 return self._verdict(address, result_of(snapshot, seed=self._seed))
-        fresh = self._store.serving_snapshot(address, window_limit=WINDOW_LIMIT, max_age=FRESH_FOR)
+        # The job is read before the snapshot: a job that ends in between then finds its snapshot,
+        # instead of looking unfinished-and-unstored and queueing a second fetch (Story 2.5 review).
         followed = self._store.job(job) if job is not None else None
+        fresh = self._store.serving_snapshot(address, window_limit=WINDOW_LIMIT, max_age=FRESH_FOR)
         if followed is not None and followed.wallet == address:
             if followed.status in (JobStatus.QUEUED, JobStatus.RUNNING):
                 return self._page(Outcome.FETCHING, address, job_id=followed.id)
-            if followed.status is JobStatus.DONE and followed.result == NO_HISTORY:
+            if fresh is None and followed.status is JobStatus.DONE and followed.result == NO_HISTORY:
                 return self._page(Outcome.NO_HISTORY, address, notice=NO_HISTORY_NOTICE)
-            if fresh is None and followed.status is JobStatus.STOPPED:
+            recent = followed.finished_at is not None and followed.finished_at > self._store.now() - RETRY_AFTER
+            if fresh is None and recent and followed.status is JobStatus.STOPPED:
                 when = self._store.snapshot_time(address, window_limit=WINDOW_LIMIT)
                 return self._page(
                     Outcome.UNAVAILABLE, address, stored_from=None if when is None else phrases.stored_on(when)
                 )
-            if fresh is None and followed.status is JobStatus.FAILED:
+            if fresh is None and recent and followed.status is JobStatus.FAILED:
                 return self._page(Outcome.FAILED, address)
-            # done with a snapshot, or interrupted: the usual answer below (a fresh snapshot, or a new job)
+            # done with a snapshot, interrupted, or stopped or failed a while ago: the usual answer below
+            # (a fresh snapshot, or a new job: reloading an old outage page tries again)
         if fresh is not None:
             return self._verdict(address, result_of(fresh, seed=self._seed))
         return self._page(Outcome.QUEUED, address, job_id=self._jobs.queue_lookup(address))

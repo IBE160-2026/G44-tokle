@@ -25,12 +25,12 @@ from liquidoracle.core import phrases
 from liquidoracle.data import synthetic
 from liquidoracle.data.errors import NoPolymarketHistory
 from liquidoracle.data.polymarket import PolymarketClient, TransportTimeout
-from liquidoracle.data.store import LIVE_DB, NO_HISTORY, JobStatus, Store
+from liquidoracle.data.store import INTERRUPTED_MESSAGE, LIVE_DB, NO_HISTORY, JobStatus, Store, StoreError
 from liquidoracle.data.window import WINDOW_LIMIT, positions_near
 from liquidoracle.services import jobs as jobs_module
 from liquidoracle.services.fetch import fetch_wallet
 from liquidoracle.services.jobs import FETCHING, Jobs, Worker
-from liquidoracle.services.lookup import FRESH_FOR, PROFILE_HINT, Lookup, Outcome
+from liquidoracle.services.lookup import FRESH_FOR, PROFILE_HINT, RETRY_AFTER, Lookup, Outcome
 from liquidoracle.settings import Settings
 from liquidoracle.web import create_app
 from fake_polymarket import FakeClock, FakePolymarket, FakeTransport, page, status
@@ -301,7 +301,7 @@ def test_conventions_unexpected_errors_fail_the_job_and_show_a_plain_page(
     job = live.store.job(job_id)
     assert job is not None and job.status is JobStatus.FAILED
     assert any("failed" in record.getMessage() for record in caplog.records)
-    text = html(live.web, f"/wallet/{live.wallet}?job={job_id}")
+    text = html(live.web, f"/wallet/{live.wallet}?job={job_id}", 500)  # like the app's own error page
     assert h1s(text) == ["Something went wrong"] and "Traceback" not in text
     live.store.close()
 
@@ -323,6 +323,67 @@ def test_conventions_a_bug_in_the_fetch_fails_the_job_and_the_worker_goes_on(
     assert second != first
     run.worker.run_once()
     assert run.store.job(second).status is JobStatus.DONE  # type: ignore[union-attr]
+
+
+@pytest.mark.parametrize("end", ["stopped", "failed"])
+def test_ux_dr23_reloading_an_old_outage_or_error_page_tries_again(tmp_path: Path, end: str) -> None:
+    """UX-DR23 (review): an outage or error page reloaded within RETRY_AFTER seconds shows the same page; reloaded
+    later it queues a new lookup, so "Try again in a few minutes." works by reloading the same address."""
+    answer = always_times_out if end == "stopped" else (lambda url, params: status(404, b"not found"))
+    live = live_run(tmp_path, answer, "0x" + "9a" * 20)
+    job_id, _ = open_page(live)
+    live.worker.run_once()
+    url = f"/wallet/{live.wallet}?job={job_id}"
+    live.clock.now += RETRY_AFTER - 1
+    assert live.web.get(url).status_code == (200 if end == "stopped" else 500)
+    live.clock.now += 2
+    reply = live.web.get(url)
+    assert reply.status_code == 302 and reply.headers["Location"] != url
+    live.store.close()
+
+
+@pytest.mark.parametrize("end", ["stopped", "failed", "no history"])
+def test_ad4_an_ended_job_with_a_fresh_snapshot_shows_the_verdict(run: Live, end: str) -> None:
+    """AD-4 (review): once a fresh snapshot exists, a stopped, failed or no-history job's page shows the Verdict,
+    not its old message."""
+    job_id, _ = open_page(run)
+    assert run.store.claim_job(job_id)
+    result = NO_HISTORY if end == "no history" else None
+    status_ = JobStatus.DONE if end == "no history" else JobStatus(end)
+    run.store.finish_job(job_id, status_, message="", result=result)
+    fetch_wallet(run.worker._client, run.store, run.wallet)  # noqa: SLF001 - a later fetch stored fresh data
+    text = html(run.web, f"/wallet/{run.wallet}?job={job_id}")
+    assert h1s(text)[0].startswith("Verdict: ")
+
+
+def test_ad5_a_job_ending_while_the_page_reads_queues_no_second_fetch(run: Live, monkeypatch: pytest.MonkeyPatch) -> None:
+    """AD-5 (review): the page reads the job before the snapshot, so a job that ends in between shows its
+    Verdict instead of queueing a second Polymarket fetch."""
+    job_id, _ = open_page(run)
+    real_job = run.store.job
+
+    def finish_then_job(found_id: int) -> object:
+        run.worker.run_once()  # the worker finishes just as the page asks for the job
+        return real_job(found_id)
+
+    monkeypatch.setattr(run.store, "job", finish_then_job)
+    page = run.lookup.wallet_page(run.wallet, job=job_id)
+    monkeypatch.setattr(run.store, "job", real_job)
+    assert page.outcome is Outcome.VERDICT
+    assert run.store.claim_next_job() is None  # no second job was queued
+
+
+def test_ad5_finish_changes_only_a_running_job_and_interrupted_jobs_say_so(tmp_path: Path) -> None:
+    """AD-5 (review): finish_job leaves a job that is no longer running as it is, and an interrupted job's
+    progress message no longer says it is fetching."""
+    store = Store(tmp_path / "live.db")
+    job_id = store.queue_lookup("0x" + "ab" * 20, message=FETCHING)
+    store.claim_job(job_id)
+    store.interrupt_running_jobs()
+    store.finish_job(job_id, JobStatus.DONE, message="Done")
+    job = store.job(job_id)
+    assert job is not None and (job.status, job.message) == (JobStatus.INTERRUPTED, INTERRUPTED_MESSAGE)
+    store.close()
 
 
 # --- interrupted, unknown and foreign jobs (AD-5) ---------------------------------------------
@@ -435,8 +496,10 @@ def test_finish_job_refuses_an_open_status(tmp_path: Path) -> None:
     store.close()
 
 
-def test_ad5_the_worker_thread_runs_queued_lookups(run: Live) -> None:
-    """AD-5: the daemon thread wakes on a new job, runs it, and stops when asked."""
+def test_ad5_the_worker_thread_runs_queued_lookups(run: Live, monkeypatch: pytest.MonkeyPatch) -> None:
+    """AD-5: the daemon thread wakes on a new job, runs it, and stops when asked. The idle wait is set far
+    above the deadline, so only the wake from queue_lookup can get the job done in time (review)."""
+    monkeypatch.setattr(jobs_module, "IDLE_WAIT", 60.0)
     thread = run.worker.start()
     assert thread.daemon and thread.name == "liquidoracle-worker"
     job_id, _ = open_page(run)
@@ -447,6 +510,41 @@ def test_ad5_the_worker_thread_runs_queued_lookups(run: Live) -> None:
     thread.join(timeout=5)
     assert run.store.job(job_id).status is JobStatus.DONE  # type: ignore[union-attr]
     assert not thread.is_alive()
+
+
+def test_ad5_queueing_a_lookup_wakes_the_worker_at_once(run: Live) -> None:
+    """AD-5 (review): a new job ends the worker's idle wait at once instead of after IDLE_WAIT."""
+    run.jobs.wait(0)  # start from a cleared signal
+    run.jobs.queue_lookup(run.wallet)
+    started = time.monotonic()
+    run.jobs.wait(30)
+    assert time.monotonic() - started < 5
+
+
+def test_ad5_the_worker_thread_survives_an_error_outside_a_job(run: Live, monkeypatch: pytest.MonkeyPatch) -> None:
+    """AD-5 (review): an error while claiming (e.g. a locked database) is logged and the thread lives on, so a
+    later lookup still runs."""
+    real_claim = run.store.claim_next_job
+    calls: list[int] = []
+
+    def flaky() -> object:
+        calls.append(1)
+        if len(calls) == 1:
+            raise StoreError("database is locked")
+        return real_claim()
+
+    monkeypatch.setattr(run.store, "claim_next_job", flaky)
+    monkeypatch.setattr(jobs_module, "IDLE_WAIT", 0.05)
+    thread = run.worker.start()
+    deadline = time.monotonic() + 10
+    while not calls and time.monotonic() < deadline:
+        time.sleep(0.01)
+    job_id, _ = open_page(run)
+    while run.store.job(job_id).status is not JobStatus.DONE and time.monotonic() < deadline:  # type: ignore[union-attr]
+        time.sleep(0.02)
+    run.worker.stop()
+    thread.join(timeout=5)
+    assert run.store.job(job_id).status is JobStatus.DONE  # type: ignore[union-attr]
 
 
 def test_ad23_create_app_starts_no_thread(tmp_path: Path) -> None:
@@ -476,6 +574,21 @@ def test_ad23_serve_interrupts_old_jobs_and_starts_the_worker(
     check = Store(tmp_path / LIVE_DB)
     assert check.job(job_id).status is JobStatus.INTERRUPTED  # type: ignore[union-attr]
     check.close()
+
+
+def test_ad23_serve_stops_plainly_when_the_database_cannot_be_written(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """AD-6, AD-23 (review): a live.db that cannot be written at startup stops `run` with a sentence, not a traceback."""
+    monkeypatch.chdir(tmp_path)
+
+    def locked(self: Store) -> int:
+        raise StoreError("database is locked")
+
+    monkeypatch.setattr(Store, "interrupt_running_jobs", locked)
+    monkeypatch.setattr(cli, "port_in_use", lambda host, port: False)
+    assert cli.serve(Settings(offline=False)) == 2
+    assert "cannot be written" in capsys.readouterr().err
 
 
 def test_ad13_offline_run_starts_no_worker_and_never_goes_stale(

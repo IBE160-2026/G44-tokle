@@ -74,6 +74,7 @@ class JobStatus(StrEnum):
 LOOKUP = "lookup"  # the one job kind so far; Scan jobs come with Epic 4
 NO_HISTORY = "no_history"  # a finished lookup's result when Polymarket has no positions for the address
 _OPEN = (JobStatus.QUEUED.value, JobStatus.RUNNING.value)
+INTERRUPTED_MESSAGE = "Interrupted: the app was closed"  # the progress message of an interrupted job
 
 
 @dataclass(frozen=True, slots=True)
@@ -354,21 +355,25 @@ class Store:
         return None
 
     def finish_job(self, job_id: int, status: JobStatus, *, message: str, result: str | None = None) -> None:
-        """End a running job: its final status, progress complete, and an optional result."""
+        """End a running job: its final status, progress complete, and an optional result.
+
+        Only a `running` job changes, so a job already marked otherwise (e.g. `interrupted`) keeps its status.
+        """
         if status in (JobStatus.QUEUED, JobStatus.RUNNING):
             raise ValueError(f"a job cannot finish as {status}")
         with self._write() as db:
             db.execute(
-                "UPDATE job SET status = ?, result = ?, message = ?, done = total, finished_at = ? WHERE id = ?",
-                (status.value, result, message, self._now(), job_id),
+                "UPDATE job SET status = ?, result = ?, message = ?, done = total, finished_at = ?"
+                " WHERE id = ? AND status = ?",
+                (status.value, result, message, self._now(), job_id, JobStatus.RUNNING.value),
             )
 
     def interrupt_running_jobs(self) -> int:
         """AD-5: at startup, every job left `running` becomes `interrupted`. Returns how many."""
         with self._write() as db:
             cursor = db.execute(
-                "UPDATE job SET status = ?, finished_at = ? WHERE status = ?",
-                (JobStatus.INTERRUPTED.value, self._now(), JobStatus.RUNNING.value),
+                "UPDATE job SET status = ?, message = ?, finished_at = ? WHERE status = ?",
+                (JobStatus.INTERRUPTED.value, INTERRUPTED_MESSAGE, self._now(), JobStatus.RUNNING.value),
             )
             return cursor.rowcount
 
@@ -456,8 +461,12 @@ class Store:
         return int(db.execute(f"SELECT COALESCE(MAX(seq), -1) + 1 FROM {table} WHERE fetch_id = ?",
                               (fetch_id,)).fetchone()[0])
 
-    def _now(self) -> int:
+    def now(self) -> int:
+        """The store's clock in epoch seconds: the time it writes into rows."""
         return int(self._clock())
+
+    def _now(self) -> int:
+        return self.now()
 
 
 def _statements(script: str) -> Iterator[str]:

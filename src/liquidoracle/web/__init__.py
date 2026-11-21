@@ -74,7 +74,7 @@ def create_app(settings: Settings, lookup: Lookup) -> Flask:
         if page.outcome is Outcome.UNAVAILABLE:
             return render_template("unavailable.html", page=page, heading=UNAVAILABLE_HEADING, try_again=TRY_AGAIN)
         if page.outcome is Outcome.FAILED:
-            return render_template("error.html")
+            return render_template("error.html"), 500  # the same status as the app's own error page
         samples = lookup.sample_list() if page.outcome is Outcome.NOT_AVAILABLE_OFFLINE else None
         return render_template("message.html", page=page, samples=samples)
 
