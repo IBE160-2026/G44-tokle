@@ -96,14 +96,19 @@ _MONTHS = ("Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct",
 
 
 def stored_at(epoch_seconds: int, tz: tzinfo | None = None) -> str:
-    """When the Wallet's data was stored (FR-2, UX-DR20): "Data stored 15 Oct 2026, 14:02".
+    """When the Wallet's data was stored (FR-2, UX-DR20): "Data stored 15 Oct 2026, 14:02"."""
+    return f"Data stored {stored_on(epoch_seconds, tz)}"
+
+
+def stored_on(epoch_seconds: int, tz: tzinfo | None = None) -> str:
+    """A stored snapshot's date and time (FR-2, UX-DR23): "15 Oct 2026, 14:02", as in "Show stored data from …".
 
     In the computer's own time zone unless `tz` is given. English month names, whatever the locale.
     """
     moment = datetime.fromtimestamp(_whole(epoch_seconds, "time"), tz=tz or timezone.utc)
     if tz is None:
         moment = moment.astimezone()  # the laptop's local time
-    return f"Data stored {moment.day} {_MONTHS[moment.month - 1]} {moment.year}, {moment:%H:%M}"
+    return f"{moment.day} {_MONTHS[moment.month - 1]} {moment.year}, {moment:%H:%M}"
 
 
 def _whole(value: object, name: str) -> int:

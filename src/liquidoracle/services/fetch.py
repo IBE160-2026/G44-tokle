@@ -10,7 +10,7 @@ from dataclasses import dataclass
 from liquidoracle.core.positions import build_positions
 from liquidoracle.core.skilltest import skill_test
 from liquidoracle.data.client import WalletClient
-from liquidoracle.data.store import Store
+from liquidoracle.data.store import Snapshot, Store
 from liquidoracle.data.window import WINDOW_LIMIT, positions_near
 from liquidoracle.records import SkillTestResult
 
@@ -48,13 +48,16 @@ def skill_result(store: Store, wallet: str, *, seed: int) -> SkillTestResult | N
 
 
 def stored_result(store: Store, wallet: str, *, seed: int) -> StoredResult | None:
-    """The Skill Test on the Wallet's latest complete snapshot, with its time, or None when none is stored.
+    """The Skill Test on the Wallet's latest complete snapshot, with its time, or None when none is stored."""
+    snapshot = store.latest_snapshot(wallet.strip().lower())
+    return None if snapshot is None else result_of(snapshot, seed=seed)
+
+
+def result_of(snapshot: Snapshot, *, seed: int) -> StoredResult:
+    """The Skill Test on one stored snapshot, with the time it was completed.
 
     The random unit is the Wallet's address (AD-15), the scope `lookup` (AD-22).
     """
-    snapshot = store.latest_snapshot(wallet.strip().lower())
-    if snapshot is None:
-        return None
     position_set = build_positions(
         snapshot.activity,
         {m.condition_id: m for m in snapshot.markets},

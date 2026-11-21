@@ -40,8 +40,8 @@
 - [ ] 2026-11-20 [story-1-7-verdict-card](989-2026-11-20-16-52-21-story-1-7-verdict-card.md) — Story 3.3: decide whether split-or-merged Positions count in the Exit PnL total and whether sell fees count (moved from 1.7)
 - [ ] 2026-11-20 [story-1-7-verdict-card](989-2026-11-20-16-52-21-story-1-7-verdict-card.md) — Story 3.4: the Verdict page scrolls sideways at 320 px wide (the head grid doesn't stack yet)
 - [x] 2026-11-20 [story-2-1-polymarket-client](988-2026-11-20-22-15-07-story-2-1-polymarket-client.md) — set Story 2.1 to `done` in `sprint-status.yaml` when its PR is merged (løst 2026-11-21: 72427a1)
-- [ ] 2026-11-20 [story-2-1-polymarket-client](988-2026-11-20-22-15-07-story-2-1-polymarket-client.md) — Story 2.5: once live runs get the client, the lookup service must not show the Sample list or the "not loaded" box in live mode (moved from 2.1)
-- [ ] 2026-11-20 [story-2-1-polymarket-client](988-2026-11-20-22-15-07-story-2-1-polymarket-client.md) — Story 2.5: find out what Data API v2 answers for an address with no history (empty list, 404 or 400) (`deferred-work.md`)
+- [x] 2026-11-20 [story-2-1-polymarket-client](988-2026-11-20-22-15-07-story-2-1-polymarket-client.md) — Story 2.5: once live runs get the client, the lookup service must not show the Sample list or the "not loaded" box in live mode (moved from 2.1) (løst 2026-11-21: 47992ab)
+- [x] 2026-11-20 [story-2-1-polymarket-client](988-2026-11-20-22-15-07-story-2-1-polymarket-client.md) — Story 2.5: find out what Data API v2 answers for an address with no history (empty list, 404 or 400) (`deferred-work.md`) (løst 2026-11-21: 200 og tomme lister, 6be78cb)
 - [x] 2026-11-20 [story-2-1-polymarket-client](988-2026-11-20-22-15-07-story-2-1-polymarket-client.md) — Story 2.2: add `ListedPosition.last_event_at` together with the Sample JSON change it needs (løst 2026-11-21: 4cc85c7)
 - [x] 2026-11-21 [story-2-2-one-complete-snapshot](987-2026-11-21-00-09-19-story-2-2-one-complete-snapshot.md) — set Story 2.2 to `done` in `sprint-status.yaml` when its PR is merged (løst 2026-11-21: 92bdd0a)
 - [x] 2026-11-21 [story-2-2-one-complete-snapshot](987-2026-11-21-00-09-19-story-2-2-one-complete-snapshot.md) — Story 2.3: the fee-schedule check must also handle a negative Own Fee (moved from 2.2) (løst 2026-11-21: 7fd1d3f)
@@ -55,4 +55,7 @@
 - [ ] 2026-11-21 [story-2-4-linked-bets](985-2026-11-21-16-13-57-story-2-4-linked-bets.md) — Story 2.6: record the 10 real Sample Wallets' uncoupled share next to their Verdicts (moved from 2.4)
 - [ ] 2026-11-21 [story-2-4-linked-bets](985-2026-11-21-16-13-57-story-2-4-linked-bets.md) — Story 2.6: check that every negRisk Market in the 10 real Wallets' Gamma records is Yes/No; otherwise CONVERSION matching needs the raw negRiskMarketID (`deferred-work.md`)
 - [ ] 2026-11-21 [story-2-4-linked-bets](985-2026-11-21-16-13-57-story-2-4-linked-bets.md) — Story 2.7: the 0x091596 hand calculation leaves out its Romania event (CONVERSION, Story 2.4)
-- [ ] 2026-11-21 [story-2-4-linked-bets](985-2026-11-21-16-13-57-story-2-4-linked-bets.md) — set Story 2.4 to `done` in `sprint-status.yaml` when its PR is merged
+- [x] 2026-11-21 [story-2-4-linked-bets](985-2026-11-21-16-13-57-story-2-4-linked-bets.md) — set Story 2.4 to `done` in `sprint-status.yaml` when its PR is merged (løst 2026-11-21: d18fbe1)
+- [ ] 2026-11-21 [story-2-5-live-lookup](984-2026-11-21-21-49-03-story-2-5-live-lookup.md) — Story 2.6: time the real Sample Wallets from stored data (within 10 s, NFR-10) and one live lookup including the fetch (no target)
+- [ ] 2026-11-21 [story-2-5-live-lookup](984-2026-11-21-21-49-03-story-2-5-live-lookup.md) — Story 3.4 or later: `progress.js` has no automated test; the repo has no JavaScript test setup (`deferred-work.md`)
+- [ ] 2026-11-21 [story-2-5-live-lookup](984-2026-11-21-21-49-03-story-2-5-live-lookup.md) — set Story 2.5 to `done` in `sprint-status.yaml` when its PR is merged

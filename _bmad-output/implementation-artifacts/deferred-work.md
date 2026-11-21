@@ -18,6 +18,7 @@ Findings and goals set aside by `bmad-build`, each with where it came from.
 - source_spec: `_bmad-output/implementation-artifacts/spec-2-1-polymarket-client-read-only-and-polite.md`
   summary: Find out what Data API v2 answers for a valid address with no Polymarket history (empty list, 404 or 400), so Story 2.5 can show "No Polymarket history found" instead of treating it as a bad request.
   evidence: maybe-false, would be medium. The Story 2.1 client raises PolymarketBadRequest on a 404 from the Data API; if v2 answers 404 for an unknown user, Story 2.5 cannot tell it from a real bug. One live request with an unused address settles it (add it to tests/online/).
+  resolved: Story 2.5 (2026-11-21): one live probe with a random unused address got 200 and empty data on both positions lists and on activity, so "no history" = both lists empty (`NoPolymarketHistory`); an online test in `tests/online/` checks it.
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-2-2-a-wallet-s-bets-as-one-complete-snapshot.md`
   summary: The negative Own Fee entry above (from spec-1-4) now belongs to Story 2.3, not Story 2.2: the fee-schedule check is built in 2.3 (Edvard, 2026-11-20; epics.md 2.3 states it).
@@ -36,3 +37,6 @@ Findings and goals set aside by `bmad-build`, each with where it came from.
 - source_spec: `_bmad-output/implementation-artifacts/spec-2-4-linked-bets-on-real-data.md`
   summary: A CONVERSION is matched through `Market.neg_risk_id`, which is set only for Yes/No negRisk Markets with two tokens; a negRisk Market of another shape would have its event's CONVERSION dropped and its converted Positions tested.
   evidence: maybe-false, would be medium (Story 2.4 review, all three reviewers). 108 of 108 negRisk Markets in the raw Gamma data are Yes/No, and Polymarket's negative-risk events are built from Yes/No Markets; such a Market is now logged ("left uncoupled"). Settle it in Story 2.6 by checking the outcomes of every negRisk Market in the 10 real Sample Wallets' Gamma records; if any is not Yes/No, keep the raw negRiskMarketID for CONVERSION matching apart from the coupling.
+- source_spec: `_bmad-output/implementation-artifacts/spec-2-5-look-up-a-live-wallet.md`
+  summary: `progress.js` (polling, swapping in the result, focus on the new heading, giving up after 30 failed polls) runs in no automated test; only the Python side of the progress contract is tested.
+  evidence: Story 2.5 review (verification gap, blind hunter). The repo has no JavaScript test runner. Edvard checks one live lookup in a browser; a browser test belongs with Story 3.4's layout and accessibility pass if a runner is added then.

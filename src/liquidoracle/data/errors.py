@@ -10,6 +10,14 @@ class NotAvailableOffline(LookupError):
     """Offline Mode was asked for a Wallet or Market outside the Sample Dataset (FR-14)."""
 
 
+class NoPolymarketHistory(LookupError):
+    """Polymarket has no positions for this address, open or closed (FR-1, UX-DR23; Story 2.5).
+
+    Data API v2 answers an unused address with 200 and empty lists, not an error (checked live,
+    2026-11-21). The address may be a wallet app's own address instead of its Polymarket proxy wallet.
+    """
+
+
 class PolymarketUnavailable(RuntimeError):
     """Polymarket did not answer usefully after the one retry policy (AD-3, FR-2).
 

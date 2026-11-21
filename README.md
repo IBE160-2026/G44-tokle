@@ -6,7 +6,7 @@ The app only reads public data. It never places orders, holds keys or touches a 
 
 Course project in **IBE160 Programmering med KI** at Høgskolen i Molde, autumn 2026. Group G44: Edvard Tokle.
 
-> **Status (Story 1.7):** stage 1's core works in Offline Mode. You can check the Synthetic Wallets (made-up Wallets whose right answers are known) and see their Verdict cards. Looking up a live Polymarket Wallet comes in Epic 2; the luck chart and the honesty notes come in Epic 3 (plan: [`_bmad-output/planning-artifacts/epics.md`](_bmad-output/planning-artifacts/epics.md)).
+> **Status (Story 2.5):** stage 1's core works in Offline Mode and live. Offline, you can check the Synthetic Wallets (made-up Wallets whose right answers are known). Live, you can paste any Polymarket address and get its Verdict card. The 10 real Sample Wallets come in Story 2.6; the luck chart and the honesty notes come in Epic 3 (plan: [`_bmad-output/planning-artifacts/epics.md`](_bmad-output/planning-artifacts/epics.md)).
 
 ## Prerequisites
 
@@ -32,14 +32,27 @@ uv run liquidoracle run --offline
 ```
 
 1. `uv sync` installs Python and the packages.
-2. `uv run liquidoracle load-sample` loads the Sample Dataset into the database `instance/offline.db` (about 75 MB, never committed). It regenerates the 1,000 coin-flipper Wallets in `instance/synthetic/coin-flippers/`, then loads them and the other Synthetic Wallets. It takes about 15 to 30 seconds. It always writes `instance/offline.db`, never the live database, and running it again replaces each Wallet's stored data.
+2. `uv run liquidoracle load-sample` loads the Sample Dataset into the database `instance/offline.db` (about 75 MB, never committed). It regenerates the 1,000 coin-flipper Wallets in `instance/synthetic/coin-flippers/`, then loads them and the other Synthetic Wallets. It takes about 15 to 30 seconds. It always writes `instance/offline.db`, never the live database, and running it again replaces each Wallet's stored data. After pulling a newer version, run it again if the app says the Sample Dataset is not loaded: a change to the database layout empties `instance/offline.db`.
 3. `uv run liquidoracle run --offline` starts the app in Offline Mode: sample data only, no network.
 
 Then open **http://127.0.0.1:8044** in your browser. Under *Sample Wallets*, pick **Sharp trader**: its Verdict card says *Skilled (high confidence)*. The thin wallet shows *Not enough data*, and a coin-flipper shows *No evidence of skill*. The list shows one of the 1,000 coin-flippers; to check another, open any file in `instance/synthetic/coin-flippers/`, copy the value after `"address":` (0x and 40 characters) and paste it into the address field. Stop the app with `Ctrl+C`.
 
-The app starts in the dark theme. The round button at the top right switches to the light theme and back, and the browser remembers your pick. That button is the app's only JavaScript, `src/liquidoracle/web/static/js/theme.js`; every page also works without JavaScript, in the dark theme.
+The app starts in the dark theme. The round button at the top right switches to the light theme and back, and the browser remembers your pick. Every page also works without JavaScript. The app has two small JavaScript files, in `src/liquidoracle/web/static/js/`:
 
-The app runs only on your own computer (it listens on 127.0.0.1, not on the network). Without `--offline`, the app starts but can't look up Wallets yet: live lookups come in Epic 2.
+- `theme.js`: the light and dark theme button.
+- `progress.js`: while a live lookup fetches, it asks the app once a second whether the fetch is done, then shows the result in place and moves the keyboard focus to its heading. Without it, the page has a "Reload this page" link instead.
+
+The app runs only on your own computer (it listens on 127.0.0.1, not on the network).
+
+### Live lookups
+
+```sh
+uv run liquidoracle run
+```
+
+Without `--offline` the app reads Polymarket's public data (no key, no account, read-only, at most 5 requests a second). Paste a Wallet address: the one shown on the Wallet's Polymarket profile page, 0x and 40 characters. The page says "Checking 0x…" while a background thread fetches the Wallet's latest 2,000 resolved bets; that takes a few seconds for a small Wallet and can take a minute for a very large one. Then the Verdict card appears.
+
+Live data is stored in `instance/live.db` (never committed). Looking up the same Wallet again within 24 hours uses the stored data and makes no network call; the card's "Data stored …" line says when it was fetched. If Polymarket does not answer, the page says so and offers the Wallet's older stored data, if there is any. An address that never traded on Polymarket gets "No Polymarket history found".
 
 `uv run liquidoracle make-synthetic` rebuilds the Synthetic Wallets: made-up Wallets whose correct answers are known in advance, used to check the Skill Test. Run it from the repository folder. It rewrites the five small Wallets in `sample_data/synthetic/` (committed; the output is identical every time, so `git status` stays clean) and writes 1,000 coin-flipper Wallets (about 90 MB) to `instance/synthetic/coin-flippers/`, which is never committed. You don't need it to run the app or the tests.
 
@@ -72,7 +85,7 @@ No key is needed to run the app or the tests. A bad value, such as a pace above 
 uv run pytest
 ```
 
-Every test runs with the network blocked. Tests that need the real network live in `tests/online/` and are skipped unless you ask for them: `uv run pytest -m online --force-enable-socket tests/online`. Today that is one smoke test: it reads the first page of one Sample Wallet's closed positions from Polymarket's public API (one request, or three if Polymarket is busy; no key).
+Every test runs with the network blocked. Tests that need the real network live in `tests/online/` and are skipped unless you ask for them: `uv run pytest -m online --force-enable-socket tests/online`. Today that is two smoke tests, three requests in all (more if Polymarket is busy; no key): one reads the first page of one Sample Wallet's closed positions, the other checks that a random, never-used address gets empty lists rather than an error.
 
 Checks marked `slow` repeat a whole test 100 times by default. `uv run pytest --repetitions 1000` runs them in full, as CI does on Linux with Python 3.14.
 

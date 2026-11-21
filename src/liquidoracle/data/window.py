@@ -12,7 +12,7 @@ import logging
 from collections.abc import Callable, Iterable, Mapping, Sequence
 
 from liquidoracle.data.client import WalletClient
-from liquidoracle.data.errors import PolymarketUnavailable
+from liquidoracle.data.errors import NoPolymarketHistory, PolymarketUnavailable
 from liquidoracle.records import ListedPosition, Market, Window
 
 log = logging.getLogger(__name__)
@@ -39,7 +39,8 @@ def positions_near(
 
     `stored_markets(ids)` gives the resolved Markets already stored, which are never fetched
     again (AD-4). A positions list that cannot be read whole raises `PolymarketUnavailable`:
-    a Verdict never rests on half a list. A Cut-off Date side comes with Story 4.1.
+    a Verdict never rests on half a list. Both lists empty raises `NoPolymarketHistory` (FR-1);
+    lists with no resolved Position give an empty window. A Cut-off Date side comes with Story 4.1.
     """
     if cutoff is not None or side is not None:
         raise NotImplementedError("the before and after parts of a Cut-off Date come with Story 4.1")
@@ -67,6 +68,8 @@ def positions_near(
 
     closed_list = client.positions_list(wallet, "CLOSED", sort_by="TIMESTAMP", sort_direction="DESC", until=enough)
     _require_whole(closed_list.complete, "CLOSED")
+    if not open_list.rows and not closed_list.rows:
+        raise NoPolymarketHistory(f"Polymarket has no positions for {wallet}")
     markets.learn(row.condition_id for row in closed_list.rows)  # the last page never reaches `enough`
 
     candidates: dict[str, ListedPosition] = {}
