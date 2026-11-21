@@ -17,7 +17,7 @@ from liquidoracle.records import ActivityRow, ListedPosition, Market
 WALLET = "0x" + "ab" * 20
 MARKET = Market("0xm1", closed=True, closed_time=1_700_000_000, token_ids=("11", "22"),
                 outcome_prices=(1.0, 0.0), fees_enabled=True, start_time=1_698_000_000, fee_rate=0.04,
-                fee_exponent=1.0, tags=("Politics", "Elections"))
+                fee_exponent=1.0, tags=("Politics", "Elections"), event_id="16868", neg_risk_id="0xevent")
 FILL = ActivityRow("TRADE", "0xm1", 1_699_000_000, 10.0, 4.37, 0.43, token_id="11", side="BUY")
 LISTED = ListedPosition("0xm1", "11", "CLOSED", 10.0, 1_699_000_000, 1_700_050_000)
 LIMIT = 2_000
@@ -166,6 +166,29 @@ def test_snapshot_naming_an_unstored_market_cannot_finish(store: Store) -> None:
     with pytest.raises(ValueError, match="0xm1"):
         store.finish_snapshot(fetch_id)
     assert store.latest_snapshot(WALLET) is None
+
+
+def test_a_conversion_naming_a_stored_markets_event_can_finish(store: Store) -> None:
+    """AD-11 (Story 2.4): a CONVERSION row names its negative-risk event, which some stored Market belongs to."""
+    conversion = ActivityRow("CONVERSION", "0xevent", 1_699_500_000, 5.0, 0.0, 0.0)
+    write(store, fills=(FILL, conversion))
+    snapshot = store.latest_snapshot(WALLET)
+    assert snapshot is not None and snapshot.activity == (FILL, conversion) and snapshot.markets == (MARKET,)
+
+
+def test_a_conversion_naming_an_unknown_event_cannot_finish(store: Store) -> None:
+    """AD-19: a CONVERSION whose event no stored Market belongs to leaves the snapshot incomplete."""
+    conversion = ActivityRow("CONVERSION", "0xother", 1_699_500_000, 5.0, 0.0, 0.0)
+    with pytest.raises(ValueError, match="0xother"):
+        write(store, fills=(FILL, conversion))
+    assert store.latest_snapshot(WALLET) is None
+
+
+def test_only_a_conversion_may_name_an_event(store: Store) -> None:
+    """AD-11, AD-19: a SPLIT naming the event id is not a Market row, so the snapshot stays incomplete."""
+    split = ActivityRow("SPLIT", "0xevent", 1_699_500_000, 5.0, 5.0, 0.0)
+    with pytest.raises(ValueError, match="0xevent"):
+        write(store, fills=(FILL, split))
 
 
 def test_a_failed_write_is_rolled_back(store: Store) -> None:
@@ -358,17 +381,31 @@ INSERT INTO market VALUES ('0xold', 1, 1, '["1","2"]', '[1.0,0.0]', 0, 1);
 PRAGMA user_version = 1;
 """
 
+# Story 2.2's market table, before the event columns of Story 2.4.
+STORY_2_2_SCHEMA = """
+CREATE TABLE snapshot (fetch_id INTEGER PRIMARY KEY AUTOINCREMENT, wallet TEXT NOT NULL, window_limit INTEGER NOT NULL,
+    started_at INTEGER NOT NULL, completed_at INTEGER, activity_read_until INTEGER);
+CREATE TABLE market (condition_id TEXT PRIMARY KEY, closed INTEGER NOT NULL, closed_time INTEGER,
+    token_ids TEXT NOT NULL, outcome_prices TEXT NOT NULL, fees_enabled INTEGER NOT NULL, start_time INTEGER,
+    fee_rate REAL, fee_exponent REAL, tags TEXT NOT NULL, fetched_at INTEGER NOT NULL);
+INSERT INTO snapshot VALUES (1, 'w', 2000, 1, 2, NULL);
+INSERT INTO market VALUES ('0xold', 1, 1, '["1","2"]', '[1.0,0.0]', 0, NULL, NULL, NULL, '[]', 1);
+PRAGMA user_version = 2;
+"""
 
-def test_an_epic_1_database_is_rebuilt_and_takes_a_window_snapshot(tmp_path: Path) -> None:
-    """AD-6 (review, Story 2.2): a database from Epic 1 (schema version 1) gets the new tables, keeps none of
-    its fetched rows, and a window snapshot can be written and read back."""
-    path = tmp_path / "epic1.db"
+
+@pytest.mark.parametrize("old_schema", [EPIC_1_SCHEMA, STORY_2_2_SCHEMA], ids=["epic-1", "story-2-2"])
+def test_an_older_database_is_rebuilt_and_takes_a_window_snapshot(tmp_path: Path, old_schema: str) -> None:
+    """AD-6 (review, Story 2.2; Story 2.4): a database from Epic 1 (version 1) or Story 2.2 (version 2, no
+    event columns) gets the new tables, keeps none of its fetched rows, and a window snapshot can be written and
+    read back with its Markets' events."""
+    path = tmp_path / "old.db"
     with sqlite3.connect(path) as old:
-        old.executescript(EPIC_1_SCHEMA)
+        old.executescript(old_schema)
     old.close()
     db = Store(path)
     try:
-        assert raw(db, "PRAGMA user_version") == [(SCHEMA_VERSION,)] and SCHEMA_VERSION == 2
+        assert raw(db, "PRAGMA user_version") == [(SCHEMA_VERSION,)] and SCHEMA_VERSION == 3
         assert db.latest_snapshot("w") is None and db.resolved_markets(["0xold"]) == {}
         write(db)
         snapshot = db.latest_snapshot(WALLET)

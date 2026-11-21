@@ -822,6 +822,10 @@ def test_a_row_that_is_not_an_object_is_unreadable(row: object) -> None:
         {"feeSchedule": {"rate": "0.04", "exponent": 1}},
         {"tags": "Politics"},  # not a list
         {"tags": [{"slug": "politics"}]},  # a tag without a label
+        {"events": {"id": "1"}},  # not a list
+        {"events": ["16868"]},  # an event that is not an object
+        {"events": [{"id": ["16868"]}]},  # an event id that is not text
+        {"negRisk": True, "negRiskMarketID": "0xe", "outcomes": "Yes, No"},  # outcomes not a JSON list
     ],
 )
 def test_gamma_market_not_as_expected_is_unreadable(bad: dict[str, object]) -> None:
@@ -956,3 +960,46 @@ def test_gamma_market_without_start_fees_or_tags() -> None:
     """AD-12: a Market with no schedule, start date or tags has None, None and none."""
     (market,) = client(FakeTransport([ok([gamma_market("0xabc", feeSchedule=None, tags=[])])])).markets(["0xabc"])
     assert (market.start_time, market.fee_rate, market.fee_exponent, market.tags) == (None, None, None, ())
+
+
+# --- AD-20: events (Story 2.4) ----------------------------------------------------------------
+
+
+def test_gamma_event_and_negative_risk_event_are_read() -> None:
+    """AD-20: the Market's event id (`events[0].id`, number or text) and, for a negRisk Yes/No Market, its
+    `negRiskMarketID`, so the Skill Test can share one draw across the event."""
+    row = gamma_market("0xabc", negRisk=True, negRiskMarketID="0x5b32", events=[{"id": "16868", "title": "Romania"}])
+    (market,) = client(FakeTransport([ok([row])])).markets(["0xabc"])
+    assert (market.event_id, market.neg_risk_id, market.token_ids[0]) == ("16868", "0x5b32", "4125767081787631735")
+    numeric = gamma_market("0xabc", events=[{"id": 708641}])
+    (market,) = client(FakeTransport([ok([numeric])])).markets(["0xabc"])
+    assert (market.event_id, market.neg_risk_id) == ("708641", None)
+
+
+@pytest.mark.parametrize(
+    "extra",
+    [
+        {"negRisk": False, "negRiskMarketID": "0x5b32"},  # not negative-risk
+        {"negRisk": True},  # no event id
+        {"negRisk": True, "negRiskMarketID": ""},
+        {"negRisk": True, "negRiskMarketID": "0x5b32", "outcomes": '["No", "Yes"]'},  # Yes is not first
+        {"negRisk": True, "negRiskMarketID": "0x5b32", "outcomes": '["Spain", "Argentina"]'},
+        {"negRisk": True, "negRiskMarketID": "0x5b32", "outcomes": None},
+        {"negRisk": "true", "negRiskMarketID": "0x5b32"},  # not a real true
+        {"negRisk": True, "negRiskMarketID": "0x5b32", "clobTokenIds": '["1", "2", "3"]', "outcomePrices": '["0", "1", "0"]'},
+    ],
+)
+def test_only_a_yes_no_negative_risk_market_is_coupled(extra: dict[str, object], caplog: pytest.LogCaptureFixture) -> None:
+    """AD-20: any other shape is left uncoupled (counted in the measured share), never guessed at; a negRisk Market
+    that is not coupled is logged, since its CONVERSION rows would not be matched either (review, Story 2.4)."""
+    with caplog.at_level(logging.WARNING, logger="liquidoracle.data.polymarket"):
+        (market,) = client(FakeTransport([ok([gamma_market("0xabc", **extra)])])).markets(["0xabc"])
+    assert market.neg_risk_id is None
+    assert ("left uncoupled" in caplog.text) is (extra.get("negRisk") is True)
+
+
+def test_gamma_market_without_events_has_none() -> None:
+    """AD-20: no `events`, or an empty list, gives no event id."""
+    for extra in ({}, {"events": []}, {"events": [{"title": "no id"}]}):
+        (market,) = client(FakeTransport([ok([gamma_market("0xabc", **extra)])])).markets(["0xabc"])
+        assert market.event_id is None

@@ -266,6 +266,11 @@
    "clobTokenIds": "[\"5963667090633809401874745693672490520503206693696243932960841034682531836868\", \"10929803792579394812588164769315078924618263870728384735881929060301477251567\"]",
    "closed": false,
    "conditionId": "0x03f73e665ef7f6221d6f54ee0aac09672f715a29717d67622bd36be6ceb0846f",
+   "events": [
+    {
+     "id": "138774"
+    }
+   ],
    "feeSchedule": {
     "exponent": 1,
     "rate": 0.01,
@@ -273,7 +278,9 @@
     "takerOnly": true
    },
    "feesEnabled": true,
+   "negRisk": false,
    "outcomePrices": "[\"0.02\", \"0.98\"]",
+   "outcomes": "[\"Dune 3\", \"Avengers: Doomsday\"]",
    "startDate": "2026-01-05T22:47:11.161Z",
    "tags": [
     {
@@ -292,6 +299,11 @@
    "closed": true,
    "closedTime": "2026-05-20 15:04:26+00",
    "conditionId": "0x206138f391fab114f9e279e5e940ba82b514bdac6b3ada364295e136621a3ba1",
+   "events": [
+    {
+     "id": "248295"
+    }
+   ],
    "feeSchedule": {
     "exponent": 1,
     "rate": 0.01,
@@ -299,7 +311,9 @@
     "takerOnly": true
    },
    "feesEnabled": true,
+   "negRisk": false,
    "outcomePrices": "[\"1\", \"0\"]",
+   "outcomes": "[\"Yes\", \"No\"]",
    "startDate": "2026-03-31T18:09:23.522087Z",
    "tags": [
     {
@@ -318,6 +332,11 @@
    "closed": true,
    "closedTime": "2026-05-04 03:09:44+00",
    "conditionId": "0x41c3c7bf8412216091308ca8e2935a819cc1ecf585f7f14a359d3431949546db",
+   "events": [
+    {
+     "id": "389193"
+    }
+   ],
    "feeSchedule": {
     "exponent": 1,
     "rate": 0.03,
@@ -325,7 +344,9 @@
     "takerOnly": true
    },
    "feesEnabled": true,
+   "negRisk": false,
    "outcomePrices": "[\"1\", \"0\"]",
+   "outcomes": "[\"Habs\", \"Lightning\"]",
    "startDate": "2026-04-17T16:22:27.948459Z",
    "tags": [
     {
@@ -353,6 +374,11 @@
    "closed": true,
    "closedTime": "2026-05-19 03:12:26+00",
    "conditionId": "0x4435d57c325f205d59e78d12aab6a15163bdc0d4c756dba129fba075f9bb3e32",
+   "events": [
+    {
+     "id": "495215"
+    }
+   ],
    "feeSchedule": {
     "exponent": 1,
     "rate": 0.03,
@@ -360,7 +386,9 @@
     "takerOnly": true
    },
    "feesEnabled": true,
+   "negRisk": false,
    "outcomePrices": "[\"1\", \"0\"]",
+   "outcomes": "[\"Canadiens\", \"Sabres\"]",
    "startDate": "2026-05-17T16:47:05.356128Z",
    "tags": [
     {
@@ -382,6 +410,11 @@
    "closed": true,
    "closedTime": "2026-05-22 03:33:44+00",
    "conditionId": "0x4e8557c944d1eb5478effff06805755005b8a845be09a7c4bad2283f23fae6ab",
+   "events": [
+    {
+     "id": "502385"
+    }
+   ],
    "feeSchedule": {
     "exponent": 1,
     "rate": 0.03,
@@ -389,7 +422,9 @@
     "takerOnly": true
    },
    "feesEnabled": true,
+   "negRisk": false,
    "outcomePrices": "[\"1\", \"0\"]",
+   "outcomes": "[\"Canadiens\", \"Hurricanes\"]",
    "startDate": "2026-05-19T15:32:17.667699Z",
    "tags": [
     {
@@ -411,6 +446,11 @@
    "closed": true,
    "closedTime": "2026-05-30 05:54:05+00",
    "conditionId": "0x52847ca1413b76a5570b97c0c432e38dbe61b0140f9d45e912604591b08f6fca",
+   "events": [
+    {
+     "id": "27829"
+    }
+   ],
    "feeSchedule": {
     "exponent": 1,
     "rate": 0.03,
@@ -418,7 +458,10 @@
     "takerOnly": true
    },
    "feesEnabled": true,
+   "negRisk": true,
+   "negRiskMarketID": "0x7faa974ff857682d64433d5c4dfba46ff51415a68cbd5bd1994248df2d561200",
    "outcomePrices": "[\"0\", \"1\"]",
+   "outcomes": "[\"Yes\", \"No\"]",
    "startDate": "2025-06-23T16:00:57.442213Z",
    "tags": [
     {
@@ -443,6 +486,11 @@
    "closed": true,
    "closedTime": "2026-05-20 13:02:29+00",
    "conditionId": "0x56e3a277978cde35f4ddea3ddcf62eb0d4f2fb0b282fb9d227f0b4645281a0ab",
+   "events": [
+    {
+     "id": "248295"
+    }
+   ],
    "feeSchedule": {
     "exponent": 1,
     "rate": 0.01,
@@ -450,7 +498,9 @@
     "takerOnly": true
    },
    "feesEnabled": true,
+   "negRisk": false,
    "outcomePrices": "[\"0\", \"1\"]",
+   "outcomes": "[\"Yes\", \"No\"]",
    "startDate": "2026-03-05T22:58:22.526386Z",
    "tags": [
     {
@@ -468,6 +518,11 @@
    "clobTokenIds": "[\"75971664127723976087466985937865139676371988915908568595607526815212140357980\", \"63288727222857538715525574191584916211293137089612615781724211046379219138896\"]",
    "closed": false,
    "conditionId": "0x57630ca87de434c74db1c388ed88c1920a6d1dfcf4094ef14a415dcc5049babc",
+   "events": [
+    {
+     "id": "97681"
+    }
+   ],
    "feeSchedule": {
     "exponent": 1,
     "rate": 0.01,
@@ -475,7 +530,9 @@
     "takerOnly": true
    },
    "feesEnabled": true,
+   "negRisk": false,
    "outcomePrices": "[\"0.065\", \"0.935\"]",
+   "outcomes": "[\"Yes\", \"No\"]",
    "startDate": "2025-12-05T05:44:10.57Z",
    "tags": [
     {
@@ -494,6 +551,11 @@
    "closed": true,
    "closedTime": "2026-05-24 02:23:46+00",
    "conditionId": "0x76a404ed10bbfd8bceefbe9098867fa773217da825f0d63814678fab596a5f6d",
+   "events": [
+    {
+     "id": "502386"
+    }
+   ],
    "feeSchedule": {
     "exponent": 1,
     "rate": 0.03,
@@ -501,7 +563,9 @@
     "takerOnly": true
    },
    "feesEnabled": true,
+   "negRisk": false,
    "outcomePrices": "[\"0\", \"1\"]",
+   "outcomes": "[\"Canadiens\", \"Hurricanes\"]",
    "startDate": "2026-05-19T15:32:40.72521Z",
    "tags": [
     {
@@ -523,6 +587,11 @@
    "closed": true,
    "closedTime": "2026-05-20 12:56:25+00",
    "conditionId": "0x7876e77675dbae67bca6071ff6423703f995d1028fb0a871eb0f0a25449c1113",
+   "events": [
+    {
+     "id": "248295"
+    }
+   ],
    "feeSchedule": {
     "exponent": 1,
     "rate": 0.01,
@@ -530,7 +599,9 @@
     "takerOnly": true
    },
    "feesEnabled": true,
+   "negRisk": false,
    "outcomePrices": "[\"1\", \"0\"]",
+   "outcomes": "[\"Yes\", \"No\"]",
    "startDate": "2026-03-05T22:58:28.813385Z",
    "tags": [
     {
@@ -549,6 +620,11 @@
    "closed": true,
    "closedTime": "2026-05-07 22:49:05+00",
    "conditionId": "0xa919b6a7cc8c958d82141ec2ba77b8fe813083a7ee2083178305c409ae28ce0d",
+   "events": [
+    {
+     "id": "199812"
+    }
+   ],
    "feeSchedule": {
     "exponent": 1,
     "rate": 0.01,
@@ -556,7 +632,10 @@
     "takerOnly": true
    },
    "feesEnabled": true,
+   "negRisk": true,
+   "negRiskMarketID": "0xc481edff678e0e25e8cb8ecc0b59b4afbfd9c63db06bbfb92255432232345100",
    "outcomePrices": "[\"0\", \"1\"]",
+   "outcomes": "[\"Yes\", \"No\"]",
    "startDate": "2026-02-06T22:23:47.146223Z",
    "tags": [
     {
@@ -581,6 +660,11 @@
    "closed": true,
    "closedTime": "2026-10-06 05:10:42+00",
    "conditionId": "0xc7bc5d759ecbd05cfbf3b41ec98f1cd7ab306234bf76fd6c1768d3be1d6b9e76",
+   "events": [
+    {
+     "id": "95203"
+    }
+   ],
    "feeSchedule": {
     "exponent": 1,
     "rate": 0.01,
@@ -588,7 +672,10 @@
     "takerOnly": true
    },
    "feesEnabled": true,
+   "negRisk": true,
+   "negRiskMarketID": "0x9be11be9c5b901474145a07f8c7ea5e6a117cede7e650bbf94e4b043ad9dc300",
    "outcomePrices": "[\"0\", \"1\"]",
+   "outcomes": "[\"Yes\", \"No\"]",
    "startDate": "2025-12-02T17:15:34.40184Z",
    "tags": [
     {
@@ -622,6 +709,11 @@
    "closed": true,
    "closedTime": "2026-06-16 05:24:57+00",
    "conditionId": "0xd175952df3f4312096d408a699c922af54d31b17b8d22afb35e8f09016053de9",
+   "events": [
+    {
+     "id": "287195"
+    }
+   ],
    "feeSchedule": {
     "exponent": 1,
     "rate": 0.01,
@@ -629,7 +721,10 @@
     "takerOnly": true
    },
    "feesEnabled": true,
+   "negRisk": true,
+   "negRiskMarketID": "0x9498cc72009419ed5b3b301776dd1e99dda54f159f7e7ab438d0ee9380731300",
    "outcomePrices": "[\"0\", \"1\"]",
+   "outcomes": "[\"Yes\", \"No\"]",
    "startDate": "2026-03-19T23:17:17.330539Z",
    "tags": [
     {
@@ -657,6 +752,11 @@
    "closed": true,
    "closedTime": "2026-05-20 15:10:32+00",
    "conditionId": "0xf74326b8b41bd86906a9af35fd5ee776649a928ae9e78adff88449904242a11a",
+   "events": [
+    {
+     "id": "248295"
+    }
+   ],
    "feeSchedule": {
     "exponent": 1,
     "rate": 0.01,
@@ -664,7 +764,9 @@
     "takerOnly": true
    },
    "feesEnabled": true,
+   "negRisk": false,
    "outcomePrices": "[\"0\", \"1\"]",
+   "outcomes": "[\"Yes\", \"No\"]",
    "startDate": "2026-03-05T22:58:31.178877Z",
    "tags": [
     {

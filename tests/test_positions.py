@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import random
+from dataclasses import replace
 
 import pytest
 
@@ -557,3 +558,60 @@ def test_the_left_out_share_and_the_ten_percent_flag() -> None:
     assert (window(3).left_out_share, mostly_left_out(window(3))) == (0.15, True)
     assert (window(2).left_out_share, mostly_left_out(window(2))) == (0.10, False)
     assert build([]).left_out_share == 0.0
+
+
+# --- Story 2.4: negative-risk events (AD-11, AD-20) ------------------------------------------
+
+EVENT = "0xneg-risk-event"
+
+
+def event_market(condition_id: str, *, event: str | None = EVENT, event_id: str | None = "ev1") -> Market:
+    """A Yes/No Market of a negative-risk event; token 0 is Yes."""
+    return replace(market(condition_id), token_ids=(f"{condition_id}-yes", f"{condition_id}-no"),
+                   event_id=event_id, neg_risk_id=event)
+
+
+def test_a_conversion_leaves_out_every_market_of_its_event() -> None:
+    """AD-11 (Edvard, 2026-11-21): a CONVERSION names the event, not a Market; every Position of every Market in
+    that event is 'split or merged', a listed one with no fill too, and Markets of other events are not touched."""
+    a, b, other = event_market("0xa"), event_market("0xb"), event_market("0xc", event="0xanother")
+    fills = [
+        buy(100, 0.4, token="0xa-no", cid="0xa"),
+        buy(50, 0.2, token="0xb-yes", cid="0xb"),
+        buy(10, 0.5, token="0xc-yes", cid="0xc"),
+        market_row("CONVERSION", cid=EVENT),
+    ]
+    output = ListedPosition("0xb", "0xb-no", "CLOSED", 100.0, 3, 3)  # a conversion output: listed, no TRADE row
+    result = build(fills, a, b, other, listed=[*listed_for(fills), output])
+    assert {(p.token_id, p.reason) for p in result.left_out} == {
+        ("0xa-no", ExclusionReason.SPLIT_OR_MERGED), ("0xb-yes", ExclusionReason.SPLIT_OR_MERGED),
+        ("0xb-no", ExclusionReason.SPLIT_OR_MERGED),
+    }
+    assert [p.token_id for p in result.tested] == ["0xc-yes"]
+
+
+def test_only_a_conversion_marks_a_whole_event() -> None:
+    """AD-11 (review, Story 2.4): a SPLIT or MERGE is about one Market; one whose id equals an event id marks nothing."""
+    a = event_market("0xa")
+    fills = [buy(100, 0.4, token="0xa-yes", cid="0xa"), market_row("SPLIT", cid=EVENT), market_row("MERGE", cid=EVENT)]
+    assert only(build(fills, a)).reason is None
+
+
+def test_a_market_outside_any_event_ignores_a_conversion_named_after_it_elsewhere() -> None:
+    """AD-11: a CONVERSION of an event no window Market belongs to leaves nothing out."""
+    fills = [buy(100, 0.4), market_row("CONVERSION", cid="0xsome-other-event")]
+    assert only(build(fills)).reason is None
+
+
+def test_positions_carry_their_markets_events() -> None:
+    """AD-20: each Position copies its Market's event and negative-risk event, and knows if it is the Yes token;
+    a Position the read never reached carries them too."""
+    a, plain = event_market("0xa"), event_market("0xp", event=None, event_id="ev2")
+    fills = [buy(100, 0.4, token="0xa-yes", cid="0xa"), buy(100, 0.4, token="0xa-no", cid="0xa"),
+             buy(100, 0.4, token="0xp-yes", cid="0xp")]
+    result = build(fills, a, plain)
+    fields = {p.token_id: (p.event_id, p.neg_risk_id, p.yes_side) for p in (*result.tested, *result.left_out)}
+    assert fields == {"0xa-yes": ("ev1", EVENT, True), "0xa-no": ("ev1", EVENT, False), "0xp-yes": ("ev2", None, False)}
+    unread = ListedPosition("0xa", "0xa-yes", "CLOSED", 10.0, 1, 2)
+    gone = build_positions([], {"0xa": a}, listed=[unread], not_fully_read=[unread]).left_out[0]
+    assert (gone.event_id, gone.neg_risk_id, gone.yes_side, gone.reason) == ("ev1", EVENT, True, ExclusionReason.NOT_FULLY_READ)

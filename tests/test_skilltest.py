@@ -46,6 +46,7 @@ GOLDEN = {
     "coin-flipper-0001": 8207,
     "coin-flipper-0002": 3270,
     "two-sided-40": 495,
+    "linked-event": 3906,  # AD-20 negative-risk layout, from its first run (2026-11-21, Story 2.4 review)
 }
 
 
@@ -77,6 +78,13 @@ def golden_bets(name: str) -> tuple[list[Position], str]:
     if name == "two-sided-40":
         bets = [b for i in range(40)
                 for b in (bet(i, 0.2 + 0.01 * i, i % 3 == 0, side=0), bet(i, 0.35, i % 3 != 0, shares=50.0, side=1))]
+        return bets, name
+    if name == "linked-event":  # AD-20 (review, Story 2.4): pins the negative-risk layout through the real engine
+        bets = [
+            linked(1, 0.2, True), linked(2, 0.3, False), linked(3, 0.4, False), linked(3, 0.55, True, yes=False),
+            linked(4, 0.6, True, event="e2", event_id="ev2"), linked(5, 0.7, False, event="e2", event_id="ev2"),
+            bet(9, 0.5, True),
+        ]
         return bets, name
     wallet = wallet_named(name)
     built = positions(wallet)
@@ -236,6 +244,8 @@ BAD_INPUT = {
     "endless shares": [replace(bet(1, 0.5, True), shares_held=math.inf)],
     "no fee amount": [replace(bet(1, 0.5, True), own_fees=None)],
     "fee not a number": [replace(bet(1, 0.5, True), own_fees=math.nan)],
+    "one Market in two events": [replace(bet(1, 0.5, True, side=0), neg_risk_id="e1", yes_side=True),
+                                 replace(bet(1, 0.5, False, side=1), neg_risk_id="e2")],
 }
 
 
@@ -497,3 +507,114 @@ def test_a_negative_own_fee_is_refused() -> None:
     broken = replace(built, tested=(replace(built.tested[0], own_fees=-0.01), *built.tested[1:]))
     with pytest.raises(ValueError, match="negative Own Fee"):
         skilltest.skill_test(broken, seed=SEED, unit_id=wallet.address)
+
+
+# --- Linked bets: negative-risk events and the uncoupled share (AD-20, Story 2.4) ------------
+
+RUNS = skilltest.SIMULATIONS
+
+
+def linked(i: int, price: float, won: bool, *, yes: bool = True, event: str = "e1", event_id: str = "ev1",
+           shares: float = 100.0) -> Position:
+    """A held Position in Market `n{i}` of the negative-risk event `event`, on its Yes or No token."""
+    return replace(
+        bet(i, price, won, shares=shares), condition_id=f"n{i:05d}", token_id=f"n{i:05d}-{'yes' if yes else 'no'}",
+        event_id=event_id, neg_risk_id=event, yes_side=yes,
+    )
+
+
+def wins_of(bets: list[Position], unit_id: str = "linked") -> dict[str, list[bool]]:
+    ordered, won = skilltest._simulated_wins(bets, seed=SEED, unit_id=unit_id, simulations=RUNS)
+    return {b.token_id: [bool(x) for x in won[:, i]] for i, b in enumerate(ordered)}
+
+
+def near_price(wins: list[bool], price: float) -> bool:
+    """Within 4 standard deviations of the price over RUNS Simulations (FR-5)."""
+    return abs(sum(wins) - price * RUNS) < 4 * math.sqrt(price * (1 - price) * RUNS)
+
+
+def test_a_planted_negative_risk_event_has_at_most_one_winner() -> None:
+    """AD-20 (Story 2.4): three Yes Positions at 0.2, 0.3, 0.4 in one event: at most one wins per Simulation, and
+    each wins at its own price. Drawn independently, two win together in about a quarter of the Simulations."""
+    prices = (0.2, 0.3, 0.4)
+    bets = [linked(i, p, False) for i, p in enumerate(prices)]
+    wins = wins_of(bets)
+    assert all(sum(row) <= 1 for row in zip(*wins.values()))
+    assert all(near_price(wins[b.token_id], p) for b, p in zip(bets, prices))
+    loose = wins_of([replace(b, neg_risk_id=None, yes_side=False) for b in bets])
+    assert sum(1 for row in zip(*loose.values()) if sum(row) > 1) > 0.15 * RUNS
+
+
+def test_no_bets_in_one_event_lose_at_most_once() -> None:
+    """AD-20: No at 0.9, 0.8 and 0.85 (regions 0.1, 0.2, 0.15): at most one Market wins, so at most one No loses."""
+    prices = (0.9, 0.8, 0.85)
+    bets = [linked(i, p, True, yes=False) for i, p in enumerate(prices)]
+    wins = wins_of(bets)
+    assert all(sum(not w for w in row) <= 1 for row in zip(*wins.values()))
+    assert all(near_price(wins[b.token_id], p) for b, p in zip(bets, prices))
+
+
+def test_both_sides_of_a_negative_risk_market_and_its_event_mate() -> None:
+    """AD-20: Yes 0.3 and No 0.6 in one Market (region max(0.3, 0.4)) and Yes 0.2 in another: Yes and No never both
+    win, and when the other Market wins, this one's Yes loses and its No wins."""
+    yes, no, other = linked(1, 0.3, False), linked(1, 0.6, True, yes=False), linked(2, 0.2, False)
+    wins = wins_of([yes, no, other])
+    assert not any(y and n for y, n in zip(wins[yes.token_id], wins[no.token_id]))
+    assert all(n and not y for y, n, o in zip(wins[yes.token_id], wins[no.token_id], wins[other.token_id]) if o)
+    assert near_price(wins[yes.token_id], 0.3) and near_price(wins[no.token_id], 0.6) and near_price(wins[other.token_id], 0.2)
+
+
+def test_regions_summing_above_1_keep_every_win_chance() -> None:
+    """AD-20: Yes 0.6 and 0.7 cannot be disjoint; each still wins at its price, and they overlap only as the prices
+    force (both win in about 0.6 + 0.7 - 1 = 30%)."""
+    a, b = linked(1, 0.6, False), linked(2, 0.7, False)
+    wins = wins_of([a, b])
+    assert near_price(wins[a.token_id], 0.6) and near_price(wins[b.token_id], 0.7)
+    assert near_price([x and y for x, y in zip(wins[a.token_id], wins[b.token_id])], 0.3)
+
+
+def test_two_events_draw_apart() -> None:
+    """AD-20: Markets of two different negative-risk events do not share a draw: both win together sometimes."""
+    wins = wins_of([linked(1, 0.5, False, event="e1"), linked(2, 0.5, False, event="e2")])
+    together = sum(1 for x, y in zip(*wins.values()) if x and y)
+    assert near_price([True] * together + [False] * (RUNS - together), 0.25)
+
+
+def test_linked_draws_are_repeatable_and_order_free() -> None:
+    """AD-15: the same linked Positions and Seed give the identical result, in any order."""
+    bets = [linked(i, p, i == 1) for i, p in enumerate((0.2, 0.3, 0.4))] + [bet(9, 0.5, True)]
+    first = skilltest._engine(bets, seed=SEED, unit_id="linked")
+    assert skilltest._engine(bets[::-1], seed=SEED, unit_id="linked") == first
+
+
+def test_the_uncoupled_share_counts_event_mates_that_share_no_draw() -> None:
+    """AD-20: two tested Positions in one Gamma event but different Markets, not negative-risk, both count; event-mates
+    in one negative-risk event, both sides of one Market, and a Position alone in its event do not."""
+    loose = [replace(bet(1, 0.5, True), event_id="ev9"), replace(bet(2, 0.5, True), event_id="ev9")]
+    coupled = [linked(3, 0.2, False), linked(4, 0.3, True)]
+    same_market = [replace(bet(5, 0.5, True, side=0), event_id="ev7"), replace(bet(5, 0.4, False, side=1), event_id="ev7")]
+    alone = [replace(bet(6, 0.5, True), event_id="ev6"), bet(7, 0.5, True)]
+    tested = [*loose, *coupled, *same_market, *alone]
+    assert skilltest.uncoupled_share(tested) == 2 / 8
+    assert skilltest.uncoupled_share([]) == 0.0
+    mixed = [linked(1, 0.2, False), replace(bet(2, 0.5, True), event_id="ev1")]  # one coupled, one not, same event
+    assert skilltest.uncoupled_share(mixed) == 1.0
+
+
+@pytest.mark.parametrize(("total", "noted"), [(5, True), (10, False)])
+def test_the_honesty_note_is_above_20_percent(total: int, noted: bool) -> None:
+    """AD-20, FR-11: two uncoupled event-mates among 5 tested Positions (40%) get the note; among 10 (exactly 20%) not."""
+    tested = [replace(bet(i, 0.5, True), event_id="ev" if i < 2 else None) for i in range(total)]
+    result = skilltest.skill_test(position_set(*tested), seed=SEED, unit_id="note")
+    assert result.verdict is Verdict.NOT_ENOUGH_DATA  # the share is stored with every result, also this one
+    assert result.uncoupled_share == 2 / total
+    assert skilltest.mostly_uncoupled(result) is noted
+
+
+def test_a_markets_region_is_its_larger_side_not_both() -> None:
+    """AD-20: Yes 0.5 and No 0.5 in one Market take a region of 0.5 (the larger side), so Yes 0.5 in a second Market
+    fits beside it: the two Yes never both win, and when the second wins, the first Market's No wins."""
+    yes, no, other = linked(1, 0.5, False), linked(1, 0.5, True, yes=False), linked(2, 0.5, False)
+    wins = wins_of([yes, no, other])
+    assert not any(y and o for y, o in zip(wins[yes.token_id], wins[other.token_id]))
+    assert all(n for n, o in zip(wins[no.token_id], wins[other.token_id]) if o)

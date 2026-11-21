@@ -4548,8 +4548,16 @@
    "closed": true,
    "closedTime": "2025-05-19 05:43:47+00",
    "conditionId": "0x00c220e55ff24400522bc2dc87bcb4441ef5c1fea77185f5203b75ae3e506d6f",
+   "events": [
+    {
+     "id": "16868"
+    }
+   ],
    "feesEnabled": false,
+   "negRisk": true,
+   "negRiskMarketID": "0x5b32843a079e064277a5ddb822a3094e2ee747d0ebae8500918717076de14e00",
    "outcomePrices": "[\"0\", \"1\"]",
+   "outcomes": "[\"Yes\", \"No\"]",
    "startDate": "2025-01-17T22:08:16.558Z",
    "tags": [
     {
@@ -4574,8 +4582,16 @@
    "closed": true,
    "closedTime": "2025-05-19 05:38:35+00",
    "conditionId": "0x00fbb9ba800894d1149eecfebf797e9fbad001fed8d51a6220304131de07a874",
+   "events": [
+    {
+     "id": "16868"
+    }
+   ],
    "feesEnabled": false,
+   "negRisk": true,
+   "negRiskMarketID": "0x5b32843a079e064277a5ddb822a3094e2ee747d0ebae8500918717076de14e00",
    "outcomePrices": "[\"0\", \"1\"]",
+   "outcomes": "[\"Yes\", \"No\"]",
    "startDate": "2025-01-17T22:07:23.514Z",
    "tags": [
     {
@@ -4600,8 +4616,16 @@
    "closed": true,
    "closedTime": "2025-05-19 05:43:49+00",
    "conditionId": "0x01c85fb55ff4f1a406c951dfefc03b55c3455ed027e5443ba682efcdaaf1d000",
+   "events": [
+    {
+     "id": "16868"
+    }
+   ],
    "feesEnabled": false,
+   "negRisk": true,
+   "negRiskMarketID": "0x5b32843a079e064277a5ddb822a3094e2ee747d0ebae8500918717076de14e00",
    "outcomePrices": "[\"0\", \"1\"]",
+   "outcomes": "[\"Yes\", \"No\"]",
    "startDate": "2025-01-17T22:05:32.922Z",
    "tags": [
     {
@@ -4626,8 +4650,16 @@
    "closed": true,
    "closedTime": "2025-05-19 05:38:37+00",
    "conditionId": "0x03a0393804923ef3a9a4a82ead4a6fa53050a72412041d25714486efc34ec1ca",
+   "events": [
+    {
+     "id": "16868"
+    }
+   ],
    "feesEnabled": false,
+   "negRisk": true,
+   "negRiskMarketID": "0x5b32843a079e064277a5ddb822a3094e2ee747d0ebae8500918717076de14e00",
    "outcomePrices": "[\"0\", \"1\"]",
+   "outcomes": "[\"Yes\", \"No\"]",
    "startDate": "2025-01-17T22:00:22.198Z",
    "tags": [
     {
@@ -4652,8 +4684,16 @@
    "closed": true,
    "closedTime": "2025-05-21 12:27:06+00",
    "conditionId": "0x0b5812b8c3ac02d3b0d13fef6d6c93a03ad7791f3e2d13519599e67aa71f08ee",
+   "events": [
+    {
+     "id": "24303"
+    }
+   ],
    "feesEnabled": false,
+   "negRisk": true,
+   "negRiskMarketID": "0x2063e04c70b954ba172919deb046ec20b9698d4e3276d19f9c3a003e35b29100",
    "outcomePrices": "[\"1\", \"0\"]",
+   "outcomes": "[\"Yes\", \"No\"]",
    "startDate": "2025-05-12T14:38:29.84Z",
    "tags": [
     {
@@ -4669,6 +4709,11 @@
    "closed": true,
    "closedTime": "2026-07-20 01:24:43+00",
    "conditionId": "0x0c4cd2055d6ea89354ffddc55d6dbcef9355748112ea952fc925f3db6a5c457f",
+   "events": [
+    {
+     "id": "30615"
+    }
+   ],
    "feeSchedule": {
     "exponent": 1,
     "rate": 0.03,
@@ -4676,7 +4721,10 @@
     "takerOnly": true
    },
    "feesEnabled": true,
+   "negRisk": true,
+   "negRiskMarketID": "0xb5c32a9acd39848acad4913ac4cd49c5de2afcc9d23a8a7ba2419375fab87400",
    "outcomePrices": "[\"0\", \"1\"]",
+   "outcomes": "[\"Yes\", \"No\"]",
    "startDate": "2025-07-02T22:26:52.071Z",
    "tags": [
     {
@@ -4704,8 +4752,16 @@
    "closed": true,
    "closedTime": "2025-05-19 05:38:31+00",
    "conditionId": "0x0d3c9bb7a98510a5f5097be77ac7f66a122256ae60b5b15d82c6a75eb6ebb60b",
+   "events": [
+    {
+     "id": "16868"
+    }
+   ],
    "feesEnabled": false,
+   "negRisk": true,
+   "negRiskMarketID": "0x5b32843a079e064277a5ddb822a3094e2ee747d0ebae8500918717076de14e00",
    "outcomePrices": "[\"0\", \"1\"]",
+   "outcomes": "[\"Yes\", \"No\"]",
    "startDate": "2025-01-17T22:04:41.842Z",
    "tags": [
     {
@@ -4730,8 +4786,16 @@
    "closed": true,
    "closedTime": "2025-05-19 05:43:45+00",
    "conditionId": "0x145bbd8cc05222dfd746787a5f598fd7fc1da8b4c794bd2f9494a50e51ad6373",
+   "events": [
+    {
+     "id": "16868"
+    }
+   ],
    "feesEnabled": false,
+   "negRisk": true,
+   "negRiskMarketID": "0x5b32843a079e064277a5ddb822a3094e2ee747d0ebae8500918717076de14e00",
    "outcomePrices": "[\"0\", \"1\"]",
+   "outcomes": "[\"Yes\", \"No\"]",
    "startDate": "2025-01-17T22:08:01.341Z",
    "tags": [
     {
@@ -4756,6 +4820,11 @@
    "closed": true,
    "closedTime": "2026-05-09 17:02:22+00",
    "conditionId": "0x1480b819d03d4b6388d70e848b0384adf38c38d955cb783cdbcf6d4a436dee14",
+   "events": [
+    {
+     "id": "34038"
+    }
+   ],
    "feeSchedule": {
     "exponent": 1,
     "rate": 0.04,
@@ -4763,7 +4832,10 @@
     "takerOnly": true
    },
    "feesEnabled": true,
+   "negRisk": true,
+   "negRiskMarketID": "0x223d79df81338c2c00e4c10a48736cee5aa3f66a3b25c5f740b54fc812178500",
    "outcomePrices": "[\"1\", \"0\"]",
+   "outcomes": "[\"Yes\", \"No\"]",
    "startDate": "2025-07-24T22:00:07.54Z",
    "tags": [
     {
@@ -4797,8 +4869,16 @@
    "closed": true,
    "closedTime": "2025-05-19 05:43:45+00",
    "conditionId": "0x155c654b7322057c75a781d8a2741a8cc28f765cedcf5d0747bc000dd5fa70ec",
+   "events": [
+    {
+     "id": "16868"
+    }
+   ],
    "feesEnabled": false,
+   "negRisk": true,
+   "negRiskMarketID": "0x5b32843a079e064277a5ddb822a3094e2ee747d0ebae8500918717076de14e00",
    "outcomePrices": "[\"0\", \"1\"]",
+   "outcomes": "[\"Yes\", \"No\"]",
    "startDate": "2025-01-17T22:08:57.882Z",
    "tags": [
     {
@@ -4823,8 +4903,16 @@
    "closed": true,
    "closedTime": "2025-12-05 00:58:53+00",
    "conditionId": "0x1abd0802165c8ef1d3b911e1dbe8e3fe8be8f244ca08c80d9ace2ec4c985aa99",
+   "events": [
+    {
+     "id": "86590"
+    }
+   ],
    "feesEnabled": false,
+   "negRisk": true,
+   "negRiskMarketID": "0x9c60220e899eeeda7ec0e138a82ed57b0be45522233a026da51c0d3bcc9c5e00",
    "outcomePrices": "[\"1\", \"0\"]",
+   "outcomes": "[\"Yes\", \"No\"]",
    "startDate": "2025-11-21T05:01:37.759244Z",
    "tags": [
     {
@@ -4849,8 +4937,16 @@
    "closed": true,
    "closedTime": "2025-06-02 11:23:06+00",
    "conditionId": "0x1e68b29be798c37448e00f83180358d0edb02393f8d6a68d50d1175798865287",
+   "events": [
+    {
+     "id": "24796"
+    }
+   ],
    "feesEnabled": false,
+   "negRisk": true,
+   "negRiskMarketID": "0x52c78ae2658d2520125b133b3963bd19fcaad84ecd12925c316d01cdaeb03700",
    "outcomePrices": "[\"0\", \"1\"]",
+   "outcomes": "[\"Yes\", \"No\"]",
    "startDate": "2025-05-19T20:29:35.584066Z",
    "tags": [
     {
@@ -4874,6 +4970,11 @@
    "clobTokenIds": "[\"11171618905857319805355893398009978356002287408842633593535559412449299952250\", \"65892530750232246342273648992064742042382898919201083513241874070914353628268\"]",
    "closed": false,
    "conditionId": "0x2053d8515f1b8cbeea4ccdb56e60e89c2617e43a8660d95166b8e71d27865277",
+   "events": [
+    {
+     "id": "31552"
+    }
+   ],
    "feeSchedule": {
     "exponent": 1,
     "rate": 0.04,
@@ -4881,7 +4982,10 @@
     "takerOnly": true
    },
    "feesEnabled": true,
+   "negRisk": true,
+   "negRiskMarketID": "0xb9aa4595bbe8ca1ecceeb16d24fb5df6d27d4e2116787ad874ff31f682bdb400",
    "outcomePrices": "[\"0.0955\", \"0.9045\"]",
+   "outcomes": "[\"Yes\", \"No\"]",
    "startDate": "2025-07-11T19:05:54.492Z",
    "tags": [
     {
@@ -4924,8 +5028,16 @@
    "closed": true,
    "closedTime": "2025-05-19 05:43:43+00",
    "conditionId": "0x20defd83c0a443b45a0ca24374d7dd6a1e30ad5e49769a9f4da656e18e4d0422",
+   "events": [
+    {
+     "id": "16868"
+    }
+   ],
    "feesEnabled": false,
+   "negRisk": true,
+   "negRiskMarketID": "0x5b32843a079e064277a5ddb822a3094e2ee747d0ebae8500918717076de14e00",
    "outcomePrices": "[\"0\", \"1\"]",
+   "outcomes": "[\"Yes\", \"No\"]",
    "startDate": "2025-01-17T22:09:36.991Z",
    "tags": [
     {
@@ -4950,8 +5062,16 @@
    "closed": true,
    "closedTime": "2025-05-19 05:33:43+00",
    "conditionId": "0x220e7bb73147e5df24c4ce15cec6e21d19eb9f46d61f1d4b823e6e0d0c6ff65b",
+   "events": [
+    {
+     "id": "16868"
+    }
+   ],
    "feesEnabled": false,
+   "negRisk": true,
+   "negRiskMarketID": "0x5b32843a079e064277a5ddb822a3094e2ee747d0ebae8500918717076de14e00",
    "outcomePrices": "[\"0\", \"1\"]",
+   "outcomes": "[\"Yes\", \"No\"]",
    "startDate": "2025-01-17T21:59:02.729Z",
    "tags": [
     {
@@ -4976,8 +5096,15 @@
    "closed": true,
    "closedTime": "2025-05-22 03:54:56+00",
    "conditionId": "0x23d50565eb42fc604e7b0d32ae523076f9ee6b0e293615f60a002ad6147da5bf",
+   "events": [
+    {
+     "id": "23689"
+    }
+   ],
    "feesEnabled": false,
+   "negRisk": false,
    "outcomePrices": "[\"1\", \"0\"]",
+   "outcomes": "[\"Yes\", \"No\"]",
    "startDate": "2025-04-30T20:19:53.661241Z",
    "tags": [
     {
@@ -5002,6 +5129,11 @@
    "closed": true,
    "closedTime": "2026-07-19 22:24:30+00",
    "conditionId": "0x2d846d44faef4bc887807e81a165e10b2faf772470e4e66cc7d9ba89d41324d4",
+   "events": [
+    {
+     "id": "708641"
+    }
+   ],
    "feeSchedule": {
     "exponent": 1,
     "rate": 0.05,
@@ -5009,7 +5141,9 @@
     "takerOnly": true
    },
    "feesEnabled": true,
+   "negRisk": false,
    "outcomePrices": "[\"0\", \"1\"]",
+   "outcomes": "[\"Over\", \"Under\"]",
    "startDate": "2026-07-16T03:10:38.781237Z",
    "tags": [
     {
@@ -5031,8 +5165,16 @@
    "closed": true,
    "closedTime": "2025-11-20 13:50:13+00",
    "conditionId": "0x2e4cbe59f45ed80d8824820176d434eb7aa3dbb2d6cf56e23d676ef7dcf45163",
+   "events": [
+    {
+     "id": "23947"
+    }
+   ],
    "feesEnabled": false,
+   "negRisk": true,
+   "negRiskMarketID": "0x52e65e99eacb6e59cc5102792265bb177414bd6803cde84409ae749d4fe9c700",
    "outcomePrices": "[\"0\", \"1\"]",
+   "outcomes": "[\"Yes\", \"No\"]",
    "startDate": "2025-05-05T23:52:15.769356Z",
    "tags": [
     {
@@ -5063,8 +5205,16 @@
    "closed": true,
    "closedTime": "2025-11-09 15:36:33+00",
    "conditionId": "0x34da915352034059e0fc47b677cb2ca87d189cb797f92c0684dcb275e6af34c2",
+   "events": [
+    {
+     "id": "58927"
+    }
+   ],
    "feesEnabled": false,
+   "negRisk": true,
+   "negRiskMarketID": "0x0dd83fa9e949eed2bde0e332862c9c023567222d1d661b3def26cc0b85c2f100",
    "outcomePrices": "[\"0\", \"1\"]",
+   "outcomes": "[\"Yes\", \"No\"]",
    "startDate": "2025-10-13T16:10:19.275364Z",
    "tags": [
     {
@@ -5086,6 +5236,11 @@
    "closed": true,
    "closedTime": "2026-07-16 00:11:11+00",
    "conditionId": "0x375409bc5eeeff961e82b479caeccc20f33d15738e5bce1186d628aa3d9dfb1f",
+   "events": [
+    {
+     "id": "30615"
+    }
+   ],
    "feeSchedule": {
     "exponent": 1,
     "rate": 0.03,
@@ -5093,7 +5248,10 @@
     "takerOnly": true
    },
    "feesEnabled": true,
+   "negRisk": true,
+   "negRiskMarketID": "0xb5c32a9acd39848acad4913ac4cd49c5de2afcc9d23a8a7ba2419375fab87400",
    "outcomePrices": "[\"0\", \"1\"]",
+   "outcomes": "[\"Yes\", \"No\"]",
    "startDate": "2025-07-02T22:26:52.326Z",
    "tags": [
     {
@@ -5121,8 +5279,16 @@
    "closed": true,
    "closedTime": "2025-05-21 04:17:45+00",
    "conditionId": "0x3aeaddfa5c56f561a169d75df4670345bd9f4547c8ebcae6a32adc95831788e4",
+   "events": [
+    {
+     "id": "23878"
+    }
+   ],
    "feesEnabled": false,
+   "negRisk": true,
+   "negRiskMarketID": "0x63bb6fd8aea1da2c509e36ef61520b4e7d207480f4b5aba92800b624e2ec3800",
    "outcomePrices": "[\"1\", \"0\"]",
+   "outcomes": "[\"Yes\", \"No\"]",
    "startDate": "2025-05-05T01:36:36.886142Z",
    "tags": [
     {
@@ -5144,8 +5310,16 @@
    "closed": true,
    "closedTime": "2025-06-02 11:17:38+00",
    "conditionId": "0x3c721bf2f5848dbdc7cadc5f80f13ceb1f48dccbb6c1569142a2da13b3d659e0",
+   "events": [
+    {
+     "id": "24796"
+    }
+   ],
    "feesEnabled": false,
+   "negRisk": true,
+   "negRiskMarketID": "0x52c78ae2658d2520125b133b3963bd19fcaad84ecd12925c316d01cdaeb03700",
    "outcomePrices": "[\"0\", \"1\"]",
+   "outcomes": "[\"Yes\", \"No\"]",
    "startDate": "2025-05-19T20:29:36.512143Z",
    "tags": [
     {
@@ -5170,8 +5344,15 @@
    "closed": true,
    "closedTime": "2025-08-16 06:03:04+00",
    "conditionId": "0x473acca842031964646ce41ad87d632a3761396b6cf91bf2f96bb57115fa3724",
+   "events": [
+    {
+     "id": "31404"
+    }
+   ],
    "feesEnabled": false,
+   "negRisk": false,
    "outcomePrices": "[\"0\", \"1\"]",
+   "outcomes": "[\"Yes\", \"No\"]",
    "startDate": "2025-07-08T19:57:57.58235Z",
    "tags": [
     {
@@ -5190,8 +5371,16 @@
    "closed": true,
    "closedTime": "2025-05-21 06:58:33+00",
    "conditionId": "0x475d06b509d75bcaf237c2ccfd8f57df8e490ccf6d9bef628b357c4e07bc94be",
+   "events": [
+    {
+     "id": "23878"
+    }
+   ],
    "feesEnabled": false,
+   "negRisk": true,
+   "negRiskMarketID": "0x63bb6fd8aea1da2c509e36ef61520b4e7d207480f4b5aba92800b624e2ec3800",
    "outcomePrices": "[\"0\", \"1\"]",
+   "outcomes": "[\"Yes\", \"No\"]",
    "startDate": "2025-05-05T01:36:37.647577Z",
    "tags": [
     {
@@ -5213,6 +5402,11 @@
    "closed": true,
    "closedTime": "2026-07-19 22:28:00+00",
    "conditionId": "0x4b045e092c3166aa29d4864c11dffe7e316daafdac5677f11aa5cd16065fd042",
+   "events": [
+    {
+     "id": "708641"
+    }
+   ],
    "feeSchedule": {
     "exponent": 1,
     "rate": 0.05,
@@ -5220,7 +5414,9 @@
     "takerOnly": true
    },
    "feesEnabled": true,
+   "negRisk": false,
    "outcomePrices": "[\"1\", \"0\"]",
+   "outcomes": "[\"Spain\", \"Argentina\"]",
    "startDate": "2026-07-16T03:07:09.117369Z",
    "tags": [
     {
@@ -5242,6 +5438,11 @@
    "closed": true,
    "closedTime": "2026-07-07 00:12:26+00",
    "conditionId": "0x4f3421fb2daf5cca7430ed8d8132463963081572d75434393a1808fdb8829fe8",
+   "events": [
+    {
+     "id": "30615"
+    }
+   ],
    "feeSchedule": {
     "exponent": 1,
     "rate": 0.03,
@@ -5249,7 +5450,10 @@
     "takerOnly": true
    },
    "feesEnabled": true,
+   "negRisk": true,
+   "negRiskMarketID": "0xb5c32a9acd39848acad4913ac4cd49c5de2afcc9d23a8a7ba2419375fab87400",
    "outcomePrices": "[\"0\", \"1\"]",
+   "outcomes": "[\"Yes\", \"No\"]",
    "startDate": "2025-07-02T22:26:58.618Z",
    "tags": [
     {
@@ -5277,8 +5481,16 @@
    "closed": true,
    "closedTime": "2024-11-02 21:50:36+00",
    "conditionId": "0x524d718f3df4d4cdcef5be16edfaca90d3c48675f0673d814779d68172746f83",
+   "events": [
+    {
+     "id": "12842"
+    }
+   ],
    "feesEnabled": false,
+   "negRisk": true,
+   "negRiskMarketID": "0x2512ee9c828bb7ba3b9c3b113b73b6e7934fb5f50695c4a6dc1f7c7b58a9da00",
    "outcomePrices": "[\"0\", \"1\"]",
+   "outcomes": "[\"Yes\", \"No\"]",
    "startDate": "2024-09-25T17:36:11.065307Z",
    "tags": [
     {
@@ -5303,8 +5515,16 @@
    "closed": true,
    "closedTime": "2025-05-19 05:38:39+00",
    "conditionId": "0x56030c3b4726de62df7d8ffe81f194854e89a3e0804ab1fa8b376a6be6bb3851",
+   "events": [
+    {
+     "id": "16868"
+    }
+   ],
    "feesEnabled": false,
+   "negRisk": true,
+   "negRiskMarketID": "0x5b32843a079e064277a5ddb822a3094e2ee747d0ebae8500918717076de14e00",
    "outcomePrices": "[\"0\", \"1\"]",
+   "outcomes": "[\"Yes\", \"No\"]",
    "startDate": "2025-01-17T21:58:22.264Z",
    "tags": [
     {
@@ -5329,8 +5549,16 @@
    "closed": true,
    "closedTime": "2025-06-02 08:55:12+00",
    "conditionId": "0x5ce0d897bd66142c43a38204a67ad85bc3e0643382258411a5aa58ca3e825082",
+   "events": [
+    {
+     "id": "14874"
+    }
+   ],
    "feesEnabled": false,
+   "negRisk": true,
+   "negRiskMarketID": "0x6df9c389b900084450acb3df5777dcde9ff74f6a1532e9d78a715b5ee83dda00",
    "outcomePrices": "[\"1\", \"0\"]",
+   "outcomes": "[\"Yes\", \"No\"]",
    "startDate": "2024-11-26T23:47:32.210711Z",
    "tags": [
     {
@@ -5358,6 +5586,11 @@
    "closed": true,
    "closedTime": "2026-05-09 17:36:51+00",
    "conditionId": "0x5ec80dc407457301f282a2b44341947afc700dfaa7923d14c8894e04bc63b03f",
+   "events": [
+    {
+     "id": "34038"
+    }
+   ],
    "feeSchedule": {
     "exponent": 1,
     "rate": 0.04,
@@ -5365,7 +5598,10 @@
     "takerOnly": true
    },
    "feesEnabled": true,
+   "negRisk": true,
+   "negRiskMarketID": "0x223d79df81338c2c00e4c10a48736cee5aa3f66a3b25c5f740b54fc812178500",
    "outcomePrices": "[\"0\", \"1\"]",
+   "outcomes": "[\"Yes\", \"No\"]",
    "startDate": "2025-07-24T22:00:06.287Z",
    "tags": [
     {
@@ -5399,8 +5635,16 @@
    "closed": true,
    "closedTime": "2025-05-19 02:59:19+00",
    "conditionId": "0x5fc28bfcb6f16080415695b53f1f60820f403a94ce16696eea2f0085d823bc92",
+   "events": [
+    {
+     "id": "16868"
+    }
+   ],
    "feesEnabled": false,
+   "negRisk": true,
+   "negRiskMarketID": "0x5b32843a079e064277a5ddb822a3094e2ee747d0ebae8500918717076de14e00",
    "outcomePrices": "[\"0\", \"1\"]",
+   "outcomes": "[\"Yes\", \"No\"]",
    "startDate": "2025-01-17T21:53:52.556Z",
    "tags": [
     {
@@ -5425,8 +5669,16 @@
    "closed": true,
    "closedTime": "2025-05-19 05:38:39+00",
    "conditionId": "0x614be8366c44bee32b179f13a1653126b28fddfdec74690c1e195989d05f5975",
+   "events": [
+    {
+     "id": "16868"
+    }
+   ],
    "feesEnabled": false,
+   "negRisk": true,
+   "negRiskMarketID": "0x5b32843a079e064277a5ddb822a3094e2ee747d0ebae8500918717076de14e00",
    "outcomePrices": "[\"0\", \"1\"]",
+   "outcomes": "[\"Yes\", \"No\"]",
    "startDate": "2025-01-17T21:56:07.89Z",
    "tags": [
     {
@@ -5451,8 +5703,16 @@
    "closed": true,
    "closedTime": "2025-06-02 09:20:06+00",
    "conditionId": "0x6507f3d3c7fbb7ee64028b1a466e76588c30a3149226227b8f21666094fe34c7",
+   "events": [
+    {
+     "id": "24796"
+    }
+   ],
    "feesEnabled": false,
+   "negRisk": true,
+   "negRiskMarketID": "0x52c78ae2658d2520125b133b3963bd19fcaad84ecd12925c316d01cdaeb03700",
    "outcomePrices": "[\"1\", \"0\"]",
+   "outcomes": "[\"Yes\", \"No\"]",
    "startDate": "2025-05-19T20:29:39.745183Z",
    "tags": [
     {
@@ -5477,8 +5737,16 @@
    "closed": true,
    "closedTime": "2025-05-19 05:33:39+00",
    "conditionId": "0x67358a6d0a5cc469e3a2f085718e7e7a20c4efbd721d1463b807a01dcc987afc",
+   "events": [
+    {
+     "id": "16868"
+    }
+   ],
    "feesEnabled": false,
+   "negRisk": true,
+   "negRiskMarketID": "0x5b32843a079e064277a5ddb822a3094e2ee747d0ebae8500918717076de14e00",
    "outcomePrices": "[\"0\", \"1\"]",
+   "outcomes": "[\"Yes\", \"No\"]",
    "startDate": "2025-01-17T22:01:37.626Z",
    "tags": [
     {
@@ -5503,8 +5771,16 @@
    "closed": true,
    "closedTime": "2025-05-19 05:43:43+00",
    "conditionId": "0x696f3a4c9b215da92c40d47a6cc344da5a6cc29cb140ec514a41020c2e6ba158",
+   "events": [
+    {
+     "id": "16868"
+    }
+   ],
    "feesEnabled": false,
+   "negRisk": true,
+   "negRiskMarketID": "0x5b32843a079e064277a5ddb822a3094e2ee747d0ebae8500918717076de14e00",
    "outcomePrices": "[\"0\", \"1\"]",
+   "outcomes": "[\"Yes\", \"No\"]",
    "startDate": "2025-01-17T21:59:36.185Z",
    "tags": [
     {
@@ -5529,8 +5805,16 @@
    "closed": true,
    "closedTime": "2025-05-21 07:03:15+00",
    "conditionId": "0x69c3f09b54e6cbf561205de7177a4cf99634bcf96e880601b124d8ebfdca9e2a",
+   "events": [
+    {
+     "id": "23878"
+    }
+   ],
    "feesEnabled": false,
+   "negRisk": true,
+   "negRiskMarketID": "0x63bb6fd8aea1da2c509e36ef61520b4e7d207480f4b5aba92800b624e2ec3800",
    "outcomePrices": "[\"0\", \"1\"]",
+   "outcomes": "[\"Yes\", \"No\"]",
    "startDate": "2025-05-05T01:36:37.393147Z",
    "tags": [
     {
@@ -5552,8 +5836,16 @@
    "closed": true,
    "closedTime": "2025-05-19 05:28:29+00",
    "conditionId": "0x6a069b13837e7000f1aa96b7c2fc1751b30e599b73e016bebfb0b1c33569a2ea",
+   "events": [
+    {
+     "id": "16868"
+    }
+   ],
    "feesEnabled": false,
+   "negRisk": true,
+   "negRiskMarketID": "0x5b32843a079e064277a5ddb822a3094e2ee747d0ebae8500918717076de14e00",
    "outcomePrices": "[\"0\", \"1\"]",
+   "outcomes": "[\"Yes\", \"No\"]",
    "startDate": "2025-01-17T22:05:16.677Z",
    "tags": [
     {
@@ -5578,8 +5870,16 @@
    "closed": true,
    "closedTime": "2025-05-19 05:38:35+00",
    "conditionId": "0x6b415e33458d6b6ed66b036067e3ae89ae40ff52881b2dd6eaeb9ef7c1800442",
+   "events": [
+    {
+     "id": "16868"
+    }
+   ],
    "feesEnabled": false,
+   "negRisk": true,
+   "negRiskMarketID": "0x5b32843a079e064277a5ddb822a3094e2ee747d0ebae8500918717076de14e00",
    "outcomePrices": "[\"0\", \"1\"]",
+   "outcomes": "[\"Yes\", \"No\"]",
    "startDate": "2025-01-17T22:06:31.599Z",
    "tags": [
     {
@@ -5604,8 +5904,16 @@
    "closed": true,
    "closedTime": "2025-05-19 05:38:37+00",
    "conditionId": "0x784d67eb3b205e7f6543b09d8737d5dc1c2a14d43a102bbb59f7f4f94fc56135",
+   "events": [
+    {
+     "id": "16868"
+    }
+   ],
    "feesEnabled": false,
+   "negRisk": true,
+   "negRiskMarketID": "0x5b32843a079e064277a5ddb822a3094e2ee747d0ebae8500918717076de14e00",
    "outcomePrices": "[\"0\", \"1\"]",
+   "outcomes": "[\"Yes\", \"No\"]",
    "startDate": "2025-01-17T22:00:52.279Z",
    "tags": [
     {
@@ -5630,6 +5938,11 @@
    "closed": true,
    "closedTime": "2026-07-20 01:14:28+00",
    "conditionId": "0x7976b8dbacf9077eb1453a62bcefd6ab2df199acd28aad276ff0d920d6992892",
+   "events": [
+    {
+     "id": "30615"
+    }
+   ],
    "feeSchedule": {
     "exponent": 1,
     "rate": 0.03,
@@ -5637,7 +5950,10 @@
     "takerOnly": true
    },
    "feesEnabled": true,
+   "negRisk": true,
+   "negRiskMarketID": "0xb5c32a9acd39848acad4913ac4cd49c5de2afcc9d23a8a7ba2419375fab87400",
    "outcomePrices": "[\"1\", \"0\"]",
+   "outcomes": "[\"Yes\", \"No\"]",
    "startDate": "2025-07-02T22:26:48.104Z",
    "tags": [
     {
@@ -5665,6 +5981,11 @@
    "closed": true,
    "closedTime": "2026-07-19 22:27:00+00",
    "conditionId": "0x8860c803891c9d6f98954cd429cd0b78fc328c63f49e7fc2d81c54a2ba107121",
+   "events": [
+    {
+     "id": "708604"
+    }
+   ],
    "feeSchedule": {
     "exponent": 1,
     "rate": 0.05,
@@ -5672,7 +5993,10 @@
     "takerOnly": true
    },
    "feesEnabled": true,
+   "negRisk": true,
+   "negRiskMarketID": "0x487b2596a47354f36dd6f2af264c30fb002faab70cdb479f66cc5771b0909c00",
    "outcomePrices": "[\"0\", \"1\"]",
+   "outcomes": "[\"Yes\", \"No\"]",
    "startDate": "2026-07-16T02:54:15.666717Z",
    "tags": [
     {
@@ -5694,6 +6018,11 @@
    "closed": true,
    "closedTime": "2026-07-19 22:43:01+00",
    "conditionId": "0x8ea0b72b4f6f4cdc1e873df834a0e3851839a244be6ecf53cc5090b38bea4a5c",
+   "events": [
+    {
+     "id": "708604"
+    }
+   ],
    "feeSchedule": {
     "exponent": 1,
     "rate": 0.05,
@@ -5701,7 +6030,10 @@
     "takerOnly": true
    },
    "feesEnabled": true,
+   "negRisk": true,
+   "negRiskMarketID": "0x487b2596a47354f36dd6f2af264c30fb002faab70cdb479f66cc5771b0909c00",
    "outcomePrices": "[\"1\", \"0\"]",
+   "outcomes": "[\"Yes\", \"No\"]",
    "startDate": "2026-07-16T02:54:08.29593Z",
    "tags": [
     {
@@ -5723,8 +6055,16 @@
    "closed": true,
    "closedTime": "2025-05-19 05:38:37+00",
    "conditionId": "0x995206207b19045aa5cfb42f5338ffd2642a851fe682363bc0c5848e6b1b6072",
+   "events": [
+    {
+     "id": "16868"
+    }
+   ],
    "feesEnabled": false,
+   "negRisk": true,
+   "negRiskMarketID": "0x5b32843a079e064277a5ddb822a3094e2ee747d0ebae8500918717076de14e00",
    "outcomePrices": "[\"0\", \"1\"]",
+   "outcomes": "[\"Yes\", \"No\"]",
    "startDate": "2025-01-17T21:54:31.328Z",
    "tags": [
     {
@@ -5749,6 +6089,11 @@
    "closed": true,
    "closedTime": "2026-07-15 00:07:37+00",
    "conditionId": "0x9b6fef249040fd17e9c107955b37ac2c3e923509b6b0ff01cc463a331ddeb894",
+   "events": [
+    {
+     "id": "30615"
+    }
+   ],
    "feeSchedule": {
     "exponent": 1,
     "rate": 0.03,
@@ -5756,7 +6101,10 @@
     "takerOnly": true
    },
    "feesEnabled": true,
+   "negRisk": true,
+   "negRiskMarketID": "0xb5c32a9acd39848acad4913ac4cd49c5de2afcc9d23a8a7ba2419375fab87400",
    "outcomePrices": "[\"0\", \"1\"]",
+   "outcomes": "[\"Yes\", \"No\"]",
    "startDate": "2025-07-02T22:26:52.583Z",
    "tags": [
     {
@@ -5784,8 +6132,16 @@
    "closed": true,
    "closedTime": "2025-11-09 15:34:03+00",
    "conditionId": "0xa201124f1421c39673f834dc55f82560d3b7734772254f9e72fcb35fe441d41f",
+   "events": [
+    {
+     "id": "58927"
+    }
+   ],
    "feesEnabled": false,
+   "negRisk": true,
+   "negRiskMarketID": "0x0dd83fa9e949eed2bde0e332862c9c023567222d1d661b3def26cc0b85c2f100",
    "outcomePrices": "[\"1\", \"0\"]",
+   "outcomes": "[\"Yes\", \"No\"]",
    "startDate": "2025-10-13T16:10:56.972056Z",
    "tags": [
     {
@@ -5807,8 +6163,16 @@
    "closed": true,
    "closedTime": "2025-12-15 02:48:15+00",
    "conditionId": "0xaa5041ca3ea8400325d726e0fb44b85180c4d6211dea960d7a3fb4600d5d6c76",
+   "events": [
+    {
+     "id": "23947"
+    }
+   ],
    "feesEnabled": false,
+   "negRisk": true,
+   "negRiskMarketID": "0x52e65e99eacb6e59cc5102792265bb177414bd6803cde84409ae749d4fe9c700",
    "outcomePrices": "[\"1\", \"0\"]",
+   "outcomes": "[\"Yes\", \"No\"]",
    "startDate": "2025-05-05T23:52:13.978619Z",
    "tags": [
     {
@@ -5839,8 +6203,16 @@
    "closed": true,
    "closedTime": "2025-05-19 04:09:33+00",
    "conditionId": "0xaf51603d78545c838490bafe178ee9ff4c23d0c2161f15e0e530d3735229ad3f",
+   "events": [
+    {
+     "id": "16868"
+    }
+   ],
    "feesEnabled": false,
+   "negRisk": true,
+   "negRiskMarketID": "0x5b32843a079e064277a5ddb822a3094e2ee747d0ebae8500918717076de14e00",
    "outcomePrices": "[\"1\", \"0\"]",
+   "outcomes": "[\"Yes\", \"No\"]",
    "startDate": "2025-01-17T21:54:57.731Z",
    "tags": [
     {
@@ -5865,6 +6237,11 @@
    "closed": true,
    "closedTime": "2026-07-19 22:30:12+00",
    "conditionId": "0xbe832aed1b062ba17cf9a41becbbbb47546c786764370433f1ffc4e45eb19c01",
+   "events": [
+    {
+     "id": "708604"
+    }
+   ],
    "feeSchedule": {
     "exponent": 1,
     "rate": 0.05,
@@ -5872,7 +6249,10 @@
     "takerOnly": true
    },
    "feesEnabled": true,
+   "negRisk": true,
+   "negRiskMarketID": "0x487b2596a47354f36dd6f2af264c30fb002faab70cdb479f66cc5771b0909c00",
    "outcomePrices": "[\"0\", \"1\"]",
+   "outcomes": "[\"Yes\", \"No\"]",
    "startDate": "2026-07-16T02:55:28.678332Z",
    "tags": [
     {
@@ -5894,6 +6274,11 @@
    "closed": true,
    "closedTime": "2026-07-19 22:27:43+00",
    "conditionId": "0xc0323c82e7c226ec9111655432859147e45e54c7801506ef1749bbb99a03a7a5",
+   "events": [
+    {
+     "id": "708604"
+    }
+   ],
    "feeSchedule": {
     "exponent": 1,
     "rate": 0.05,
@@ -5901,7 +6286,10 @@
     "takerOnly": true
    },
    "feesEnabled": true,
+   "negRisk": true,
+   "negRiskMarketID": "0x487b2596a47354f36dd6f2af264c30fb002faab70cdb479f66cc5771b0909c00",
    "outcomePrices": "[\"0\", \"1\"]",
+   "outcomes": "[\"Yes\", \"No\"]",
    "startDate": "2026-07-16T02:54:44.032612Z",
    "tags": [
     {
@@ -5923,8 +6311,16 @@
    "closed": true,
    "closedTime": "2025-12-08 04:23:07+00",
    "conditionId": "0xc09535a2f39877de8b488263bcb271868e36a55d21bc25ba4106ec0f14b9754b",
+   "events": [
+    {
+     "id": "24895"
+    }
+   ],
    "feesEnabled": false,
+   "negRisk": true,
+   "negRiskMarketID": "0x80b3198e7e2fd02432f2edb561857715f010772661587f50ace1c6bb12266500",
    "outcomePrices": "[\"0\", \"1\"]",
+   "outcomes": "[\"Yes\", \"No\"]",
    "startDate": "2025-05-21T00:10:09.513Z",
    "tags": [
     {
@@ -5952,8 +6348,16 @@
    "closed": true,
    "closedTime": "2025-05-21 15:52:06+00",
    "conditionId": "0xc09c8201aac465d350840a3ba84a3ab7550d2ad5dafef417ee923324a94ec11a",
+   "events": [
+    {
+     "id": "24303"
+    }
+   ],
    "feesEnabled": false,
+   "negRisk": true,
+   "negRiskMarketID": "0x2063e04c70b954ba172919deb046ec20b9698d4e3276d19f9c3a003e35b29100",
    "outcomePrices": "[\"0\", \"1\"]",
+   "outcomes": "[\"Yes\", \"No\"]",
    "startDate": "2025-05-12T14:38:30.35Z",
    "tags": [
     {
@@ -5969,8 +6373,16 @@
    "closed": true,
    "closedTime": "2025-05-19 05:28:29+00",
    "conditionId": "0xc52cb22f2ca2fff02170862d971fdeafb7c0ff13fde292a2af508546b337aa4c",
+   "events": [
+    {
+     "id": "16868"
+    }
+   ],
    "feesEnabled": false,
+   "negRisk": true,
+   "negRiskMarketID": "0x5b32843a079e064277a5ddb822a3094e2ee747d0ebae8500918717076de14e00",
    "outcomePrices": "[\"0\", \"1\"]",
+   "outcomes": "[\"Yes\", \"No\"]",
    "startDate": "2025-01-17T21:53:27.313Z",
    "tags": [
     {
@@ -5995,8 +6407,16 @@
    "closed": true,
    "closedTime": "2025-05-19 05:38:37+00",
    "conditionId": "0xcc4e7542c6b9b0c0a5069dc1dc16d27fd60c4654f3a36fbc1db96ca74939a580",
+   "events": [
+    {
+     "id": "16868"
+    }
+   ],
    "feesEnabled": false,
+   "negRisk": true,
+   "negRiskMarketID": "0x5b32843a079e064277a5ddb822a3094e2ee747d0ebae8500918717076de14e00",
    "outcomePrices": "[\"0\", \"1\"]",
+   "outcomes": "[\"Yes\", \"No\"]",
    "startDate": "2025-01-17T22:01:17.56Z",
    "tags": [
     {
@@ -6021,8 +6441,16 @@
    "closed": true,
    "closedTime": "2024-11-11 22:30:39+00",
    "conditionId": "0xcd1b6b71a1964f15e2c14809594cbfa0d576270e8ef94c8c24913121097e09e5",
+   "events": [
+    {
+     "id": "903216"
+    }
+   ],
    "feesEnabled": false,
+   "negRisk": true,
+   "negRiskMarketID": "0xfa5d43be36255764600be8bf2a29f288e6c8963c121df8400ddfe6bcbc744700",
    "outcomePrices": "[\"1\", \"0\"]",
+   "outcomes": "[\"Yes\", \"No\"]",
    "startDate": "2024-01-09T23:37:00Z",
    "tags": [
     {
@@ -6109,6 +6537,11 @@
    "clobTokenIds": "[\"11807691644868166983390207408868795383945915035851758101409310535538572683733\", \"72656506786460378316387284276713856836841708169262528054985577978493419440428\"]",
    "closed": false,
    "conditionId": "0xce9a5fa30fe74e323b4a8f15afbb0b7a41a537aa880779ddf7dee22223b2f34a",
+   "events": [
+    {
+     "id": "31552"
+    }
+   ],
    "feeSchedule": {
     "exponent": 1,
     "rate": 0.04,
@@ -6116,7 +6549,10 @@
     "takerOnly": true
    },
    "feesEnabled": true,
+   "negRisk": true,
+   "negRiskMarketID": "0xb9aa4595bbe8ca1ecceeb16d24fb5df6d27d4e2116787ad874ff31f682bdb400",
    "outcomePrices": "[\"0.0125\", \"0.9875\"]",
+   "outcomes": "[\"Yes\", \"No\"]",
    "startDate": "2025-07-11T19:06:02.535Z",
    "tags": [
     {
@@ -6159,8 +6595,16 @@
    "closed": true,
    "closedTime": "2025-05-21 08:32:06+00",
    "conditionId": "0xd35da57f76072a80702decca8cac1493599575930130c2646bfda0b4a43bb933",
+   "events": [
+    {
+     "id": "24303"
+    }
+   ],
    "feesEnabled": false,
+   "negRisk": true,
+   "negRiskMarketID": "0x2063e04c70b954ba172919deb046ec20b9698d4e3276d19f9c3a003e35b29100",
    "outcomePrices": "[\"0\", \"1\"]",
+   "outcomes": "[\"Yes\", \"No\"]",
    "startDate": "2025-05-12T14:38:39.701Z",
    "tags": [
     {
@@ -6176,8 +6620,16 @@
    "closed": true,
    "closedTime": "2024-11-06 15:17:41+00",
    "conditionId": "0xdd22472e552920b8438158ea7238bfadfa4f736aa4cee91a6b86c39ead110917",
+   "events": [
+    {
+     "id": "903193"
+    }
+   ],
    "feesEnabled": false,
+   "negRisk": true,
+   "negRiskMarketID": "0xe3b1bc389210504ebcb9cffe4b0ed06ccac50561e0f24abb6379984cec030f00",
    "outcomePrices": "[\"1\", \"0\"]",
+   "outcomes": "[\"Yes\", \"No\"]",
    "startDate": "2024-01-04T22:58:00Z",
    "tags": [
     {
@@ -6271,8 +6723,16 @@
    "closed": true,
    "closedTime": "2025-05-19 05:43:49+00",
    "conditionId": "0xde69f3a4ea109f797c51b5c166e78ffaa79efbaea7d7f64c74638cbb529f7fdd",
+   "events": [
+    {
+     "id": "16868"
+    }
+   ],
    "feesEnabled": false,
+   "negRisk": true,
+   "negRiskMarketID": "0x5b32843a079e064277a5ddb822a3094e2ee747d0ebae8500918717076de14e00",
    "outcomePrices": "[\"0\", \"1\"]",
+   "outcomes": "[\"Yes\", \"No\"]",
    "startDate": "2025-01-17T22:11:26.82Z",
    "tags": [
     {
@@ -6297,8 +6757,16 @@
    "closed": true,
    "closedTime": "2025-05-19 05:43:47+00",
    "conditionId": "0xe343e905d4a805016123652e4975a0bb01461d210c2990c578f53dedf5442012",
+   "events": [
+    {
+     "id": "16868"
+    }
+   ],
    "feesEnabled": false,
+   "negRisk": true,
+   "negRiskMarketID": "0x5b32843a079e064277a5ddb822a3094e2ee747d0ebae8500918717076de14e00",
    "outcomePrices": "[\"0\", \"1\"]",
+   "outcomes": "[\"Yes\", \"No\"]",
    "startDate": "2025-01-17T22:02:31.959Z",
    "tags": [
     {
@@ -6323,6 +6791,11 @@
    "closed": true,
    "closedTime": "2026-07-19 22:26:15+00",
    "conditionId": "0xea3a43cfe43b5bf81aa736f0d6204f0f2b298425df4612a6ab21ed513b0d42ae",
+   "events": [
+    {
+     "id": "708604"
+    }
+   ],
    "feeSchedule": {
     "exponent": 1,
     "rate": 0.05,
@@ -6330,7 +6803,10 @@
     "takerOnly": true
    },
    "feesEnabled": true,
+   "negRisk": true,
+   "negRiskMarketID": "0x487b2596a47354f36dd6f2af264c30fb002faab70cdb479f66cc5771b0909c00",
    "outcomePrices": "[\"0\", \"1\"]",
+   "outcomes": "[\"Yes\", \"No\"]",
    "startDate": "2026-07-16T02:54:34.627596Z",
    "tags": [
     {
@@ -6352,8 +6828,16 @@
    "closed": true,
    "closedTime": "2025-12-08 04:24:03+00",
    "conditionId": "0xef5880e94212f24f17d45b756c9aa42bc7d39c3feda659fc22417adae5e22d00",
+   "events": [
+    {
+     "id": "24895"
+    }
+   ],
    "feesEnabled": false,
+   "negRisk": true,
+   "negRiskMarketID": "0x80b3198e7e2fd02432f2edb561857715f010772661587f50ace1c6bb12266500",
    "outcomePrices": "[\"0\", \"1\"]",
+   "outcomes": "[\"Yes\", \"No\"]",
    "startDate": "2025-05-21T00:09:53.606Z",
    "tags": [
     {
@@ -6381,8 +6865,16 @@
    "closed": true,
    "closedTime": "2025-05-19 05:33:41+00",
    "conditionId": "0xf759fba6c4fd415128bc840a1bf99708244720d7e613ef4ca02f0e15157b2f14",
+   "events": [
+    {
+     "id": "16868"
+    }
+   ],
    "feesEnabled": false,
+   "negRisk": true,
+   "negRiskMarketID": "0x5b32843a079e064277a5ddb822a3094e2ee747d0ebae8500918717076de14e00",
    "outcomePrices": "[\"0\", \"1\"]",
+   "outcomes": "[\"Yes\", \"No\"]",
    "startDate": "2025-01-17T21:57:42.644Z",
    "tags": [
     {
@@ -6407,6 +6899,11 @@
    "closed": true,
    "closedTime": "2026-05-17 16:00:18+00",
    "conditionId": "0xf7b7e74caa4c848d7e9e2db12a94d2ffbdba11c5d4762aa8371a75b05ab91da2",
+   "events": [
+    {
+     "id": "491983"
+    }
+   ],
    "feeSchedule": {
     "exponent": 1,
     "rate": 0.07,
@@ -6414,7 +6911,9 @@
     "takerOnly": true
    },
    "feesEnabled": true,
+   "negRisk": false,
    "outcomePrices": "[\"0\", \"1\"]",
+   "outcomes": "[\"Up\", \"Down\"]",
    "startDate": "2026-05-16T16:03:47.249376Z",
    "tags": [
     {
@@ -6445,8 +6944,16 @@
    "closed": true,
    "closedTime": "2025-06-03 21:49:12+00",
    "conditionId": "0xf9425f69ce7fbde7ee54887ea24b164d2d4c06b594c4d4f94b1921cd79321b19",
+   "events": [
+    {
+     "id": "22254"
+    }
+   ],
    "feesEnabled": false,
+   "negRisk": true,
+   "negRiskMarketID": "0x5b89137622e3a237f7216462dcbe1268fbfdfe543fac5a4af05e1ced202f3100",
    "outcomePrices": "[\"0\", \"1\"]",
+   "outcomes": "[\"Yes\", \"No\"]",
    "startDate": "2025-04-04T22:45:52.223491Z",
    "tags": [
     {
