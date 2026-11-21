@@ -25,3 +25,10 @@ Findings and goals set aside by `bmad-build`, each with where it came from.
 - source_spec: `_bmad-output/implementation-artifacts/spec-2-2-a-wallet-s-bets-as-one-complete-snapshot.md`
   summary: A real Sample Wallet whose capture stopped at the 150,000-row cap could read as complete offline but capped live, because OfflineClient only knows the rows in its file.
   evidence: maybe-false, would be medium for Story 2.6 (0xd218e4 and 0x63d43b hit the cap in the capture). Settle it when 2.6 writes the real Wallets: store where each capture stopped and make OfflineClient's activity read incomplete past it.
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-2-3-every-exclusion-and-fee-on-real-data.md`
+  summary: Neg-risk conversion outputs (listed Positions with no TRADE row whose shares came from a CONVERSION in another Market of the same event) are left out as "share gap"; Story 2.4, which reads the events, should decide whether they belong under "split or merged" instead.
+  evidence: Story 2.3 review (blind hunter). 0x091596 has 21 of them, which alone puts it over the 10% note. They are left out either way; only the label and the reason counts on the card would change.
+- source_spec: `_bmad-output/implementation-artifacts/spec-2-3-every-exclusion-and-fee-on-real-data.md`
+  summary: The card's "Left out of the test" line (EXPERIENCE.md) has six labels for seven reasons; Epic 3 must show both "only in activity rows" and "share gap" as "Polymarket's two lists disagree", and read the Position set (left-out share, flag, failed fees) from the stored lookup, which today returns only the Skill Test result.
+  evidence: Story 2.3 review (blind hunter). Pre-existing in the UX plan: AD-11 always had both list reasons. `services/fetch.stored_result` drops the Position set; no page reads these numbers until Epic 3.
