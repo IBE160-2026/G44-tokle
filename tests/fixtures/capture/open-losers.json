@@ -1,0 +1,444 @@
+{
+ "activity": [
+  {
+   "condition_id": "0x5f0de9f7ef85003356acb6117d235a4fa45ed5718d2a467ea7015cc92ae68713",
+   "price": 0.7399896381,
+   "side": "BUY",
+   "size": 0.013511,
+   "timestamp": 1726911494,
+   "token_id": "79911681936092376806356690766147238671615861182435855933493987069612781063659",
+   "type": "TRADE",
+   "usdc_size": 0.009998
+  },
+  {
+   "condition_id": "0xc7cfba4c3b81fb4e74eee84262e4d8173295851b4f9bdffa69b22c36ffec6901",
+   "price": 0.8,
+   "side": "BUY",
+   "size": 0.0125,
+   "timestamp": 1726911632,
+   "token_id": "91645638213256672559914109081587454247513357184242914288747238104025663137368",
+   "type": "TRADE",
+   "usdc_size": 0.01
+  },
+  {
+   "condition_id": "0x9462d15cc91e1bb685b128d96efc67d5ad2bfcf6fbe66e3d5a1a4216c7b932e3",
+   "price": 0.569997036,
+   "side": "BUY",
+   "size": 0.087718,
+   "timestamp": 1726981585,
+   "token_id": "37332492868600767845667960391228364247388913389547720698639261943636032905953",
+   "type": "TRADE",
+   "usdc_size": 0.049999
+  },
+  {
+   "condition_id": "0x47aa207c3436031ea85d712def10f049c7dccd17b834d88fd8cdd249980da087",
+   "price": 0.8599690349,
+   "side": "BUY",
+   "size": 0.011626,
+   "timestamp": 1727154897,
+   "token_id": "66548958203936238192789473051197856208038349857383786439152894562843708785867",
+   "type": "TRADE",
+   "usdc_size": 0.009998
+  },
+  {
+   "condition_id": "0x47aa207c3436031ea85d712def10f049c7dccd17b834d88fd8cdd249980da087",
+   "price": 0.85,
+   "side": "SELL",
+   "size": 0.01,
+   "timestamp": 1727154923,
+   "token_id": "66548958203936238192789473051197856208038349857383786439152894562843708785867",
+   "type": "TRADE",
+   "usdc_size": 0.0085
+  },
+  {
+   "condition_id": "0x0364877def147d66fe14016ecb3c3ce83b65e712326e9681ab123d8ad0fc32bf",
+   "price": 0.002,
+   "side": "BUY",
+   "size": 10.0,
+   "timestamp": 1732292841,
+   "token_id": "104000388498994911321484968798613587537926809717225930035316303503433919656069",
+   "type": "TRADE",
+   "usdc_size": 0.02
+  },
+  {
+   "condition_id": "0x04f5b8254cfbe9212650c7821e63b014f7a6b410d5dbe696d3d59c5d804d68d3",
+   "price": 0.002,
+   "side": "BUY",
+   "size": 5.0,
+   "timestamp": 1732420897,
+   "token_id": "83264990023008215072714289844996297008514335280320196927207665503776183994528",
+   "type": "TRADE",
+   "usdc_size": 0.01
+  },
+  {
+   "condition_id": "0x00fd2b95380b1700e693d9af4b316aa2f06fca9f80551c773b8bd3a5fac58c54",
+   "price": 0.002,
+   "side": "BUY",
+   "size": 10.0,
+   "timestamp": 1732833976,
+   "token_id": "58683990313207607377719611992674244759147616718129339723942786270769526068068",
+   "type": "TRADE",
+   "usdc_size": 0.02
+  },
+  {
+   "condition_id": "0x01bec04b3b16f26b2d335894505cf033fe71093d90a84fb47e333abb4ad4028a",
+   "price": 0.01,
+   "side": "BUY",
+   "size": 40.0,
+   "timestamp": 1735845982,
+   "token_id": "7310961225692928848120211643671485917931272177551318688061402640148642902390",
+   "type": "TRADE",
+   "usdc_size": 0.4
+  },
+  {
+   "condition_id": "0x030ffc12d4619622e3d318526e306008bc1fbf982fe95e92b649c9f40a135ad3",
+   "price": 0.002,
+   "side": "BUY",
+   "size": 5.0,
+   "timestamp": 1737260477,
+   "token_id": "65661592405417984267066437223235056001699463687124602041720003480189576143687",
+   "type": "TRADE",
+   "usdc_size": 0.01
+  },
+  {
+   "condition_id": "0x39b843a13152bda25541a37144332d30be2fd8e003224e34ff5083309f317312",
+   "price": 0.002,
+   "side": "BUY",
+   "size": 100.0,
+   "timestamp": 1743520925,
+   "token_id": "9236100660698638963494175561175291965862484513513595383709925887956867467584",
+   "type": "TRADE",
+   "usdc_size": 0.2
+  },
+  {
+   "condition_id": "0x39b843a13152bda25541a37144332d30be2fd8e003224e34ff5083309f317312",
+   "price": 0.02045,
+   "side": "SELL",
+   "size": 100.0,
+   "timestamp": 1744053209,
+   "token_id": "9236100660698638963494175561175291965862484513513595383709925887956867467584",
+   "type": "TRADE",
+   "usdc_size": 2.045
+  }
+ ],
+ "gamma": [
+  {
+   "clobTokenIds": "[\"58683990313207607377719611992674244759147616718129339723942786270769526068068\", \"69605201761170073607916250660592922388774778050253114584082908868712091067561\"]",
+   "closed": true,
+   "closedTime": "2024-11-30 01:55:22+00",
+   "conditionId": "0x00fd2b95380b1700e693d9af4b316aa2f06fca9f80551c773b8bd3a5fac58c54",
+   "feesEnabled": false,
+   "outcomePrices": "[\"0\", \"1\"]",
+   "startDate": "2024-11-25T18:47:09.4431Z",
+   "tags": [
+    {
+     "label": "Sports"
+    },
+    {
+     "label": "futures"
+    },
+    {
+     "label": "NBA"
+    },
+    {
+     "label": "NBA Cup"
+    }
+   ]
+  },
+  {
+   "clobTokenIds": "[\"7310961225692928848120211643671485917931272177551318688061402640148642902390\", \"67152343913842239143865471722718479320243313352561944776011482154958056461178\"]",
+   "closed": true,
+   "closedTime": "2025-01-24 03:35:28+00",
+   "conditionId": "0x01bec04b3b16f26b2d335894505cf033fe71093d90a84fb47e333abb4ad4028a",
+   "feesEnabled": false,
+   "outcomePrices": "[\"0\", \"1\"]",
+   "startDate": "2024-12-03T19:51:23.575297Z",
+   "tags": [
+    {
+     "label": "Sports"
+    },
+    {
+     "label": "futures"
+    },
+    {
+     "label": "NFL (All)"
+    },
+    {
+     "label": "Awards"
+    }
+   ]
+  },
+  {
+   "clobTokenIds": "[\"65661592405417984267066437223235056001699463687124602041720003480189576143687\", \"59592679804789655084419983772617102094652837284438068929153072929337840348730\"]",
+   "closed": true,
+   "closedTime": "2025-04-02 00:22:32+00",
+   "conditionId": "0x030ffc12d4619622e3d318526e306008bc1fbf982fe95e92b649c9f40a135ad3",
+   "feesEnabled": false,
+   "outcomePrices": "[\"0\", \"1\"]",
+   "startDate": "2024-09-09T20:56:30.99212Z",
+   "tags": [
+    {
+     "label": "Soccer"
+    },
+    {
+     "label": "Sports"
+    },
+    {
+     "label": "EPL"
+    },
+    {
+     "label": "Premier League"
+    }
+   ]
+  },
+  {
+   "clobTokenIds": "[\"108838149716024419829115782671791235855246153116774736054678019656611541099641\", \"104000388498994911321484968798613587537926809717225930035316303503433919656069\"]",
+   "closed": true,
+   "closedTime": "2024-11-28 07:03:11+00",
+   "conditionId": "0x0364877def147d66fe14016ecb3c3ce83b65e712326e9681ab123d8ad0fc32bf",
+   "feesEnabled": false,
+   "outcomePrices": "[\"1\", \"0\"]",
+   "startDate": "2024-09-27T21:03:14.10502Z",
+   "tags": [
+    {
+     "label": "Airdrops"
+    },
+    {
+     "label": "Crypto"
+    }
+   ]
+  },
+  {
+   "clobTokenIds": "[\"83264990023008215072714289844996297008514335280320196927207665503776183994528\", \"11170389089295718925035160663360978493451156063588130095990429072185797028978\"]",
+   "closed": true,
+   "closedTime": "2024-12-15 05:31:45+00",
+   "conditionId": "0x04f5b8254cfbe9212650c7821e63b014f7a6b410d5dbe696d3d59c5d804d68d3",
+   "feesEnabled": false,
+   "outcomePrices": "[\"0\", \"1\"]",
+   "startDate": "2024-09-19T21:34:27.779416Z",
+   "tags": [
+    {
+     "label": "Sports"
+    },
+    {
+     "label": "CFB (All)"
+    },
+    {
+     "label": "Cam Ward"
+    },
+    {
+     "label": "Jalen Milroe"
+    },
+    {
+     "label": "Jaxson Dart"
+    },
+    {
+     "label": "Nico Iamaleava"
+    },
+    {
+     "label": "Dillon Gabriel"
+    },
+    {
+     "label": "Arch Manning"
+    },
+    {
+     "label": "All"
+    },
+    {
+     "label": "Miller Moss"
+    },
+    {
+     "label": "Heisman"
+    },
+    {
+     "label": "Ashton Jeanty"
+    },
+    {
+     "label": "Carson Beck"
+    },
+    {
+     "label": "Today's Sports"
+    }
+   ]
+  },
+  {
+   "clobTokenIds": "[\"9236100660698638963494175561175291965862484513513595383709925887956867467584\", \"115508369299498407617668910124486118559718758188949120296125676185858146105617\"]",
+   "closed": true,
+   "closedTime": "2025-04-25 05:17:35+00",
+   "conditionId": "0x39b843a13152bda25541a37144332d30be2fd8e003224e34ff5083309f317312",
+   "feesEnabled": false,
+   "outcomePrices": "[\"1\", \"0\"]",
+   "startDate": "2025-03-10T19:10:09.094397Z",
+   "tags": [
+    {
+     "label": "Sports"
+    },
+    {
+     "label": "NFL (All)"
+    },
+    {
+     "label": "NFL Draft"
+    }
+   ]
+  },
+  {
+   "clobTokenIds": "[\"66548958203936238192789473051197856208038349857383786439152894562843708785867\", \"26512449436402798349093947424100272679028530461117938071409194064023450852274\"]",
+   "closed": true,
+   "closedTime": "2024-09-24 20:01:36+00",
+   "conditionId": "0x47aa207c3436031ea85d712def10f049c7dccd17b834d88fd8cdd249980da087",
+   "feesEnabled": false,
+   "outcomePrices": "[\"1\", \"0\"]",
+   "startDate": "2024-09-23T17:44:16.86836Z",
+   "tags": [
+    {
+     "label": "Mentions"
+    },
+    {
+     "label": "Politics"
+    },
+    {
+     "label": "Trump"
+    }
+   ]
+  },
+  {
+   "clobTokenIds": "[\"66356749201966925787394862012514591199702416009848674879712034012856398648754\", \"79911681936092376806356690766147238671615861182435855933493987069612781063659\"]",
+   "closed": true,
+   "closedTime": "2024-12-30 08:12:03+00",
+   "conditionId": "0x5f0de9f7ef85003356acb6117d235a4fa45ed5718d2a467ea7015cc92ae68713",
+   "feesEnabled": false,
+   "outcomePrices": "[\"0\", \"1\"]",
+   "startDate": "2024-08-08T17:48:11.700864Z",
+   "tags": [
+    {
+     "label": "Sports"
+    },
+    {
+     "label": "NFL (All)"
+    }
+   ]
+  },
+  {
+   "clobTokenIds": "[\"37332492868600767845667960391228364247388913389547720698639261943636032905953\", \"68180159553897409706987898393752957728388255779392494453492977693183585443301\"]",
+   "closed": true,
+   "closedTime": "2024-09-23 03:39:20+00",
+   "conditionId": "0x9462d15cc91e1bb685b128d96efc67d5ad2bfcf6fbe66e3d5a1a4216c7b932e3",
+   "feesEnabled": false,
+   "outcomePrices": "[\"1\", \"0\"]",
+   "startDate": "2024-09-18T03:21:41.224312Z",
+   "tags": [
+    {
+     "label": "Sports"
+    },
+    {
+     "label": "Formula 1"
+    },
+    {
+     "label": "f1"
+    },
+    {
+     "label": "Today's Sports"
+    }
+   ]
+  },
+  {
+   "clobTokenIds": "[\"89160785198796563000757263315552521973902189650346802982065648750043582742129\", \"91645638213256672559914109081587454247513357184242914288747238104025663137368\"]",
+   "closed": true,
+   "closedTime": "2024-09-21 19:22:36+00",
+   "conditionId": "0xc7cfba4c3b81fb4e74eee84262e4d8173295851b4f9bdffa69b22c36ffec6901",
+   "feesEnabled": false,
+   "outcomePrices": "[\"0\", \"1\"]",
+   "startDate": "2024-09-17T22:44:58.104605Z",
+   "tags": [
+    {
+     "label": "EPL"
+    },
+    {
+     "label": "Sports"
+    },
+    {
+     "label": "Today's Sports"
+    },
+    {
+     "label": "Games"
+    }
+   ]
+  }
+ ],
+ "positions_closed": [
+  {
+   "condition_id": "0xc7cfba4c3b81fb4e74eee84262e4d8173295851b4f9bdffa69b22c36ffec6901",
+   "first_entry_at": 1726911632,
+   "last_event_at": 1726946556,
+   "token_id": "91645638213256672559914109081587454247513357184242914288747238104025663137368",
+   "total_size": 0.0125
+  },
+  {
+   "condition_id": "0x9462d15cc91e1bb685b128d96efc67d5ad2bfcf6fbe66e3d5a1a4216c7b932e3",
+   "first_entry_at": 1726981585,
+   "last_event_at": 1727062760,
+   "token_id": "37332492868600767845667960391228364247388913389547720698639261943636032905953",
+   "total_size": 0.0877
+  },
+  {
+   "condition_id": "0x47aa207c3436031ea85d712def10f049c7dccd17b834d88fd8cdd249980da087",
+   "first_entry_at": 1727154897,
+   "last_event_at": 1727208096,
+   "token_id": "66548958203936238192789473051197856208038349857383786439152894562843708785867",
+   "total_size": 0.0116
+  },
+  {
+   "condition_id": "0x5f0de9f7ef85003356acb6117d235a4fa45ed5718d2a467ea7015cc92ae68713",
+   "first_entry_at": 1726911494,
+   "last_event_at": 1735546323,
+   "token_id": "79911681936092376806356690766147238671615861182435855933493987069612781063659",
+   "total_size": 0.0135
+  },
+  {
+   "condition_id": "0x39b843a13152bda25541a37144332d30be2fd8e003224e34ff5083309f317312",
+   "first_entry_at": 1743520925,
+   "last_event_at": 1744053209,
+   "token_id": "9236100660698638963494175561175291965862484513513595383709925887956867467584",
+   "total_size": 100.0
+  }
+ ],
+ "positions_open": [
+  {
+   "condition_id": "0x0364877def147d66fe14016ecb3c3ce83b65e712326e9681ab123d8ad0fc32bf",
+   "first_entry_at": 1732292841,
+   "last_event_at": 1732777391,
+   "token_id": "104000388498994911321484968798613587537926809717225930035316303503433919656069",
+   "total_size": 10.0
+  },
+  {
+   "condition_id": "0x00fd2b95380b1700e693d9af4b316aa2f06fca9f80551c773b8bd3a5fac58c54",
+   "first_entry_at": 1732833976,
+   "last_event_at": 1732931722,
+   "token_id": "58683990313207607377719611992674244759147616718129339723942786270769526068068",
+   "total_size": 10.0
+  },
+  {
+   "condition_id": "0x030ffc12d4619622e3d318526e306008bc1fbf982fe95e92b649c9f40a135ad3",
+   "first_entry_at": 1737260477,
+   "last_event_at": 1743553352,
+   "token_id": "65661592405417984267066437223235056001699463687124602041720003480189576143687",
+   "total_size": 5.0
+  },
+  {
+   "condition_id": "0x01bec04b3b16f26b2d335894505cf033fe71093d90a84fb47e333abb4ad4028a",
+   "first_entry_at": 1735845982,
+   "last_event_at": 1737689728,
+   "token_id": "7310961225692928848120211643671485917931272177551318688061402640148642902390",
+   "total_size": 40.0
+  },
+  {
+   "condition_id": "0x04f5b8254cfbe9212650c7821e63b014f7a6b410d5dbe696d3d59c5d804d68d3",
+   "first_entry_at": 1732420897,
+   "last_event_at": 1734240705,
+   "token_id": "83264990023008215072714289844996297008514335280320196927207665503776183994528",
+   "total_size": 5.0
+  }
+ ],
+ "source": "spike/raw/sample/capture (Data API v2, 2026-10-23) and Gamma /markets with include_tag (2026-11-20)",
+ "wallet": "0x94884db79666a1a34c46d03fb4f8e9cbcaf6b5a6"
+}

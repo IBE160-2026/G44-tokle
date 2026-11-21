@@ -1,0 +1,1238 @@
+{
+ "activity": [
+  {
+   "condition_id": "0x275d1a9eadf860ef7caab65c4a1b54ccdc10f995dd787e201a6e6f38650c6d39",
+   "price": 0.5,
+   "side": "",
+   "size": 3000.0,
+   "timestamp": 1735225737,
+   "token_id": "",
+   "type": "SPLIT",
+   "usdc_size": 3000.0
+  },
+  {
+   "condition_id": "0x275d1a9eadf860ef7caab65c4a1b54ccdc10f995dd787e201a6e6f38650c6d39",
+   "price": 0.95,
+   "side": "SELL",
+   "size": 300.0,
+   "timestamp": 1735227749,
+   "token_id": "27221824332399502286012122723752546831240058297151204248707236565422249422499",
+   "type": "TRADE",
+   "usdc_size": 285.0
+  },
+  {
+   "condition_id": "0x275d1a9eadf860ef7caab65c4a1b54ccdc10f995dd787e201a6e6f38650c6d39",
+   "price": 0.0,
+   "side": "",
+   "size": 2700.0,
+   "timestamp": 1735246483,
+   "token_id": "",
+   "type": "REDEEM",
+   "usdc_size": 2700.0
+  },
+  {
+   "condition_id": "0x04d5e75c920683705a89a85a62a01cf842fbbaf5e0c78e302fc1371aa052afa3",
+   "price": 0.5,
+   "side": "",
+   "size": 8000.0,
+   "timestamp": 1736982625,
+   "token_id": "",
+   "type": "SPLIT",
+   "usdc_size": 8000.0
+  },
+  {
+   "condition_id": "0x04d5e75c920683705a89a85a62a01cf842fbbaf5e0c78e302fc1371aa052afa3",
+   "price": 0.0,
+   "side": "",
+   "size": 8000.0,
+   "timestamp": 1736982761,
+   "token_id": "",
+   "type": "MERGE",
+   "usdc_size": 8000.0
+  },
+  {
+   "condition_id": "0x04d5e75c920683705a89a85a62a01cf842fbbaf5e0c78e302fc1371aa052afa3",
+   "price": 0.5,
+   "side": "",
+   "size": 100.0,
+   "timestamp": 1736982871,
+   "token_id": "",
+   "type": "SPLIT",
+   "usdc_size": 100.0
+  },
+  {
+   "condition_id": "0x04d5e75c920683705a89a85a62a01cf842fbbaf5e0c78e302fc1371aa052afa3",
+   "price": 0.0,
+   "side": "",
+   "size": 100.0,
+   "timestamp": 1736983069,
+   "token_id": "",
+   "type": "MERGE",
+   "usdc_size": 100.0
+  },
+  {
+   "condition_id": "0xb6c1af40ff988d54721a0c0c26a53f9b82528276ce9cd17f6ffe2366ff34f16e",
+   "price": 0.5,
+   "side": "",
+   "size": 100.0,
+   "timestamp": 1736983083,
+   "token_id": "",
+   "type": "SPLIT",
+   "usdc_size": 100.0
+  },
+  {
+   "condition_id": "0xb6c1af40ff988d54721a0c0c26a53f9b82528276ce9cd17f6ffe2366ff34f16e",
+   "price": 0.0,
+   "side": "",
+   "size": 100.0,
+   "timestamp": 1736983137,
+   "token_id": "",
+   "type": "MERGE",
+   "usdc_size": 100.0
+  },
+  {
+   "condition_id": "0x04d5e75c920683705a89a85a62a01cf842fbbaf5e0c78e302fc1371aa052afa3",
+   "price": 0.5,
+   "side": "",
+   "size": 100.0,
+   "timestamp": 1736983151,
+   "token_id": "",
+   "type": "SPLIT",
+   "usdc_size": 100.0
+  },
+  {
+   "condition_id": "0x04d5e75c920683705a89a85a62a01cf842fbbaf5e0c78e302fc1371aa052afa3",
+   "price": 0.0,
+   "side": "",
+   "size": 100.0,
+   "timestamp": 1736983885,
+   "token_id": "",
+   "type": "MERGE",
+   "usdc_size": 100.0
+  },
+  {
+   "condition_id": "0x04d5e75c920683705a89a85a62a01cf842fbbaf5e0c78e302fc1371aa052afa3",
+   "price": 0.5,
+   "side": "",
+   "size": 6000.0,
+   "timestamp": 1736991396,
+   "token_id": "",
+   "type": "SPLIT",
+   "usdc_size": 6000.0
+  },
+  {
+   "condition_id": "0x04d5e75c920683705a89a85a62a01cf842fbbaf5e0c78e302fc1371aa052afa3",
+   "price": 0.42,
+   "side": "SELL",
+   "size": 500.0,
+   "timestamp": 1736995933,
+   "token_id": "29610397271688369066894328850003104397480239992926756406057091319035788146989",
+   "type": "TRADE",
+   "usdc_size": 210.0
+  },
+  {
+   "condition_id": "0x04d5e75c920683705a89a85a62a01cf842fbbaf5e0c78e302fc1371aa052afa3",
+   "price": 0.43,
+   "side": "SELL",
+   "size": 140.0,
+   "timestamp": 1737119029,
+   "token_id": "29610397271688369066894328850003104397480239992926756406057091319035788146989",
+   "type": "TRADE",
+   "usdc_size": 60.2
+  },
+  {
+   "condition_id": "0x04d5e75c920683705a89a85a62a01cf842fbbaf5e0c78e302fc1371aa052afa3",
+   "price": 0.41,
+   "side": "SELL",
+   "size": 40.0,
+   "timestamp": 1737161777,
+   "token_id": "29610397271688369066894328850003104397480239992926756406057091319035788146989",
+   "type": "TRADE",
+   "usdc_size": 16.4
+  },
+  {
+   "condition_id": "0x04d5e75c920683705a89a85a62a01cf842fbbaf5e0c78e302fc1371aa052afa3",
+   "price": 0.4281818182,
+   "side": "SELL",
+   "size": 495.0,
+   "timestamp": 1737268871,
+   "token_id": "29610397271688369066894328850003104397480239992926756406057091319035788146989",
+   "type": "TRADE",
+   "usdc_size": 211.95
+  },
+  {
+   "condition_id": "0x04d5e75c920683705a89a85a62a01cf842fbbaf5e0c78e302fc1371aa052afa3",
+   "price": 0.4108774,
+   "side": "SELL",
+   "size": 500.0,
+   "timestamp": 1737304541,
+   "token_id": "29610397271688369066894328850003104397480239992926756406057091319035788146989",
+   "type": "TRADE",
+   "usdc_size": 205.4387
+  },
+  {
+   "condition_id": "0x04d5e75c920683705a89a85a62a01cf842fbbaf5e0c78e302fc1371aa052afa3",
+   "price": 0.5448717949,
+   "side": "BUY",
+   "size": 195.0,
+   "timestamp": 1737464635,
+   "token_id": "29610397271688369066894328850003104397480239992926756406057091319035788146989",
+   "type": "TRADE",
+   "usdc_size": 106.25
+  },
+  {
+   "condition_id": "0x04d5e75c920683705a89a85a62a01cf842fbbaf5e0c78e302fc1371aa052afa3",
+   "price": 0.7,
+   "side": "BUY",
+   "size": 6.88,
+   "timestamp": 1737464717,
+   "token_id": "29610397271688369066894328850003104397480239992926756406057091319035788146989",
+   "type": "TRADE",
+   "usdc_size": 4.816
+  },
+  {
+   "condition_id": "0x04d5e75c920683705a89a85a62a01cf842fbbaf5e0c78e302fc1371aa052afa3",
+   "price": 0.5759759976,
+   "side": "BUY",
+   "size": 150.86999,
+   "timestamp": 1737464717,
+   "token_id": "29610397271688369066894328850003104397480239992926756406057091319035788146989",
+   "type": "TRADE",
+   "usdc_size": 86.897493
+  },
+  {
+   "condition_id": "0x04d5e75c920683705a89a85a62a01cf842fbbaf5e0c78e302fc1371aa052afa3",
+   "price": 0.7000000078,
+   "side": "BUY",
+   "size": 77.333332,
+   "timestamp": 1737464727,
+   "token_id": "29610397271688369066894328850003104397480239992926756406057091319035788146989",
+   "type": "TRADE",
+   "usdc_size": 54.133333
+  },
+  {
+   "condition_id": "0x04d5e75c920683705a89a85a62a01cf842fbbaf5e0c78e302fc1371aa052afa3",
+   "price": 0.7,
+   "side": "BUY",
+   "size": 58.0,
+   "timestamp": 1737464727,
+   "token_id": "29610397271688369066894328850003104397480239992926756406057091319035788146989",
+   "type": "TRADE",
+   "usdc_size": 40.6
+  },
+  {
+   "condition_id": "0x04d5e75c920683705a89a85a62a01cf842fbbaf5e0c78e302fc1371aa052afa3",
+   "price": 0.42,
+   "side": "BUY",
+   "size": 15.0,
+   "timestamp": 1737464729,
+   "token_id": "29610397271688369066894328850003104397480239992926756406057091319035788146989",
+   "type": "TRADE",
+   "usdc_size": 6.3
+  },
+  {
+   "condition_id": "0x04d5e75c920683705a89a85a62a01cf842fbbaf5e0c78e302fc1371aa052afa3",
+   "price": 0.6130297642,
+   "side": "BUY",
+   "size": 164.999977,
+   "timestamp": 1737464731,
+   "token_id": "29610397271688369066894328850003104397480239992926756406057091319035788146989",
+   "type": "TRADE",
+   "usdc_size": 101.149897
+  },
+  {
+   "condition_id": "0x04d5e75c920683705a89a85a62a01cf842fbbaf5e0c78e302fc1371aa052afa3",
+   "price": 0.74,
+   "side": "BUY",
+   "size": 8.31,
+   "timestamp": 1737464733,
+   "token_id": "29610397271688369066894328850003104397480239992926756406057091319035788146989",
+   "type": "TRADE",
+   "usdc_size": 6.1494
+  },
+  {
+   "condition_id": "0x04d5e75c920683705a89a85a62a01cf842fbbaf5e0c78e302fc1371aa052afa3",
+   "price": 0.74,
+   "side": "BUY",
+   "size": 10.0,
+   "timestamp": 1737464733,
+   "token_id": "29610397271688369066894328850003104397480239992926756406057091319035788146989",
+   "type": "TRADE",
+   "usdc_size": 7.4
+  },
+  {
+   "condition_id": "0x04d5e75c920683705a89a85a62a01cf842fbbaf5e0c78e302fc1371aa052afa3",
+   "price": 0.7,
+   "side": "BUY",
+   "size": 13.0,
+   "timestamp": 1737464733,
+   "token_id": "29610397271688369066894328850003104397480239992926756406057091319035788146989",
+   "type": "TRADE",
+   "usdc_size": 9.1
+  },
+  {
+   "condition_id": "0x04d5e75c920683705a89a85a62a01cf842fbbaf5e0c78e302fc1371aa052afa3",
+   "price": 0.7,
+   "side": "BUY",
+   "size": 20.64,
+   "timestamp": 1737464735,
+   "token_id": "29610397271688369066894328850003104397480239992926756406057091319035788146989",
+   "type": "TRADE",
+   "usdc_size": 14.448
+  },
+  {
+   "condition_id": "0x04d5e75c920683705a89a85a62a01cf842fbbaf5e0c78e302fc1371aa052afa3",
+   "price": 0.74,
+   "side": "BUY",
+   "size": 10.0,
+   "timestamp": 1737464735,
+   "token_id": "29610397271688369066894328850003104397480239992926756406057091319035788146989",
+   "type": "TRADE",
+   "usdc_size": 7.4
+  },
+  {
+   "condition_id": "0x04d5e75c920683705a89a85a62a01cf842fbbaf5e0c78e302fc1371aa052afa3",
+   "price": 0.49,
+   "side": "SELL",
+   "size": 555.0,
+   "timestamp": 1737501935,
+   "token_id": "29610397271688369066894328850003104397480239992926756406057091319035788146989",
+   "type": "TRADE",
+   "usdc_size": 271.95
+  },
+  {
+   "condition_id": "0x04d5e75c920683705a89a85a62a01cf842fbbaf5e0c78e302fc1371aa052afa3",
+   "price": 0.48,
+   "side": "SELL",
+   "size": 6.0,
+   "timestamp": 1737501967,
+   "token_id": "29610397271688369066894328850003104397480239992926756406057091319035788146989",
+   "type": "TRADE",
+   "usdc_size": 2.88
+  },
+  {
+   "condition_id": "0x04d5e75c920683705a89a85a62a01cf842fbbaf5e0c78e302fc1371aa052afa3",
+   "price": 0.48,
+   "side": "SELL",
+   "size": 494.0,
+   "timestamp": 1737502197,
+   "token_id": "29610397271688369066894328850003104397480239992926756406057091319035788146989",
+   "type": "TRADE",
+   "usdc_size": 237.12
+  },
+  {
+   "condition_id": "0x04d5e75c920683705a89a85a62a01cf842fbbaf5e0c78e302fc1371aa052afa3",
+   "price": 0.47,
+   "side": "SELL",
+   "size": 150.0,
+   "timestamp": 1737515825,
+   "token_id": "29610397271688369066894328850003104397480239992926756406057091319035788146989",
+   "type": "TRADE",
+   "usdc_size": 70.5
+  },
+  {
+   "condition_id": "0x04d5e75c920683705a89a85a62a01cf842fbbaf5e0c78e302fc1371aa052afa3",
+   "price": 0.4702857143,
+   "side": "SELL",
+   "size": 210.0,
+   "timestamp": 1737535054,
+   "token_id": "29610397271688369066894328850003104397480239992926756406057091319035788146989",
+   "type": "TRADE",
+   "usdc_size": 98.76
+  },
+  {
+   "condition_id": "0x04d5e75c920683705a89a85a62a01cf842fbbaf5e0c78e302fc1371aa052afa3",
+   "price": 0.4722341379,
+   "side": "SELL",
+   "size": 290.0,
+   "timestamp": 1737535268,
+   "token_id": "29610397271688369066894328850003104397480239992926756406057091319035788146989",
+   "type": "TRADE",
+   "usdc_size": 136.9479
+  },
+  {
+   "condition_id": "0x04d5e75c920683705a89a85a62a01cf842fbbaf5e0c78e302fc1371aa052afa3",
+   "price": 0.6599999974,
+   "side": "SELL",
+   "size": 356.485759,
+   "timestamp": 1737584529,
+   "token_id": "29610397271688369066894328850003104397480239992926756406057091319035788146989",
+   "type": "TRADE",
+   "usdc_size": 235.2806
+  },
+  {
+   "condition_id": "0x04d5e75c920683705a89a85a62a01cf842fbbaf5e0c78e302fc1371aa052afa3",
+   "price": 0.62,
+   "side": "SELL",
+   "size": 50.0,
+   "timestamp": 1737593022,
+   "token_id": "29610397271688369066894328850003104397480239992926756406057091319035788146989",
+   "type": "TRADE",
+   "usdc_size": 31.0
+  },
+  {
+   "condition_id": "0x04d5e75c920683705a89a85a62a01cf842fbbaf5e0c78e302fc1371aa052afa3",
+   "price": 0.62,
+   "side": "SELL",
+   "size": 495.0,
+   "timestamp": 1737593022,
+   "token_id": "29610397271688369066894328850003104397480239992926756406057091319035788146989",
+   "type": "TRADE",
+   "usdc_size": 306.9
+  },
+  {
+   "condition_id": "0x04d5e75c920683705a89a85a62a01cf842fbbaf5e0c78e302fc1371aa052afa3",
+   "price": 0.64,
+   "side": "SELL",
+   "size": 18.875,
+   "timestamp": 1737597288,
+   "token_id": "29610397271688369066894328850003104397480239992926756406057091319035788146989",
+   "type": "TRADE",
+   "usdc_size": 12.08
+  },
+  {
+   "condition_id": "0x04d5e75c920683705a89a85a62a01cf842fbbaf5e0c78e302fc1371aa052afa3",
+   "price": 0.6499999863,
+   "side": "SELL",
+   "size": 7.284474,
+   "timestamp": 1737606454,
+   "token_id": "29610397271688369066894328850003104397480239992926756406057091319035788146989",
+   "type": "TRADE",
+   "usdc_size": 4.734908
+  },
+  {
+   "condition_id": "0x04d5e75c920683705a89a85a62a01cf842fbbaf5e0c78e302fc1371aa052afa3",
+   "price": 0.6499999581,
+   "side": "SELL",
+   "size": 2.384614,
+   "timestamp": 1737615959,
+   "token_id": "29610397271688369066894328850003104397480239992926756406057091319035788146989",
+   "type": "TRADE",
+   "usdc_size": 1.549999
+  },
+  {
+   "condition_id": "0x04d5e75c920683705a89a85a62a01cf842fbbaf5e0c78e302fc1371aa052afa3",
+   "price": 0.63,
+   "side": "SELL",
+   "size": 475.0,
+   "timestamp": 1737636471,
+   "token_id": "29610397271688369066894328850003104397480239992926756406057091319035788146989",
+   "type": "TRADE",
+   "usdc_size": 299.25
+  },
+  {
+   "condition_id": "0x04d5e75c920683705a89a85a62a01cf842fbbaf5e0c78e302fc1371aa052afa3",
+   "price": 0.63,
+   "side": "SELL",
+   "size": 470.0,
+   "timestamp": 1737638088,
+   "token_id": "29610397271688369066894328850003104397480239992926756406057091319035788146989",
+   "type": "TRADE",
+   "usdc_size": 296.1
+  },
+  {
+   "condition_id": "0x04d5e75c920683705a89a85a62a01cf842fbbaf5e0c78e302fc1371aa052afa3",
+   "price": 0.64,
+   "side": "SELL",
+   "size": 500.0,
+   "timestamp": 1737681955,
+   "token_id": "29610397271688369066894328850003104397480239992926756406057091319035788146989",
+   "type": "TRADE",
+   "usdc_size": 320.0
+  },
+  {
+   "condition_id": "0x04d5e75c920683705a89a85a62a01cf842fbbaf5e0c78e302fc1371aa052afa3",
+   "price": 0.5,
+   "side": "",
+   "size": 1500.0,
+   "timestamp": 1737681975,
+   "token_id": "",
+   "type": "SPLIT",
+   "usdc_size": 1500.0
+  },
+  {
+   "condition_id": "0x04d5e75c920683705a89a85a62a01cf842fbbaf5e0c78e302fc1371aa052afa3",
+   "price": 0.64,
+   "side": "SELL",
+   "size": 495.0,
+   "timestamp": 1737686746,
+   "token_id": "29610397271688369066894328850003104397480239992926756406057091319035788146989",
+   "type": "TRADE",
+   "usdc_size": 316.8
+  },
+  {
+   "condition_id": "0x04d5e75c920683705a89a85a62a01cf842fbbaf5e0c78e302fc1371aa052afa3",
+   "price": 0.68,
+   "side": "SELL",
+   "size": 500.0,
+   "timestamp": 1737697857,
+   "token_id": "29610397271688369066894328850003104397480239992926756406057091319035788146989",
+   "type": "TRADE",
+   "usdc_size": 340.0
+  },
+  {
+   "condition_id": "0x04d5e75c920683705a89a85a62a01cf842fbbaf5e0c78e302fc1371aa052afa3",
+   "price": 0.7,
+   "side": "SELL",
+   "size": 65.0,
+   "timestamp": 1737719052,
+   "token_id": "29610397271688369066894328850003104397480239992926756406057091319035788146989",
+   "type": "TRADE",
+   "usdc_size": 45.5
+  },
+  {
+   "condition_id": "0x04d5e75c920683705a89a85a62a01cf842fbbaf5e0c78e302fc1371aa052afa3",
+   "price": 0.7019047619,
+   "side": "SELL",
+   "size": 315.0,
+   "timestamp": 1737720048,
+   "token_id": "29610397271688369066894328850003104397480239992926756406057091319035788146989",
+   "type": "TRADE",
+   "usdc_size": 221.1
+  },
+  {
+   "condition_id": "0x04d5e75c920683705a89a85a62a01cf842fbbaf5e0c78e302fc1371aa052afa3",
+   "price": 0.7200081748,
+   "side": "SELL",
+   "size": 259.999998,
+   "timestamp": 1737750231,
+   "token_id": "29610397271688369066894328850003104397480239992926756406057091319035788146989",
+   "type": "TRADE",
+   "usdc_size": 187.202124
+  },
+  {
+   "condition_id": "0x04d5e75c920683705a89a85a62a01cf842fbbaf5e0c78e302fc1371aa052afa3",
+   "price": 0.720012744,
+   "side": "SELL",
+   "size": 9.999998,
+   "timestamp": 1737750591,
+   "token_id": "29610397271688369066894328850003104397480239992926756406057091319035788146989",
+   "type": "TRADE",
+   "usdc_size": 7.200126
+  },
+  {
+   "condition_id": "0x04d5e75c920683705a89a85a62a01cf842fbbaf5e0c78e302fc1371aa052afa3",
+   "price": 0.720007828,
+   "side": "SELL",
+   "size": 229.999998,
+   "timestamp": 1737758102,
+   "token_id": "29610397271688369066894328850003104397480239992926756406057091319035788146989",
+   "type": "TRADE",
+   "usdc_size": 165.601799
+  },
+  {
+   "condition_id": "0xb6c1af40ff988d54721a0c0c26a53f9b82528276ce9cd17f6ffe2366ff34f16e",
+   "price": 0.41,
+   "side": "SELL",
+   "size": 200.0,
+   "timestamp": 1737797649,
+   "token_id": "47161413885392408279512907020639004226343399792038663622690112935141485101512",
+   "type": "TRADE",
+   "usdc_size": 82.0
+  },
+  {
+   "condition_id": "0xb6c1af40ff988d54721a0c0c26a53f9b82528276ce9cd17f6ffe2366ff34f16e",
+   "price": 0.41,
+   "side": "SELL",
+   "size": 300.0,
+   "timestamp": 1737797653,
+   "token_id": "47161413885392408279512907020639004226343399792038663622690112935141485101512",
+   "type": "TRADE",
+   "usdc_size": 123.0
+  },
+  {
+   "condition_id": "0xb6c1af40ff988d54721a0c0c26a53f9b82528276ce9cd17f6ffe2366ff34f16e",
+   "price": 0.41,
+   "side": "SELL",
+   "size": 500.0,
+   "timestamp": 1737797657,
+   "token_id": "47161413885392408279512907020639004226343399792038663622690112935141485101512",
+   "type": "TRADE",
+   "usdc_size": 205.0
+  },
+  {
+   "condition_id": "0xb6c1af40ff988d54721a0c0c26a53f9b82528276ce9cd17f6ffe2366ff34f16e",
+   "price": 0.41,
+   "side": "SELL",
+   "size": 1448.66,
+   "timestamp": 1737797657,
+   "token_id": "47161413885392408279512907020639004226343399792038663622690112935141485101512",
+   "type": "TRADE",
+   "usdc_size": 593.9506
+  },
+  {
+   "condition_id": "0xb6c1af40ff988d54721a0c0c26a53f9b82528276ce9cd17f6ffe2366ff34f16e",
+   "price": 0.5,
+   "side": "",
+   "size": 1500.0,
+   "timestamp": 1737797659,
+   "token_id": "",
+   "type": "SPLIT",
+   "usdc_size": 1500.0
+  },
+  {
+   "condition_id": "0xb6c1af40ff988d54721a0c0c26a53f9b82528276ce9cd17f6ffe2366ff34f16e",
+   "price": 0.7599999587,
+   "side": "SELL",
+   "size": 21.315788,
+   "timestamp": 1737798869,
+   "token_id": "47161413885392408279512907020639004226343399792038663622690112935141485101512",
+   "type": "TRADE",
+   "usdc_size": 16.199998
+  },
+  {
+   "condition_id": "0xb6c1af40ff988d54721a0c0c26a53f9b82528276ce9cd17f6ffe2366ff34f16e",
+   "price": 0.76,
+   "side": "SELL",
+   "size": 5.0,
+   "timestamp": 1737798869,
+   "token_id": "47161413885392408279512907020639004226343399792038663622690112935141485101512",
+   "type": "TRADE",
+   "usdc_size": 3.8
+  },
+  {
+   "condition_id": "0xb6c1af40ff988d54721a0c0c26a53f9b82528276ce9cd17f6ffe2366ff34f16e",
+   "price": 0.76,
+   "side": "SELL",
+   "size": 478.68,
+   "timestamp": 1737798889,
+   "token_id": "47161413885392408279512907020639004226343399792038663622690112935141485101512",
+   "type": "TRADE",
+   "usdc_size": 363.7968
+  },
+  {
+   "condition_id": "0x04d5e75c920683705a89a85a62a01cf842fbbaf5e0c78e302fc1371aa052afa3",
+   "price": 0.74,
+   "side": "BUY",
+   "size": 495.0,
+   "timestamp": 1737824901,
+   "token_id": "29610397271688369066894328850003104397480239992926756406057091319035788146989",
+   "type": "TRADE",
+   "usdc_size": 366.3
+  },
+  {
+   "condition_id": "0x04d5e75c920683705a89a85a62a01cf842fbbaf5e0c78e302fc1371aa052afa3",
+   "price": 0.7100061612,
+   "side": "SELL",
+   "size": 504.999998,
+   "timestamp": 1737868182,
+   "token_id": "29610397271688369066894328850003104397480239992926756406057091319035788146989",
+   "type": "TRADE",
+   "usdc_size": 358.55311
+  },
+  {
+   "condition_id": "0x04d5e75c920683705a89a85a62a01cf842fbbaf5e0c78e302fc1371aa052afa3",
+   "price": 0.7100141026,
+   "side": "SELL",
+   "size": 49.999997,
+   "timestamp": 1737868998,
+   "token_id": "29610397271688369066894328850003104397480239992926756406057091319035788146989",
+   "type": "TRADE",
+   "usdc_size": 35.500703
+  },
+  {
+   "condition_id": "0x04d5e75c920683705a89a85a62a01cf842fbbaf5e0c78e302fc1371aa052afa3",
+   "price": 0.7100006226,
+   "side": "SELL",
+   "size": 314.999997,
+   "timestamp": 1737870137,
+   "token_id": "29610397271688369066894328850003104397480239992926756406057091319035788146989",
+   "type": "TRADE",
+   "usdc_size": 223.650194
+  },
+  {
+   "condition_id": "0x04d5e75c920683705a89a85a62a01cf842fbbaf5e0c78e302fc1371aa052afa3",
+   "price": 0.8883333333,
+   "side": "BUY",
+   "size": 300.0,
+   "timestamp": 1737884270,
+   "token_id": "29610397271688369066894328850003104397480239992926756406057091319035788146989",
+   "type": "TRADE",
+   "usdc_size": 266.5
+  },
+  {
+   "condition_id": "0x04d5e75c920683705a89a85a62a01cf842fbbaf5e0c78e302fc1371aa052afa3",
+   "price": 0.83,
+   "side": "SELL",
+   "size": 495.0,
+   "timestamp": 1737884400,
+   "token_id": "29610397271688369066894328850003104397480239992926756406057091319035788146989",
+   "type": "TRADE",
+   "usdc_size": 410.85
+  },
+  {
+   "condition_id": "0x04d5e75c920683705a89a85a62a01cf842fbbaf5e0c78e302fc1371aa052afa3",
+   "price": 0.800906988,
+   "side": "SELL",
+   "size": 415.0,
+   "timestamp": 1737884788,
+   "token_id": "29610397271688369066894328850003104397480239992926756406057091319035788146989",
+   "type": "TRADE",
+   "usdc_size": 332.3764
+  },
+  {
+   "condition_id": "0x04d5e75c920683705a89a85a62a01cf842fbbaf5e0c78e302fc1371aa052afa3",
+   "price": 0.87,
+   "side": "SELL",
+   "size": 485.0,
+   "timestamp": 1737884796,
+   "token_id": "29610397271688369066894328850003104397480239992926756406057091319035788146989",
+   "type": "TRADE",
+   "usdc_size": 421.95
+  },
+  {
+   "condition_id": "0x04d5e75c920683705a89a85a62a01cf842fbbaf5e0c78e302fc1371aa052afa3",
+   "price": 0.7712274,
+   "side": "SELL",
+   "size": 500.0,
+   "timestamp": 1737886714,
+   "token_id": "29610397271688369066894328850003104397480239992926756406057091319035788146989",
+   "type": "TRADE",
+   "usdc_size": 385.6137
+  },
+  {
+   "condition_id": "0x04d5e75c920683705a89a85a62a01cf842fbbaf5e0c78e302fc1371aa052afa3",
+   "price": 0.8,
+   "side": "SELL",
+   "size": 7.8,
+   "timestamp": 1737886868,
+   "token_id": "29610397271688369066894328850003104397480239992926756406057091319035788146989",
+   "type": "TRADE",
+   "usdc_size": 6.24
+  },
+  {
+   "condition_id": "0x04d5e75c920683705a89a85a62a01cf842fbbaf5e0c78e302fc1371aa052afa3",
+   "price": 0.8,
+   "side": "SELL",
+   "size": 492.2,
+   "timestamp": 1737887018,
+   "token_id": "29610397271688369066894328850003104397480239992926756406057091319035788146989",
+   "type": "TRADE",
+   "usdc_size": 393.76
+  },
+  {
+   "condition_id": "0x04d5e75c920683705a89a85a62a01cf842fbbaf5e0c78e302fc1371aa052afa3",
+   "price": 0.8299998676,
+   "side": "SELL",
+   "size": 6.270601,
+   "timestamp": 1737887493,
+   "token_id": "29610397271688369066894328850003104397480239992926756406057091319035788146989",
+   "type": "TRADE",
+   "usdc_size": 5.204598
+  },
+  {
+   "condition_id": "0x04d5e75c920683705a89a85a62a01cf842fbbaf5e0c78e302fc1371aa052afa3",
+   "price": 0.83,
+   "side": "SELL",
+   "size": 8.0,
+   "timestamp": 1737887535,
+   "token_id": "29610397271688369066894328850003104397480239992926756406057091319035788146989",
+   "type": "TRADE",
+   "usdc_size": 6.64
+  },
+  {
+   "condition_id": "0x04d5e75c920683705a89a85a62a01cf842fbbaf5e0c78e302fc1371aa052afa3",
+   "price": 0.89,
+   "side": "BUY",
+   "size": 85.0,
+   "timestamp": 1737888246,
+   "token_id": "29610397271688369066894328850003104397480239992926756406057091319035788146989",
+   "type": "TRADE",
+   "usdc_size": 75.65
+  },
+  {
+   "condition_id": "0x04d5e75c920683705a89a85a62a01cf842fbbaf5e0c78e302fc1371aa052afa3",
+   "price": 0.8623035714,
+   "side": "SELL",
+   "size": 280.0,
+   "timestamp": 1737888497,
+   "token_id": "29610397271688369066894328850003104397480239992926756406057091319035788146989",
+   "type": "TRADE",
+   "usdc_size": 241.445
+  },
+  {
+   "condition_id": "0x04d5e75c920683705a89a85a62a01cf842fbbaf5e0c78e302fc1371aa052afa3",
+   "price": 0.93,
+   "side": "SELL",
+   "size": 4.22,
+   "timestamp": 1737889337,
+   "token_id": "29610397271688369066894328850003104397480239992926756406057091319035788146989",
+   "type": "TRADE",
+   "usdc_size": 3.9246
+  },
+  {
+   "condition_id": "0x04d5e75c920683705a89a85a62a01cf842fbbaf5e0c78e302fc1371aa052afa3",
+   "price": 0.93,
+   "side": "SELL",
+   "size": 100.0,
+   "timestamp": 1737889489,
+   "token_id": "29610397271688369066894328850003104397480239992926756406057091319035788146989",
+   "type": "TRADE",
+   "usdc_size": 93.0
+  },
+  {
+   "condition_id": "0x04d5e75c920683705a89a85a62a01cf842fbbaf5e0c78e302fc1371aa052afa3",
+   "price": 0.93,
+   "side": "SELL",
+   "size": 395.78,
+   "timestamp": 1737889595,
+   "token_id": "29610397271688369066894328850003104397480239992926756406057091319035788146989",
+   "type": "TRADE",
+   "usdc_size": 368.0754
+  },
+  {
+   "condition_id": "0x04d5e75c920683705a89a85a62a01cf842fbbaf5e0c78e302fc1371aa052afa3",
+   "price": 0.9899999993,
+   "side": "SELL",
+   "size": 465.686867,
+   "timestamp": 1737889847,
+   "token_id": "29610397271688369066894328850003104397480239992926756406057091319035788146989",
+   "type": "TRADE",
+   "usdc_size": 461.029998
+  },
+  {
+   "condition_id": "0x04d5e75c920683705a89a85a62a01cf842fbbaf5e0c78e302fc1371aa052afa3",
+   "price": 0.0,
+   "side": "",
+   "size": 1455.045998,
+   "timestamp": 1737990233,
+   "token_id": "",
+   "type": "REDEEM",
+   "usdc_size": 1455.045998
+  },
+  {
+   "condition_id": "0x801025983033c5e1640da473cb68d6f007386cf15c0b64473b47bd664d285b57",
+   "price": 0.5,
+   "side": "",
+   "size": 3000.0,
+   "timestamp": 1747922477,
+   "token_id": "",
+   "type": "SPLIT",
+   "usdc_size": 3000.0
+  },
+  {
+   "condition_id": "0x801025983033c5e1640da473cb68d6f007386cf15c0b64473b47bd664d285b57",
+   "price": 0.005,
+   "side": "SELL",
+   "size": 500.0,
+   "timestamp": 1747941236,
+   "token_id": "78726974268370648715342290191510927881782778182319992078902696339417824219997",
+   "type": "TRADE",
+   "usdc_size": 2.5
+  },
+  {
+   "condition_id": "0x801025983033c5e1640da473cb68d6f007386cf15c0b64473b47bd664d285b57",
+   "price": 0.5,
+   "side": "",
+   "size": 3000.0,
+   "timestamp": 1751463103,
+   "token_id": "",
+   "type": "SPLIT",
+   "usdc_size": 3000.0
+  },
+  {
+   "condition_id": "0x74617eebf0acbbe417db8994f8a706caa77e8e1eb76a93d34b646cef0fcc6dd3",
+   "price": 0.5,
+   "side": "",
+   "size": 8000.0,
+   "timestamp": 1752525184,
+   "token_id": "",
+   "type": "SPLIT",
+   "usdc_size": 8000.0
+  },
+  {
+   "condition_id": "0x74617eebf0acbbe417db8994f8a706caa77e8e1eb76a93d34b646cef0fcc6dd3",
+   "price": 0.27,
+   "side": "SELL",
+   "size": 115.0,
+   "timestamp": 1752544251,
+   "token_id": "35390558940168847426692505109130830903325875006146775770035695571515626548582",
+   "type": "TRADE",
+   "usdc_size": 31.05
+  },
+  {
+   "condition_id": "0x74617eebf0acbbe417db8994f8a706caa77e8e1eb76a93d34b646cef0fcc6dd3",
+   "price": 0.29,
+   "side": "SELL",
+   "size": 50.0,
+   "timestamp": 1752544533,
+   "token_id": "35390558940168847426692505109130830903325875006146775770035695571515626548582",
+   "type": "TRADE",
+   "usdc_size": 14.5
+  },
+  {
+   "condition_id": "0x0f49db97f71c68b1e42a6d16e3de93d85dbf7d4148e3f018eb79e88554be9f75",
+   "price": 0.5,
+   "side": "",
+   "size": 10000.0,
+   "timestamp": 1755704151,
+   "token_id": "",
+   "type": "SPLIT",
+   "usdc_size": 10000.0
+  },
+  {
+   "condition_id": "0x0f49db97f71c68b1e42a6d16e3de93d85dbf7d4148e3f018eb79e88554be9f75",
+   "price": 0.0,
+   "side": "",
+   "size": 10000.0,
+   "timestamp": 1755704533,
+   "token_id": "",
+   "type": "MERGE",
+   "usdc_size": 10000.0
+  },
+  {
+   "condition_id": "0x0f49db97f71c68b1e42a6d16e3de93d85dbf7d4148e3f018eb79e88554be9f75",
+   "price": 0.5,
+   "side": "",
+   "size": 5000.0,
+   "timestamp": 1755704913,
+   "token_id": "",
+   "type": "SPLIT",
+   "usdc_size": 5000.0
+  },
+  {
+   "condition_id": "0x0f49db97f71c68b1e42a6d16e3de93d85dbf7d4148e3f018eb79e88554be9f75",
+   "price": 0.17,
+   "side": "SELL",
+   "size": 5.0,
+   "timestamp": 1766797333,
+   "token_id": "54533043819946592547517511176940999955633860128497669742211153063842200957669",
+   "type": "TRADE",
+   "usdc_size": 0.85
+  },
+  {
+   "condition_id": "0x0f49db97f71c68b1e42a6d16e3de93d85dbf7d4148e3f018eb79e88554be9f75",
+   "price": 0.16,
+   "side": "SELL",
+   "size": 20.0,
+   "timestamp": 1766797333,
+   "token_id": "54533043819946592547517511176940999955633860128497669742211153063842200957669",
+   "type": "TRADE",
+   "usdc_size": 3.2
+  },
+  {
+   "condition_id": "0x0f49db97f71c68b1e42a6d16e3de93d85dbf7d4148e3f018eb79e88554be9f75",
+   "price": 0.5,
+   "side": "SELL",
+   "size": 500.0,
+   "timestamp": 1767511381,
+   "token_id": "54533043819946592547517511176940999955633860128497669742211153063842200957669",
+   "type": "TRADE",
+   "usdc_size": 250.0
+  },
+  {
+   "condition_id": "0x0f49db97f71c68b1e42a6d16e3de93d85dbf7d4148e3f018eb79e88554be9f75",
+   "price": 0.43,
+   "side": "SELL",
+   "size": 500.0,
+   "timestamp": 1767511383,
+   "token_id": "54533043819946592547517511176940999955633860128497669742211153063842200957669",
+   "type": "TRADE",
+   "usdc_size": 215.0
+  },
+  {
+   "condition_id": "0x0f49db97f71c68b1e42a6d16e3de93d85dbf7d4148e3f018eb79e88554be9f75",
+   "price": 0.5,
+   "side": "SELL",
+   "size": 710.0,
+   "timestamp": 1767511387,
+   "token_id": "54533043819946592547517511176940999955633860128497669742211153063842200957669",
+   "type": "TRADE",
+   "usdc_size": 355.0
+  },
+  {
+   "condition_id": "0x0f49db97f71c68b1e42a6d16e3de93d85dbf7d4148e3f018eb79e88554be9f75",
+   "price": 0.5,
+   "side": "SELL",
+   "size": 545.0,
+   "timestamp": 1767511389,
+   "token_id": "54533043819946592547517511176940999955633860128497669742211153063842200957669",
+   "type": "TRADE",
+   "usdc_size": 272.5
+  },
+  {
+   "condition_id": "0x0f49db97f71c68b1e42a6d16e3de93d85dbf7d4148e3f018eb79e88554be9f75",
+   "price": 0.5,
+   "side": "SELL",
+   "size": 1550.0,
+   "timestamp": 1767511389,
+   "token_id": "54533043819946592547517511176940999955633860128497669742211153063842200957669",
+   "type": "TRADE",
+   "usdc_size": 775.0
+  },
+  {
+   "condition_id": "0x0f49db97f71c68b1e42a6d16e3de93d85dbf7d4148e3f018eb79e88554be9f75",
+   "price": 0.5,
+   "side": "SELL",
+   "size": 1170.0,
+   "timestamp": 1767511391,
+   "token_id": "54533043819946592547517511176940999955633860128497669742211153063842200957669",
+   "type": "TRADE",
+   "usdc_size": 585.0
+  },
+  {
+   "condition_id": "0x0f49db97f71c68b1e42a6d16e3de93d85dbf7d4148e3f018eb79e88554be9f75",
+   "price": 0.5,
+   "side": "",
+   "size": 1000.0,
+   "timestamp": 1769705270,
+   "token_id": "",
+   "type": "SPLIT",
+   "usdc_size": 1000.0
+  },
+  {
+   "condition_id": "0x0f49db97f71c68b1e42a6d16e3de93d85dbf7d4148e3f018eb79e88554be9f75",
+   "price": 0.5,
+   "side": "",
+   "size": 4000.0,
+   "timestamp": 1772655153,
+   "token_id": "",
+   "type": "SPLIT",
+   "usdc_size": 4000.0
+  }
+ ],
+ "gamma": [
+  {
+   "clobTokenIds": "[\"29610397271688369066894328850003104397480239992926756406057091319035788146989\", \"94826123167065046825571984018517066153670492119017061454946808940632746761185\"]",
+   "closed": true,
+   "closedTime": "2025-01-26 15:05:46+00",
+   "conditionId": "0x04d5e75c920683705a89a85a62a01cf842fbbaf5e0c78e302fc1371aa052afa3",
+   "feesEnabled": false,
+   "outcomePrices": "[\"1\", \"0\"]",
+   "startDate": "2025-01-09T22:47:50.811448Z",
+   "tags": [
+    {
+     "label": "Sports"
+    },
+    {
+     "label": "Tennis"
+    },
+    {
+     "label": "australian open"
+    }
+   ]
+  },
+  {
+   "clobTokenIds": "[\"54533043819946592547517511176940999955633860128497669742211153063842200957669\", \"87854174148074652060467921081181402357467303721471806610111179101805869578687\"]",
+   "closed": false,
+   "conditionId": "0x0f49db97f71c68b1e42a6d16e3de93d85dbf7d4148e3f018eb79e88554be9f75",
+   "feeSchedule": {
+    "exponent": 1,
+    "rate": 0.05,
+    "rebateRate": 0.25,
+    "takerOnly": true
+   },
+   "feesEnabled": true,
+   "outcomePrices": "[\"0.0985\", \"0.9015\"]",
+   "startDate": "2025-07-11T18:35:56.805Z",
+   "tags": [
+    {
+     "label": "Primaries"
+    },
+    {
+     "label": "Parent For Derivative"
+    },
+    {
+     "label": "2028 Election"
+    },
+    {
+     "label": "United States"
+    },
+    {
+     "label": "Politics"
+    },
+    {
+     "label": "Elections"
+    },
+    {
+     "label": "US Election"
+    },
+    {
+     "label": "World Elections"
+    },
+    {
+     "label": "Earn 3.25%"
+    }
+   ]
+  },
+  {
+   "clobTokenIds": "[\"27221824332399502286012122723752546831240058297151204248707236565422249422499\", \"114417445270113548782092002263940966794807499563670721795238245610513533945814\"]",
+   "closed": true,
+   "closedTime": "2024-12-26 20:15:44+00",
+   "conditionId": "0x275d1a9eadf860ef7caab65c4a1b54ccdc10f995dd787e201a6e6f38650c6d39",
+   "feesEnabled": false,
+   "outcomePrices": "[\"1\", \"0\"]",
+   "startDate": "2024-12-25T06:30:33.336716Z",
+   "tags": [
+    {
+     "label": "Sports"
+    },
+    {
+     "label": "Premier League"
+    },
+    {
+     "label": "EPL"
+    },
+    {
+     "label": "Games"
+    }
+   ]
+  },
+  {
+   "clobTokenIds": "[\"35390558940168847426692505109130830903325875006146775770035695571515626548582\", \"46776825750415965109712911461816994297436296345883033920388308718488110492055\"]",
+   "closed": true,
+   "closedTime": "2025-07-15 05:53:55+00",
+   "conditionId": "0x74617eebf0acbbe417db8994f8a706caa77e8e1eb76a93d34b646cef0fcc6dd3",
+   "feesEnabled": false,
+   "outcomePrices": "[\"0\", \"1\"]",
+   "startDate": "2025-07-11T22:54:40.768355Z",
+   "tags": [
+    {
+     "label": "Sports"
+    },
+    {
+     "label": "MLB"
+    },
+    {
+     "label": "MLB ASG"
+    },
+    {
+     "label": "Home Run Derby"
+    },
+    {
+     "label": "MLB All-Star Game"
+    }
+   ]
+  },
+  {
+   "clobTokenIds": "[\"78726974268370648715342290191510927881782778182319992078902696339417824219997\", \"7865481681432195730424675132659691312124676151887642215915199314574781893593\"]",
+   "closed": true,
+   "closedTime": "2025-07-07 00:14:57+00",
+   "conditionId": "0x801025983033c5e1640da473cb68d6f007386cf15c0b64473b47bd664d285b57",
+   "feesEnabled": false,
+   "outcomePrices": "[\"0\", \"1\"]",
+   "startDate": "2025-05-10T17:30:29.330414Z",
+   "tags": [
+    {
+     "label": "Politics"
+    },
+    {
+     "label": "Global Elections"
+    },
+    {
+     "label": "World"
+    },
+    {
+     "label": "Suriname"
+    }
+   ]
+  },
+  {
+   "clobTokenIds": "[\"47161413885392408279512907020639004226343399792038663622690112935141485101512\", \"89489249397375145963354404450727256169540209695293354045707653402931933487375\"]",
+   "closed": true,
+   "closedTime": "2025-01-25 14:12:04+00",
+   "conditionId": "0xb6c1af40ff988d54721a0c0c26a53f9b82528276ce9cd17f6ffe2366ff34f16e",
+   "feesEnabled": false,
+   "outcomePrices": "[\"0\", \"1\"]",
+   "startDate": "2025-01-09T22:47:54.868505Z",
+   "tags": [
+    {
+     "label": "Sports"
+    },
+    {
+     "label": "Tennis"
+    }
+   ]
+  }
+ ],
+ "positions_closed": [
+  {
+   "condition_id": "0x275d1a9eadf860ef7caab65c4a1b54ccdc10f995dd787e201a6e6f38650c6d39",
+   "first_entry_at": 1735225737,
+   "last_event_at": 1735225797,
+   "token_id": "114417445270113548782092002263940966794807499563670721795238245610513533945814",
+   "total_size": 3000.0
+  },
+  {
+   "condition_id": "0x275d1a9eadf860ef7caab65c4a1b54ccdc10f995dd787e201a6e6f38650c6d39",
+   "first_entry_at": 1735225737,
+   "last_event_at": 1735246483,
+   "token_id": "27221824332399502286012122723752546831240058297151204248707236565422249422499",
+   "total_size": 3000.0
+  },
+  {
+   "condition_id": "0x04d5e75c920683705a89a85a62a01cf842fbbaf5e0c78e302fc1371aa052afa3",
+   "first_entry_at": 1736982625,
+   "last_event_at": 1737681983,
+   "token_id": "94826123167065046825571984018517066153670492119017061454946808940632746761185",
+   "total_size": 15700.0
+  },
+  {
+   "condition_id": "0xb6c1af40ff988d54721a0c0c26a53f9b82528276ce9cd17f6ffe2366ff34f16e",
+   "first_entry_at": 1736983083,
+   "last_event_at": 1737797669,
+   "token_id": "89489249397375145963354404450727256169540209695293354045707653402931933487375",
+   "total_size": 1600.0
+  },
+  {
+   "condition_id": "0x04d5e75c920683705a89a85a62a01cf842fbbaf5e0c78e302fc1371aa052afa3",
+   "first_entry_at": 1736982625,
+   "last_event_at": 1737990233,
+   "token_id": "29610397271688369066894328850003104397480239992926756406057091319035788146989",
+   "total_size": 21810.0332
+  },
+  {
+   "condition_id": "0xb6c1af40ff988d54721a0c0c26a53f9b82528276ce9cd17f6ffe2366ff34f16e",
+   "first_entry_at": 1736983083,
+   "last_event_at": 1744120732,
+   "token_id": "47161413885392408279512907020639004226343399792038663622690112935141485101512",
+   "total_size": 4600.0
+  },
+  {
+   "condition_id": "0x801025983033c5e1640da473cb68d6f007386cf15c0b64473b47bd664d285b57",
+   "first_entry_at": 1747922477,
+   "last_event_at": 1751463159,
+   "token_id": "7865481681432195730424675132659691312124676151887642215915199314574781893593",
+   "total_size": 6000.0
+  },
+  {
+   "condition_id": "0x74617eebf0acbbe417db8994f8a706caa77e8e1eb76a93d34b646cef0fcc6dd3",
+   "first_entry_at": 1752525184,
+   "last_event_at": 1752525196,
+   "token_id": "46776825750415965109712911461816994297436296345883033920388308718488110492055",
+   "total_size": 8000.0
+  },
+  {
+   "condition_id": "0x801025983033c5e1640da473cb68d6f007386cf15c0b64473b47bd664d285b57",
+   "first_entry_at": 1747922477,
+   "last_event_at": 1752618345,
+   "token_id": "78726974268370648715342290191510927881782778182319992078902696339417824219997",
+   "total_size": 18000.0
+  },
+  {
+   "condition_id": "0x74617eebf0acbbe417db8994f8a706caa77e8e1eb76a93d34b646cef0fcc6dd3",
+   "first_entry_at": 1752525184,
+   "last_event_at": 1752618393,
+   "token_id": "35390558940168847426692505109130830903325875006146775770035695571515626548582",
+   "total_size": 8000.0
+  },
+  {
+   "condition_id": "0x0f49db97f71c68b1e42a6d16e3de93d85dbf7d4148e3f018eb79e88554be9f75",
+   "first_entry_at": 1755704151,
+   "last_event_at": 1772655165,
+   "token_id": "87854174148074652060467921081181402357467303721471806610111179101805869578687",
+   "total_size": 20000.0
+  }
+ ],
+ "positions_open": [
+  {
+   "condition_id": "0x0f49db97f71c68b1e42a6d16e3de93d85dbf7d4148e3f018eb79e88554be9f75",
+   "first_entry_at": 1755704151,
+   "last_event_at": 1772655153,
+   "token_id": "54533043819946592547517511176940999955633860128497669742211153063842200957669",
+   "total_size": 22500.0
+  }
+ ],
+ "source": "spike/raw/sample/capture (Data API v2, 2026-10-23) and Gamma /markets with include_tag (2026-11-20)",
+ "wallet": "0x7298060b1844a4c4ca0578146ab3f5e76aa1fcfc"
+}
