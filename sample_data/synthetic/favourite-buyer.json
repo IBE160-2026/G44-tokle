@@ -1007,9 +1007,11 @@
    "closed": true,
    "closed_time": 1735862400,
    "condition_id": "0xe185878a531b1df9836348980e5f008c6e01f7fa896942bd4eca9614d9485e2d",
+   "event_id": null,
    "fee_exponent": null,
    "fee_rate": null,
    "fees_enabled": false,
+   "neg_risk_id": null,
    "outcome_prices": [
     1.0,
     0.0
@@ -1025,9 +1027,11 @@
    "closed": true,
    "closed_time": 1735948800,
    "condition_id": "0x469bf0c0b59fa09d472fb41c3baae82a3afd170746b1706f6d2ea81eb715b5cc",
+   "event_id": null,
    "fee_exponent": null,
    "fee_rate": null,
    "fees_enabled": false,
+   "neg_risk_id": null,
    "outcome_prices": [
     1.0,
     0.0
@@ -1043,9 +1047,11 @@
    "closed": true,
    "closed_time": 1736035200,
    "condition_id": "0xe014f678230d89af6814b18d61c2366cbf0c231d51349f20ad10b7264f2dd495",
+   "event_id": null,
    "fee_exponent": null,
    "fee_rate": null,
    "fees_enabled": false,
+   "neg_risk_id": null,
    "outcome_prices": [
     1.0,
     0.0
@@ -1061,9 +1067,11 @@
    "closed": true,
    "closed_time": 1736121600,
    "condition_id": "0xb77b9806bc135790b6a2d9043e238cd1704438bf4c158c7d2f6392ff1ab102a6",
+   "event_id": null,
    "fee_exponent": null,
    "fee_rate": null,
    "fees_enabled": false,
+   "neg_risk_id": null,
    "outcome_prices": [
     0.0,
     1.0
@@ -1079,9 +1087,11 @@
    "closed": true,
    "closed_time": 1736208000,
    "condition_id": "0xed15fcd725571397145fc8bbb29e414b51c46a3ab0959f1d55bd89fd33e7e2a3",
+   "event_id": null,
    "fee_exponent": null,
    "fee_rate": null,
    "fees_enabled": false,
+   "neg_risk_id": null,
    "outcome_prices": [
     1.0,
     0.0
@@ -1097,9 +1107,11 @@
    "closed": true,
    "closed_time": 1736294400,
    "condition_id": "0x19460014d5b706da272a0dc1fb6c2fb91fb2b5d289d50e1be49efa5a3d09ad3e",
+   "event_id": null,
    "fee_exponent": null,
    "fee_rate": null,
    "fees_enabled": false,
+   "neg_risk_id": null,
    "outcome_prices": [
     1.0,
     0.0
@@ -1115,9 +1127,11 @@
    "closed": true,
    "closed_time": 1736380800,
    "condition_id": "0x8d2391e38c9269a9d36ac1514f54bf700af825721748439047d75a165943d9fe",
+   "event_id": null,
    "fee_exponent": null,
    "fee_rate": null,
    "fees_enabled": false,
+   "neg_risk_id": null,
    "outcome_prices": [
     1.0,
     0.0
@@ -1133,9 +1147,11 @@
    "closed": true,
    "closed_time": 1736467200,
    "condition_id": "0xb6b2eb64bb479982f0e4991522ad7fa0072135cd00581c51f732843dcff4ec76",
+   "event_id": null,
    "fee_exponent": null,
    "fee_rate": null,
    "fees_enabled": false,
+   "neg_risk_id": null,
    "outcome_prices": [
     1.0,
     0.0
@@ -1151,9 +1167,11 @@
    "closed": true,
    "closed_time": 1736553600,
    "condition_id": "0x860d189fcfb9c54066846f1f42f4161fd61809c611cc5c724427c148fbf82bc8",
+   "event_id": null,
    "fee_exponent": null,
    "fee_rate": null,
    "fees_enabled": false,
+   "neg_risk_id": null,
    "outcome_prices": [
     1.0,
     0.0
@@ -1169,9 +1187,11 @@
    "closed": true,
    "closed_time": 1736640000,
    "condition_id": "0x87cdeaf818267d01c59c2cd563b7753d5afd1fc7e027df2c62a5b59b75d86a00",
+   "event_id": null,
    "fee_exponent": null,
    "fee_rate": null,
    "fees_enabled": false,
+   "neg_risk_id": null,
    "outcome_prices": [
     1.0,
     0.0
@@ -1187,9 +1207,11 @@
    "closed": true,
    "closed_time": 1736726400,
    "condition_id": "0x37182eebbd3c607fe87d9652b7032355e0c76e5f2fdf3d2b0451b136faf68748",
+   "event_id": null,
    "fee_exponent": null,
    "fee_rate": null,
    "fees_enabled": false,
+   "neg_risk_id": null,
    "outcome_prices": [
     0.0,
     1.0
@@ -1205,9 +1227,11 @@
    "closed": true,
    "closed_time": 1736812800,
    "condition_id": "0xe27ded402513273505585be88aedbc546f4c05d2e24d649166ef9e425826fff1",
+   "event_id": null,
    "fee_exponent": null,
    "fee_rate": null,
    "fees_enabled": false,
+   "neg_risk_id": null,
    "outcome_prices": [
     1.0,
     0.0
@@ -1223,9 +1247,11 @@
    "closed": true,
    "closed_time": 1736899200,
    "condition_id": "0xcc648b5304af9214ce345e54f7f56a32736fbb10faff16ce6c75e45f70b779f3",
+   "event_id": null,
    "fee_exponent": null,
    "fee_rate": null,
    "fees_enabled": false,
+   "neg_risk_id": null,
    "outcome_prices": [
     1.0,
     0.0
@@ -1241,9 +1267,11 @@
    "closed": true,
    "closed_time": 1736985600,
    "condition_id": "0xac9f9e244b9a6f2143ad4bb23468ec9d3a36775969b6a43c0c3d4700ecf754ad",
+   "event_id": null,
    "fee_exponent": null,
    "fee_rate": null,
    "fees_enabled": false,
+   "neg_risk_id": null,
    "outcome_prices": [
     1.0,
     0.0
@@ -1259,9 +1287,11 @@
    "closed": true,
    "closed_time": 1737072000,
    "condition_id": "0x9e056b6124c500c3990ba6cf2ae9e972748ae434296a38bb8458a0317da8d803",
+   "event_id": null,
    "fee_exponent": null,
    "fee_rate": null,
    "fees_enabled": false,
+   "neg_risk_id": null,
    "outcome_prices": [
     1.0,
     0.0
@@ -1277,9 +1307,11 @@
    "closed": true,
    "closed_time": 1737158400,
    "condition_id": "0xa2b23132dd7c7b098e765350e2b2ccb8f64a30b7a356532d9923fee7fa86d710",
+   "event_id": null,
    "fee_exponent": null,
    "fee_rate": null,
    "fees_enabled": false,
+   "neg_risk_id": null,
    "outcome_prices": [
     1.0,
     0.0
@@ -1295,9 +1327,11 @@
    "closed": true,
    "closed_time": 1737244800,
    "condition_id": "0x5bd6fbbf27ee246eb2b5c95059c7ba30df1a277402d23916b44b8eb792348a98",
+   "event_id": null,
    "fee_exponent": null,
    "fee_rate": null,
    "fees_enabled": false,
+   "neg_risk_id": null,
    "outcome_prices": [
     1.0,
     0.0
@@ -1313,9 +1347,11 @@
    "closed": true,
    "closed_time": 1737331200,
    "condition_id": "0xe1e84467bc7de8f7d4dd7c38ede43fa838a6a4a3b70bd912097eb57f0e2ca2ed",
+   "event_id": null,
    "fee_exponent": null,
    "fee_rate": null,
    "fees_enabled": false,
+   "neg_risk_id": null,
    "outcome_prices": [
     1.0,
     0.0
@@ -1331,9 +1367,11 @@
    "closed": true,
    "closed_time": 1737417600,
    "condition_id": "0x75a475838fdfcb47708d9e3057472c32e12058a82ccb2f169d223069a55810e8",
+   "event_id": null,
    "fee_exponent": null,
    "fee_rate": null,
    "fees_enabled": false,
+   "neg_risk_id": null,
    "outcome_prices": [
     0.0,
     1.0
@@ -1349,9 +1387,11 @@
    "closed": true,
    "closed_time": 1737504000,
    "condition_id": "0x1d6d1fb14eb14db36bfb4c94ebdc9bd98976519539660b074223021a604c1f23",
+   "event_id": null,
    "fee_exponent": null,
    "fee_rate": null,
    "fees_enabled": false,
+   "neg_risk_id": null,
    "outcome_prices": [
     1.0,
     0.0
@@ -1367,9 +1407,11 @@
    "closed": true,
    "closed_time": 1737590400,
    "condition_id": "0x1624524d842bc98370a02072e8b5ec0530f0c79483b8fc48321967340da8e552",
+   "event_id": null,
    "fee_exponent": null,
    "fee_rate": null,
    "fees_enabled": false,
+   "neg_risk_id": null,
    "outcome_prices": [
     1.0,
     0.0
@@ -1385,9 +1427,11 @@
    "closed": true,
    "closed_time": 1737676800,
    "condition_id": "0x1066bb51948a525cbacfa98a89aaecddc7816111a5b875815f440f5bec674629",
+   "event_id": null,
    "fee_exponent": null,
    "fee_rate": null,
    "fees_enabled": false,
+   "neg_risk_id": null,
    "outcome_prices": [
     1.0,
     0.0
@@ -1403,9 +1447,11 @@
    "closed": true,
    "closed_time": 1737763200,
    "condition_id": "0x849ce756003e1ebe9eca4de9513d85312843a7a3c4ee4f8853fb76fe73d197d8",
+   "event_id": null,
    "fee_exponent": null,
    "fee_rate": null,
    "fees_enabled": false,
+   "neg_risk_id": null,
    "outcome_prices": [
     1.0,
     0.0
@@ -1421,9 +1467,11 @@
    "closed": true,
    "closed_time": 1737849600,
    "condition_id": "0xab4be819f36e1076da82891391060737bcfd32bf9b90273a333f25c7366d3918",
+   "event_id": null,
    "fee_exponent": null,
    "fee_rate": null,
    "fees_enabled": false,
+   "neg_risk_id": null,
    "outcome_prices": [
     1.0,
     0.0
@@ -1439,9 +1487,11 @@
    "closed": true,
    "closed_time": 1737936000,
    "condition_id": "0xea90fee72e9e294cc27025d8d4897bf6084b4aa27f473d1f7890a1f0413ed738",
+   "event_id": null,
    "fee_exponent": null,
    "fee_rate": null,
    "fees_enabled": false,
+   "neg_risk_id": null,
    "outcome_prices": [
     1.0,
     0.0
@@ -1457,9 +1507,11 @@
    "closed": true,
    "closed_time": 1738022400,
    "condition_id": "0x77ad2a9ba9779b4c270cadd7f42201458ae8cc069c83f6ac1f1330b03a13c1fd",
+   "event_id": null,
    "fee_exponent": null,
    "fee_rate": null,
    "fees_enabled": false,
+   "neg_risk_id": null,
    "outcome_prices": [
     1.0,
     0.0
@@ -1475,9 +1527,11 @@
    "closed": true,
    "closed_time": 1738108800,
    "condition_id": "0xfe8b59a583a0a7d1e444323598d7a23e2dbebba2bf287804f6b7316efb98e04f",
+   "event_id": null,
    "fee_exponent": null,
    "fee_rate": null,
    "fees_enabled": false,
+   "neg_risk_id": null,
    "outcome_prices": [
     1.0,
     0.0
@@ -1493,9 +1547,11 @@
    "closed": true,
    "closed_time": 1738195200,
    "condition_id": "0xd4293791e5bbffd6b7d48d1707c7e72b5fd8ba0e32a430932119c6ff2e729114",
+   "event_id": null,
    "fee_exponent": null,
    "fee_rate": null,
    "fees_enabled": false,
+   "neg_risk_id": null,
    "outcome_prices": [
     1.0,
     0.0
@@ -1511,9 +1567,11 @@
    "closed": true,
    "closed_time": 1738281600,
    "condition_id": "0xa2c4c0f4ccf18568ecfd351e206dbec65c347c0180c206a7a10e8c239e19ccf2",
+   "event_id": null,
    "fee_exponent": null,
    "fee_rate": null,
    "fees_enabled": false,
+   "neg_risk_id": null,
    "outcome_prices": [
     1.0,
     0.0
@@ -1529,9 +1587,11 @@
    "closed": true,
    "closed_time": 1738368000,
    "condition_id": "0x72c70b5aac9a4c611fa72c1d8872244c665a384b0f6fca86e4716d1e4e47bff2",
+   "event_id": null,
    "fee_exponent": null,
    "fee_rate": null,
    "fees_enabled": false,
+   "neg_risk_id": null,
    "outcome_prices": [
     1.0,
     0.0
@@ -1547,9 +1607,11 @@
    "closed": true,
    "closed_time": 1738454400,
    "condition_id": "0x8872bc6e49b621bad9e537cee528bce6b2e4e28db7a1dda7adc5850308d9f6ba",
+   "event_id": null,
    "fee_exponent": null,
    "fee_rate": null,
    "fees_enabled": false,
+   "neg_risk_id": null,
    "outcome_prices": [
     1.0,
     0.0
@@ -1565,9 +1627,11 @@
    "closed": true,
    "closed_time": 1738540800,
    "condition_id": "0x1554680c1fd867a417202c6a12b1b05d958e1ad37e525063ddfa4f2e554b5df1",
+   "event_id": null,
    "fee_exponent": null,
    "fee_rate": null,
    "fees_enabled": false,
+   "neg_risk_id": null,
    "outcome_prices": [
     1.0,
     0.0
@@ -1583,9 +1647,11 @@
    "closed": true,
    "closed_time": 1738627200,
    "condition_id": "0xf772b368a387715aa237320bdce187f372110adaaf527e6ab1203b02b33cd557",
+   "event_id": null,
    "fee_exponent": null,
    "fee_rate": null,
    "fees_enabled": false,
+   "neg_risk_id": null,
    "outcome_prices": [
     1.0,
     0.0
@@ -1601,9 +1667,11 @@
    "closed": true,
    "closed_time": 1738713600,
    "condition_id": "0xae8b27b83daaf7130560aee8f95130cae729b5baa8c943a3c8988a26080b610b",
+   "event_id": null,
    "fee_exponent": null,
    "fee_rate": null,
    "fees_enabled": false,
+   "neg_risk_id": null,
    "outcome_prices": [
     1.0,
     0.0
@@ -1619,9 +1687,11 @@
    "closed": true,
    "closed_time": 1738800000,
    "condition_id": "0xbda215b8f6bfa4eee10e698e8ced0f2efebaa1eac5f9a5526b0ef7ec275c5239",
+   "event_id": null,
    "fee_exponent": null,
    "fee_rate": null,
    "fees_enabled": false,
+   "neg_risk_id": null,
    "outcome_prices": [
     1.0,
     0.0
@@ -1637,9 +1707,11 @@
    "closed": true,
    "closed_time": 1738886400,
    "condition_id": "0xfd0dbc06dee09369c45db8fb969fc6129891274e4aad55741549b599309f397e",
+   "event_id": null,
    "fee_exponent": null,
    "fee_rate": null,
    "fees_enabled": false,
+   "neg_risk_id": null,
    "outcome_prices": [
     1.0,
     0.0
@@ -1655,9 +1727,11 @@
    "closed": true,
    "closed_time": 1738972800,
    "condition_id": "0xfa9653161a195716b1247d587a3280fc31b43576afe546ebf9112fe9fcd16482",
+   "event_id": null,
    "fee_exponent": null,
    "fee_rate": null,
    "fees_enabled": false,
+   "neg_risk_id": null,
    "outcome_prices": [
     1.0,
     0.0
@@ -1673,9 +1747,11 @@
    "closed": true,
    "closed_time": 1739059200,
    "condition_id": "0x84cd1caa73d5cd04af93276127cdc32b240fd374e952ef18b36b8af2e2cf4ddc",
+   "event_id": null,
    "fee_exponent": null,
    "fee_rate": null,
    "fees_enabled": false,
+   "neg_risk_id": null,
    "outcome_prices": [
     1.0,
     0.0
@@ -1691,9 +1767,11 @@
    "closed": true,
    "closed_time": 1739145600,
    "condition_id": "0x6bf650e162e93dad8fe4e2e049561c4c3c380e61c50328d0f9f01014b23f8567",
+   "event_id": null,
    "fee_exponent": null,
    "fee_rate": null,
    "fees_enabled": false,
+   "neg_risk_id": null,
    "outcome_prices": [
     1.0,
     0.0
@@ -1709,9 +1787,11 @@
    "closed": true,
    "closed_time": 1739232000,
    "condition_id": "0x2b889f56079e4a069cb75483b5c145fc3b8a412f975c9aa825b8b94473358cc9",
+   "event_id": null,
    "fee_exponent": null,
    "fee_rate": null,
    "fees_enabled": false,
+   "neg_risk_id": null,
    "outcome_prices": [
     1.0,
     0.0
@@ -1727,9 +1807,11 @@
    "closed": true,
    "closed_time": 1739318400,
    "condition_id": "0x351abb555ce882f9b00d8e98bf5ea64a3e2de58f78ad86354beb0a1af49f657c",
+   "event_id": null,
    "fee_exponent": null,
    "fee_rate": null,
    "fees_enabled": false,
+   "neg_risk_id": null,
    "outcome_prices": [
     1.0,
     0.0
@@ -1745,9 +1827,11 @@
    "closed": true,
    "closed_time": 1739404800,
    "condition_id": "0xc5e88223ee6210f7ba20b7b75a5f6d67ceb4fb806fc082c510f22c7983351cf9",
+   "event_id": null,
    "fee_exponent": null,
    "fee_rate": null,
    "fees_enabled": false,
+   "neg_risk_id": null,
    "outcome_prices": [
     0.0,
     1.0
@@ -1763,9 +1847,11 @@
    "closed": true,
    "closed_time": 1739491200,
    "condition_id": "0x4385c43a921eee9b34647615299424df725f59d13c343a7a4e6880476a1741a3",
+   "event_id": null,
    "fee_exponent": null,
    "fee_rate": null,
    "fees_enabled": false,
+   "neg_risk_id": null,
    "outcome_prices": [
     1.0,
     0.0
@@ -1781,9 +1867,11 @@
    "closed": true,
    "closed_time": 1739577600,
    "condition_id": "0xa82ba552478592c482503d360712282bb7086fe41ad60b8cebf3405cdd76f9ed",
+   "event_id": null,
    "fee_exponent": null,
    "fee_rate": null,
    "fees_enabled": false,
+   "neg_risk_id": null,
    "outcome_prices": [
     0.0,
     1.0
@@ -1799,9 +1887,11 @@
    "closed": true,
    "closed_time": 1739664000,
    "condition_id": "0x2eceef089d5f0330c24c8ecb078ce79f0a526cac3b8fd53621397a9f1d467c8b",
+   "event_id": null,
    "fee_exponent": null,
    "fee_rate": null,
    "fees_enabled": false,
+   "neg_risk_id": null,
    "outcome_prices": [
     1.0,
     0.0
@@ -1817,9 +1907,11 @@
    "closed": true,
    "closed_time": 1739750400,
    "condition_id": "0x6b6e5e864486117b2ba2898e86b13bdfb711cf061de3f36af2ff38b49555bc0c",
+   "event_id": null,
    "fee_exponent": null,
    "fee_rate": null,
    "fees_enabled": false,
+   "neg_risk_id": null,
    "outcome_prices": [
     1.0,
     0.0
@@ -1835,9 +1927,11 @@
    "closed": true,
    "closed_time": 1739836800,
    "condition_id": "0xa5c5837a0b33c0eb47c80829207fd50c375e6efa48eac6721b35026d2ab74a1a",
+   "event_id": null,
    "fee_exponent": null,
    "fee_rate": null,
    "fees_enabled": false,
+   "neg_risk_id": null,
    "outcome_prices": [
     1.0,
     0.0
@@ -1853,9 +1947,11 @@
    "closed": true,
    "closed_time": 1739923200,
    "condition_id": "0x448916246aad831f21eec84e4bae6b944ccb17821ef3ae04fa247bebd6487b34",
+   "event_id": null,
    "fee_exponent": null,
    "fee_rate": null,
    "fees_enabled": false,
+   "neg_risk_id": null,
    "outcome_prices": [
     1.0,
     0.0
@@ -1871,9 +1967,11 @@
    "closed": true,
    "closed_time": 1740009600,
    "condition_id": "0x8605c4ca4531267502c936dbdfae5ab46efe3e204a46c215b5775ca2215a2fcd",
+   "event_id": null,
    "fee_exponent": null,
    "fee_rate": null,
    "fees_enabled": false,
+   "neg_risk_id": null,
    "outcome_prices": [
     0.0,
     1.0
@@ -1889,9 +1987,11 @@
    "closed": true,
    "closed_time": 1740096000,
    "condition_id": "0x2330728f240bf0f5775dfb560a7644368e243ec37c29fa88747b2276352307f1",
+   "event_id": null,
    "fee_exponent": null,
    "fee_rate": null,
    "fees_enabled": false,
+   "neg_risk_id": null,
    "outcome_prices": [
     0.0,
     1.0
@@ -1907,9 +2007,11 @@
    "closed": true,
    "closed_time": 1740182400,
    "condition_id": "0x1bf353a968b4a0003f2e51ae3f8e8f480100227a09bdf92969b0f14c9cfdc7ea",
+   "event_id": null,
    "fee_exponent": null,
    "fee_rate": null,
    "fees_enabled": false,
+   "neg_risk_id": null,
    "outcome_prices": [
     1.0,
     0.0
@@ -1925,9 +2027,11 @@
    "closed": true,
    "closed_time": 1740268800,
    "condition_id": "0x2876088a0a5959c7a1beb77ac64a209d617ad0ccbaa33020d36299208e9f7137",
+   "event_id": null,
    "fee_exponent": null,
    "fee_rate": null,
    "fees_enabled": false,
+   "neg_risk_id": null,
    "outcome_prices": [
     1.0,
     0.0
@@ -1943,9 +2047,11 @@
    "closed": true,
    "closed_time": 1740355200,
    "condition_id": "0x375ca6789f61110ba6db4de4db73dea41c0c554251728f23e883e78e970da35d",
+   "event_id": null,
    "fee_exponent": null,
    "fee_rate": null,
    "fees_enabled": false,
+   "neg_risk_id": null,
    "outcome_prices": [
     1.0,
     0.0
@@ -1961,9 +2067,11 @@
    "closed": true,
    "closed_time": 1740441600,
    "condition_id": "0x9eecae16f8b8e086ff5509920ed2db07339ec7ca1d3b0103db5ff4310d33fd1c",
+   "event_id": null,
    "fee_exponent": null,
    "fee_rate": null,
    "fees_enabled": false,
+   "neg_risk_id": null,
    "outcome_prices": [
     1.0,
     0.0
@@ -1979,9 +2087,11 @@
    "closed": true,
    "closed_time": 1740528000,
    "condition_id": "0x6d618f84c3b22415407bd40675a2c013a73a82ece4fc79113385e1344673192b",
+   "event_id": null,
    "fee_exponent": null,
    "fee_rate": null,
    "fees_enabled": false,
+   "neg_risk_id": null,
    "outcome_prices": [
     1.0,
     0.0
@@ -1997,9 +2107,11 @@
    "closed": true,
    "closed_time": 1740614400,
    "condition_id": "0xd8d11eb55ed1e1799655df82519538b88e5625ff75aad77df756ed86c1904fcf",
+   "event_id": null,
    "fee_exponent": null,
    "fee_rate": null,
    "fees_enabled": false,
+   "neg_risk_id": null,
    "outcome_prices": [
     1.0,
     0.0
@@ -2015,9 +2127,11 @@
    "closed": true,
    "closed_time": 1740700800,
    "condition_id": "0x8ff9b34f79704fa5befaeb2b030e62db741de0c4f1017fc20594bc062b644661",
+   "event_id": null,
    "fee_exponent": null,
    "fee_rate": null,
    "fees_enabled": false,
+   "neg_risk_id": null,
    "outcome_prices": [
     1.0,
     0.0
@@ -2033,9 +2147,11 @@
    "closed": true,
    "closed_time": 1740787200,
    "condition_id": "0xb067ce3b76cdb43696a63141d3a62ef38a0c82427407aa7e7ff42bf2c876781c",
+   "event_id": null,
    "fee_exponent": null,
    "fee_rate": null,
    "fees_enabled": false,
+   "neg_risk_id": null,
    "outcome_prices": [
     1.0,
     0.0
@@ -2051,9 +2167,11 @@
    "closed": true,
    "closed_time": 1740873600,
    "condition_id": "0x275371c11500800ab7797a3a57ac0808deec8a04dd7e520f08100a40a14fecd6",
+   "event_id": null,
    "fee_exponent": null,
    "fee_rate": null,
    "fees_enabled": false,
+   "neg_risk_id": null,
    "outcome_prices": [
     1.0,
     0.0
@@ -2069,9 +2187,11 @@
    "closed": true,
    "closed_time": 1740960000,
    "condition_id": "0x99d4dca57b7f2f35beaa1b554aa9c7236503ff5dfb46e236b446db4013bf8b36",
+   "event_id": null,
    "fee_exponent": null,
    "fee_rate": null,
    "fees_enabled": false,
+   "neg_risk_id": null,
    "outcome_prices": [
     1.0,
     0.0
@@ -2087,9 +2207,11 @@
    "closed": true,
    "closed_time": 1741046400,
    "condition_id": "0x013e36bc274a2f0c02f334771949f3e291cfed2f9854803bd4a4fc1436a1d107",
+   "event_id": null,
    "fee_exponent": null,
    "fee_rate": null,
    "fees_enabled": false,
+   "neg_risk_id": null,
    "outcome_prices": [
     1.0,
     0.0
@@ -2105,9 +2227,11 @@
    "closed": true,
    "closed_time": 1741132800,
    "condition_id": "0x01a7a47531beb9dde0fd62b06e3a25dd9937c591c7778a8cd89d60652780c142",
+   "event_id": null,
    "fee_exponent": null,
    "fee_rate": null,
    "fees_enabled": false,
+   "neg_risk_id": null,
    "outcome_prices": [
     1.0,
     0.0
@@ -2123,9 +2247,11 @@
    "closed": true,
    "closed_time": 1741219200,
    "condition_id": "0xc69bc90d7a31aae70b4282ed31931b38653d162ebdb453102dce27c6c49104d7",
+   "event_id": null,
    "fee_exponent": null,
    "fee_rate": null,
    "fees_enabled": false,
+   "neg_risk_id": null,
    "outcome_prices": [
     1.0,
     0.0
@@ -2141,9 +2267,11 @@
    "closed": true,
    "closed_time": 1741305600,
    "condition_id": "0xb47cc7054bcbd78c9245096db7e61dba873282d702b85c63b7f91ad7d1e3ea50",
+   "event_id": null,
    "fee_exponent": null,
    "fee_rate": null,
    "fees_enabled": false,
+   "neg_risk_id": null,
    "outcome_prices": [
     1.0,
     0.0
@@ -2159,9 +2287,11 @@
    "closed": true,
    "closed_time": 1741392000,
    "condition_id": "0x4f907463231981268340a68ef782b333c81dd2576a97ef8f95a9031fa877e93f",
+   "event_id": null,
    "fee_exponent": null,
    "fee_rate": null,
    "fees_enabled": false,
+   "neg_risk_id": null,
    "outcome_prices": [
     1.0,
     0.0
@@ -2177,9 +2307,11 @@
    "closed": true,
    "closed_time": 1741478400,
    "condition_id": "0x2695a29475c3ebdd75b0b7616d54696970ef7bc181f1b9a3f089df689c3e20f4",
+   "event_id": null,
    "fee_exponent": null,
    "fee_rate": null,
    "fees_enabled": false,
+   "neg_risk_id": null,
    "outcome_prices": [
     1.0,
     0.0
@@ -2195,9 +2327,11 @@
    "closed": true,
    "closed_time": 1741564800,
    "condition_id": "0x00c68bea3a2afc3a1d7bc32651ac573fef07a1cf02addc793ec4d712b62318df",
+   "event_id": null,
    "fee_exponent": null,
    "fee_rate": null,
    "fees_enabled": false,
+   "neg_risk_id": null,
    "outcome_prices": [
     1.0,
     0.0
@@ -2213,9 +2347,11 @@
    "closed": true,
    "closed_time": 1741651200,
    "condition_id": "0x3cd0f65e590d03f82693f0fcf7c87112f60222336d4d471c39fd2f0f84aa3aba",
+   "event_id": null,
    "fee_exponent": null,
    "fee_rate": null,
    "fees_enabled": false,
+   "neg_risk_id": null,
    "outcome_prices": [
     1.0,
     0.0
@@ -2231,9 +2367,11 @@
    "closed": true,
    "closed_time": 1741737600,
    "condition_id": "0x36359e4310849ac9b90a419e6143eeaa609fabb8c3467e36144accf233537af5",
+   "event_id": null,
    "fee_exponent": null,
    "fee_rate": null,
    "fees_enabled": false,
+   "neg_risk_id": null,
    "outcome_prices": [
     1.0,
     0.0
@@ -2249,9 +2387,11 @@
    "closed": true,
    "closed_time": 1741824000,
    "condition_id": "0x453c2267bba8e2860a18bba6eae1f344ef5373484cfa75a0ff14bf6565edc459",
+   "event_id": null,
    "fee_exponent": null,
    "fee_rate": null,
    "fees_enabled": false,
+   "neg_risk_id": null,
    "outcome_prices": [
     0.0,
     1.0
@@ -2267,9 +2407,11 @@
    "closed": true,
    "closed_time": 1741910400,
    "condition_id": "0x8149b300c449e8698a1be040cb78aeabc5365c1739037aec7be6df45081719a2",
+   "event_id": null,
    "fee_exponent": null,
    "fee_rate": null,
    "fees_enabled": false,
+   "neg_risk_id": null,
    "outcome_prices": [
     1.0,
     0.0
@@ -2285,9 +2427,11 @@
    "closed": true,
    "closed_time": 1741996800,
    "condition_id": "0x8445fe098b44c0e1f1f1d1b45a908ad9b343a164f34d3571c55fd148045707a2",
+   "event_id": null,
    "fee_exponent": null,
    "fee_rate": null,
    "fees_enabled": false,
+   "neg_risk_id": null,
    "outcome_prices": [
     1.0,
     0.0
@@ -2303,9 +2447,11 @@
    "closed": true,
    "closed_time": 1742083200,
    "condition_id": "0xc653557b069fb8b94c40cac3355c35c683f651b414d8fb330996ffa9647d1125",
+   "event_id": null,
    "fee_exponent": null,
    "fee_rate": null,
    "fees_enabled": false,
+   "neg_risk_id": null,
    "outcome_prices": [
     1.0,
     0.0
@@ -2321,9 +2467,11 @@
    "closed": true,
    "closed_time": 1742169600,
    "condition_id": "0x25f0a8261a7285586a9ae6fa57e9ac82be6160272c7e754c07685f3d57f7de87",
+   "event_id": null,
    "fee_exponent": null,
    "fee_rate": null,
    "fees_enabled": false,
+   "neg_risk_id": null,
    "outcome_prices": [
     1.0,
     0.0
@@ -2339,9 +2487,11 @@
    "closed": true,
    "closed_time": 1742256000,
    "condition_id": "0x7df54be54cb615301396af5f8c09b742d1b775d93195c630f53f68b146ae2540",
+   "event_id": null,
    "fee_exponent": null,
    "fee_rate": null,
    "fees_enabled": false,
+   "neg_risk_id": null,
    "outcome_prices": [
     1.0,
     0.0
@@ -2357,9 +2507,11 @@
    "closed": true,
    "closed_time": 1742342400,
    "condition_id": "0xeb1a4f98088fdf0e487b1e150ac830d5b597e3c6e6a5e7086a3c45999b0393e6",
+   "event_id": null,
    "fee_exponent": null,
    "fee_rate": null,
    "fees_enabled": false,
+   "neg_risk_id": null,
    "outcome_prices": [
     1.0,
     0.0
@@ -2375,9 +2527,11 @@
    "closed": true,
    "closed_time": 1742428800,
    "condition_id": "0x80a6da0939c21b4e6e5d9eb5cd9f3aa9a10db08f6af2d70a5381f1e0944c4c72",
+   "event_id": null,
    "fee_exponent": null,
    "fee_rate": null,
    "fees_enabled": false,
+   "neg_risk_id": null,
    "outcome_prices": [
     1.0,
     0.0
@@ -2393,9 +2547,11 @@
    "closed": true,
    "closed_time": 1742515200,
    "condition_id": "0xf37ef9cc16e391293985fa65fbbbbfbb37aa77fb37594db5aa0401f67d772e50",
+   "event_id": null,
    "fee_exponent": null,
    "fee_rate": null,
    "fees_enabled": false,
+   "neg_risk_id": null,
    "outcome_prices": [
     1.0,
     0.0
@@ -2411,9 +2567,11 @@
    "closed": true,
    "closed_time": 1742601600,
    "condition_id": "0x4d6a32a9613dd618632870cbb484a2f7d59645bec780e85cfdb2fdbeeec1f435",
+   "event_id": null,
    "fee_exponent": null,
    "fee_rate": null,
    "fees_enabled": false,
+   "neg_risk_id": null,
    "outcome_prices": [
     1.0,
     0.0
@@ -2429,9 +2587,11 @@
    "closed": true,
    "closed_time": 1742688000,
    "condition_id": "0x2201ea40e68c7faca1aa2bda7f241e96acd9629c6397d17c9d17cb67def89f1a",
+   "event_id": null,
    "fee_exponent": null,
    "fee_rate": null,
    "fees_enabled": false,
+   "neg_risk_id": null,
    "outcome_prices": [
     1.0,
     0.0
@@ -2447,9 +2607,11 @@
    "closed": true,
    "closed_time": 1742774400,
    "condition_id": "0xbd20bb72c7b956aba103912c6110ce9f8042d8a442f79cc3399cc6f494177b47",
+   "event_id": null,
    "fee_exponent": null,
    "fee_rate": null,
    "fees_enabled": false,
+   "neg_risk_id": null,
    "outcome_prices": [
     1.0,
     0.0
@@ -2465,9 +2627,11 @@
    "closed": true,
    "closed_time": 1742860800,
    "condition_id": "0x4570e009d56a7a3228edf5f40d762e219ce6a0dde9710dacfc1fc4ac905eff02",
+   "event_id": null,
    "fee_exponent": null,
    "fee_rate": null,
    "fees_enabled": false,
+   "neg_risk_id": null,
    "outcome_prices": [
     1.0,
     0.0
@@ -2483,9 +2647,11 @@
    "closed": true,
    "closed_time": 1742947200,
    "condition_id": "0x2424c9b19f1fa8d3cf70973509f96beca450b6f15445d428c31da5254c30147e",
+   "event_id": null,
    "fee_exponent": null,
    "fee_rate": null,
    "fees_enabled": false,
+   "neg_risk_id": null,
    "outcome_prices": [
     1.0,
     0.0
@@ -2501,9 +2667,11 @@
    "closed": true,
    "closed_time": 1743033600,
    "condition_id": "0x264c77aa9c8ba3cdf295538c2bae16a51ee48f61d2e8fc5e34e0c06b3cfdb61c",
+   "event_id": null,
    "fee_exponent": null,
    "fee_rate": null,
    "fees_enabled": false,
+   "neg_risk_id": null,
    "outcome_prices": [
     1.0,
     0.0
@@ -2519,9 +2687,11 @@
    "closed": true,
    "closed_time": 1743120000,
    "condition_id": "0xc1855cd3807811d015db92c128f49259f89352ddfdefc99df59ad8ffdd1d89ac",
+   "event_id": null,
    "fee_exponent": null,
    "fee_rate": null,
    "fees_enabled": false,
+   "neg_risk_id": null,
    "outcome_prices": [
     1.0,
     0.0
@@ -2537,9 +2707,11 @@
    "closed": true,
    "closed_time": 1743206400,
    "condition_id": "0xed0593f7b74ab4afdc09784f4b98aec3d3b809a3e7287d936903251164297c5d",
+   "event_id": null,
    "fee_exponent": null,
    "fee_rate": null,
    "fees_enabled": false,
+   "neg_risk_id": null,
    "outcome_prices": [
     1.0,
     0.0
@@ -2555,9 +2727,11 @@
    "closed": true,
    "closed_time": 1743292800,
    "condition_id": "0x186a75eaeb8322e3f354e1f31d6bd33120c34b31aac7015a23f906721d95cf70",
+   "event_id": null,
    "fee_exponent": null,
    "fee_rate": null,
    "fees_enabled": false,
+   "neg_risk_id": null,
    "outcome_prices": [
     1.0,
     0.0
@@ -2573,9 +2747,11 @@
    "closed": true,
    "closed_time": 1743379200,
    "condition_id": "0xb71f59a26bde9bd34f0065c4328678fa9e7cbe34ffcdcea2eba92846095a948c",
+   "event_id": null,
    "fee_exponent": null,
    "fee_rate": null,
    "fees_enabled": false,
+   "neg_risk_id": null,
    "outcome_prices": [
     1.0,
     0.0
@@ -2591,9 +2767,11 @@
    "closed": true,
    "closed_time": 1743465600,
    "condition_id": "0x632d1b871ab7ebaeb622a201331e7c593fb631018e301bbb9b95f613976282da",
+   "event_id": null,
    "fee_exponent": null,
    "fee_rate": null,
    "fees_enabled": false,
+   "neg_risk_id": null,
    "outcome_prices": [
     1.0,
     0.0
@@ -2609,9 +2787,11 @@
    "closed": true,
    "closed_time": 1743552000,
    "condition_id": "0xce89fab67866b55cc54a5bb6d3623df79077eecfae9a9e1a1e29bd1c8ac766a0",
+   "event_id": null,
    "fee_exponent": null,
    "fee_rate": null,
    "fees_enabled": false,
+   "neg_risk_id": null,
    "outcome_prices": [
     1.0,
     0.0
@@ -2627,9 +2807,11 @@
    "closed": true,
    "closed_time": 1743638400,
    "condition_id": "0xb2adccfecc043840f0847795bf8767b5c3f9969d94dfcd7f549b231ab169b81b",
+   "event_id": null,
    "fee_exponent": null,
    "fee_rate": null,
    "fees_enabled": false,
+   "neg_risk_id": null,
    "outcome_prices": [
     0.0,
     1.0
@@ -2645,9 +2827,11 @@
    "closed": true,
    "closed_time": 1743724800,
    "condition_id": "0x480b7d7f41a67956949d80c8c9b99f079ca7be42ab0448be6b845d45152cf580",
+   "event_id": null,
    "fee_exponent": null,
    "fee_rate": null,
    "fees_enabled": false,
+   "neg_risk_id": null,
    "outcome_prices": [
     1.0,
     0.0
@@ -2663,9 +2847,11 @@
    "closed": true,
    "closed_time": 1743811200,
    "condition_id": "0x072aad924ed08b35ac0a2d53ea1b0439a3f8562911a0f651f4f92938405af484",
+   "event_id": null,
    "fee_exponent": null,
    "fee_rate": null,
    "fees_enabled": false,
+   "neg_risk_id": null,
    "outcome_prices": [
     1.0,
     0.0
@@ -2681,9 +2867,11 @@
    "closed": true,
    "closed_time": 1743897600,
    "condition_id": "0x63dc0a41dd8ad7d563cce2c9aa427a570bf1cafe3f0fc509551b13e885541182",
+   "event_id": null,
    "fee_exponent": null,
    "fee_rate": null,
    "fees_enabled": false,
+   "neg_risk_id": null,
    "outcome_prices": [
     1.0,
     0.0
@@ -2699,9 +2887,11 @@
    "closed": true,
    "closed_time": 1743984000,
    "condition_id": "0xf6f5fd7f960b71a6898ae9a5a154f5c0aa141fbac28d10ca3a3a5c30bf21d377",
+   "event_id": null,
    "fee_exponent": null,
    "fee_rate": null,
    "fees_enabled": false,
+   "neg_risk_id": null,
    "outcome_prices": [
     0.0,
     1.0
@@ -2717,9 +2907,11 @@
    "closed": true,
    "closed_time": 1744070400,
    "condition_id": "0x800b97d9e6438c38c372c24f5ae901ab5865a2bc6b9c0c6c012960643df163d7",
+   "event_id": null,
    "fee_exponent": null,
    "fee_rate": null,
    "fees_enabled": false,
+   "neg_risk_id": null,
    "outcome_prices": [
     1.0,
     0.0
@@ -2735,9 +2927,11 @@
    "closed": true,
    "closed_time": 1744156800,
    "condition_id": "0x9ca577ef6e8fdc85baef0108844465f34006cb634d2a9c2374dd9aab9817781e",
+   "event_id": null,
    "fee_exponent": null,
    "fee_rate": null,
    "fees_enabled": false,
+   "neg_risk_id": null,
    "outcome_prices": [
     1.0,
     0.0
@@ -2753,9 +2947,11 @@
    "closed": true,
    "closed_time": 1744243200,
    "condition_id": "0xcda26fccc94b5fe947ce3b31ec795ef438d5d64b9d623cc9c2b31440ccf67df4",
+   "event_id": null,
    "fee_exponent": null,
    "fee_rate": null,
    "fees_enabled": false,
+   "neg_risk_id": null,
    "outcome_prices": [
     1.0,
     0.0
@@ -2771,9 +2967,11 @@
    "closed": true,
    "closed_time": 1744329600,
    "condition_id": "0xad07dd76283f3b7ecb21f68b00969dd490a382c6b7fa6d3d9ec57c67afd48396",
+   "event_id": null,
    "fee_exponent": null,
    "fee_rate": null,
    "fees_enabled": false,
+   "neg_risk_id": null,
    "outcome_prices": [
     1.0,
     0.0
@@ -2789,9 +2987,11 @@
    "closed": true,
    "closed_time": 1744416000,
    "condition_id": "0x1efe76b0f75c453624053f6d464a3d288cfe940841a6791328e08c03744e5dc1",
+   "event_id": null,
    "fee_exponent": null,
    "fee_rate": null,
    "fees_enabled": false,
+   "neg_risk_id": null,
    "outcome_prices": [
     1.0,
     0.0

@@ -169,7 +169,7 @@ Arrows are the only allowed imports. `core` imports only `records`, the standard
   - **Reasons.** A Position is left out of the Skill Test, with one stored reason, when it is (when several apply, the first in this list is the one stored; Story 2.3):
     - unread, because the Wallet's read was capped or refused (AD-7, AD-9);
     - in a Market with unclear resolution (AD-7);
-    - in a Market where the Wallet did a SPLIT, MERGE or CONVERSION;
+    - in a Market where the Wallet did a SPLIT, MERGE or CONVERSION. A CONVERSION row names its negative-risk event (Gamma `negRiskMarketID`), not a Market, so it marks every Market of that event; the window keeps these rows (Edvard, 2026-11-21, Story 2.4);
     - a token found only in activity rows;
     - one whose share gap between positions list and activity is above 1% `[ASSUMPTION]` (the gap's size is stored, so the line can move without refetching). The gap is |activity bought − listed bought| ÷ the larger of the two; a listed Position with no buy fill has a gap of 1 (Story 2.3);
     - fully sold before resolution (PRD FR-3);
@@ -273,8 +273,10 @@ Arrows are the only allowed imports. `core` imports only `records`, the standard
 - **Prevents:** fake significance: Passers who bet in the same Markets counted as independent bets (7 Wallets × 40 shared Markets treated as 280 coin flips), a Wallet's two sides of one Market treated as independent, correlated ladder Markets counted as separate evidence, and the Copy Test passing by luck in shared Markets (about 27% instead of 5%).
 - **Rule:**
   - **One draw per Market.** In each Simulation, `core/skilltest` draws one uniform U per Market, shared by every Position in that Market across all Wallets in the test. A Position on one outcome wins when U < p of that outcome, and the other side wins when U > 1 − p. Each Position keeps a win chance equal to its Entry Price, so the FR-5 checks are unchanged. The two sides cannot both win when their prices sum to at most 1; above that, the coupling is as tight as the prices allow. The side whose `token_id` comes first as text (not as a number) among the test's Positions in that Market is the one that wins on U < p, so the rule is the same for every Wallet in a group test. A Market with more than two outcomes in one test is refused. (Story 1.4, 2026-11-18.)
-  - **One draw per detectable event.** A negative-risk event (one winner) shares one U, split into disjoint intervals by price. A ladder (same underlying, same resolution date, different thresholds) shares one U with nested intervals ordered by price. Each Market still keeps its own win chance.
-  - **The rest is measured.** Every result stores the share of tested Positions whose Gamma event holds another tested Position that is not coupled above, and the Verdict card shows an honesty note above 20% `[ASSUMPTION]`. A planted ladder Wallet has a test.
+  - **One draw per detectable event.** A negative-risk event (one winner) shares one U, split into disjoint intervals by price. A ladder (same underlying, same resolution date, different thresholds) would share one U with nested intervals ordered by price (slipped, see below). Each Market still keeps its own win chance.
+    - Negative-risk (Story 2.4): a Market is coupled when Gamma says `negRisk` with outcomes Yes/No; its event is `negRiskMarketID`. Its Yes token wins on low draws. Its win region has length max(p of its Yes Positions, 1 − p of its No Positions) over the test's Positions; the event's regions are laid end to end in `condition_id` order from 0, wrapping past 1, and each Market draws V = (U − start) mod 1. So the regions are disjoint while their lengths sum to at most 1, and every Position keeps its win chance. A Wallet with no coupled Market draws exactly as before.
+    - Ladders slipped (Edvard, 2026-11-21): Gamma's `groupItemThreshold` is a display order, not a threshold, so detection would mean parsing question text. Ladders are counted in the measured share below.
+  - **The rest is measured.** Every result stores the share of tested Positions whose Gamma event (`events[0].id`) holds another tested Position that is not coupled above, and the Verdict card shows an honesty note above 20% `[ASSUMPTION]`. A planted ladder Wallet has a test once ladders are built.
   - **The Copy Test.** The Copy Test page shows how many of the Passers' Copy Sample Markets are shared by two or more Passers. A planted gate test runs 1,000 Scans in which 10 coin-flipper Passers hold the same side of the same 40 Markets: the Copy p-value may be below 0.05 in at most 7%. If the gate fails, the Random Group Check needs a Market-level null, which is a PRD change.
 
 ### AD-21 — The Scan funnel is fixed and shown on the Scan page
@@ -433,7 +435,7 @@ erDiagram
 | --- | --- |
 | Rebuilding the true entry price of split, merge and conversion Positions | Needs every trade row; left out and counted instead (AD-11). |
 | Table columns in `schema.sql` | The first story that stores each entity defines them, within AD-6, AD-10 and AD-19. |
-| Correlation between sibling Markets of one negative-risk event | Stated limit of AD-20; revisit if real data shows it matters. |
+| Ladder detection (AD-20) | Slipped in Story 2.4: needs question-text parsing; ladders are counted in the measured share instead. |
 | Whether the v2 activity cursor has a depth cap | Untested; `ACTIVITY_ROW_CAP` and AD-11 cover a capped read. |
 | A Market-anchored read with `sort_by=TIMESTAMP` | The probes used the default sort; the first data story checks one. |
 | `/v2/resolutions` as a fallback for Gamma resolution times | Not yet compared with Gamma; only needed if Gamma fails. |

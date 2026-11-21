@@ -90,7 +90,12 @@ def positions_near(
         read_until = read.rows[-1].timestamp if read.rows else start - 1
         log.info("activity of %s read only up to %d; later Positions are not fully read", wallet, read_until)
     ids = {m.condition_id for m in window_markets}
-    activity = tuple(row for row in read.rows if row.condition_id in ids)
+    # A CONVERSION row names its negative-risk event, not a Market (AD-11, Story 2.4).
+    events = {m.neg_risk_id for m in window_markets if m.neg_risk_id is not None}
+    activity = tuple(
+        row for row in read.rows
+        if row.condition_id in ids or (row.type == "CONVERSION" and row.condition_id in events)
+    )
     return Window(wallet, limit, tuple(chosen), window_markets, activity, read_until)
 
 

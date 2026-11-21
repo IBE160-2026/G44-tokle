@@ -102,6 +102,13 @@ def test_serializer_round_trip(compact: bool) -> None:
         assert sample_json.loads(sample_json.dumps(wallet, compact=compact)) == wallet
 
 
+def test_serializer_keeps_market_events() -> None:
+    """AD-14, AD-20 (Story 2.4): a Market's event and negative-risk event survive the round trip."""
+    wallet = SMALL["hand-check"]
+    linked = replace(wallet, markets=(replace(wallet.markets[0], event_id="16868", neg_risk_id="0x5b32"), *wallet.markets[1:]))
+    assert sample_json.loads(sample_json.dumps(linked)) == linked
+
+
 @pytest.mark.parametrize(
     "corrupt",
     [
@@ -118,6 +125,8 @@ def test_serializer_round_trip(compact: bool) -> None:
         lambda d: d["activity"][0].update(timestamp=1735689600.9),
         lambda d: d["activity"][0].update(size=True),
         lambda d: d["markets"][0].update(token_ids="10"),
+        lambda d: d["markets"][0].update(event_id=16868),
+        lambda d: d["markets"][0].pop("neg_risk_id"),
         lambda d: d["positions"][0].update(status="PENDING"),
         lambda d: d["prices"].append("not an object"),
     ],

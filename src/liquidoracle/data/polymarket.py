@@ -542,7 +542,49 @@ def _market(raw: Mapping[str, Any]) -> Market:
         fee_rate=fee_rate,
         fee_exponent=fee_exponent,
         tags=_tag_labels(raw.get("tags")),
+        event_id=_event_id(raw.get("events")),
+        neg_risk_id=_neg_risk_id(raw),
     )
+
+
+def _event_id(value: Any) -> str | None:
+    """The Market's Gamma event (`events[0].id`, AD-20); None when Gamma lists no event."""
+    if value is None:
+        return None
+    if not isinstance(value, list):
+        raise ValueError("events is not a list")
+    if not value:
+        return None
+    if not isinstance(value[0], Mapping):
+        raise ValueError("an event is not an object")
+    event_id = value[0].get("id")
+    if event_id is None:
+        return None
+    if not isinstance(event_id, (str, int)) or isinstance(event_id, bool):
+        raise ValueError("an event id is not text")
+    return str(event_id) or None
+
+
+def _neg_risk_id(raw: Mapping[str, Any]) -> str | None:
+    """The negative-risk event (`negRiskMarketID`) of a Yes/No Market Gamma marks `negRisk` (AD-20).
+
+    Only a Market whose outcomes are exactly Yes then No is coupled, so `token_ids[0]` is Yes;
+    any other shape stays uncoupled and is counted in the measured share instead of guessed at.
+    """
+    if raw.get("negRisk") is not True:
+        return None
+    neg_risk_id = raw.get("negRiskMarketID")
+    outcomes = raw.get("outcomes")
+    tokens = _json_list(raw["clobTokenIds"], "clobTokenIds")
+    if (
+        not isinstance(neg_risk_id, str) or not neg_risk_id or outcomes is None
+        or _json_list(outcomes, "outcomes") != ["Yes", "No"] or len(tokens) != 2
+    ):
+        # 108 of 108 negRisk Markets in the raw data are Yes/No (Story 2.4 review); another shape is
+        # logged, not guessed at, because its CONVERSION rows would not be matched either.
+        log.warning("negRisk Market %s is not a Yes/No Market with an event id; left uncoupled", raw.get("conditionId"))
+        return None
+    return neg_risk_id
 
 
 def _optional_time(raw: Mapping[str, Any], key: str) -> int | None:

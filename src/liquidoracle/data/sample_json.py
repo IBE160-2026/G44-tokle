@@ -176,6 +176,8 @@ def _market(row: Any) -> Market:
         fee_rate=None if row["fee_rate"] is None else _float(row["fee_rate"]),
         fee_exponent=None if row["fee_exponent"] is None else _float(row["fee_exponent"]),
         tags=tuple(_str(tag) for tag in _list(row["tags"])),
+        event_id=None if row["event_id"] is None else _str(row["event_id"]),
+        neg_risk_id=None if row["neg_risk_id"] is None else _str(row["neg_risk_id"]),
     )
 
 

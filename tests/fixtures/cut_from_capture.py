@@ -47,6 +47,7 @@ POSITION_KEYS = ("condition_id", "token_id", "total_size", "first_entry_at", "la
 ACTIVITY_KEYS = ("type", "condition_id", "timestamp", "size", "usdc_size", "price", "token_id", "side", "is_combo")
 GAMMA_KEYS = (
     "conditionId", "closed", "closedTime", "startDate", "clobTokenIds", "outcomePrices", "feesEnabled", "feeSchedule",
+    "outcomes", "negRisk", "negRiskMarketID",  # AD-20 (Story 2.4)
 )
 
 
@@ -182,6 +183,8 @@ def _keep(row: dict, keys: tuple[str, ...]) -> dict:
 def _gamma(market: dict) -> dict:
     kept = _keep(market, GAMMA_KEYS)
     kept["tags"] = [{"label": tag["label"]} for tag in market.get("tags") or []]
+    if "events" in market:  # only each event's id is read (AD-20)
+        kept["events"] = [{"id": event["id"]} for event in market["events"]]
     return kept
 
 

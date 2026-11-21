@@ -19,6 +19,7 @@ import pytest
 from fake_polymarket import FakeClock, FakePolymarket, FakeTransport
 
 from liquidoracle.core.positions import build_positions, mostly_left_out
+from liquidoracle.core.skilltest import uncoupled_share
 from liquidoracle.data import offline as offline_module
 from liquidoracle.data import sample_json
 from liquidoracle.data.errors import PolymarketUnavailable
@@ -283,8 +284,9 @@ def test_stored_resolved_markets_are_not_fetched_again(store: Store) -> None:
 
 
 def test_markets_only_in_activity_are_never_asked_for() -> None:
-    """AD-10: the positions lists say which Positions exist; 0x091596's two activity-only Markets (unknown
-    to Gamma too) are never asked for and stay outside the window (Story 2.3 counts such tokens)."""
+    """AD-10: the positions lists say which Positions exist; 0x091596's two activity-only ids (unknown to Gamma
+    as Markets) are never asked for. The TRADE one stays outside the window (Story 2.3 counts such tokens); the
+    other is a CONVERSION naming a window Market's negative-risk event, which the window keeps (AD-11, Story 2.4)."""
     client, transport, server = live("fees-and-open")
     listed = {r["condition_id"] for r in server.lists["CLOSED"] + server.lists["OPEN"]}
     only_in_activity = {r["condition_id"] for r in server.activity} - listed
@@ -292,7 +294,19 @@ def test_markets_only_in_activity_are_never_asked_for() -> None:
     window = positions_near(client, server.wallet)
     asked = {v for c in transport.calls if c.url.endswith("/markets") for k, v in c.params if k == "condition_ids"}
     assert not only_in_activity & asked
-    assert not only_in_activity & {r.condition_id for r in window.activity}
+    kept = [r for r in window.activity if r.condition_id in only_in_activity]
+    assert [r.type for r in kept] == ["CONVERSION"]
+    assert kept[0].condition_id in {m.neg_risk_id for m in window.markets}
+
+
+def test_only_a_conversion_row_may_name_an_event() -> None:
+    """AD-11 (Story 2.4): a CONVERSION names its negative-risk event; any other row type naming that id is not a row of
+    the window's Markets and stays out."""
+    client, _, server = live("fees-and-open")
+    conversion = next(r for r in server.activity if r["type"] == "CONVERSION")
+    server.activity.append({**conversion, "type": "MERGE"})
+    window = positions_near(client, server.wallet)
+    assert [r.type for r in window.activity if r.condition_id == conversion["condition_id"]] == ["CONVERSION"]
 
 
 def test_a_listed_market_gamma_does_not_know_is_outside_the_window(caplog: pytest.LogCaptureFixture) -> None:
@@ -312,9 +326,11 @@ def test_identical_rows_stay_separate_fills() -> None:
     window = positions_near(client, server.wallet)
     (activity,) = calls_to(transport, "/v2/activity")
     ids = {m.condition_id for m in window.markets}
+    events = {m.neg_risk_id for m in window.markets if m.neg_risk_id}
     expected = [
         r for r in server.activity
-        if r["condition_id"] in ids and r.get("is_combo") is not True
+        if (r["condition_id"] in ids or (r["type"] == "CONVERSION" and r["condition_id"] in events))
+        and r.get("is_combo") is not True
         and int(activity["start"]) <= r["timestamp"] <= int(activity["end"])
     ]
     copies = Counter(json.dumps(r, sort_keys=True) for r in expected)
@@ -413,8 +429,9 @@ def test_fixtures_are_cut_by_the_script() -> None:
         for section, keys in (("positions_closed", cut.POSITION_KEYS), ("positions_open", cut.POSITION_KEYS),
                               ("activity", cut.ACTIVITY_KEYS)):
             assert {key for row in document[section] for key in row} <= set(keys), (path.name, section)
-        assert {key for row in document["gamma"] for key in row} <= {*cut.GAMMA_KEYS, "tags"}
+        assert {key for row in document["gamma"] for key in row} <= {*cut.GAMMA_KEYS, "tags", "events"}
         assert all(set(tag) == {"label"} for row in document["gamma"] for tag in row["tags"])
+        assert all(set(event) == {"id"} for row in document["gamma"] for event in row.get("events", []))
 
 
 # --- Story 2.3: exclusions and fees on the real fixtures ------------------------------------
@@ -463,13 +480,45 @@ def test_real_fees_pass_except_one_charged_before_the_rate_changed() -> None:
     assert sum(p.own_fees for p in (*built.tested, *built.slivers)) > 1000  # the other large fees still count
 
 
-def test_conversion_outputs_are_counted_as_share_gaps_on_real_data() -> None:
-    """AD-11 (Story 2.3): 0x091596's 21 listed Positions with no TRADE row used to vanish; now each is a share gap of 1,
-    and with them over 10% of the window is left out."""
-    built, _ = built_from("fees-and-open")
-    gaps = [p for p in built.left_out if p.reason is ExclusionReason.SHARE_GAP]
-    assert len(gaps) == 21 and all(p.share_gap == 1.0 and p.entry_price is None for p in gaps)
+def test_a_conversion_leaves_out_its_whole_event_on_real_data() -> None:
+    """AD-11 (Edvard, 2026-11-21, Story 2.4): 0x091596's CONVERSION names the Romania event (0x5b32843a...). Every
+    Position of that event is 'split or merged': the 21 conversion outputs (share gaps in Story 2.3), the converted
+    NO (1,666.67 shares at 0.36, which was tested as a held winner), and the rest. Over 10% is still left out."""
+    built, window = built_from("fees-and-open")
+    event = "0x5b32843a079e064277a5ddb822a3094e2ee747d0ebae8500918717076de14e00"
+    in_event = [p for p in (*built.tested, *built.slivers, *built.left_out) if p.neg_risk_id == event]
+    assert len(in_event) == 25 and all(p.reason is ExclusionReason.SPLIT_OR_MERGED for p in in_event)
+    assert len([p for p in in_event if p.entry_price is None and p.share_gap == 1.0]) == 21
+    converted = [p for p in in_event if p.shares_held == pytest.approx(1666.666665) and p.outcome == 1.0]
+    assert len(converted) == 1 and not converted[0].yes_side and converted[0].entry_price == pytest.approx(0.36, abs=0.01)
+    assert built.excluded_counts[ExclusionReason.SHARE_GAP] == 0
+    assert (built.tested_count, built.excluded_counts[ExclusionReason.SPLIT_OR_MERGED]) == (14, 25)
     assert mostly_left_out(built)
+
+
+# AD-20 (Story 2.4): the uncoupled share on the fixture Wallets, recorded as it came out (the 10 real Sample
+# Wallets' share comes with Story 2.6). 0x091596: Spain vs. Argentina's O/U 5.5 and Team to Advance share a Gamma
+# event that is not negative-risk. 0x0f4b0a: three "Who will die in The Boys" Markets, not negative-risk either;
+# at 27% it is the one fixture over the 20% line, so its card would show the honesty note (Epic 3). split-merge has
+# no tested Position, so its row only checks the empty case.
+UNCOUPLED = {"small-clean": (0, 18), "fees-and-open": (2, 14), "fees": (3, 11), "open-losers": (0, 9), "split-merge": (0, 0)}
+
+
+@pytest.mark.parametrize("name", sorted(UNCOUPLED))
+def test_the_uncoupled_share_on_real_data(name: str) -> None:
+    """AD-20: tested Positions with an uncoupled event-mate, per fixture; negative-risk event-mates are coupled."""
+    built, _ = built_from(name)
+    linked, tested = UNCOUPLED[name]
+    assert built.tested_count == tested
+    assert uncoupled_share(built.tested) == (linked / tested if tested else 0.0)
+
+
+def test_a_stored_lookup_carries_the_uncoupled_share(store: Store) -> None:
+    """AD-20, AD-19: the stored snapshot keeps the Markets' events, so the stored result has the same share."""
+    client, _, server = live("fees-and-open")
+    fetch_wallet(client, store, server.wallet)
+    stored = stored_result(store, server.wallet, seed=44)
+    assert stored is not None and stored.result.uncoupled_share == 2 / 14
 
 
 def test_the_second_fee_wallet_fails_only_fees_from_before_a_rate_cut() -> None:
@@ -489,4 +538,4 @@ def test_a_stored_lookup_applies_the_list_checks(store: Store) -> None:
     fetch_wallet(client, store, server.wallet)
     stored = stored_result(store, server.wallet, seed=44)
     built, _ = built_from("fees-and-open")
-    assert stored is not None and stored.result.tested_count == built.tested_count == 17
+    assert stored is not None and stored.result.tested_count == built.tested_count == 14  # 17 before Story 2.4

@@ -24,7 +24,7 @@ from pathlib import Path
 
 from liquidoracle.records import ActivityRow, ListedPosition, Market, unread_positions
 
-SCHEMA_VERSION = 2  # 2: the Wallet window (Story 2.2)
+SCHEMA_VERSION = 3  # 2: the Wallet window (Story 2.2); 3: Market events (Story 2.4)
 BUSY_TIMEOUT_SECONDS = 5.0  # [ASSUMPTION] AD-6: long enough for the worker's short writes
 SCHEMA_FILE = Path(__file__).with_name("schema.sql")
 
@@ -126,11 +126,11 @@ class Store:
         with self._write() as db:
             db.executemany(
                 f"INSERT OR REPLACE INTO market ({_MARKET_COLUMNS}, fetched_at)"
-                " VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                " VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
                 (
                     (m.condition_id, int(m.closed), m.closed_time, json.dumps(list(m.token_ids)),
                      json.dumps(list(m.outcome_prices)), int(m.fees_enabled), m.start_time, m.fee_rate,
-                     m.fee_exponent, json.dumps(list(m.tags)), now)
+                     m.fee_exponent, json.dumps(list(m.tags)), m.event_id, m.neg_risk_id, now)
                     for m in markets
                 ),
             )
@@ -158,7 +158,8 @@ class Store:
         `activity_read_until` is the time of the last activity row read when the read was capped
         or cut short (AD-7), None when it was complete. Refused when the snapshot is unknown or
         already finished, or when one of its rows names a Market that is not stored, so a visible
-        snapshot is always complete.
+        snapshot is always complete. A CONVERSION row names its negative-risk event instead, which
+        must be the `neg_risk_id` of a stored Market (AD-11, Story 2.4).
         """
         with self._write() as db:
             row = db.execute(
@@ -168,9 +169,12 @@ class Store:
                 raise ValueError(f"snapshot {fetch_id} does not exist or is already finished")
             missing = db.execute(
                 "SELECT condition_id FROM (SELECT condition_id FROM listed_position WHERE fetch_id = ?"
-                " UNION SELECT condition_id FROM activity_row WHERE fetch_id = ?)"
-                " WHERE condition_id NOT IN (SELECT condition_id FROM market) LIMIT 1",
-                (fetch_id, fetch_id),
+                " UNION SELECT condition_id FROM activity_row WHERE fetch_id = ? AND type != 'CONVERSION')"
+                " WHERE condition_id NOT IN (SELECT condition_id FROM market)"
+                " UNION SELECT condition_id FROM activity_row WHERE fetch_id = ? AND type = 'CONVERSION'"
+                " AND condition_id NOT IN (SELECT condition_id FROM market)"
+                " AND condition_id NOT IN (SELECT neg_risk_id FROM market WHERE neg_risk_id IS NOT NULL) LIMIT 1",
+                (fetch_id, fetch_id, fetch_id),
             ).fetchone()
             if missing is not None:
                 raise ValueError(f"snapshot {fetch_id} refers to Market {missing[0]}, which is not stored")
@@ -332,12 +336,13 @@ def _statements(script: str) -> Iterator[str]:
 
 _MARKET_COLUMNS = (
     "condition_id, closed, closed_time, token_ids, outcome_prices, fees_enabled, start_time, fee_rate,"
-    " fee_exponent, tags"
+    " fee_exponent, tags, event_id, neg_risk_id"
 )
 
 
 def _market(row: tuple) -> Market:
-    condition_id, closed, closed_time, token_ids, outcome_prices, fees_enabled, start, rate, exponent, tags = row
+    (condition_id, closed, closed_time, token_ids, outcome_prices, fees_enabled, start, rate, exponent, tags,
+     event, neg) = row
     return Market(
         condition_id=condition_id,
         closed=bool(closed),
@@ -349,4 +354,6 @@ def _market(row: tuple) -> Market:
         fee_rate=rate,
         fee_exponent=exponent,
         tags=tuple(json.loads(tags)),
+        event_id=event,
+        neg_risk_id=neg,
     )

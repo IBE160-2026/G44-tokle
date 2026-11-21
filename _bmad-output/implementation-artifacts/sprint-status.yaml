@@ -29,7 +29,7 @@
 # - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
 # - Retrospective appends its action items to action_items; the status view surfaces open ones
 generated: 11-05-2026 02:06
-last_updated: 11-21-2026 14:00
+last_updated: 11-21-2026 16:07
 project: LiquidOracle
 project_key: NOKEY
 tracking_system: file-system
@@ -48,8 +48,8 @@ development_status:
   epic-2: in-progress
   2-1-polymarket-client-read-only-and-polite: done
   2-2-a-wallet-s-bets-as-one-complete-snapshot: done
-  2-3-every-exclusion-and-fee-on-real-data: review
-  2-4-linked-bets-on-real-data: backlog
+  2-3-every-exclusion-and-fee-on-real-data: done
+  2-4-linked-bets-on-real-data: review
   2-5-look-up-a-live-wallet: backlog
   2-6-real-wallets-in-the-sample-dataset: backlog
   2-7-real-pnl-checked-by-hand: backlog
