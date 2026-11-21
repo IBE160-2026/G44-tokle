@@ -614,9 +614,11 @@ So that I can check a Wallet before copying it, even when Polymarket is having t
 **Then** the page shows the heading "Polymarket did not answer" and the button "Show stored data from …" only when a snapshot of the same view exists, otherwise "Try again in a few minutes."; a snapshot of another view is never offered (FR-2, AD-4)
 **And** no page ever shows a raw exception.
 
-**Given** a real Sample Wallet's stored data
+**Given** a 1,000-Position Wallet's stored data (made up for the test: the real Sample Wallets arrive in Story 2.6; Edvard, 2026-11-21)
 **When** its Verdict is computed
-**Then** a Wallet with up to 1,000 Resolved Positions returns its Verdict within 10 seconds, measured and noted (NFR-10).
+**Then** it returns its Verdict within 10 seconds, measured and noted (NFR-10); Story 2.6 measures the real Wallets again.
+
+Notes (Story 2.5, 2026-11-21): "no history" means both positions lists are empty (Data API v2 answers an unused address with 200 and empty lists, checked live); a Wallet with only open bets gets the normal *Not enough data* Verdict. Offline Mode queues no jobs: its stored snapshots never go stale, since there is nothing to refresh them from.
 
 ### Story 2.6: Real Wallets in the Sample Dataset
 
@@ -647,6 +649,7 @@ So that I can check real results offline and see how the committed data was made
 **Then** the Sample Wallets list shows the *Real Wallets* group with shortened addresses, and each of the 10 can be looked up with sockets blocked (FR-12, FR-14, UX-DR17)
 **And** each real Wallet's Verdict is recorded in a note next to the pick's estimate, whatever it comes out as, and nothing is tuned to match (NFR-13)
 **And** each real Wallet's uncoupled share (AD-20, moved here from Story 2.4) is recorded in the same note.
+**And** the Verdict time from stored data for the largest real Wallets (NFR-10, within 10 seconds), and the live lookup time including the Polymarket fetch for at least one of them, are measured and noted; the fetch time has no 10-second target, since NFR-10 covers stored data (Edvard, 2026-11-21, Story 2.5).
 
 ### Story 2.7: Real PnL checked by hand
 

@@ -83,6 +83,7 @@ Arrows are the only allowed imports. `core` imports only `records`, the standard
 - **Rule:**
   - Freshness belongs to a snapshot (AD-19). A read is a cache hit only when **one** complete snapshot's own range covers the requested window and was fetched less than 24 hours ago `[ASSUMPTION]`. Rows are never merged across snapshots, and a missing part is never fetched as a gap: the whole window is fetched again. One function in `data/store.py` answers "which snapshot serves this window".
   - When Polymarket does not answer (FR-2), the page offers stored data only from a snapshot whose range matches the view, labelled with its fetch date. Otherwise it says there is no stored data for this view.
+  - Offline Mode never goes stale: it queues no jobs and serves its stored snapshots whatever their age, since the Sample Dataset is the only source (Story 2.5).
   - Gamma Market records, fee schedules and price-history windows never expire once the Market is resolved. Records of open Markets expire with the Wallet lists.
   - Domain labels are keyed by (Market, label source) (AD-16).
 
@@ -96,6 +97,7 @@ Arrows are the only allowed imports. `core` imports only `records`, the standard
   - **Claiming.** The worker claims a job with one atomic `UPDATE … SET status='running' WHERE id=? AND status='queued'` and checks that `rowcount == 1`.
   - **Phases.** A Scan job runs ranking, Skill Tests, Hold-up Test and Copy Test as phases. The progress JSON carries `phase`, and a Scan counts as finished only when every phase is done.
   - **States.** `queued`, `running`, `done`, `interrupted` (app closed), `stopped` (Polymarket did not answer; Resume offered), `failed` (unexpected error, logged; no Resume). At startup, a job left `running` becomes `interrupted`.
+  - **Lookup jobs (Story 2.5).** A lookup while the Wallet already has a `queued` or `running` job joins that job. A lookup that finds no Polymarket history (both positions lists empty) ends `done` with the result `no_history` and stores no snapshot; a lookup job opened again after `interrupted` is queued afresh.
   - **Where it starts.** The worker is a daemon thread started only by `liquidoracle run` (AD-23), never by the app factory.
 
 ### AD-6 — SQLite access rules [ADOPTED]
