@@ -1,0 +1,786 @@
+{
+ "activity": [
+  {
+   "condition_id": "0x03f73e665ef7f6221d6f54ee0aac09672f715a29717d67622bd36be6ceb0846f",
+   "price": 0.1,
+   "side": "BUY",
+   "size": 10.0,
+   "timestamp": 1777505382,
+   "token_id": "5963667090633809401874745693672490520503206693696243932960841034682531836868",
+   "type": "TRADE",
+   "usdc_size": 1.045
+  },
+  {
+   "condition_id": "0xa919b6a7cc8c958d82141ec2ba77b8fe813083a7ee2083178305c409ae28ce0d",
+   "price": 0.08,
+   "side": "BUY",
+   "size": 12.5,
+   "timestamp": 1777505436,
+   "token_id": "51879356623960339702517935610541417453102128871576127477151302298376463079921",
+   "type": "TRADE",
+   "usdc_size": 1.046
+  },
+  {
+   "condition_id": "0x41c3c7bf8412216091308ca8e2935a819cc1ecf585f7f14a359d3431949546db",
+   "price": 0.459999885,
+   "side": "BUY",
+   "size": 4.347825,
+   "timestamp": 1777506018,
+   "token_id": "73353722662342990289981001091515897144819058003177208867036611740530556987426",
+   "type": "TRADE",
+   "usdc_size": 2.032389
+  },
+  {
+   "condition_id": "0xc7bc5d759ecbd05cfbf3b41ec98f1cd7ab306234bf76fd6c1768d3be1d6b9e76",
+   "price": 0.1,
+   "side": "BUY",
+   "size": 20.0,
+   "timestamp": 1777508324,
+   "token_id": "62672831099052856773092936123032454032816810006460666476569228483231264400027",
+   "type": "TRADE",
+   "usdc_size": 2.072
+  },
+  {
+   "condition_id": "0xd175952df3f4312096d408a699c922af54d31b17b8d22afb35e8f09016053de9",
+   "price": 0.0193470375,
+   "side": "BUY",
+   "size": 51.6875,
+   "timestamp": 1777508510,
+   "token_id": "61477801831524798796089965987254934417243412974006147429148311989757827359597",
+   "type": "TRADE",
+   "usdc_size": 1.04903
+  },
+  {
+   "condition_id": "0x41c3c7bf8412216091308ca8e2935a819cc1ecf585f7f14a359d3431949546db",
+   "price": 0.6899999586,
+   "side": "BUY",
+   "size": 2.898548,
+   "timestamp": 1777595542,
+   "token_id": "73353722662342990289981001091515897144819058003177208867036611740530556987426",
+   "type": "TRADE",
+   "usdc_size": 2.018588
+  },
+  {
+   "condition_id": "0x41c3c7bf8412216091308ca8e2935a819cc1ecf585f7f14a359d3431949546db",
+   "price": 0.6899999586,
+   "side": "BUY",
+   "size": 1.449274,
+   "timestamp": 1777679578,
+   "token_id": "73353722662342990289981001091515897144819058003177208867036611740530556987426",
+   "type": "TRADE",
+   "usdc_size": 1.009289
+  },
+  {
+   "condition_id": "0x41c3c7bf8412216091308ca8e2935a819cc1ecf585f7f14a359d3431949546db",
+   "price": 0.6899999586,
+   "side": "BUY",
+   "size": 1.449274,
+   "timestamp": 1777682268,
+   "token_id": "73353722662342990289981001091515897144819058003177208867036611740530556987426",
+   "type": "TRADE",
+   "usdc_size": 1.009289
+  },
+  {
+   "condition_id": "0x41c3c7bf8412216091308ca8e2935a819cc1ecf585f7f14a359d3431949546db",
+   "price": 0.0,
+   "side": "",
+   "size": 10.144921,
+   "timestamp": 1777897774,
+   "token_id": "",
+   "type": "REDEEM",
+   "usdc_size": 10.144921
+  },
+  {
+   "condition_id": "0x52847ca1413b76a5570b97c0c432e38dbe61b0140f9d45e912604591b08f6fca",
+   "price": 0.08,
+   "side": "BUY",
+   "size": 12.5,
+   "timestamp": 1777897864,
+   "token_id": "114248353339288476395516704859280406139740194553592209059241667781908210476009",
+   "type": "TRADE",
+   "usdc_size": 1.0276
+  },
+  {
+   "condition_id": "0x57630ca87de434c74db1c388ed88c1920a6d1dfcf4094ef14a415dcc5049babc",
+   "price": 0.5199998445,
+   "side": "BUY",
+   "size": 2.057691,
+   "timestamp": 1777898046,
+   "token_id": "75971664127723976087466985937865139676371988915908568595607526815212140357980",
+   "type": "TRADE",
+   "usdc_size": 1.095669
+  },
+  {
+   "condition_id": "0x7876e77675dbae67bca6071ff6423703f995d1028fb0a871eb0f0a25449c1113",
+   "price": 0.7299998102,
+   "side": "BUY",
+   "size": 1.369862,
+   "timestamp": 1778199168,
+   "token_id": "79382741024970186129797953653060145650913644152004475846293129040770185475674",
+   "type": "TRADE",
+   "usdc_size": 1.013489
+  },
+  {
+   "condition_id": "0xf74326b8b41bd86906a9af35fd5ee776649a928ae9e78adff88449904242a11a",
+   "price": 0.3899998479,
+   "side": "BUY",
+   "size": 2.564101,
+   "timestamp": 1778199231,
+   "token_id": "102868054808328798943086523853485532065959967413389275073290175909971770694705",
+   "type": "TRADE",
+   "usdc_size": 1.030489
+  },
+  {
+   "condition_id": "0x4435d57c325f205d59e78d12aab6a15163bdc0d4c756dba129fba075f9bb3e32",
+   "price": 0.7599999019,
+   "side": "BUY",
+   "size": 2.03947,
+   "timestamp": 1779155416,
+   "token_id": "110782358574335557425241876284413288352731878544597054685615651870789336191155",
+   "type": "TRADE",
+   "usdc_size": 1.561147
+  },
+  {
+   "condition_id": "0x206138f391fab114f9e279e5e940ba82b514bdac6b3ada364295e136621a3ba1",
+   "price": 0.72,
+   "side": "BUY",
+   "size": 2.027775,
+   "timestamp": 1779156921,
+   "token_id": "27763694306058370832829377074912676610106558852131879699467908493636255964315",
+   "type": "TRADE",
+   "usdc_size": 1.480428
+  },
+  {
+   "condition_id": "0x4435d57c325f205d59e78d12aab6a15163bdc0d4c756dba129fba075f9bb3e32",
+   "price": 0.4799998272,
+   "side": "BUY",
+   "size": 2.083332,
+   "timestamp": 1779156944,
+   "token_id": "110782358574335557425241876284413288352731878544597054685615651870789336191155",
+   "type": "TRADE",
+   "usdc_size": 1.015589
+  },
+  {
+   "condition_id": "0x4435d57c325f205d59e78d12aab6a15163bdc0d4c756dba129fba075f9bb3e32",
+   "price": 0.0,
+   "side": "",
+   "size": 4.122802,
+   "timestamp": 1779192117,
+   "token_id": "",
+   "type": "REDEEM",
+   "usdc_size": 4.122802
+  },
+  {
+   "condition_id": "0x56e3a277978cde35f4ddea3ddcf62eb0d4f2fb0b282fb9d227f0b4645281a0ab",
+   "price": 0.0699999363,
+   "side": "BUY",
+   "size": 14.285713,
+   "timestamp": 1779205903,
+   "token_id": "112891904558236423387089671454210955289526819579181706625419336283317436616675",
+   "type": "TRADE",
+   "usdc_size": 1.046489
+  },
+  {
+   "condition_id": "0x7876e77675dbae67bca6071ff6423703f995d1028fb0a871eb0f0a25449c1113",
+   "price": 0.0,
+   "side": "",
+   "size": 1.369862,
+   "timestamp": 1779282063,
+   "token_id": "",
+   "type": "REDEEM",
+   "usdc_size": 1.369862
+  },
+  {
+   "condition_id": "0x206138f391fab114f9e279e5e940ba82b514bdac6b3ada364295e136621a3ba1",
+   "price": 0.999,
+   "side": "SELL",
+   "size": 2.02,
+   "timestamp": 1779285791,
+   "token_id": "27763694306058370832829377074912676610106558852131879699467908493636255964315",
+   "type": "TRADE",
+   "usdc_size": 2.01788
+  },
+  {
+   "condition_id": "0x52847ca1413b76a5570b97c0c432e38dbe61b0140f9d45e912604591b08f6fca",
+   "price": 0.1209999055,
+   "side": "BUY",
+   "size": 8.264461,
+   "timestamp": 1779409530,
+   "token_id": "114248353339288476395516704859280406139740194553592209059241667781908210476009",
+   "type": "TRADE",
+   "usdc_size": 1.026359
+  },
+  {
+   "condition_id": "0x4e8557c944d1eb5478effff06805755005b8a845be09a7c4bad2283f23fae6ab",
+   "price": 0.5099998317,
+   "side": "BUY",
+   "size": 1.960783,
+   "timestamp": 1779409554,
+   "token_id": "11171613171305798332782747642251597750599888421395466899609872547629072059004",
+   "type": "TRADE",
+   "usdc_size": 1.014689
+  },
+  {
+   "condition_id": "0x4e8557c944d1eb5478effff06805755005b8a845be09a7c4bad2283f23fae6ab",
+   "price": 0.0,
+   "side": "",
+   "size": 1.960783,
+   "timestamp": 1779474969,
+   "token_id": "",
+   "type": "REDEEM",
+   "usdc_size": 1.960783
+  },
+  {
+   "condition_id": "0x52847ca1413b76a5570b97c0c432e38dbe61b0140f9d45e912604591b08f6fca",
+   "price": 0.1859999027,
+   "side": "BUY",
+   "size": 7.150536,
+   "timestamp": 1779474992,
+   "token_id": "114248353339288476395516704859280406139740194553592209059241667781908210476009",
+   "type": "TRADE",
+   "usdc_size": 1.362469
+  },
+  {
+   "condition_id": "0x76a404ed10bbfd8bceefbe9098867fa773217da825f0d63814678fab596a5f6d",
+   "price": 0.16,
+   "side": "BUY",
+   "size": 6.25,
+   "timestamp": 1779585184,
+   "token_id": "110318953828458642590135924448148426710747009024594491894356520693564229470539",
+   "type": "TRADE",
+   "usdc_size": 1.0252
+  },
+  {
+   "condition_id": "0x52847ca1413b76a5570b97c0c432e38dbe61b0140f9d45e912604591b08f6fca",
+   "price": 0.0170000004,
+   "side": "BUY",
+   "size": 58.823528,
+   "timestamp": 1780012290,
+   "token_id": "114248353339288476395516704859280406139740194553592209059241667781908210476009",
+   "type": "TRADE",
+   "usdc_size": 1.02948
+  }
+ ],
+ "gamma": [
+  {
+   "clobTokenIds": "[\"5963667090633809401874745693672490520503206693696243932960841034682531836868\", \"10929803792579394812588164769315078924618263870728384735881929060301477251567\"]",
+   "closed": false,
+   "conditionId": "0x03f73e665ef7f6221d6f54ee0aac09672f715a29717d67622bd36be6ceb0846f",
+   "feeSchedule": {
+    "exponent": 1,
+    "rate": 0.01,
+    "rebateRate": 0.25,
+    "takerOnly": true
+   },
+   "feesEnabled": true,
+   "outcomePrices": "[\"0.02\", \"0.98\"]",
+   "startDate": "2026-01-05T22:47:11.161Z",
+   "tags": [
+    {
+     "label": "Movies"
+    },
+    {
+     "label": "Culture"
+    },
+    {
+     "label": "Dunesday"
+    }
+   ]
+  },
+  {
+   "clobTokenIds": "[\"27763694306058370832829377074912676610106558852131879699467908493636255964315\", \"2076728750404873399320594263954432764934879528957567690506525351157701418604\"]",
+   "closed": true,
+   "closedTime": "2026-05-20 15:04:26+00",
+   "conditionId": "0x206138f391fab114f9e279e5e940ba82b514bdac6b3ada364295e136621a3ba1",
+   "feeSchedule": {
+    "exponent": 1,
+    "rate": 0.01,
+    "rebateRate": 0.25,
+    "takerOnly": true
+   },
+   "feesEnabled": true,
+   "outcomePrices": "[\"1\", \"0\"]",
+   "startDate": "2026-03-31T18:09:23.522087Z",
+   "tags": [
+    {
+     "label": "Movies"
+    },
+    {
+     "label": "Culture"
+    },
+    {
+     "label": "the boys"
+    }
+   ]
+  },
+  {
+   "clobTokenIds": "[\"73353722662342990289981001091515897144819058003177208867036611740530556987426\", \"16867133451433068864617281085761272239210395619187146622985719936438723008805\"]",
+   "closed": true,
+   "closedTime": "2026-05-04 03:09:44+00",
+   "conditionId": "0x41c3c7bf8412216091308ca8e2935a819cc1ecf585f7f14a359d3431949546db",
+   "feeSchedule": {
+    "exponent": 1,
+    "rate": 0.03,
+    "rebateRate": 0.25,
+    "takerOnly": true
+   },
+   "feesEnabled": true,
+   "outcomePrices": "[\"1\", \"0\"]",
+   "startDate": "2026-04-17T16:22:27.948459Z",
+   "tags": [
+    {
+     "label": "2026 NHL Playoffs"
+    },
+    {
+     "label": "Sports"
+    },
+    {
+     "label": "Hockey"
+    },
+    {
+     "label": "NHL"
+    },
+    {
+     "label": "Canadiens"
+    },
+    {
+     "label": "Lightning"
+    }
+   ]
+  },
+  {
+   "clobTokenIds": "[\"110782358574335557425241876284413288352731878544597054685615651870789336191155\", \"15457526108040204444228420815991935092806573821684146625351159461052194646140\"]",
+   "closed": true,
+   "closedTime": "2026-05-19 03:12:26+00",
+   "conditionId": "0x4435d57c325f205d59e78d12aab6a15163bdc0d4c756dba129fba075f9bb3e32",
+   "feeSchedule": {
+    "exponent": 1,
+    "rate": 0.03,
+    "rebateRate": 0.25,
+    "takerOnly": true
+   },
+   "feesEnabled": true,
+   "outcomePrices": "[\"1\", \"0\"]",
+   "startDate": "2026-05-17T16:47:05.356128Z",
+   "tags": [
+    {
+     "label": "Sports"
+    },
+    {
+     "label": "NHL"
+    },
+    {
+     "label": "Games"
+    },
+    {
+     "label": "Hockey"
+    }
+   ]
+  },
+  {
+   "clobTokenIds": "[\"11171613171305798332782747642251597750599888421395466899609872547629072059004\", \"13735444440897837252976012205509887891441688859055381092522546248740719229002\"]",
+   "closed": true,
+   "closedTime": "2026-05-22 03:33:44+00",
+   "conditionId": "0x4e8557c944d1eb5478effff06805755005b8a845be09a7c4bad2283f23fae6ab",
+   "feeSchedule": {
+    "exponent": 1,
+    "rate": 0.03,
+    "rebateRate": 0.25,
+    "takerOnly": true
+   },
+   "feesEnabled": true,
+   "outcomePrices": "[\"1\", \"0\"]",
+   "startDate": "2026-05-19T15:32:17.667699Z",
+   "tags": [
+    {
+     "label": "Sports"
+    },
+    {
+     "label": "NHL"
+    },
+    {
+     "label": "Games"
+    },
+    {
+     "label": "Hockey"
+    }
+   ]
+  },
+  {
+   "clobTokenIds": "[\"114248353339288476395516704859280406139740194553592209059241667781908210476009\", \"85705323099460694144578384076010167420188174879039498210125410497783582291911\"]",
+   "closed": true,
+   "closedTime": "2026-05-30 05:54:05+00",
+   "conditionId": "0x52847ca1413b76a5570b97c0c432e38dbe61b0140f9d45e912604591b08f6fca",
+   "feeSchedule": {
+    "exponent": 1,
+    "rate": 0.03,
+    "rebateRate": 0.25,
+    "takerOnly": true
+   },
+   "feesEnabled": true,
+   "outcomePrices": "[\"0\", \"1\"]",
+   "startDate": "2025-06-23T16:00:57.442213Z",
+   "tags": [
+    {
+     "label": "Sports"
+    },
+    {
+     "label": "NHL"
+    },
+    {
+     "label": "Hockey"
+    },
+    {
+     "label": "Stanley Cup"
+    },
+    {
+     "label": "2026 NHL Playoffs"
+    }
+   ]
+  },
+  {
+   "clobTokenIds": "[\"112891904558236423387089671454210955289526819579181706625419336283317436616675\", \"111043191182127603355307235343504536187236771595393503601532147027124575580226\"]",
+   "closed": true,
+   "closedTime": "2026-05-20 13:02:29+00",
+   "conditionId": "0x56e3a277978cde35f4ddea3ddcf62eb0d4f2fb0b282fb9d227f0b4645281a0ab",
+   "feeSchedule": {
+    "exponent": 1,
+    "rate": 0.01,
+    "rebateRate": 0.25,
+    "takerOnly": true
+   },
+   "feesEnabled": true,
+   "outcomePrices": "[\"0\", \"1\"]",
+   "startDate": "2026-03-05T22:58:22.526386Z",
+   "tags": [
+    {
+     "label": "Movies"
+    },
+    {
+     "label": "Culture"
+    },
+    {
+     "label": "the boys"
+    }
+   ]
+  },
+  {
+   "clobTokenIds": "[\"75971664127723976087466985937865139676371988915908568595607526815212140357980\", \"63288727222857538715525574191584916211293137089612615781724211046379219138896\"]",
+   "closed": false,
+   "conditionId": "0x57630ca87de434c74db1c388ed88c1920a6d1dfcf4094ef14a415dcc5049babc",
+   "feeSchedule": {
+    "exponent": 1,
+    "rate": 0.01,
+    "rebateRate": 0.25,
+    "takerOnly": true
+   },
+   "feesEnabled": true,
+   "outcomePrices": "[\"0.065\", \"0.935\"]",
+   "startDate": "2025-12-05T05:44:10.57Z",
+   "tags": [
+    {
+     "label": "Canada"
+    },
+    {
+     "label": "Celebrities"
+    },
+    {
+     "label": "Culture"
+    }
+   ]
+  },
+  {
+   "clobTokenIds": "[\"110318953828458642590135924448148426710747009024594491894356520693564229470539\", \"37435467795050056528717008811162133859289856993419735557660838542081046347305\"]",
+   "closed": true,
+   "closedTime": "2026-05-24 02:23:46+00",
+   "conditionId": "0x76a404ed10bbfd8bceefbe9098867fa773217da825f0d63814678fab596a5f6d",
+   "feeSchedule": {
+    "exponent": 1,
+    "rate": 0.03,
+    "rebateRate": 0.25,
+    "takerOnly": true
+   },
+   "feesEnabled": true,
+   "outcomePrices": "[\"0\", \"1\"]",
+   "startDate": "2026-05-19T15:32:40.72521Z",
+   "tags": [
+    {
+     "label": "Sports"
+    },
+    {
+     "label": "NHL"
+    },
+    {
+     "label": "Games"
+    },
+    {
+     "label": "Hockey"
+    }
+   ]
+  },
+  {
+   "clobTokenIds": "[\"79382741024970186129797953653060145650913644152004475846293129040770185475674\", \"63035906583757120013480067674321540884322606291246053381350800176885198268634\"]",
+   "closed": true,
+   "closedTime": "2026-05-20 12:56:25+00",
+   "conditionId": "0x7876e77675dbae67bca6071ff6423703f995d1028fb0a871eb0f0a25449c1113",
+   "feeSchedule": {
+    "exponent": 1,
+    "rate": 0.01,
+    "rebateRate": 0.25,
+    "takerOnly": true
+   },
+   "feesEnabled": true,
+   "outcomePrices": "[\"1\", \"0\"]",
+   "startDate": "2026-03-05T22:58:28.813385Z",
+   "tags": [
+    {
+     "label": "Movies"
+    },
+    {
+     "label": "Culture"
+    },
+    {
+     "label": "the boys"
+    }
+   ]
+  },
+  {
+   "clobTokenIds": "[\"51879356623960339702517935610541417453102128871576127477151302298376463079921\", \"111818479229240828290208367364714178426200902608714241010568675631099799914850\"]",
+   "closed": true,
+   "closedTime": "2026-05-07 22:49:05+00",
+   "conditionId": "0xa919b6a7cc8c958d82141ec2ba77b8fe813083a7ee2083178305c409ae28ce0d",
+   "feeSchedule": {
+    "exponent": 1,
+    "rate": 0.01,
+    "rebateRate": 0.25,
+    "takerOnly": true
+   },
+   "feesEnabled": true,
+   "outcomePrices": "[\"0\", \"1\"]",
+   "startDate": "2026-02-06T22:23:47.146223Z",
+   "tags": [
+    {
+     "label": "Mexico"
+    },
+    {
+     "label": "Economy"
+    },
+    {
+     "label": "Economic Policy"
+    },
+    {
+     "label": "Global Rates"
+    },
+    {
+     "label": "Banxico"
+    }
+   ]
+  },
+  {
+   "clobTokenIds": "[\"62672831099052856773092936123032454032816810006460666476569228483231264400027\", \"97832856862127986027766147933852971526937878635748074587497266036978127808919\"]",
+   "closed": true,
+   "closedTime": "2026-10-06 05:10:42+00",
+   "conditionId": "0xc7bc5d759ecbd05cfbf3b41ec98f1cd7ab306234bf76fd6c1768d3be1d6b9e76",
+   "feeSchedule": {
+    "exponent": 1,
+    "rate": 0.01,
+    "rebateRate": 0.25,
+    "takerOnly": true
+   },
+   "feesEnabled": true,
+   "outcomePrices": "[\"0\", \"1\"]",
+   "startDate": "2025-12-02T17:15:34.40184Z",
+   "tags": [
+    {
+     "label": "Politics"
+    },
+    {
+     "label": "Elections"
+    },
+    {
+     "label": "Canada"
+    },
+    {
+     "label": "Global Elections"
+    },
+    {
+     "label": "World Elections"
+    },
+    {
+     "label": "World"
+    },
+    {
+     "label": "Quebec Elections"
+    },
+    {
+     "label": "Main Election"
+    }
+   ]
+  },
+  {
+   "clobTokenIds": "[\"61477801831524798796089965987254934417243412974006147429148311989757827359597\", \"340613496372671895707476886213473430604404111701874901576265026766831932235\"]",
+   "closed": true,
+   "closedTime": "2026-06-16 05:24:57+00",
+   "conditionId": "0xd175952df3f4312096d408a699c922af54d31b17b8d22afb35e8f09016053de9",
+   "feeSchedule": {
+    "exponent": 1,
+    "rate": 0.01,
+    "rebateRate": 0.25,
+    "takerOnly": true
+   },
+   "feesEnabled": true,
+   "outcomePrices": "[\"0\", \"1\"]",
+   "startDate": "2026-03-19T23:17:17.330539Z",
+   "tags": [
+    {
+     "label": "interest rates"
+    },
+    {
+     "label": "Economy"
+    },
+    {
+     "label": "Japan"
+    },
+    {
+     "label": "Economic Policy"
+    },
+    {
+     "label": "World"
+    },
+    {
+     "label": "Global Rates"
+    }
+   ]
+  },
+  {
+   "clobTokenIds": "[\"102868054808328798943086523853485532065959967413389275073290175909971770694705\", \"59571204071500297875439531203506191344653235788512782193115280847012931149928\"]",
+   "closed": true,
+   "closedTime": "2026-05-20 15:10:32+00",
+   "conditionId": "0xf74326b8b41bd86906a9af35fd5ee776649a928ae9e78adff88449904242a11a",
+   "feeSchedule": {
+    "exponent": 1,
+    "rate": 0.01,
+    "rebateRate": 0.25,
+    "takerOnly": true
+   },
+   "feesEnabled": true,
+   "outcomePrices": "[\"0\", \"1\"]",
+   "startDate": "2026-03-05T22:58:31.178877Z",
+   "tags": [
+    {
+     "label": "Movies"
+    },
+    {
+     "label": "Culture"
+    },
+    {
+     "label": "the boys"
+    }
+   ]
+  }
+ ],
+ "positions_closed": [
+  {
+   "condition_id": "0x41c3c7bf8412216091308ca8e2935a819cc1ecf585f7f14a359d3431949546db",
+   "first_entry_at": 1777506018,
+   "last_event_at": 1777897774,
+   "token_id": "73353722662342990289981001091515897144819058003177208867036611740530556987426",
+   "total_size": 10.1449
+  },
+  {
+   "condition_id": "0x4435d57c325f205d59e78d12aab6a15163bdc0d4c756dba129fba075f9bb3e32",
+   "first_entry_at": 1779155416,
+   "last_event_at": 1779192117,
+   "token_id": "110782358574335557425241876284413288352731878544597054685615651870789336191155",
+   "total_size": 4.1228
+  },
+  {
+   "condition_id": "0x7876e77675dbae67bca6071ff6423703f995d1028fb0a871eb0f0a25449c1113",
+   "first_entry_at": 1778199168,
+   "last_event_at": 1779282063,
+   "token_id": "79382741024970186129797953653060145650913644152004475846293129040770185475674",
+   "total_size": 1.3698
+  },
+  {
+   "condition_id": "0x206138f391fab114f9e279e5e940ba82b514bdac6b3ada364295e136621a3ba1",
+   "first_entry_at": 1779156921,
+   "last_event_at": 1779289466,
+   "token_id": "27763694306058370832829377074912676610106558852131879699467908493636255964315",
+   "total_size": 2.0277
+  },
+  {
+   "condition_id": "0x4e8557c944d1eb5478effff06805755005b8a845be09a7c4bad2283f23fae6ab",
+   "first_entry_at": 1779409554,
+   "last_event_at": 1779474969,
+   "token_id": "11171613171305798332782747642251597750599888421395466899609872547629072059004",
+   "total_size": 1.9607
+  }
+ ],
+ "positions_open": [
+  {
+   "condition_id": "0x57630ca87de434c74db1c388ed88c1920a6d1dfcf4094ef14a415dcc5049babc",
+   "first_entry_at": 1777898046,
+   "last_event_at": 1777898046,
+   "token_id": "75971664127723976087466985937865139676371988915908568595607526815212140357980",
+   "total_size": 2.0576
+  },
+  {
+   "condition_id": "0x03f73e665ef7f6221d6f54ee0aac09672f715a29717d67622bd36be6ceb0846f",
+   "first_entry_at": 1777505382,
+   "last_event_at": 1777505382,
+   "token_id": "5963667090633809401874745693672490520503206693696243932960841034682531836868",
+   "total_size": 10.0
+  },
+  {
+   "condition_id": "0xf74326b8b41bd86906a9af35fd5ee776649a928ae9e78adff88449904242a11a",
+   "first_entry_at": 1778199231,
+   "last_event_at": 1779289832,
+   "token_id": "102868054808328798943086523853485532065959967413389275073290175909971770694705",
+   "total_size": 2.5641
+  },
+  {
+   "condition_id": "0x76a404ed10bbfd8bceefbe9098867fa773217da825f0d63814678fab596a5f6d",
+   "first_entry_at": 1779585184,
+   "last_event_at": 1779589426,
+   "token_id": "110318953828458642590135924448148426710747009024594491894356520693564229470539",
+   "total_size": 6.25
+  },
+  {
+   "condition_id": "0x56e3a277978cde35f4ddea3ddcf62eb0d4f2fb0b282fb9d227f0b4645281a0ab",
+   "first_entry_at": 1779205903,
+   "last_event_at": 1779282149,
+   "token_id": "112891904558236423387089671454210955289526819579181706625419336283317436616675",
+   "total_size": 14.2857
+  },
+  {
+   "condition_id": "0x52847ca1413b76a5570b97c0c432e38dbe61b0140f9d45e912604591b08f6fca",
+   "first_entry_at": 1777897864,
+   "last_event_at": 1780120445,
+   "token_id": "114248353339288476395516704859280406139740194553592209059241667781908210476009",
+   "total_size": 86.7385
+  },
+  {
+   "condition_id": "0xa919b6a7cc8c958d82141ec2ba77b8fe813083a7ee2083178305c409ae28ce0d",
+   "first_entry_at": 1777505436,
+   "last_event_at": 1778194145,
+   "token_id": "51879356623960339702517935610541417453102128871576127477151302298376463079921",
+   "total_size": 12.5
+  },
+  {
+   "condition_id": "0xd175952df3f4312096d408a699c922af54d31b17b8d22afb35e8f09016053de9",
+   "first_entry_at": 1777508510,
+   "last_event_at": 1781587497,
+   "token_id": "61477801831524798796089965987254934417243412974006147429148311989757827359597",
+   "total_size": 51.6875
+  },
+  {
+   "condition_id": "0xc7bc5d759ecbd05cfbf3b41ec98f1cd7ab306234bf76fd6c1768d3be1d6b9e76",
+   "first_entry_at": 1777508324,
+   "last_event_at": 1791263442,
+   "token_id": "62672831099052856773092936123032454032816810006460666476569228483231264400027",
+   "total_size": 20.0
+  }
+ ],
+ "source": "spike/raw/sample/capture (Data API v2, 2026-10-23) and Gamma /markets with include_tag (2026-11-20)",
+ "wallet": "0x0f4b0a6b7f82108924ac9c8320ed91028f504183"
+}

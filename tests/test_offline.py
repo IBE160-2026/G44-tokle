@@ -160,7 +160,7 @@ def test_round_trip_gives_each_synthetic_wallet_its_bets_and_verdict(loaded: Sto
     wallet = next(w for w in synthetic.small_wallets() if w.name == name)
     snapshot = loaded.latest_snapshot(wallet.address)
     assert snapshot is not None
-    built = build_positions(snapshot.activity, {m.condition_id: m for m in snapshot.markets})
+    built = build_positions(snapshot.activity, {m.condition_id: m for m in snapshot.markets}, listed=snapshot.positions)
     assert (len(built.tested), len(built.slivers), len(built.left_out)) == (
         answer["tested"], answer["slivers"], answer["left_out"])
     result = skill_result(loaded, wallet.address, seed=SEED)
@@ -178,7 +178,7 @@ def test_round_trip_result_equals_the_direct_result(loaded: Store) -> None:
     """AD-14, AD-15: the stored path gives the identical Skill Test result as the generator's own records."""
     for wallet in generated():
         markets = {m.condition_id: m for m in wallet.markets}
-        direct = skill_test(build_positions(wallet.activity, markets), seed=SEED, unit_id=wallet.address)
+        direct = skill_test(build_positions(wallet.activity, markets, listed=wallet.positions), seed=SEED, unit_id=wallet.address)
         assert skill_result(loaded, wallet.address.upper().replace("0X", "0x"), seed=SEED) == direct
 
 

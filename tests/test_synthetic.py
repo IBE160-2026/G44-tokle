@@ -32,7 +32,7 @@ SMALL = {wallet.name: wallet for wallet in synthetic.small_wallets()}
 
 
 def positions(wallet: SampleWallet) -> PositionSet:
-    return build_positions(wallet.activity, {m.condition_id: m for m in wallet.markets})
+    return build_positions(wallet.activity, {m.condition_id: m for m in wallet.markets}, listed=wallet.positions)
 
 
 def real_pnl(position_set: PositionSet) -> float:

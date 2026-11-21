@@ -6,8 +6,8 @@ import random
 
 import pytest
 
-from liquidoracle.core.positions import build_positions, is_resolved
-from liquidoracle.records import ActivityRow, ExclusionReason, Market, Position, PositionSet
+from liquidoracle.core.positions import build_positions, fee_passes, is_resolved, mostly_left_out
+from liquidoracle.records import ActivityRow, ExclusionReason, ListedPosition, Market, Position, PositionSet
 
 CENT = 0.005  # tests compare money to the cent (Consistency Conventions)
 
@@ -22,7 +22,10 @@ def market(
     closed_time: int | None = 1_750_000_000,
     prices: tuple[float, ...] = (1.0, 0.0),
     fees: bool = False,
+    schedule: tuple[float, float] | None = (0.03, 1.0),
 ) -> Market:
+    """A fee Market gets Gamma's usual taker schedule, rate 0.03 and exponent 1, unless told otherwise (AD-12)."""
+    rate, exponent = schedule if fees and schedule else (None, None)
     return Market(
         condition_id=condition_id,
         closed=closed,
@@ -30,6 +33,8 @@ def market(
         token_ids=(YES, NO),
         outcome_prices=prices,
         fees_enabled=fees,
+        fee_rate=rate,
+        fee_exponent=exponent,
     )
 
 
@@ -46,8 +51,22 @@ def market_row(kind: str, *, cid: str = M) -> ActivityRow:
     return ActivityRow(kind, cid, 3, 100.0, 100.0, 0.5)
 
 
-def build(fills: list[ActivityRow], *markets: Market) -> PositionSet:
-    return build_positions(fills, {m.condition_id: m for m in (markets or (market(),))})
+def listed_for(fills: list[ActivityRow]) -> list[ListedPosition]:
+    """A positions list that agrees with the fills: one row per traded token, shares bought = its BUY sizes (AD-10)."""
+    bought: dict[tuple[str, str], float] = {}
+    times: dict[tuple[str, str], list[int]] = {}
+    for row in fills:
+        if row.type == "TRADE" and row.token_id:
+            key = (row.condition_id, row.token_id)
+            bought[key] = bought.get(key, 0.0) + (row.size if row.side == "BUY" else 0.0)
+            times.setdefault(key, []).append(row.timestamp)
+    return [ListedPosition(c, t, "CLOSED", bought[(c, t)], min(times[(c, t)]), max(times[(c, t)])) for c, t in sorted(bought)]
+
+
+def build(fills: list[ActivityRow], *markets: Market, listed: list[ListedPosition] | None = None) -> PositionSet:
+    return build_positions(
+        fills, {m.condition_id: m for m in (markets or (market(),))}, listed=listed_for(fills) if listed is None else listed
+    )
 
 
 def only(result: PositionSet) -> Position:
@@ -156,12 +175,14 @@ def test_selling_more_than_bought_is_not_explained() -> None:
     assert position.shares_held == -20
 
 
-def test_a_token_with_sells_only_is_not_explained() -> None:
-    """AD-11: a SELL with no BUY has no Entry Price and is left out as 'not explained'."""
-    position = only(build([sell(50, 0.50)]))
-    assert position.reason is ExclusionReason.NOT_EXPLAINED
-    assert position.entry_price is None
-    assert position.exit_pnl is None
+def test_a_token_with_sells_only_is_left_out_without_an_entry_price() -> None:
+    """AD-11: a SELL with no BUY has no Entry Price. Since Story 2.3 it is left out by the list checks
+    before 'not explained' is reached: a share gap of 1 when listed, 'only in activity rows' when not."""
+    listed_one = only(build([sell(50, 0.50)]))
+    assert (listed_one.reason, listed_one.share_gap) == (ExclusionReason.SHARE_GAP, 1.0)
+    assert listed_one.entry_price is None
+    assert listed_one.exit_pnl is None
+    assert only(build([sell(50, 0.50)], listed=[])).reason is ExclusionReason.ONLY_IN_ACTIVITY
 
 
 @pytest.mark.parametrize("kind", ["SPLIT", "MERGE", "CONVERSION"])
@@ -226,7 +247,7 @@ def test_redeem_rows_never_change_shares() -> None:
 
 
 def test_own_fee_is_cash_paid_minus_shares_times_price() -> None:
-    """AD-12: in a fee Market, 100 shares @ 0.50 paid with 50.75 cash give an Own Fee of 0.75."""
+    """AD-12: in a fee Market, 100 shares @ 0.50 paid with 50.75 cash give an Own Fee of 0.75 (= 100 x 0.03 x 0.5 x 0.5, so it passes)."""
     position = only(build([buy(100, 0.50, cash=50.75)], market(fees=True)))
     assert position.own_fees == pytest.approx(0.75, abs=CENT)
 
@@ -303,11 +324,11 @@ def test_builder_is_pure_and_order_independent() -> None:
         buy(12.5, 0.55, cid="0xc", t=5),
     ]
     markets = {c: market(c, fees=True) for c in ("0xa", "0xb", "0xc")}
-    first = build_positions(fills, markets)
+    first = build_positions(fills, markets, listed=listed_for(fills))
     shuffled = list(fills)
     random.Random(44).shuffle(shuffled)
-    assert build_positions(shuffled, markets) == first
-    assert build_positions(iter(fills), markets) == first
+    assert build_positions(shuffled, markets, listed=listed_for(fills)[::-1]) == first
+    assert build_positions(iter(fills), markets, listed=iter(listed_for(fills))) == first
     assert [(p.condition_id, p.token_id) for p in first.tested] == sorted((p.condition_id, p.token_id) for p in first.tested)
 
 
@@ -329,14 +350,13 @@ def test_malformed_rows_are_refused(bad: ActivityRow) -> None:
 def test_not_fully_read_positions_are_left_out_and_counted() -> None:
     """AD-7, AD-11: every Position in a Market the capped activity read did not finish is left out as
     "not fully read": one with fills read keeps its numbers, one with none read is still counted."""
-    from liquidoracle.records import ListedPosition
-
     later = "0xlater"
     unread_with_fill = ListedPosition(later, YES, "CLOSED", 10.0, 1, 5)
     unread_without = ListedPosition(later, NO, "OPEN", 4.0, 1, 5)
     result = build_positions(
         [buy(10, 0.4), buy(10, 0.3, cid=later)],
         {M: market(), later: market(later)},
+        listed=[*listed_for([buy(10, 0.4)]), unread_with_fill, unread_without],
         not_fully_read=[unread_with_fill, unread_without],
     )
     assert len(result.tested) == 1  # the fully read Market is untouched
@@ -346,3 +366,194 @@ def test_not_fully_read_positions_are_left_out_and_counted() -> None:
     assert result.window_size == 3
     bare = next(p for p in result.left_out if p.token_id == NO)
     assert (bare.shares_bought, bare.entry_price, bare.outcome) == (4.0, None, 0.0)
+
+
+# --- Story 2.3: the positions lists, the fee check and the left-out share --------------------
+
+def listed(shares: float, *, token: str = YES, cid: str = M, status: str = "CLOSED") -> ListedPosition:
+    return ListedPosition(cid, token, status, shares, 1, 2)
+
+
+def test_a_token_only_in_activity_rows_is_left_out() -> None:
+    """AD-11, FR-3: a traded token on neither positions list is left out as 'only in activity rows', with no gap."""
+    position = only(build([buy(100, 0.40)], listed=[]))
+    assert position.reason is ExclusionReason.ONLY_IN_ACTIVITY
+    assert position.share_gap is None
+
+
+def test_a_share_gap_above_one_percent_is_left_out_with_its_size() -> None:
+    """AD-11: listed 5,000 against 4,895 bought in the activity rows is a 2.1% gap, left out with the gap stored."""
+    position = only(build([buy(4895, 0.40)], listed=[listed(5000)]))
+    assert position.reason is ExclusionReason.SHARE_GAP
+    assert position.share_gap == pytest.approx(0.021)
+
+
+@pytest.mark.parametrize(("listed_shares", "bought"), [(100, 99), (99, 100), (7, 6.93)])
+def test_a_gap_of_exactly_one_percent_is_not_a_share_gap(listed_shares: float, bought: float) -> None:
+    """AD-11: exactly 1% either way (and 0.07 of 7, which floats make 1.0000000000000009%) stays in the test."""
+    position = only(build([buy(bought, 0.40)], listed=[listed(listed_shares)]))
+    assert position.reason is None
+    assert position.share_gap == pytest.approx(0.01)
+
+
+def test_just_over_one_percent_is_a_share_gap() -> None:
+    """AD-11: 98.9 bought against 100 listed is a 1.1% gap."""
+    assert only(build([buy(98.9, 0.40)], listed=[listed(100)])).reason is ExclusionReason.SHARE_GAP
+
+
+def test_a_listed_position_with_no_fill_is_counted_as_a_share_gap() -> None:
+    """AD-11 (Story 2.3): a listed Position with no TRADE row (0x091596's conversion outputs) no longer vanishes:
+    it is counted, left out as 'share gap' with gap 1."""
+    result = build([buy(100, 0.40)], listed=[listed(100), listed(1666.6666, token=NO)])
+    assert result.tested_count == 1
+    bare = only(PositionSet(tested=(), slivers=(), left_out=result.left_out))
+    assert (bare.token_id, bare.reason, bare.share_gap, bare.entry_price) == (NO, ExclusionReason.SHARE_GAP, 1.0, None)
+    assert result.window_size == 2
+
+
+def test_a_listed_position_with_zero_shares_and_no_fill_is_counted() -> None:
+    """AD-11 (review): a list row of 0 shares with no fill neither crashes nor reads as 'sold before resolution';
+    nothing was bought, so it is a share gap of 1, and it is counted."""
+    result = build([], listed=[listed(0.0)])
+    position = only(result)
+    assert (position.reason, position.share_gap) == (ExclusionReason.SHARE_GAP, 1.0)
+    assert result.window_size == 1
+
+
+def test_not_fully_read_beats_the_list_checks_and_a_gap_beats_selling_first() -> None:
+    """AD-11 order (review): an unread Market wins over a share gap; a share gap wins over 'not explained'."""
+    unread = listed(200)
+    result = build_positions([buy(100, 0.4)], {M: market()}, listed=[unread], not_fully_read=[unread])
+    assert only(result).reason is ExclusionReason.NOT_FULLY_READ
+    gap_and_sold_first = only(build([sell(10, 0.5, t=1), buy(30, 0.4, t=2)], listed=[listed(60)]))
+    assert gap_and_sold_first.reason is ExclusionReason.SHARE_GAP
+
+
+def test_list_reasons_come_after_split_and_unclear_and_before_sold() -> None:
+    """AD-11 order (Story 2.3): unclear, split or merged, only in activity rows, share gap, sold before resolution."""
+    split = market_row("SPLIT")
+    assert only(build([split], listed=[listed(50)])).reason is ExclusionReason.SPLIT_OR_MERGED
+    assert only(build([buy(10, 0.4), split], listed=[])).reason is ExclusionReason.SPLIT_OR_MERGED
+    unclear = market(prices=(0.5, 0.5))
+    assert only(build([buy(10, 0.4)], unclear, listed=[])).reason is ExclusionReason.UNCLEAR_RESOLUTION
+    gap_and_sold = only(build([buy(100, 0.4), sell(100, 0.5)], listed=[listed(200)]))
+    assert gap_and_sold.reason is ExclusionReason.SHARE_GAP
+    only_and_gap = only(build([buy(100, 0.4)], listed=[listed(200, cid="0xother")]))
+    assert only_and_gap.reason is ExclusionReason.ONLY_IN_ACTIVITY
+
+
+def test_listed_positions_outside_the_window_are_ignored() -> None:
+    """AD-7: a listed Position in a Market that is not closed, or not known, is outside the window."""
+    result = build([], market(closed=False), listed=[listed(10), listed(10, cid="0xunknown")])
+    assert result.window_size == 0
+
+
+def test_selling_before_buying_is_not_explained_even_with_shares_left() -> None:
+    """AD-11 (Edvard, 2026-11-21): SELL 10 then BUY 30 ends with 20 held, but the shares sold came from
+    outside the fills, so the share count cannot be trusted: 'not explained'."""
+    position = only(build([sell(10, 0.5, t=1), buy(30, 0.4, t=2)]))
+    assert position.shares_held == 20
+    assert position.reason is ExclusionReason.NOT_EXPLAINED
+
+
+def test_a_sell_and_a_buy_in_the_same_second_count_the_buy_first() -> None:
+    """AD-11: within one second the order of rows is unknown, so buys count first."""
+    position = only(build([sell(10, 0.5, t=5), buy(30, 0.4, t=5)]))
+    assert position.reason is None
+    assert position.shares_held == 20
+
+
+@pytest.mark.parametrize("side", ["before", "after"])
+def test_the_same_rules_apply_on_both_sides_of_the_cut_off_date(side: str) -> None:
+    """AD-11, FR-3: the builder has no notion of the date; the same fills a year before or after
+    1 July 2025 give the same reasons, gaps and fees."""
+    cut_off = 1_751_328_000  # 2025-07-01 00:00 UTC
+    shift = -365 * 86_400 if side == "before" else 365 * 86_400
+    t = cut_off + shift
+    a, b, c, d = "0xa", "0xb", "0xc", "0xd"
+    fills = [
+        buy(100, 0.4, cid=a, t=t), buy(100, 0.4, cid=b, t=t), buy(4895, 0.4, cid=c, t=t),
+        sell(10, 0.5, cid=d, t=t), buy(30, 0.4, cid=d, t=t + 1), buy(100, 0.5, cid=a, t=t, token=NO, cash=50.75),
+    ]
+    markets = [market(x, closed_time=t + 86_400, fees=True) for x in (a, b, c, d)]
+    result = build(fills, *markets, listed=[listed(100, cid=a), listed(100, cid=a, token=NO), listed(5000, cid=c),
+                                             listed(30, cid=d)])
+    reasons = sorted((p.condition_id, p.token_id, p.reason) for p in result.left_out)
+    assert reasons == [(b, YES, ExclusionReason.ONLY_IN_ACTIVITY), (c, YES, ExclusionReason.SHARE_GAP),
+                       (d, YES, ExclusionReason.NOT_EXPLAINED)]
+    assert [(p.token_id, round(p.own_fees, 6)) for p in result.tested] == [(NO, 0.75), (YES, 0.0)]
+
+
+# The fee check (AD-12): rate 0.03, exponent 1, so 100 shares at 0.50 owe 0.75.
+
+def fee_buy(fee: float, *, size: float = 100, price: float = 0.50) -> ActivityRow:
+    return buy(size, price, cash=size * price + fee)
+
+
+def test_a_taker_fee_on_schedule_passes_and_counts() -> None:
+    """AD-12: 0.75 on 100 shares at 0.50 in a 3% Market is the scheduled fee; within $0.0001 of it passes."""
+    for fee in (0.75, 0.75009, 0.74991):
+        position = only(build([fee_buy(fee)], market(fees=True)))
+        assert position.own_fees == pytest.approx(fee, abs=1e-9)
+        assert position.failed_fee_count == 0
+
+
+def test_a_maker_fill_passes_and_counts_as_exactly_zero() -> None:
+    """AD-12: a maker fill pays no fee; real rows leave a rounding gap such as -5.1e-7, which counts as 0."""
+    position = only(build([fee_buy(-5.1e-7), fee_buy(0.0)], market(fees=True)))
+    assert position.own_fees == 0.0
+    assert position.failed_fee_count == 0
+
+
+def test_a_negative_fee_fails_counts_as_zero_and_keeps_the_position() -> None:
+    """AD-12 (moved from Story 2.2): a fee of -0.50 fails, counts as 0, is recorded with its value, and its
+    Position stays in the test."""
+    result = build([fee_buy(-0.50), fee_buy(0.75)], market(fees=True))
+    position = only(result)
+    assert position.reason is None and position in result.tested
+    assert position.own_fees == pytest.approx(0.75)
+    assert (position.failed_fee_count, position.failed_fees) == (1, pytest.approx(-0.50))
+    assert (result.failed_fee_count, result.failed_fee_total) == (1, pytest.approx(-0.50))
+
+
+def test_a_fee_off_schedule_fails() -> None:
+    """AD-12: 1.25 where the schedule says 0.75 (a 5% fill in a Market now at 3%) fails, as does 0.7502."""
+    for fee in (1.25, 0.7502, 0.3):
+        position = only(build([fee_buy(fee)], market(fees=True)))
+        assert position.own_fees == 0.0
+        assert (position.failed_fee_count, position.failed_fees) == (1, pytest.approx(fee))
+
+
+def test_with_no_schedule_only_a_zero_fee_passes() -> None:
+    """AD-12: fees enabled but no `feeSchedule`: nothing to check a fee against, so only a maker fill passes."""
+    no_schedule = market(fees=True, schedule=None)
+    assert only(build([fee_buy(0.0)], no_schedule)).failed_fee_count == 0
+    assert only(build([fee_buy(0.75)], no_schedule)).failed_fee_count == 1
+
+
+def test_the_exponent_is_applied_to_p_times_one_minus_p() -> None:
+    """AD-12: expected fee = shares x rate x (p(1-p))^exponent; with exponent 2, 100 x 0.03 x 0.0625 = 0.1875."""
+    squared = market(fees=True, schedule=(0.03, 2.0))
+    assert fee_passes(0.1875, 100, 0.50, squared)
+    assert not fee_passes(0.75, 100, 0.50, squared)
+
+
+def test_only_counted_positions_carry_failed_fees_to_the_card() -> None:
+    """AD-12: a failed fee in a left-out Position never counts in Real PnL, so the card does not list it."""
+    a, b = "0xa", "0xb"
+    fills = [buy(100, 0.5, cid=a, cash=60), buy(100, 0.5, cid=b, cash=60), sell(100, 0.6, cid=b)]
+    result = build(fills, market(a, fees=True), market(b, fees=True))
+    assert result.left_out[0].failed_fee_count == 1
+    assert (result.failed_fee_count, result.failed_fee_total) == (1, pytest.approx(10.0))
+
+
+def test_the_left_out_share_and_the_ten_percent_flag() -> None:
+    """FR-11, AD-11: 3 of 20 left out is 15%, flag on; 2 of 20 is exactly 10%, flag off; an empty window is 0%."""
+    def window(left: int) -> PositionSet:
+        tested = [buy(10, 0.4, cid=f"0x{i:02}") for i in range(20 - left)]
+        sold = [row for i in range(20 - left, 20) for row in (buy(10, 0.4, cid=f"0x{i:02}"), sell(10, 0.5, cid=f"0x{i:02}"))]
+        return build(tested + sold, *(market(f"0x{i:02}") for i in range(20)))
+
+    assert (window(3).left_out_share, mostly_left_out(window(3))) == (0.15, True)
+    assert (window(2).left_out_share, mostly_left_out(window(2))) == (0.10, False)
+    assert build([]).left_out_share == 0.0

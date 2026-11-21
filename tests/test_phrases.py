@@ -164,7 +164,7 @@ def test_ad25_story_1_3_wallets_read_as_expected():
     """
     read = {}
     for wallet in synthetic.small_wallets():
-        position_set = build_positions(wallet.activity, {m.condition_id: m for m in wallet.markets})
+        position_set = build_positions(wallet.activity, {m.condition_id: m for m in wallet.markets}, listed=wallet.positions)
         result = skilltest.skill_test(position_set, seed=SEED, unit_id=wallet.address)
         if result.p_value is None:
             read[wallet.name] = phrases.not_enough_data(result.tested_count)

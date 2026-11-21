@@ -50,7 +50,7 @@ GOLDEN = {
 
 
 def positions(wallet: SampleWallet) -> PositionSet:
-    return build_positions(wallet.activity, {m.condition_id: m for m in wallet.markets})
+    return build_positions(wallet.activity, {m.condition_id: m for m in wallet.markets}, listed=wallet.positions)
 
 
 def bet(i: int, price: float, won: bool, *, shares: float = 100.0, fees: float = 0.0, side: int = 0) -> Position:
@@ -337,7 +337,7 @@ from liquidoracle.core.positions import build_positions
 from liquidoracle.data import synthetic
 out = {{}}
 for w in synthetic.small_wallets():
-    built = build_positions(w.activity, {{m.condition_id: m for m in w.markets}})
+    built = build_positions(w.activity, {{m.condition_id: m for m in w.markets}}, listed=w.positions)
     r = skilltest.skill_test(built, seed={SEED}, unit_id=w.address)
     out[w.name] = [r.p_value, str(r.verdict), r.at_or_above]
 print(json.dumps(out, sort_keys=True))
@@ -488,3 +488,12 @@ def test_a_1000_position_wallet_takes_under_10_seconds() -> None:
     elapsed = time.perf_counter() - started
     assert result.p_value is not None
     assert elapsed < 10.0, elapsed
+
+
+def test_a_negative_own_fee_is_refused() -> None:
+    """AD-12 (Story 2.3): the builder's fee check never passes a negative fee, so one reaching the Skill Test is a bug."""
+    wallet = SMALL["sharp-trader"]
+    built = positions(wallet)
+    broken = replace(built, tested=(replace(built.tested[0], own_fees=-0.01), *built.tested[1:]))
+    with pytest.raises(ValueError, match="negative Own Fee"):
+        skilltest.skill_test(broken, seed=SEED, unit_id=wallet.address)

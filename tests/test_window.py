@@ -18,7 +18,7 @@ from pathlib import Path
 import pytest
 from fake_polymarket import FakeClock, FakePolymarket, FakeTransport
 
-from liquidoracle.core.positions import build_positions
+from liquidoracle.core.positions import build_positions, mostly_left_out
 from liquidoracle.data import offline as offline_module
 from liquidoracle.data import sample_json
 from liquidoracle.data.errors import PolymarketUnavailable
@@ -26,7 +26,7 @@ from liquidoracle.data.offline import OfflineClient
 from liquidoracle.data.polymarket import PolymarketClient
 from liquidoracle.data.store import Store
 from liquidoracle.data.window import ACTIVITY_ROW_CAP, positions_near
-from liquidoracle.records import ExclusionReason, ListedPosition, Market, SampleWallet
+from liquidoracle.records import ExclusionReason, ListedPosition, Market, PositionSet, SampleWallet, Window
 from liquidoracle.services import fetch as fetch_module
 from liquidoracle.services.fetch import fetch_wallet, stored_result
 
@@ -174,7 +174,8 @@ def test_an_activity_cap_leaves_out_later_positions_as_not_fully_read(store: Sto
     closed_at = {m.condition_id: m.closed_time for m in window.markets}
     assert unread and set(unread) == {p for p in window.positions if closed_at[p.condition_id] >= window.activity_read_until}
 
-    built = build_positions(window.activity, {m.condition_id: m for m in window.markets}, not_fully_read=unread)
+    built = build_positions(window.activity, {m.condition_id: m for m in window.markets}, listed=window.positions,
+                            not_fully_read=unread)
     assert built.excluded_counts[ExclusionReason.NOT_FULLY_READ] == len(unread)
     assert built.window_size == len(window.positions)  # nothing silently missing
 
@@ -191,7 +192,7 @@ def test_a_capped_fetch_is_saved_with_where_it_stopped(store: Store, monkeypatch
     assert snapshot.activity_read_until == expected.activity_read_until
     assert set(snapshot.not_fully_read()) == set(expected.not_fully_read())
     stored = stored_result(store, server.wallet, seed=44)
-    built = build_positions(expected.activity, {m.condition_id: m for m in expected.markets},
+    built = build_positions(expected.activity, {m.condition_id: m for m in expected.markets}, listed=expected.positions,
                             not_fully_read=expected.not_fully_read())
     assert stored is not None and stored.result.tested_count == built.tested_count
 
@@ -397,7 +398,7 @@ def test_the_stored_result_leaves_out_unread_positions(store: Store) -> None:
     store.finish_snapshot(fetch_id, activity_read_until=window.activity_read_until)
     result = stored_result(store, server.wallet, seed=44)
     assert result is not None
-    built = build_positions(window.activity, {m.condition_id: m for m in window.markets},
+    built = build_positions(window.activity, {m.condition_id: m for m in window.markets}, listed=window.positions,
                             not_fully_read=window.not_fully_read())
     assert result.result.tested_count == built.tested_count
     assert built.excluded_counts[ExclusionReason.NOT_FULLY_READ] == len(window.not_fully_read()) > 0
@@ -414,3 +415,78 @@ def test_fixtures_are_cut_by_the_script() -> None:
             assert {key for row in document[section] for key in row} <= set(keys), (path.name, section)
         assert {key for row in document["gamma"] for key in row} <= {*cut.GAMMA_KEYS, "tags"}
         assert all(set(tag) == {"label"} for row in document["gamma"] for tag in row["tags"])
+
+
+# --- Story 2.3: exclusions and fees on the real fixtures ------------------------------------
+
+def built_from(name: str) -> tuple[PositionSet, Window]:
+    """A fixture's window through the live client, then the builder, exactly as a lookup does it."""
+    client, _, server = live(name)
+    window = positions_near(client, server.wallet)
+    built = build_positions(window.activity, {m.condition_id: m for m in window.markets}, listed=window.positions,
+                            not_fully_read=window.not_fully_read())
+    assert built.window_size == len(window.positions)  # every listed Position comes out, none vanish
+    return built, window
+
+
+def test_split_and_merge_markets_are_left_out_on_real_data() -> None:
+    """AD-11, FR-3: 0x729806's three MERGE Markets and three SPLIT Markets: every Position 'split or merged'.
+    One SPLIT Market (0x0f49db97) is still open in Gamma, so it is outside the window (AD-7)."""
+    built, window = built_from("split-merge")
+    assert len({p.condition_id for p in window.positions}) == 5
+    assert not any(p.condition_id.startswith("0x0f49db97") for p in window.positions)
+    assert built.excluded_counts[ExclusionReason.SPLIT_OR_MERGED] == built.window_size == 10
+    assert (built.left_out_share, mostly_left_out(built)) == (1.0, True)
+
+
+def test_unredeemed_losers_from_the_open_list_count_as_losses() -> None:
+    """AD-10, FR-3: 0x94884d's five losers still on the OPEN list (never redeemed) are tested, outcome 0, with their shares."""
+    built, window = built_from("open-losers")
+    open_tokens = {p.token_id for p in window.positions if p.status == "OPEN"}
+    losers = [p for p in built.tested if p.token_id in open_tokens]
+    assert len(open_tokens) == len(losers) == 5
+    assert all(p.outcome == 0.0 and p.shares_held > 0 for p in losers)
+    assert {p.outcome for p in built.tested if p.token_id not in open_tokens} == {1.0}
+
+
+def test_real_fees_pass_except_one_charged_before_the_rate_changed() -> None:
+    """AD-12 (Edvard, 2026-11-21): on 0x091596 every fee passes but the $44.31 paid at 5% on 11 July 2026 in a
+    Market Gamma now lists at 3%; it counts as 0, is recorded, and its Position stays in the test (a Sliver here)."""
+    built, window = built_from("fees-and-open")
+    failed = [p for p in (*built.tested, *built.slivers) if p.failed_fee_count]
+    assert len(failed) == 1 and failed[0] in built.slivers
+    assert not any(p.failed_fee_count for p in built.left_out)
+    assert failed[0].condition_id.startswith("0x375409bc")
+    assert (built.failed_fee_count, built.failed_fee_total) == (1, pytest.approx(44.3074, abs=1e-4))
+    rates = {m.condition_id: m.fee_rate for m in window.markets}
+    assert rates[failed[0].condition_id] == 0.03
+    assert sum(p.own_fees for p in (*built.tested, *built.slivers)) > 1000  # the other large fees still count
+
+
+def test_conversion_outputs_are_counted_as_share_gaps_on_real_data() -> None:
+    """AD-11 (Story 2.3): 0x091596's 21 listed Positions with no TRADE row used to vanish; now each is a share gap of 1,
+    and with them over 10% of the window is left out."""
+    built, _ = built_from("fees-and-open")
+    gaps = [p for p in built.left_out if p.reason is ExclusionReason.SHARE_GAP]
+    assert len(gaps) == 21 and all(p.share_gap == 1.0 and p.entry_price is None for p in gaps)
+    assert mostly_left_out(built)
+
+
+def test_the_second_fee_wallet_fails_only_fees_from_before_a_rate_cut() -> None:
+    """AD-12 (Edvard, 2026-11-21): on 0x0f4b0a every fee in a 3% Market passes; the 7 that fail ($0.28) were charged
+    at 4-5% in Markets Gamma now lists at 1%."""
+    built, window = built_from("fees")
+    rates = {m.condition_id: m.fee_rate for m in window.markets}
+    counted = (*built.tested, *built.slivers)
+    assert {rates[p.condition_id] for p in counted if p.failed_fee_count} == {0.01}
+    assert all(p.failed_fee_count == 0 for p in counted if rates[p.condition_id] == 0.03)
+    assert (built.failed_fee_count, built.failed_fee_total) == (7, pytest.approx(0.2779, abs=1e-4))
+
+
+def test_a_stored_lookup_applies_the_list_checks(store: Store) -> None:
+    """AD-11, AD-19: `stored_result` passes the snapshot's listed Positions, so the share gaps count there too."""
+    client, _, server = live("fees-and-open")
+    fetch_wallet(client, store, server.wallet)
+    stored = stored_result(store, server.wallet, seed=44)
+    built, _ = built_from("fees-and-open")
+    assert stored is not None and stored.result.tested_count == built.tested_count == 17

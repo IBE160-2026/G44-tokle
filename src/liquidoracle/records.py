@@ -12,11 +12,16 @@ from enum import StrEnum
 
 
 class ExclusionReason(StrEnum):
-    """Why a Position is left out of the Skill Test (AD-11). Story 2.3 adds the rest."""
+    """Why a Position is left out of the Skill Test (AD-11).
+
+    Listed in the order the builder checks them: when several apply, the first is the one stored.
+    """
 
     NOT_FULLY_READ = "not fully read"
     UNCLEAR_RESOLUTION = "unclear resolution"
     SPLIT_OR_MERGED = "split or merged"
+    ONLY_IN_ACTIVITY = "only in activity rows"
+    SHARE_GAP = "share gap"
     SOLD_BEFORE_RESOLUTION = "sold before resolution"
     NOT_EXPLAINED = "not explained"
 
@@ -120,6 +125,12 @@ class Position:
     when the token has no buy. `shares_held` (s) is bought minus sold. `outcome` (o) is 1.0 or
     0.0, or None when the Market's resolution is unclear. `reason` is None for a tested Position
     or a Sliver.
+
+    `own_fees` holds only the fees that passed the schedule check (AD-12). `failed_fee_count` and
+    `failed_fees` are the fills whose fee failed it and their recorded total, which counts as 0.
+    `share_gap` is how far the positions list and the activity rows disagree on shares bought, as a
+    share of the larger (AD-11); None when the token is not on the positions lists, or when its
+    activity was never read ("not fully read", so there is nothing to compare).
     """
 
     condition_id: str
@@ -132,6 +143,9 @@ class Position:
     own_fees: float
     exit_pnl: float | None
     reason: ExclusionReason | None = None
+    share_gap: float | None = None
+    failed_fee_count: int = 0
+    failed_fees: float = 0.0
 
 
 @dataclass(frozen=True, slots=True)
@@ -153,6 +167,21 @@ class PositionSet:
     @property
     def tested_count(self) -> int:
         return len(self.tested)
+
+    @property
+    def left_out_share(self) -> float:
+        """The share of the window's Positions left out, for any reason together (FR-11); 0 for an empty window."""
+        return len(self.left_out) / self.window_size if self.window_size else 0.0
+
+    @property
+    def failed_fee_count(self) -> int:
+        """Fills whose Own Fee failed the schedule check, in the Positions that count in Real PnL (AD-12)."""
+        return sum(p.failed_fee_count for p in (*self.tested, *self.slivers))
+
+    @property
+    def failed_fee_total(self) -> float:
+        """The recorded total of those failed fees, shown on the card; each counts as 0 (AD-12)."""
+        return sum((p.failed_fees for p in (*self.tested, *self.slivers)), 0.0)
 
     @property
     def excluded_counts(self) -> dict[ExclusionReason, int]:
