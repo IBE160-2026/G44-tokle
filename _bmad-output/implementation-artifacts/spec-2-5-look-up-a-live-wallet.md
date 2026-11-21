@@ -2,7 +2,7 @@
 title: 'Story 2.5: Look up a live Wallet'
 type: 'feature'
 created: '2026-11-21'
-status: 'in-review'
+status: 'done'
 baseline_commit: 'd18fbe107c16fe28a75ca85bae0366b40e57d8b5'
 route: 'dispatch'
 review_loop_iteration: 0
