@@ -128,6 +128,8 @@ def _check(bets: Sequence[Position]) -> None:
             raise ValueError(f"Position {bet.token_id} holds no shares ({bet.shares_held!r})")
         if bet.own_fees is None or not math.isfinite(bet.own_fees):
             raise ValueError(f"Position {bet.token_id} has no Own Fees amount ({bet.own_fees!r})")
+        if bet.own_fees < 0:  # the builder's fee check never passes one (AD-12, Story 2.3)
+            raise ValueError(f"Position {bet.token_id} has a negative Own Fee ({bet.own_fees!r})")
     _tokens_per_market(bets)
 
 

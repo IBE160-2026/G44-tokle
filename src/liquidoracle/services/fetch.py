@@ -58,6 +58,7 @@ def stored_result(store: Store, wallet: str, *, seed: int) -> StoredResult | Non
     position_set = build_positions(
         snapshot.activity,
         {m.condition_id: m for m in snapshot.markets},
+        listed=snapshot.positions,
         not_fully_read=snapshot.not_fully_read(),
     )
     return StoredResult(skill_test(position_set, seed=seed, unit_id=snapshot.wallet), snapshot.completed_at)
