@@ -554,12 +554,12 @@ So that the Verdict is honest about what it rests on.
 
 **Given** a buy fill in a Market with fees enabled
 **When** its Own Fee is checked against the Market's Gamma `feeSchedule` (rate and exponent) with a rounding tolerance
-**Then** a fee that passes counts in Real PnL; a maker fill's fee of 0 passes; a negative Own Fee fails (moved here from Story 2.2: the Skill Test still accepts one; Edvard, 2026-11-20); a fee that fails is stored with its value, counts as 0, keeps its Position in the test, and is counted with its recorded total for the card (AD-12)
+**Then** a fee that passes counts in Real PnL; a maker fill's fee of 0 passes; a negative Own Fee fails (moved here from Story 2.2, Edvard, 2026-11-20; since Story 2.3 the Skill Test also refuses one); a fee that fails is stored with its value, counts as 0, keeps its Position in the test, and is counted with its recorded total for the card (AD-12)
 **And** v2's `entry_fees_usdc` is never used.
 
 **Given** fixtures cut from the real capture
 **When** the tests run
-**Then** 0x729806's split and merge Markets are left out as "split or merged", 0x94884d's unredeemed losers from the OPEN list count as losses, and the fee Wallets' fees pass the schedule check
+**Then** 0x729806's split and merge Markets are left out as "split or merged", 0x94884d's unredeemed losers from the OPEN list count as losses, and the fee Wallets' fees pass the schedule check, except fees paid before Polymarket lowered a Market's rate (Gamma shows only today's rate): 0x091596's $44.31 at 5% in a Market now at 3%, and 7 of 0x0f4b0a's fees ($0.28) at 4-5% in Markets now at 1%. These fail, count as 0 and are counted (Edvard, 2026-11-21: the check stays strict)
 **And** the share of Positions left out is available to the card, with the over-10% flag (FR-11).
 
 ### Story 2.4: Linked bets on real data

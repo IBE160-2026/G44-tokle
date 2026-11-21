@@ -7,7 +7,7 @@ paradigm: 'layered, functional core / imperative shell'
 scope: 'LiquidOracle v1, stages 1-3: the whole local app (FR-1 to FR-24, PRD s8)'
 status: final
 created: '2026-10-21'
-updated: '2026-11-20'
+updated: '2026-11-21'
 binds: [FR-1, FR-2, FR-3, FR-4, FR-5, FR-6, FR-7, FR-8, FR-9, FR-10, FR-11, FR-12, FR-13, FR-14, FR-15, FR-16, FR-17, FR-18, FR-19, FR-20, FR-21, FR-22, FR-23, FR-24]
 sources:
   - _bmad-output/planning-artifacts/prds/prd-LiquidOracle-2026-10-12/prd.md
@@ -166,14 +166,15 @@ Arrows are the only allowed imports. `core` imports only `records`, the standard
 - **Prevents:** a Verdict quietly built on part of a Wallet; the Hold-up Test comparing different kinds of Positions before and after the cut-off; a wrong share count entering the Skill Test looking normal.
 - **Rule:**
   - **One builder.** `core/positions` is the only code that builds Positions and applies exclusions. Lookup, Scan, Hold-up Test and Copy Test all call it. It returns the window size, the excluded count for each reason, and the tested count, and pages print only from that record.
-  - **Reasons.** A Position is left out of the Skill Test, with one stored reason, when it is:
-    - fully sold before resolution (PRD FR-3);
+  - **Reasons.** A Position is left out of the Skill Test, with one stored reason, when it is (when several apply, the first in this list is the one stored; Story 2.3):
+    - unread, because the Wallet's read was capped or refused (AD-7, AD-9);
+    - in a Market with unclear resolution (AD-7);
     - in a Market where the Wallet did a SPLIT, MERGE or CONVERSION;
     - a token found only in activity rows;
-    - one whose shares held are not explained: not within 0 < s ≤ shares bought;
-    - unread, because the Wallet's read was capped or refused (AD-7, AD-9);
-    - one whose share gap between positions list and activity is above 1% `[ASSUMPTION]` (the gap's size is stored, so the line can move without refetching);
-    - in a Market with unclear resolution (AD-7).
+    - one whose share gap between positions list and activity is above 1% `[ASSUMPTION]` (the gap's size is stored, so the line can move without refetching). The gap is |activity bought − listed bought| ÷ the larger of the two; a listed Position with no buy fill has a gap of 1 (Story 2.3);
+    - fully sold before resolution (PRD FR-3);
+    - one whose shares held are not explained: not within 0 < s ≤ shares bought, or the running balance of its fills goes below zero at any point (it sold shares before buying them; buys counted first within one second). (Edvard, 2026-11-21, Story 2.3: 4 real bets of 0xd3a6e5 would otherwise enter the test with a wrong share count.)
+  - **Every listed Position is counted.** Each Position on the positions lists in a window Market comes out of the builder as tested, a Sliver or left out, also one with no fill (Story 2.3). Its shares bought for the s ≤ shares bought check stay the activity rows' sum, so both sides of that check come from one source; the share-gap reason keeps the two sources within 1%.
   - **Slivers are not exclusions.** A Position with less than 1% `[ASSUMPTION]` of its bought shares and fewer than 1 share held at resolution is a Sliver (PRD Glossary): `core/positions` returns it apart from the tested Positions, its money stays in Real PnL and every Simulation, and it is in neither the tested count nor any left-out count. Shares are compared after rounding to 6 decimals, Polymarket's share precision. (Edvard, 2026-11-11, Story 1.2.)
   - **Both sides.** The same rules apply before and after the cut-off.
   - **Thresholds.** The 30 minimum, Minimum After-bets, the Copy Pool and the 10% rule all use the tested count.
@@ -185,7 +186,8 @@ Arrows are the only allowed imports. `core` imports only `records`, the standard
 - **Prevents:** using v2's `entry_fees_usdc` (wrong in 3 of 7 checks); a wrong fee counted as real; a bad fee knocking a sound Position out of the Skill Test.
 - **Rule:**
   - Own Fee per fill = cash paid − shares × price (v2 activity equals v1 trade rows on all 25 fee fills checked), read only in Markets with fees enabled.
-  - Each fee is checked against that Market's Gamma `feeSchedule` (rate and exponent) with a rounding tolerance. A maker fill's fee of 0 passes.
+  - Each fee is checked against that Market's Gamma `feeSchedule` (rate and exponent) with a rounding tolerance of $0.0001 `[ASSUMPTION]` (real taker fees miss by at most $0.00001). The expected fee is shares × rate × (p × (1 − p))^exponent; every real schedule seen has exponent 1. A maker fill's fee of 0 passes and counts as exactly 0. Anything else fails, including a negative fee and any non-zero fee in a Market with no schedule (Story 2.3).
+  - Gamma shows only a Market's current schedule, so a fee paid before the rate changed fails. Kept strict on purpose: 0x091596's $44.31 fee at 5% in a Market now at 3% fails, and so do 7 of 0x0f4b0a's fees ($0.28) at 4-5% in Markets now at 1%; the Verdict does not depend on it (last point) and the card shows them (Edvard, 2026-11-21, Story 2.3).
   - A fee that fails the check is stored with its value as a data-quality note. Its Position stays in the Skill Test, the fee counts as 0 in Real PnL and in the Scan ranking, and the Verdict card shows how many fees were left out and their recorded total.
   - Fees shift Real PnL and every Simulation equally, so the p-value and Verdict do not depend on this (PRD FR-5).
 
