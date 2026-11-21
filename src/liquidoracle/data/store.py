@@ -338,17 +338,20 @@ class Store:
             return cursor.rowcount == 1
 
     def claim_next_job(self) -> Job | None:
-        """The next queued job, claimed, or None: lookups first, then oldest first (AD-5)."""
-        while True:
-            row = self._connection().execute(
-                "SELECT id FROM job WHERE status = ? ORDER BY kind != ?, id LIMIT 1",
-                (JobStatus.QUEUED.value, LOOKUP),
-            ).fetchone()
-            if row is None:
-                return None
-            if self.claim_job(int(row[0])):
-                return self.job(int(row[0]))
-            # another claimer took it between the read and the update: look again
+        """The next queued job, claimed, or None: lookups first, then oldest first (AD-5).
+
+        The queue is read once and each job tried in turn; a job another claimer took in between is
+        skipped. When none can be claimed it returns None and the worker looks again after its wait,
+        so a claim that keeps failing can never spin for ever (Edvard, 2026-11-21, Story 2.5).
+        """
+        queued = self._connection().execute(
+            "SELECT id FROM job WHERE status = ? ORDER BY kind != ?, id",
+            (JobStatus.QUEUED.value, LOOKUP),
+        ).fetchall()
+        for (job_id,) in queued:
+            if self.claim_job(int(job_id)):
+                return self.job(int(job_id))
+        return None
 
     def finish_job(self, job_id: int, status: JobStatus, *, message: str, result: str | None = None) -> None:
         """End a running job: its final status, progress complete, and an optional result."""

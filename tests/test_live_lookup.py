@@ -378,6 +378,36 @@ def test_ad5_two_claimers_one_job_only_one_wins(tmp_path: Path) -> None:
     second.close()
 
 
+def test_ad5_a_job_taken_in_between_is_skipped_and_a_failing_claim_never_spins(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """AD-5 (Edvard, 2026-11-21): claim_next_job reads the queue once and tries each job in turn. A job another
+    claimer takes between the read and the update is skipped for the next one; when every claim fails it
+    returns None at once instead of looking again for ever (the break check found that hang)."""
+    store = Store(tmp_path / "live.db")
+    other = Store(tmp_path / "live.db")
+    first = store.queue_lookup("0x" + "66" * 20, message=FETCHING)
+    second = store.queue_lookup("0x" + "77" * 20, message=FETCHING)
+    real_claim = store.claim_job
+    taken: list[int] = []
+
+    def racing(job_id: int) -> bool:
+        if not taken:
+            taken.append(job_id)
+            assert other.claim_job(job_id)  # the other claimer gets there first
+        return real_claim(job_id)
+
+    monkeypatch.setattr(store, "claim_job", racing)
+    claimed = store.claim_next_job()
+    assert taken == [first] and claimed is not None and claimed.id == second
+    third = store.queue_lookup("0x" + "88" * 20, message=FETCHING)
+    monkeypatch.setattr(store, "claim_job", lambda job_id: False)
+    assert store.claim_next_job() is None  # returns, never spins
+    assert store.job(third).status is JobStatus.QUEUED  # type: ignore[union-attr]
+    store.close()
+    other.close()
+
+
 def test_ad5_lookups_run_before_other_work(tmp_path: Path) -> None:
     """AD-5: a waiting lookup is claimed before older work of another kind (Epic 4's Scans)."""
     store = Store(tmp_path / "live.db")
