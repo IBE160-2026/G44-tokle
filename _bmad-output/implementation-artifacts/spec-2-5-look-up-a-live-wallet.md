@@ -2,7 +2,7 @@
 title: 'Story 2.5: Look up a live Wallet'
 type: 'feature'
 created: '2026-11-21'
-status: 'in-progress'
+status: 'in-review'
 baseline_commit: 'd18fbe107c16fe28a75ca85bae0366b40e57d8b5'
 route: 'dispatch'
 review_loop_iteration: 0
@@ -77,17 +77,61 @@ context:
 
 ## Implementation Notes
 
-- Written by the main session directly (subagents for review only, Edvard's call). 797 tests pass (769 before), 2 online tests deselected; both online tests passed live (3 requests). `load-sample`: 1,005 Wallets in 18 s on schema 4.
+- Written by the main session directly (subagents for review only, Edvard's call). 799 tests pass (769 before), 2 online tests deselected; both online tests passed live (3 requests). `load-sample`: 1,005 Wallets in 18 s on schema 4.
 - Plan first: epics.md 2.5 (made-up 1,000-Position Wallet, no-history and offline notes) and 2.6 (real Wallets timed again, plus one live lookup with the fetch, no 10 s target), AD-4 (Offline Mode never goes stale) and AD-5 (lookup jobs) lines, two memlog entries, deferred-work no-history item resolved, Epic 2 context line.
 - **NFR-10:** the made-up 1,000-Position Wallet gets its Verdict from stored data in 0.20 s on this laptop (Windows, Python 3.14). The test's limit is the requirement itself (10 s), about 50 times the measured time, so a slow CI runner does not make it flaky (Edvard's concern); it runs everywhere.
 - **Live check (manual, 2026-11-21 17:24):** `run --port 8099`, real Sample Wallet 0x29306d: fetching page, job done after 1.8 s, then *Not enough data*, 18 resolved bets, Real PnL $295, "Data stored 21 Nov 2026, 17:24"; the second lookup answered in 0.003 s with no job. `progress.js` was not clicked through in a browser (no browser available in this session): Edvard should open one live lookup in a browser.
+- **After review (Edvard to confirm):** reloading an outage or error page tries again once its job ended over 60 s ago (`RETRY_AFTER` [ASSUMPTION]); before that, the reload shows the same page.
 - Small choices: a page asks for `?job=<id>` and `?stored=1`; a job of another Wallet, a missing job or a non-number is ignored (usual lookup). A done job shows the fresh snapshot or queues again; stopped and failed jobs show their pages only while no fresh snapshot exists. The upper-case redirect keeps only `job` and `stored` (found while re-reading the diff: passing every query key could crash on `?raw=`). `Lookup` takes exactly one of the Offline client and the job queue, so the Sample list and the "not loaded" box stay off in live runs (closes the 2.1 issue). The worker's idle wait is 1 s [ASSUMPTION]; a new job wakes it at once.
 - **Deviation from the Code Map:** no separate `queue_lookup` progress updates during the fetch (`done`/`total` go 0/1 to 1/1): `fetch_wallet` has no progress hook, and the page shows a fixed line anyway. `stored_snapshot_time` is named `snapshot_time`.
+- **Deliberate-break check** (24 changes, one per new rule; each run limited to 120 s): the first try left a planted break in `store.py` when Edvard's PC died mid-run (found by checking every planted spot, restored, then committed). The second run hung on "claim not atomic": `claim_next_job` looked again at once for ever when a claim kept failing. Edvard chose to fix the code (read the queue once, try each job, else None) over only time-limiting the check (edabe67, new test). The third run missed 2 of 24: "freshness 48 h" (tests used `FRESH_FOR` itself) and "reduce motion ignored" (no test); a test was added for each, and both now fail.
 - AI slip: a bash heredoc with a long Python edit broke on quoting again (as the handoff warned); the edits went through script files in the scratchpad.
 
 ## Spec Change Log
 
 ## Review Triage Log
+
+Pass 1 (2026-11-21). Three reviewers: blind hunter (BH), edge-case hunter (EC), verification gap (VG). The diff left out this spec (edge-case hunter only). 31 findings: 9 fix groups patched, 1 deferred, the rest rejected. No loopback.
+
+| # | Finding | Verdict | Evidence | Route |
+|---|---------|---------|----------|-------|
+| BH1 | Reloading an outage or error page (`?job=` of a stopped or failed job) never retries, though the page says "Try again in a few minutes." | medium | Confirmed: `wallet_page` returned UNAVAILABLE/FAILED for that job for ever, and `progress.js` pins the `?job=` URL | patch (group with VG-o1, EC3, BH11d): the page is shown for `RETRY_AFTER` (60 s) after the job ended; a later reload queues a new lookup; new test (stopped and failed) |
+| VG-o1 | Same as BH1 | medium | Same | patch (BH1 group) |
+| EC3 | Same as BH1 | medium | Same | patch (BH1 group) |
+| BH11d | No test reloads an outage or error page | medium | Same root | patch (BH1 group) |
+| BH2 | A failed lookup's "Something went wrong" page is served with 200 | low | Confirmed: the 500 handler sends the same page with 500 | patch (group with EC11): 500; test updated |
+| EC11 | Same as BH2 | low | Same | patch (BH2 group) |
+| BH3 | Freshness is read before the followed job: a job ending in between queues a second fetch | low | Confirmed: fresh None, then DONE, fell through to `queue_lookup` | patch (group with EC1): job read first; test finishes the job between the reads |
+| EC1 | Same as BH3 | low | Same | patch (BH3 group) |
+| EC2 | A no-history job's page ignores a fresh snapshot stored since | low | Confirmed: unlike STOPPED/FAILED it had no `fresh is None` | patch: same guard; covered by the ended-job test |
+| BH4a | `finish_job` overwrites a job that is no longer running | low | Confirmed: UPDATE by id only, docstring says "running job" | patch (group with EC8): `AND status = 'running'`; test |
+| EC8 | Same as BH4a | low | Same | patch (BH4a group) |
+| BH4b | An interrupted job's progress message still says it is fetching | low | Confirmed | patch: message "Interrupted: the app was closed"; test |
+| BH4c | No CHECK constraint on `status` / `kind` | low | Only `store.py` writes these, from `JobStatus` and `LOOKUP` | reject: adds schema for unseen input |
+| BH8 | "Fetching trades…" and "No Polymarket history found" defined twice | low | Confirmed in `jobs.py` and `lookup.py` | patch: defined once in `jobs.py`, `lookup.py` uses them |
+| VG1 | The worker thread's crash guard is never exercised | medium | Pre-verified gap | patch: test raises from `claim_next_job` once; the thread lives on and runs a later job |
+| VG2 | The thread test passes without the wake | medium | Pre-verified gap | patch: direct test that `queue_lookup` ends the idle wait at once (a first try in the thread test raced and missed a planted break) |
+| VG3 | Stopped or failed jobs with a fresh snapshot are untested | medium | Pre-verified gap | patch: test for stopped, failed and no history |
+| BH11b | `serve` exiting on a database that cannot be written is untested | low | Confirmed | patch: test |
+| VG4 | `progress.js` runs in no test | medium | Pre-verified gap; the repo has no JS test runner | defer: manual browser check by Edvard (already in Implementation Notes); a JS test setup is beyond this story |
+| BH11a | Same as VG4 | medium | Same | defer (VG4 group) |
+| BH5 | Job rows are never deleted | low | True: about 100 bytes per lookup that fetches, on one laptop | reject: negligible size; Epic 4 settles job retention with Scans |
+| EC12 | Same as BH5 | low | Same | reject |
+| BH6 | Progress fields never move during a fetch | low | True and recorded as a deviation in Implementation Notes; the page shows a fixed line | reject |
+| BH7 | `progress.js` stops polling silently after 30 failures | low | True, only when the app itself stopped answering; the reload link stays | reject: rare, needs new wording |
+| BH9 | NFR-10 measured but not noted | false | Implementation Notes record 0.20 s (the spec was left out of this reviewer's diff) | reject |
+| BH10 | No AI log, spec not in the diff, sprint status still in-progress | false | The AI log and the review status come at step 5; the spec is left out of the diff by design | reject |
+| BH11c | No test runs a job left queued at restart | false | `claim_next_job` reads every queued row; nothing distinguishes a job queued before a restart | reject |
+| BH12 | A no-history answer is not remembered | low | True by design (the frozen matrix: nothing stored); a revisit costs 2 requests | reject |
+| VG-o2 | A wake can be lost between `wait` and `clear` | false | `queue_lookup` commits the row before waking, and the loop calls `run_once` right after any wait, so a job queued in that gap is claimed at once | reject |
+| EC4 | `finish_job` raising leaves the job running until restart | low | Needs a 5 s lock or a full disk; a restart marks it interrupted | reject: the fix needs retry logic |
+| EC5 | `?job=` above 2^63 gives the error page | low | True; only a hand-made URL, and the page is the plain error page | reject |
+| EC6 | Same for `/jobs/<id>/progress` (HTML 500, not JSON 404) | low | Same | reject |
+| EC7 | `claim_next_job` claims every kind | false | Only lookup rows are ever written; Epic 4 adds Scan jobs with their runner | reject |
+| EC9 | A second app on another port shares `live.db` | low | True; the fix is a lock file | reject: rare, adds a mechanism |
+| EC10 | Jobs left queued at startup are run | low | AD-5 turns only `running` into `interrupted`; a queued lookup's page still follows it | reject |
+
+After the patches: 809 tests pass (799 before review), 2 online tests deselected. Each fix was broken again on purpose (9 changes): the first run missed two (the race test simulated the race in the wrong order; the thread wake test raced), both tests were rewritten, and all 9 now fail a test.
 
 ## Verification
 
