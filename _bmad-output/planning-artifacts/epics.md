@@ -572,17 +572,18 @@ So that a Wallet is not credited with independent evidence it does not have.
 
 **Given** the Markets of one negative-risk event (only one can win)
 **When** the Skill Test simulates them
-**Then** they share one uniform U split into disjoint intervals by price, each Market keeps a win chance equal to its price, and at most one wins per Simulation (AD-20; tested on a planted event of three Markets); this extends Story 1.4's per-Market draw and never slips.
+**Then** they share one uniform U split into disjoint intervals by price, each Market keeps a win chance equal to its price, and at most one wins per Simulation (AD-20; tested on a planted event of three Markets); this extends Story 1.4's per-Market draw and never slips
+**And** a CONVERSION row, which names the event rather than a Market, is kept in the window and leaves out every Position of its event as "split or merged" (AD-11; Edvard, 2026-11-21).
 
 **Given** a ladder (same underlying, same resolution date, different thresholds)
 **When** it is detected
 **Then** its Markets share one U with nested intervals ordered by price, and a planted ladder Wallet has a test (AD-20)
-**And** if this part slips, ladders are simply counted in the measured share below.
+**And** if this part slips, ladders are simply counted in the measured share below. (Slipped, Edvard, 2026-11-21: Gamma gives no threshold number, so detection would mean parsing question text.)
 
 **Given** a result
 **When** it is stored
 **Then** it stores the share of tested Positions whose Gamma event holds another tested Position not coupled above, for the FR-11 note over 20% `[ASSUMPTION]` (AD-20)
-**And** the share is computed for the 10 real Sample Wallets and noted, whatever it comes out as.
+**And** the share is computed for the fixture Wallets and noted, whatever it comes out as; the 10 real Sample Wallets' share moves to Story 2.6, which first builds their Gamma records (Edvard, 2026-11-21).
 
 ### Story 2.5: Look up a live Wallet
 
@@ -644,7 +645,8 @@ So that I can check real results offline and see how the committed data was made
 **Given** Offline Mode
 **When** the examiner opens the Lookup page
 **Then** the Sample Wallets list shows the *Real Wallets* group with shortened addresses, and each of the 10 can be looked up with sockets blocked (FR-12, FR-14, UX-DR17)
-**And** each real Wallet's Verdict is recorded in a note next to the pick's estimate, whatever it comes out as, and nothing is tuned to match (NFR-13).
+**And** each real Wallet's Verdict is recorded in a note next to the pick's estimate, whatever it comes out as, and nothing is tuned to match (NFR-13)
+**And** each real Wallet's uncoupled share (AD-20, moved here from Story 2.4) is recorded in the same note.
 
 ### Story 2.7: Real PnL checked by hand
 
@@ -658,7 +660,7 @@ So that a mistake in the app's maths cannot pass its own test.
 **When** Edvard calculates its Real PnL by hand in a spreadsheet, following FR-3 and the Glossary (resolved Markets only, fully sold left out, partly sold at shares held, Own Fees subtracted)
 **Then** the spreadsheet is committed (as CSV) before the test compares it with the app (Edvard, 2026-10-24).
 
-**Given** 0x0f4b0a (fees $0.60) and 0x091596 (fees $1,138)
+**Given** 0x0f4b0a (fees $0.60) and 0x091596 (fees $1,138; its Romania event is left out because of a CONVERSION, Story 2.4)
 **When** their reference values are computed
 **Then** they come from a separate small script written from the PRD's definitions alone (Real PnL = Σ s · (o − p) − Own Fees; shares held = bought − sold; Own Fee = cash paid − shares × price), without reading the app's code, so the check cannot copy the app's mistake (Edvard, 2026-10-24)
 **And** the script imports nothing from `liquidoracle`, and a rule test enforces that.
