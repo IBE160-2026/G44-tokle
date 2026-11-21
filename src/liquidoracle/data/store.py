@@ -8,7 +8,8 @@ A Wallet is written as a snapshot (AD-19): `begin_snapshot` gives a `fetch_id`, 
 under it, and `finish_snapshot` makes it visible in one final step, deleting that Wallet's older
 snapshots in the same transaction (Edvard, 2026-11-19, Story 1.6). Readers see only complete
 snapshots. `wallet_lock` lets one fetch of a Wallet run at a time, across every thread that
-shares this Store (AD-19).
+shares this Store (AD-19). `serving_snapshot` is the one answer to "which snapshot serves this
+window" (AD-4). Jobs (AD-5, Story 2.5) are rows the worker claims with one atomic update.
 """
 
 from __future__ import annotations
@@ -20,11 +21,12 @@ import time
 from collections.abc import Callable, Iterable, Iterator, Sequence
 from contextlib import contextmanager
 from dataclasses import dataclass
+from enum import StrEnum
 from pathlib import Path
 
 from liquidoracle.records import ActivityRow, ListedPosition, Market, unread_positions
 
-SCHEMA_VERSION = 3  # 2: the Wallet window (Story 2.2); 3: Market events (Story 2.4)
+SCHEMA_VERSION = 4  # 2: the Wallet window (Story 2.2); 3: Market events (Story 2.4); 4: jobs (Story 2.5)
 BUSY_TIMEOUT_SECONDS = 5.0  # [ASSUMPTION] AD-6: long enough for the worker's short writes
 SCHEMA_FILE = Path(__file__).with_name("schema.sql")
 
@@ -56,6 +58,39 @@ class Snapshot:
     def not_fully_read(self) -> tuple[ListedPosition, ...]:
         """The window's Positions whose Market resolved in or after the last activity row's second (AD-7, AD-11)."""
         return unread_positions(self.positions, self.markets, self.activity_read_until)
+
+
+class JobStatus(StrEnum):
+    """AD-5's job states."""
+
+    QUEUED = "queued"
+    RUNNING = "running"
+    DONE = "done"
+    INTERRUPTED = "interrupted"  # the app was closed while it ran
+    STOPPED = "stopped"  # Polymarket did not answer
+    FAILED = "failed"  # an unexpected error, logged
+
+
+LOOKUP = "lookup"  # the one job kind so far; Scan jobs come with Epic 4
+NO_HISTORY = "no_history"  # a finished lookup's result when Polymarket has no positions for the address
+_OPEN = (JobStatus.QUEUED.value, JobStatus.RUNNING.value)
+
+
+@dataclass(frozen=True, slots=True)
+class Job:
+    """One job row (AD-5). `done`, `total`, `phase` and `message` are its progress."""
+
+    id: int
+    kind: str
+    wallet: str | None
+    status: JobStatus
+    phase: str
+    done: int
+    total: int
+    message: str
+    result: str | None
+    created_at: int
+    finished_at: int | None
 
 
 class Store:
@@ -190,13 +225,32 @@ class Store:
 
     def latest_snapshot(self, wallet: str) -> Snapshot | None:
         """The Wallet's newest complete snapshot, or None. Half-written snapshots are never returned."""
+        return self.serving_snapshot(wallet)
+
+    def serving_snapshot(
+        self, wallet: str, *, window_limit: int | None = None, max_age: float | None = None
+    ) -> Snapshot | None:
+        """AD-4: the one snapshot that serves this window, or None.
+
+        The Wallet's newest complete snapshot whose own window is `window_limit` (any, when None)
+        and that was completed less than `max_age` seconds ago (any age, when None). Rows are never
+        merged across snapshots: a snapshot serves the whole window or nothing.
+        """
+        where = "wallet = ? AND completed_at IS NOT NULL"
+        args: list[object] = [wallet]
+        if window_limit is not None:
+            where += " AND window_limit = ?"
+            args.append(window_limit)
+        if max_age is not None:
+            where += " AND completed_at > ?"
+            args.append(self._now() - max_age)
         db = self._connection()
         db.execute("BEGIN")  # one read transaction, so a finish in another thread cannot cut it in half
         try:
             head = db.execute(
                 "SELECT fetch_id, completed_at, window_limit, activity_read_until FROM snapshot"
-                " WHERE wallet = ? AND completed_at IS NOT NULL ORDER BY fetch_id DESC LIMIT 1",
-                (wallet,),
+                f" WHERE {where} ORDER BY fetch_id DESC LIMIT 1",  # `where` is fixed text built above
+                args,
             ).fetchone()
             if head is None:
                 return None
@@ -241,12 +295,90 @@ class Store:
         ).fetchone()
         return row is not None
 
+    def snapshot_time(self, wallet: str, *, window_limit: int) -> int | None:
+        """When the Wallet's newest complete snapshot of this window was completed, or None (AD-4's outage offer)."""
+        row = self._connection().execute(
+            "SELECT MAX(completed_at) FROM snapshot WHERE wallet = ? AND window_limit = ? AND completed_at IS NOT NULL",
+            (wallet, window_limit),
+        ).fetchone()
+        return None if row[0] is None else int(row[0])
+
     def wallet_count(self) -> int:
         """How many Wallets have a complete snapshot."""
         row = self._connection().execute(
             "SELECT COUNT(DISTINCT wallet) FROM snapshot WHERE completed_at IS NOT NULL"
         ).fetchone()
         return int(row[0])
+
+    # --- jobs (AD-5) -----------------------------------------------------------------------------
+
+    def queue_lookup(self, wallet: str, *, message: str) -> int:
+        """A lookup job for the Wallet: its queued or running one if it has one, else a new `queued` row."""
+        with self._write() as db:
+            row = db.execute(
+                "SELECT id FROM job WHERE kind = ? AND wallet = ? AND status IN (?, ?) ORDER BY id DESC LIMIT 1",
+                (LOOKUP, wallet, *_OPEN),
+            ).fetchone()
+            if row is not None:
+                return int(row[0])
+            cursor = db.execute(
+                "INSERT INTO job (kind, wallet, status, phase, done, total, message, created_at)"
+                " VALUES (?, ?, ?, 'fetch', 0, 1, ?, ?)",
+                (LOOKUP, wallet, JobStatus.QUEUED.value, message, self._now()),
+            )
+            return int(cursor.lastrowid)
+
+    def claim_job(self, job_id: int) -> bool:
+        """AD-5: take a queued job with one atomic update; True only for the one caller that got it."""
+        with self._write() as db:
+            cursor = db.execute(
+                "UPDATE job SET status = ? WHERE id = ? AND status = ?",
+                (JobStatus.RUNNING.value, job_id, JobStatus.QUEUED.value),
+            )
+            return cursor.rowcount == 1
+
+    def claim_next_job(self) -> Job | None:
+        """The next queued job, claimed, or None: lookups first, then oldest first (AD-5)."""
+        while True:
+            row = self._connection().execute(
+                "SELECT id FROM job WHERE status = ? ORDER BY kind != ?, id LIMIT 1",
+                (JobStatus.QUEUED.value, LOOKUP),
+            ).fetchone()
+            if row is None:
+                return None
+            if self.claim_job(int(row[0])):
+                return self.job(int(row[0]))
+            # another claimer took it between the read and the update: look again
+
+    def finish_job(self, job_id: int, status: JobStatus, *, message: str, result: str | None = None) -> None:
+        """End a running job: its final status, progress complete, and an optional result."""
+        if status in (JobStatus.QUEUED, JobStatus.RUNNING):
+            raise ValueError(f"a job cannot finish as {status}")
+        with self._write() as db:
+            db.execute(
+                "UPDATE job SET status = ?, result = ?, message = ?, done = total, finished_at = ? WHERE id = ?",
+                (status.value, result, message, self._now(), job_id),
+            )
+
+    def interrupt_running_jobs(self) -> int:
+        """AD-5: at startup, every job left `running` becomes `interrupted`. Returns how many."""
+        with self._write() as db:
+            cursor = db.execute(
+                "UPDATE job SET status = ?, finished_at = ? WHERE status = ?",
+                (JobStatus.INTERRUPTED.value, self._now(), JobStatus.RUNNING.value),
+            )
+            return cursor.rowcount
+
+    def job(self, job_id: int) -> Job | None:
+        """One job row, or None when there is no such job."""
+        row = self._connection().execute(
+            "SELECT id, kind, wallet, status, phase, done, total, message, result, created_at, finished_at"
+            " FROM job WHERE id = ?",
+            (job_id,),
+        ).fetchone()
+        if row is None:
+            return None
+        return Job(row[0], row[1], row[2], JobStatus(row[3]), *row[4:])
 
     def close(self) -> None:
         """Close every connection this store opened, in any thread. Call it at shutdown only."""
@@ -294,7 +426,8 @@ class Store:
     def _prepare_schema(self) -> None:
         """Create the tables, or rebuild them when the file has another schema version (AD-6).
 
-        Every table so far holds fetched data that `load-sample` or a lookup can fetch again.
+        Every table so far holds fetched data that `load-sample` or a lookup can fetch again, or
+        jobs, which a rebuild simply forgets.
         """
         with self._write() as db:
             if db.execute("PRAGMA user_version").fetchone()[0] == SCHEMA_VERSION:

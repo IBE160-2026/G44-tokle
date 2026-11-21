@@ -1,5 +1,5 @@
 -- The SQLite schema (AD-6). `data/store.py` runs it and sets PRAGMA user_version to
--- store.SCHEMA_VERSION. Every table so far holds fetched data, so a version mismatch rebuilds it.
+-- store.SCHEMA_VERSION. Every table so far holds fetched data or short-lived jobs, so a version mismatch rebuilds it.
 -- Later stories add their tables here and raise the version.
 
 -- One fetch of one Wallet's window (AD-7, AD-8, AD-19). Readers see it only once completed_at is set.
@@ -63,3 +63,23 @@ CREATE TABLE market (
     fetched_at     INTEGER NOT NULL
 );
 CREATE INDEX market_by_neg_risk ON market (neg_risk_id);
+
+-- Background work (AD-5): one row per lookup that needs a fetch (Story 2.5); Scan jobs come with Epic 4.
+-- status: queued, running, done, interrupted, stopped, failed. result: 'no_history' when a finished
+-- lookup found no Polymarket history (nothing is stored then). done, total, phase and message are the
+-- progress JSON of GET /jobs/<id>/progress.
+CREATE TABLE job (
+    id          INTEGER PRIMARY KEY AUTOINCREMENT,
+    kind        TEXT    NOT NULL,
+    wallet      TEXT,
+    status      TEXT    NOT NULL,
+    phase       TEXT    NOT NULL,
+    done        INTEGER NOT NULL,
+    total       INTEGER NOT NULL,
+    message     TEXT    NOT NULL,
+    result      TEXT,
+    created_at  INTEGER NOT NULL,
+    finished_at INTEGER
+);
+CREATE INDEX job_by_status ON job (status, id);
+CREATE INDEX job_by_wallet ON job (wallet, status);
