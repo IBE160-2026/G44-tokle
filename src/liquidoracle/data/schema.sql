@@ -45,6 +45,8 @@ CREATE TABLE activity_row (
 
 -- Gamma Market records, one per Market, shared by every snapshot (AD-4). A resolved Market's
 -- record is never fetched again. token_ids, outcome_prices and tags are JSON arrays.
+-- event_id is Gamma's event. neg_risk_id is the negative-risk event (negRiskMarketID), set only for a Yes/No
+-- negRisk Market: the key of its shared draw and the id its CONVERSION rows name (AD-20, AD-11).
 CREATE TABLE market (
     condition_id   TEXT    PRIMARY KEY,
     closed         INTEGER NOT NULL,
@@ -56,5 +58,8 @@ CREATE TABLE market (
     fee_rate       REAL,
     fee_exponent   REAL,
     tags           TEXT    NOT NULL,
+    event_id       TEXT,
+    neg_risk_id    TEXT,
     fetched_at     INTEGER NOT NULL
 );
+CREATE INDEX market_by_neg_risk ON market (neg_risk_id);

@@ -80,6 +80,9 @@ def build_positions(
     `not_fully_read` are the window's Positions whose Market resolved in or after the second of the
     last activity row read (AD-7). Every Position in their Markets is left out as "not fully read", also one with
     no fill read at all, so it is still counted (AD-11).
+
+    A CONVERSION row names a negative-risk event, not a Market, so it marks every Market of that
+    event as "split or merged" (AD-11, Story 2.4).
     """
     listed_rows: dict[tuple[str, str], ListedPosition] = {}
     for row in listed:
@@ -87,11 +90,14 @@ def build_positions(
     unread = {row.token_id: row for row in not_fully_read}
     unread_markets = {row.condition_id for row in unread.values()}
     split_markets: set[str] = set()
+    conversion_events: set[str] = set()  # a CONVERSION names its negative-risk event, not a Market
     trades: dict[tuple[str, str], list[ActivityRow]] = {}
     for row in fills:
         if row.type not in _KNOWN_TYPES:
             raise ValueError(f"unknown activity row type {row.type!r}")
         if row.type in _MARKET_ROWS:
+            if row.type == "CONVERSION":
+                conversion_events.add(row.condition_id)
             split_markets.add(row.condition_id)
         elif row.type == "TRADE":
             if not row.token_id or row.side not in ("BUY", "SELL"):
@@ -110,9 +116,8 @@ def build_positions(
         rows = trades.get((condition_id, token_id), [])
         if not rows and token_id in unread:
             continue  # counted below with what the positions list says
-        position = _build_one(
-            market, condition_id, token_id, rows, condition_id in split_markets, listed_rows.get((condition_id, token_id))
-        )
+        split = condition_id in split_markets or market.neg_risk_id in conversion_events
+        position = _build_one(market, condition_id, token_id, rows, split, listed_rows.get((condition_id, token_id)))
         if condition_id in unread_markets:
             position = replace(position, reason=ExclusionReason.NOT_FULLY_READ)
         if position.reason is not None:
@@ -140,7 +145,15 @@ def _unread(row: ListedPosition, market: Market | None) -> Position:
         own_fees=0.0,
         exit_pnl=None,
         reason=ExclusionReason.NOT_FULLY_READ,
+        event_id=None if market is None else market.event_id,
+        neg_risk_id=None if market is None else market.neg_risk_id,
+        yes_side=market is not None and _yes_side(market, row.token_id),
     )
+
+
+def _yes_side(market: Market, token_id: str) -> bool:
+    """AD-20: the Yes token of a negative-risk Market (its first outcome), which wins on low draws."""
+    return market.neg_risk_id is not None and token_id == market.token_ids[0]
 
 
 def _outcome(market: Market | None, token_id: str) -> float | None:
@@ -254,6 +267,9 @@ def _build_one(
         share_gap=share_gap,
         failed_fee_count=fees.failed_count,
         failed_fees=fees.failed_total,
+        event_id=market.event_id,
+        neg_risk_id=market.neg_risk_id,
+        yes_side=_yes_side(market, token_id),
     )
 
 

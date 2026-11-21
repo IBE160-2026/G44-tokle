@@ -20,6 +20,7 @@ SIMULATIONS = 10_000
 MIN_RESOLVED = 30  # FR-6: fewer tested Positions give Not enough data
 SKILLED_BELOW = 0.01  # FR-6 / PRD §3 thresholds
 LIKELY_SKILLED_BELOW = 0.05
+UNCOUPLED_NOTE_ABOVE = 0.20  # AD-20 [ASSUMPTION]: above this uncoupled share, the card adds an honesty note
 
 CHART_BARS = 40  # AD-25 (Edvard, 2026-11-18): 40 equal bars plus two end bars
 CHART_TAIL = 0.001  # each end bar may take up to 0.1% of the Simulations, so the axis shows the middle 99.8%
@@ -55,12 +56,14 @@ def skill_test(position_set: PositionSet, *, seed: int, unit_id: str, scope: str
             scope=scope, seed=seed, verdict=Verdict.NOT_ENOUGH_DATA, tested_count=tested,
             sliver_count=slivers, real_pnl=_real_pnl(bets), own_fees=_own_fees(bets),
             simulations=0, at_or_above=None, p_value=None, bins=(),
+            uncoupled_share=uncoupled_share(position_set.tested),
         )
     run = _engine(bets, seed=seed, unit_id=unit_id)
     return SkillTestResult(
         scope=scope, seed=seed, verdict=verdict_for(run.p_value), tested_count=tested,
         sliver_count=slivers, real_pnl=run.real_pnl, own_fees=run.own_fees,
         simulations=SIMULATIONS, at_or_above=run.at_or_above, p_value=run.p_value, bins=run.bins,
+        uncoupled_share=uncoupled_share(position_set.tested),
     )
 
 
@@ -73,21 +76,32 @@ def verdict_for(p_value: float) -> Verdict:
     return Verdict.NO_EVIDENCE
 
 
+def uncoupled_share(tested: Sequence[Position]) -> float:
+    """AD-20: the share of tested Positions whose Gamma event holds another tested Position not coupled with it.
+
+    Two Positions are coupled when they share a draw: the same Market, or the same negative-risk
+    event. Ladders are not detected (Story 2.4), so they count here. 0 for no tested Positions.
+    """
+    units_per_event: dict[str, set[tuple[str, str]]] = {}
+    for bet in tested:
+        if bet.event_id is not None:
+            units_per_event.setdefault(bet.event_id, set()).add(_unit_key(bet))
+    linked = sum(1 for bet in tested if bet.event_id is not None and len(units_per_event[bet.event_id]) > 1)
+    return linked / len(tested) if tested else 0.0
+
+
+def mostly_uncoupled(result: SkillTestResult) -> bool:
+    """FR-11 / AD-20: more than 20% of the tested Positions have an uncoupled event-mate."""
+    return result.uncoupled_share > UNCOUPLED_NOTE_ABOVE
+
+
 def _engine(bets: Sequence[Position], *, seed: int, unit_id: str) -> _Run:
     """The Simulations and the p-value, with no minimum. Tests only (see the module docstring)."""
     _check(bets)
     if not bets:
         raise ValueError("the Skill Test needs at least one Position")
-    ordered = sorted(bets, key=lambda b: (b.condition_id, b.token_id))  # AD-15
-
-    # AD-20: one U per Market; in each Market the smaller token_id (as text) wins on U < p, the other on U > 1 - p.
-    tokens = _tokens_per_market(ordered)
-    markets = sorted(tokens)
-    column = {condition_id: i for i, condition_id in enumerate(markets)}
-    market_of = np.array([column[b.condition_id] for b in ordered], dtype=np.intp)
-    wins_low = np.array([b.token_id == min(tokens[b.condition_id]) for b in ordered], dtype=bool)
-    price = np.array([b.entry_price for b in ordered], dtype=np.float64)
-    high_bar = 1.0 - price
+    ordered = _ordered(bets)
+    draws = _Draws(ordered)
 
     # Conventions › Money: whole cents once per Position, no fees, so ties count exactly.
     win_cents = [round(b.shares_held * (1.0 - b.entry_price) * 100) for b in ordered]
@@ -96,13 +110,11 @@ def _engine(bets: Sequence[Position], *, seed: int, unit_id: str) -> _Run:
     base = sum(loss_cents)
     gain = np.array([w - lo for w, lo in zip(win_cents, loss_cents)], dtype=np.int64)
 
-    generator = rng.generator(seed, "skilltest", unit_id)
+    generator = _generator(seed, unit_id)
     totals = np.empty(SIMULATIONS, dtype=np.int64)
     for start in range(0, SIMULATIONS, _CHUNK):
         rows = min(_CHUNK, SIMULATIONS - start)
-        draws = generator.random((rows, len(markets)))[:, market_of]
-        won = np.where(wins_low, draws < price, draws > high_bar)
-        totals[start:start + rows] = base + won.astype(np.int64) @ gain
+        totals[start:start + rows] = base + draws.won(generator, rows).astype(np.int64) @ gain
 
     at_or_above = int(np.count_nonzero(totals >= real_cents))
     real_pnl = _real_pnl(ordered)
@@ -115,6 +127,82 @@ def _engine(bets: Sequence[Position], *, seed: int, unit_id: str) -> _Run:
         p_value=(1 + at_or_above) / (SIMULATIONS + 1),
         bins=_bins(totals / 100.0 - own_fees, real_pnl),
     )
+
+
+class _Draws:
+    """AD-20: which of the ordered Positions win, for a block of Simulations.
+
+    One uniform U per draw unit: a Market, or a whole negative-risk event. In a Market on its own,
+    the smaller token_id (as text) wins on U < p and the other side on U > 1 - p (Story 1.4). In a
+    negative-risk event, each Market gets a win region of length max(p of its Yes Positions,
+    1 - p of its No Positions), laid end to end in condition_id order from 0 and wrapping past 1;
+    the Market draws V = (U - start) mod 1, its Yes token wins on V < p and No on V > 1 - p. V is
+    uniform, so every Position keeps its win chance, and only one Market's region holds U while
+    the lengths sum to at most 1 (Story 2.4). Columns are sorted units, so a Wallet with no
+    negative-risk Market draws exactly as before.
+    """
+
+    def __init__(self, ordered: Sequence[Position]) -> None:
+        tokens = _tokens_per_market(ordered)
+        units = sorted({_unit_key(b) for b in ordered})
+        column = {unit: i for i, unit in enumerate(units)}
+        starts = _region_starts(ordered)
+        self.columns = len(units)
+        self.unit_of = np.array([column[_unit_key(b)] for b in ordered], dtype=np.intp)
+        self.wins_low = np.array(
+            [b.yes_side if b.neg_risk_id is not None else b.token_id == min(tokens[b.condition_id]) for b in ordered],
+            dtype=bool,
+        )
+        self.price = np.array([b.entry_price for b in ordered], dtype=np.float64)
+        self.start = np.array([starts.get(b.condition_id, 0.0) for b in ordered], dtype=np.float64)
+
+    def won(self, generator: np.random.Generator, rows: int) -> np.ndarray:
+        u = generator.random((rows, self.columns))[:, self.unit_of]
+        v = np.mod(u - self.start, 1.0)  # a start of 0 leaves U as it is: U is already in [0, 1)
+        return np.where(self.wins_low, v < self.price, v > 1.0 - self.price)
+
+
+def _simulated_wins(
+    bets: Sequence[Position], *, seed: int, unit_id: str, simulations: int
+) -> tuple[list[Position], np.ndarray]:
+    """Tests only: the ordered Positions and who wins in each Simulation, drawn the way `_engine` draws."""
+    _check(bets)
+    ordered = _ordered(bets)
+    return ordered, _Draws(ordered).won(_generator(seed, unit_id), simulations)
+
+
+def _ordered(bets: Sequence[Position]) -> list[Position]:
+    """AD-15: one fixed order, so the draws never depend on the order the Positions came in."""
+    return sorted(bets, key=lambda b: (b.condition_id, b.token_id))
+
+
+def _generator(seed: int, unit_id: str) -> np.random.Generator:
+    return rng.generator(seed, "skilltest", unit_id)
+
+
+def _unit_key(bet: Position) -> tuple[str, str]:
+    """The draw a Position shares, its negative-risk event or else its Market (AD-20), as a sortable
+    key that never mistakes an event id for a Market id."""
+    return ("event", bet.neg_risk_id) if bet.neg_risk_id is not None else ("market", bet.condition_id)
+
+
+def _region_starts(ordered: Sequence[Position]) -> dict[str, float]:
+    """Where each negative-risk Market's win region starts in its event's U (AD-20, Story 2.4)."""
+    length: dict[str, float] = {}
+    event_of: dict[str, str] = {}
+    for bet in ordered:
+        if bet.neg_risk_id is None or bet.entry_price is None:
+            continue
+        reach = bet.entry_price if bet.yes_side else 1.0 - bet.entry_price
+        length[bet.condition_id] = max(length.get(bet.condition_id, 0.0), reach)
+        event_of[bet.condition_id] = bet.neg_risk_id
+    starts: dict[str, float] = {}
+    filled: dict[str, float] = {}
+    for condition_id in sorted(length):
+        event = event_of[condition_id]
+        starts[condition_id] = math.fmod(filled.get(event, 0.0), 1.0)
+        filled[event] = filled.get(event, 0.0) + length[condition_id]
+    return starts
 
 
 def _check(bets: Sequence[Position]) -> None:
@@ -131,6 +219,10 @@ def _check(bets: Sequence[Position]) -> None:
         if bet.own_fees < 0:  # the builder's fee check never passes one (AD-12, Story 2.3)
             raise ValueError(f"Position {bet.token_id} has a negative Own Fee ({bet.own_fees!r})")
     _tokens_per_market(bets)
+    events: dict[str, str | None] = {}
+    for bet in bets:
+        if events.setdefault(bet.condition_id, bet.neg_risk_id) != bet.neg_risk_id:
+            raise ValueError(f"Market {bet.condition_id} has Positions in different negative-risk events")
 
 
 def _tokens_per_market(bets: Sequence[Position]) -> dict[str, set[str]]:

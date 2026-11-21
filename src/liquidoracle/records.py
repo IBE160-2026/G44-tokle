@@ -54,6 +54,10 @@ class Market:
     (where the window's activity read begins, AD-7); `fee_rate` and `fee_exponent` are its
     `feeSchedule` (checked in Story 2.3, AD-12), None when Gamma gives none; `tags` are the
     event tag labels (used from Story 7.1).
+
+    `event_id` is Gamma's event (`events[0].id`), used to measure links not coupled (AD-20).
+    `neg_risk_id` is the negative-risk event (`negRiskMarketID`), set only when Gamma says
+    `negRisk` and the outcomes are Yes/No; then `token_ids[0]` is Yes (AD-20, Story 2.4).
     """
 
     condition_id: str
@@ -66,6 +70,8 @@ class Market:
     fee_rate: float | None = None
     fee_exponent: float | None = None
     tags: tuple[str, ...] = ()
+    event_id: str | None = None
+    neg_risk_id: str | None = None
 
     @property
     def resolved(self) -> bool:
@@ -131,6 +137,9 @@ class Position:
     `share_gap` is how far the positions list and the activity rows disagree on shares bought, as a
     share of the larger (AD-11); None when the token is not on the positions lists, or when its
     activity was never read ("not fully read", so there is nothing to compare).
+
+    `event_id` and `neg_risk_id` are copied from the Market (AD-20). `yes_side` is True when the
+    token is the Yes outcome of a negative-risk Market; it wins on low draws in the Skill Test.
     """
 
     condition_id: str
@@ -146,6 +155,9 @@ class Position:
     share_gap: float | None = None
     failed_fee_count: int = 0
     failed_fees: float = 0.0
+    event_id: str | None = None
+    neg_risk_id: str | None = None
+    yes_side: bool = False
 
 
 @dataclass(frozen=True, slots=True)
@@ -225,6 +237,8 @@ class SkillTestResult:
     `real_pnl` is the exact sum, Own Fees included (FR-4). For *Not enough data*, `p_value`
     and `at_or_above` are None, `simulations` is 0 and there are no `bins` (FR-6, FR-10).
     `at_or_above` is the exact count of Simulations at or above the Real PnL (FR-5).
+    `uncoupled_share` is the share of tested Positions whose Gamma event holds another tested
+    Position not coupled with it, for the FR-11 note (AD-20).
     """
 
     scope: str
@@ -238,6 +252,7 @@ class SkillTestResult:
     at_or_above: int | None
     p_value: float | None
     bins: tuple[ChartBin, ...]
+    uncoupled_share: float
 
 
 @dataclass(frozen=True, slots=True)
