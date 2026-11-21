@@ -1,5 +1,7 @@
 """The lookup service: an address in, the Verdict card's words out (FR-1, FR-8, FR-10, FR-14, AD-13, AD-25; Story 1.7).
 
+Story 2.5's live lookups (jobs, freshness, outage) are tested in `test_live_lookup.py`.
+
 Runs over a repository-like folder with the committed Synthetic Wallets and 3 coin-flippers,
 loaded through the same pipeline `load-sample` uses, with sockets blocked.
 """
@@ -17,10 +19,10 @@ from liquidoracle.data.offline import OfflineClient, sample_files
 from liquidoracle.data.store import OFFLINE_DB, Store
 from liquidoracle.services import lookup as lookup_module
 from liquidoracle.services.fetch import fetch_wallet
+from liquidoracle.services.jobs import Jobs
 from liquidoracle.services.lookup import (
     BAD_ADDRESS,
     EMPTY_ADDRESS,
-    LIVE_NOT_BUILT,
     NOT_AVAILABLE_OFFLINE,
     NOT_LOADED,
     Lookup,
@@ -71,9 +73,9 @@ def empty(sample_root: Path, tmp_path: Path) -> Iterator[Lookup]:
 
 @pytest.fixture
 def live(tmp_path: Path) -> Iterator[Lookup]:
-    """A live run before Story 2.1: no client (AD-13)."""
+    """A live run (AD-13): a job queue, and no client the pages may ask (Story 2.5)."""
     store = Store(tmp_path / "live.db")
-    yield Lookup(None, store, seed=SEED)
+    yield Lookup(None, store, seed=SEED, jobs=Jobs(store))
     store.close()
 
 
@@ -120,7 +122,7 @@ def test_fr14_lookup_form_offline(offline: Lookup) -> None:
 
 
 def test_live_lookup_form_lets_a_valid_address_through(live: Lookup) -> None:
-    """FR-1, AD-13: a live run checks only the format; the Verdict page says live lookups come later."""
+    """FR-1, AD-13: a live run checks only the format; the Verdict page does the fetching (Story 2.5)."""
     assert live.check(UNKNOWN) == (UNKNOWN, None)
 
 
@@ -196,12 +198,23 @@ def test_not_loaded_box_goes_once_loaded(offline: Lookup) -> None:
     assert offline.not_loaded() is None
 
 
-def test_live_run_says_live_lookups_come_later(live: Lookup) -> None:
-    """AD-13 (Edvard, 2026-11-20): a live run has no Sample list and says live lookups are not built yet (Story 2.5)."""
+def test_live_run_queues_a_lookup_and_shows_no_sample_list(live: Lookup) -> None:
+    """AD-5, AD-13 (Story 2.5, closes the 2.1 issue): a live run queues a lookup job, and has no Sample
+    list and no "not loaded" box."""
     page = live.wallet_page(SHARP)
-    assert (page.outcome, page.notice) == (Outcome.LIVE_NOT_BUILT, LIVE_NOT_BUILT)
+    assert page.outcome is Outcome.QUEUED and page.job_id is not None
     assert live.sample_list() is None
     assert live.not_loaded() is None
+
+
+def test_lookup_needs_exactly_one_of_client_and_jobs(tmp_path: Path) -> None:
+    """AD-13: Offline Mode hands in its client, a live run its job queue; never both, never neither."""
+    store = Store(tmp_path / "live.db")
+    with pytest.raises(ValueError):
+        Lookup(None, store, seed=SEED)
+    with pytest.raises(ValueError):
+        Lookup(OfflineClient(sample_files(tmp_path)), store, seed=SEED, jobs=Jobs(store))
+    store.close()
 
 
 # --- the Sample Wallets list (UX-DR17; Edvard, 2026-11-20) -------------------------------------

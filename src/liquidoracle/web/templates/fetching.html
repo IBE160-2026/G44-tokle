@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+{% block title %}Checking · {{ page.short_address }} · LiquidOracle{% endblock %}
+{% block content %}
+    <div class="narrow" id="job-block" data-progress="{{ url_for('job_progress', job_id=page.job_id) }}" data-page="{{ url_for('wallet', raw=page.address, job=page.job_id) }}">
+      <p class="eyebrow">Wallet analysis</p>
+      <h1 class="checking">Checking {{ page.short_address }}</h1>
+      <p class="fetching" role="status"><span class="fetch-dots" aria-hidden="true"><span></span><span></span><span></span></span>{{ line }}</p>
+      <p class="address-line">Wallet address <code class="address">{{ page.address }}</code></p>
+      <p class="reload-note"><a href="{{ url_for('wallet', raw=page.address, job=page.job_id) }}">Reload this page</a> to see the result.</p>
+    </div>
+    <script src="{{ url_for('static', filename='js/progress.js') }}" defer></script>
+{% endblock %}

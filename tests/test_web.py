@@ -20,6 +20,7 @@ from liquidoracle.data import synthetic
 from liquidoracle.data.offline import OfflineClient, sample_files
 from liquidoracle.data.store import OFFLINE_DB, Store
 from liquidoracle.services.fetch import fetch_wallet
+from liquidoracle.services.jobs import Jobs
 from liquidoracle.services.lookup import Lookup, Outcome, VerdictCard, WalletPage
 from liquidoracle.settings import Settings
 from liquidoracle.web import create_app
@@ -56,7 +57,7 @@ def offline(loaded_lookup: Lookup) -> FlaskClient:
 @pytest.fixture
 def live(tmp_path: Path) -> Iterator[FlaskClient]:
     store = Store(tmp_path / "live.db")
-    yield create_app(Settings(offline=False), Lookup(None, store, seed=SEED)).test_client()
+    yield create_app(Settings(offline=False), Lookup(None, store, seed=SEED, jobs=Jobs(store))).test_client()
     store.close()
 
 
@@ -237,7 +238,7 @@ class FakeLookup:
     def __init__(self, card: VerdictCard) -> None:
         self.card = card
 
-    def wallet_page(self, address: str) -> WalletPage:
+    def wallet_page(self, address: str, *, job: int | None = None, stored: bool = False) -> WalletPage:
         return WalletPage(Outcome.VERDICT, address, "0xabcd…ef01", card=self.card)
 
 
@@ -266,11 +267,13 @@ def test_fr14_unknown_address_opened_directly(offline: FlaskClient) -> None:
     assert "Sample Wallets" in page
 
 
-def test_live_run_verdict_page(live: FlaskClient) -> None:
-    """AD-13 (Edvard, 2026-11-20): a live run says live lookups are not built yet and how to start offline."""
-    page = html(live, f"/wallet/{SHARP}")
-    assert h1s(page) == ["Live lookups not built yet"]
-    assert "Start the app with <code>--offline</code> to check the Sample Wallets." in page
+def test_live_run_verdict_page_starts_fetching(live: FlaskClient) -> None:
+    """AD-5, UX-DR22 (Story 2.5): a live run's Verdict page queues a lookup and shows the fetching state;
+    the rest of the live pages are tested in test_live_lookup.py."""
+    reply = live.get(f"/wallet/{SHARP}")
+    assert reply.status_code == 302 and reply.headers["Location"] == f"/wallet/{SHARP}?job=1"
+    page = html(live, f"/wallet/{SHARP}?job=1")
+    assert h1s(page) == [f"Checking {SHARP[:6]}…{SHARP[-4:]}"]
 
 
 @pytest.mark.parametrize("url", ["/wallet/abc", "/wallet/0x123", f"/wallet/{SHARP}/x", "/no-such-page"])
@@ -314,6 +317,13 @@ def test_ux_dr2_theme_script_is_listed_and_falls_back(offline: FlaskClient) -> N
     assert script.count("localStorage") == 2 and script.count("try {") == 2
     readme = (REPO / "README.md").read_text(encoding="utf-8")
     assert "theme.js" in readme
+
+
+def test_ad18_readme_lists_every_javascript_file() -> None:
+    """AD-18: the README names each JavaScript file and what it does (Edvard, 2026-10-21)."""
+    readme = (REPO / "README.md").read_text(encoding="utf-8")
+    for script in sorted((WEB / "static" / "js").glob("*.js")):
+        assert f"`{script.name}`:" in readme, script.name
 
 
 def test_ux_dr3_fonts_are_bundled_and_local(offline: FlaskClient) -> None:

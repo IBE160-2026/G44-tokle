@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% block title %}{{ heading }} · {{ page.short_address }} · LiquidOracle{% endblock %}
+{% block content %}
+    <div class="narrow">
+      <p class="eyebrow">Wallet analysis</p>
+      <h1 class="page-title-small">{{ heading }}</h1>
+      {% if page.stored_from %}
+      <p class="message"><a class="btn-primary btn-link" href="{{ url_for('wallet', raw=page.address, stored=1) }}">Show stored data from {{ page.stored_from }}</a></p>
+      {% else %}
+      <p class="message">{{ try_again }}</p>
+      {% endif %}
+      <p class="address-line">Wallet address <code class="address">{{ page.address }}</code></p>
+      <p><a href="{{ url_for('check_a_wallet') }}">Check a wallet</a></p>
+    </div>
+{% endblock %}

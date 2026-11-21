@@ -272,3 +272,15 @@ def test_fr2_stored_at():
     assert phrases.stored_at(1_767_232_800, timezone.utc) == "Data stored 1 Jan 2026, 02:00"
     local = datetime.fromtimestamp(moment).astimezone()  # the computer's own time zone
     assert phrases.stored_at(moment) == phrases.stored_at(moment, local.tzinfo)
+
+
+def test_ux_dr23_stored_on():
+    """UX-DR23 (Story 2.5): the outage button's date, "Show stored data from 15 Oct 2026, 14:02",
+    is the same date and time as "Data stored …"."""
+    from datetime import timedelta, timezone
+
+    moment = 1_792_065_720  # 2026-10-15 12:02 UTC
+    assert phrases.stored_on(moment, timezone(timedelta(hours=2))) == "15 Oct 2026, 14:02"
+    assert phrases.stored_at(moment) == f"Data stored {phrases.stored_on(moment)}"
+    with pytest.raises(ValueError):
+        phrases.stored_on(-1)

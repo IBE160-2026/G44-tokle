@@ -1,10 +1,14 @@
-"""The Wallet lookup: an address in, the Verdict card's words out (FR-1, FR-2, FR-8, FR-10, FR-14; Story 1.7).
+"""The Wallet lookup: an address in, the Verdict card's words out (FR-1, FR-2, FR-8, FR-10, FR-14; Stories 1.7, 2.5).
 
-Pages call this module only. It reads the Wallet's latest stored snapshot, runs the Skill Test,
-and turns the result into finished text from `core/phrases` (AD-25), so the templates never
-format a number. Typed errors from `data` become the messages in EXPERIENCE.md (Conventions ›
-Errors); a database that cannot be read is left to the pages' error page. Offline and live runs differ only in the client handed in at startup (AD-13): Offline
-Mode has the `OfflineClient`; a live run has none until Story 2.1.
+Pages call this module only. It reads the Wallet's stored snapshot, runs the Skill Test, and turns
+the result into finished text from `core/phrases` (AD-25), so the templates never format a number.
+Typed errors from `data` become the messages in EXPERIENCE.md (Conventions › Errors); a database
+that cannot be read is left to the pages' error page.
+
+Offline and live runs differ only in what is handed in at startup (AD-13). Offline Mode has the
+`OfflineClient`, which a page may ask directly (it reads local files), and no job queue: its stored
+snapshots never go stale. A live run has a job queue and no client here: only the worker talks to
+Polymarket (AD-5), and a page serves a fresh snapshot (AD-4) or queues a lookup job.
 """
 
 from __future__ import annotations
@@ -18,11 +22,15 @@ from liquidoracle.core.skilltest import SIMULATIONS
 from liquidoracle.data import synthetic
 from liquidoracle.data.client import WalletClient
 from liquidoracle.data.errors import NotAvailableOffline
-from liquidoracle.data.store import Store
+from liquidoracle.data.store import NO_HISTORY, JobStatus, Store
+from liquidoracle.data.window import WINDOW_LIMIT
 from liquidoracle.records import Verdict
-from liquidoracle.services.fetch import stored_result
+from liquidoracle.services.fetch import StoredResult, result_of, stored_result
+from liquidoracle.services.jobs import Jobs
 
 ADDRESS = re.compile(r"0x[0-9a-fA-F]{40}")  # FR-1: 0x and 40 hex characters, any case
+
+FRESH_FOR = 24 * 60 * 60  # [ASSUMPTION] AD-4: a stored snapshot under 24 hours old is used without a fetch
 
 # Messages, word for word from EXPERIENCE.md (FR-1, FR-14) and Story 1.7's decisions (Edvard, 2026-11-20).
 EMPTY_ADDRESS = "Enter a wallet address."
@@ -31,6 +39,12 @@ NOT_AVAILABLE_OFFLINE = "Not available offline. In Offline Mode only the Sample 
 LOOKUP_LEDE = (  # UX-DR16, from mockups/lookup.html; the count comes from the Skill Test (AD-25)
     f"Paste a Polymarket Wallet address. LiquidOracle replays its resolved bets {phrases.count(SIMULATIONS)} "
     "times to see how often luck alone would do as well."
+)
+# The fetching state (UX-DR22, EXPERIENCE.md).
+FETCHING_LINE = "Fetching trades from Polymarket…"
+# The no-history hint: PRD FR-1's sentence (Story 2.5).
+PROFILE_HINT = (
+    "Use the address shown on the Polymarket profile page. An address from a wallet app may show no history."
 )
 
 # The Sample Wallets list (UX-DR17): the stage 1 Synthetic Wallets, and one coin-flipper for all 1,000
@@ -57,7 +71,11 @@ class Outcome(StrEnum):
     VERDICT = "verdict"
     NOT_AVAILABLE_OFFLINE = "not available offline"
     NOT_LOADED = "not loaded"
-    LIVE_NOT_BUILT = "live not built"
+    QUEUED = "queued"  # a lookup job was queued or joined: open the page of that job
+    FETCHING = "fetching"  # UX-DR22
+    NO_HISTORY = "no history"  # UX-DR23
+    UNAVAILABLE = "unavailable"  # UX-DR23: Polymarket did not answer
+    FAILED = "failed"  # an unexpected error, logged by the worker
 
 
 @dataclass(frozen=True, slots=True)
@@ -69,6 +87,7 @@ class Notice:
     command: str = ""
     after: str = ""
     error: bool = False  # shown in the error style and read with a hidden "Error:" (UX-DR13)
+    hint: str = ""  # a second sentence under the first
 
 
 NOT_LOADED = Notice(
@@ -77,13 +96,12 @@ NOT_LOADED = Notice(
     "uv run liquidoracle load-sample",
     " in the repository folder, then reload this page.",
 )
-LIVE_NOT_BUILT = Notice(
-    "Live lookups not built yet",
-    "Live lookups are not built yet. Start the app with ",
-    "--offline",
-    " to check the Sample Wallets.",
-)
 NOT_OFFLINE = Notice("Not available offline", NOT_AVAILABLE_OFFLINE, error=True)
+NO_HISTORY_NOTICE = Notice(  # UX-DR23, EXPERIENCE.md
+    "No Polymarket history found", "No Polymarket history found for this address.", hint=PROFILE_HINT
+)
+UNAVAILABLE_HEADING = "Polymarket did not answer"  # UX-DR23
+TRY_AGAIN = "Try again in a few minutes."  # UX-DR23: when no stored data of this view exists
 
 
 @dataclass(frozen=True, slots=True)
@@ -106,6 +124,8 @@ class WalletPage:
     short_address: str
     card: VerdictCard | None = None
     notice: Notice | None = None
+    job_id: int | None = None  # QUEUED and FETCHING: the job the page follows
+    stored_from: str | None = None  # UNAVAILABLE: "18 Nov 2026, 14:02" when a snapshot of this view exists
 
 
 @dataclass(frozen=True, slots=True)
@@ -118,6 +138,17 @@ class SampleItem:
 class SampleList:
     items: tuple[SampleItem, ...]
     note: str  # "and 999 more coin-flippers, checked by address"
+
+
+@dataclass(frozen=True, slots=True)
+class Progress:
+    """GET /jobs/<id>/progress (Consistency Conventions › Job progress): the only worker-page contract."""
+
+    status: str
+    phase: str
+    done: int
+    total: int
+    message: str
 
 
 def clean_address(raw: str | None) -> tuple[str | None, str | None]:
@@ -136,12 +167,19 @@ def short_address(address: str) -> str:
 
 
 class Lookup:
-    """One run's lookups, over the client and database picked at startup (AD-13). Safe to share between threads."""
+    """One run's lookups, over what was picked at startup (AD-13). Safe to share between threads.
 
-    def __init__(self, client: WalletClient | None, store: Store, *, seed: int) -> None:
+    `client` is Offline Mode's Sample client, which pages may ask directly; `jobs` is a live run's
+    job queue. Exactly one of them is given.
+    """
+
+    def __init__(self, client: WalletClient | None, store: Store, *, seed: int, jobs: Jobs | None = None) -> None:
+        if (client is None) == (jobs is None):
+            raise ValueError("a Lookup needs either the Offline Mode client or a live run's job queue")
         self._client = client
         self._store = store
         self._seed = seed
+        self._jobs = jobs
         self._synthetic = synthetic.all_addresses()  # the coin-flippers' files exist only after load-sample
 
     def check(self, raw: str | None) -> tuple[str | None, str | None]:
@@ -152,33 +190,47 @@ class Lookup:
         address, error = clean_address(raw)
         if address is None:
             return None, error
-        if self._outcome_without_snapshot(address) is Outcome.NOT_AVAILABLE_OFFLINE:
+        if self._client is not None and self._offline_outcome(address) is Outcome.NOT_AVAILABLE_OFFLINE:
             return None, NOT_AVAILABLE_OFFLINE
         return address, None
 
-    def wallet_page(self, address: str) -> WalletPage:
-        """The Verdict page for a valid lower-case address (FR-8, FR-10, FR-14)."""
-        stored = stored_result(self._store, address, seed=self._seed)
-        if stored is None:
-            # None here means a snapshot was finished just now, after the read above: reloading shows it.
-            outcome = self._outcome_without_snapshot(address) or Outcome.NOT_LOADED
-            notice = {
-                Outcome.NOT_AVAILABLE_OFFLINE: NOT_OFFLINE,
-                Outcome.LIVE_NOT_BUILT: LIVE_NOT_BUILT,
-            }.get(outcome, NOT_LOADED)
-            return WalletPage(outcome, address, short_address(address), notice=notice)
-        result = stored.result
-        enough = result.p_value is not None
-        card = VerdictCard(
-            verdict=result.verdict.value,
-            filled_dots=FILLED_DOTS[result.verdict],
-            odds_line=phrases.odds_sentence(result.p_value) if enough else phrases.not_enough_data(result.tested_count),
-            bets=phrases.count(result.tested_count),
-            bets_word=phrases.resolved_bets_word(result.tested_count),
-            real_pnl=phrases.money(result.real_pnl),
-            stored=phrases.stored_at(stored.stored_at),
-        )
-        return WalletPage(Outcome.VERDICT, address, short_address(address), card=card)
+    def wallet_page(self, address: str, *, job: int | None = None, stored: bool = False) -> WalletPage:
+        """The Verdict page for a valid lower-case address (FR-1, FR-2, FR-8, FR-10, FR-14).
+
+        `job` is the lookup job the page follows; `stored` asks for the stored snapshot whatever its
+        age (the outage page's "Show stored data from …"). Both are ignored in Offline Mode.
+        """
+        if self._jobs is None:
+            return self._offline_page(address)
+        if stored:
+            snapshot = self._store.serving_snapshot(address, window_limit=WINDOW_LIMIT)
+            if snapshot is not None:
+                return self._verdict(address, result_of(snapshot, seed=self._seed))
+        fresh = self._store.serving_snapshot(address, window_limit=WINDOW_LIMIT, max_age=FRESH_FOR)
+        followed = self._store.job(job) if job is not None else None
+        if followed is not None and followed.wallet == address:
+            if followed.status in (JobStatus.QUEUED, JobStatus.RUNNING):
+                return self._page(Outcome.FETCHING, address, job_id=followed.id)
+            if followed.status is JobStatus.DONE and followed.result == NO_HISTORY:
+                return self._page(Outcome.NO_HISTORY, address, notice=NO_HISTORY_NOTICE)
+            if fresh is None and followed.status is JobStatus.STOPPED:
+                when = self._store.snapshot_time(address, window_limit=WINDOW_LIMIT)
+                return self._page(
+                    Outcome.UNAVAILABLE, address, stored_from=None if when is None else phrases.stored_on(when)
+                )
+            if fresh is None and followed.status is JobStatus.FAILED:
+                return self._page(Outcome.FAILED, address)
+            # done with a snapshot, or interrupted: the usual answer below (a fresh snapshot, or a new job)
+        if fresh is not None:
+            return self._verdict(address, result_of(fresh, seed=self._seed))
+        return self._page(Outcome.QUEUED, address, job_id=self._jobs.queue_lookup(address))
+
+    def progress(self, job_id: int) -> Progress | None:
+        """A job's progress for `progress.js`, or None when there is no such job."""
+        found = self._store.job(job_id)
+        if found is None:
+            return None
+        return Progress(found.status.value, found.phase, found.done, found.total, found.message)
 
     def sample_list(self) -> SampleList | None:
         """The Sample Wallets list (UX-DR17), or None outside Offline Mode (no Sample client)."""
@@ -194,12 +246,24 @@ class Lookup:
             return None
         return NOT_LOADED if self._store.wallet_count() == 0 else None
 
-    def _outcome_without_snapshot(self, address: str) -> Outcome | None:
-        """For an address: None if it has a snapshot; otherwise why there is no Verdict to show."""
+    # --- helpers ---------------------------------------------------------------------------------
+
+    def _offline_page(self, address: str) -> WalletPage:
+        """Story 1.7's Offline Mode page: the stored snapshot, whatever its age, or why there is none."""
+        found = stored_result(self._store, address, seed=self._seed)
+        if found is not None:
+            return self._verdict(address, found)
+        # None here may mean a snapshot was finished just now, after the read above: reloading shows it.
+        outcome = self._offline_outcome(address) or Outcome.NOT_LOADED
+        notice = NOT_OFFLINE if outcome is Outcome.NOT_AVAILABLE_OFFLINE else NOT_LOADED
+        return self._page(outcome, address, notice=notice)
+
+    def _offline_outcome(self, address: str) -> Outcome | None:
+        """Offline Mode: None if the address has a snapshot; otherwise why there is no Verdict to show."""
+        if self._client is None:  # never reached: only Offline Mode asks this
+            raise RuntimeError("only Offline Mode has a client to ask")
         if self._store.has_snapshot(address):
             return None
-        if self._client is None:
-            return Outcome.LIVE_NOT_BUILT
         if address in self._synthetic:
             return Outcome.NOT_LOADED  # a Synthetic Wallet whose file or snapshot load-sample has not written yet
         try:
@@ -209,3 +273,30 @@ class Lookup:
         except (OSError, ValueError):  # a Sample file still being written by load-sample
             return Outcome.NOT_LOADED
         return Outcome.NOT_LOADED
+
+    @staticmethod
+    def _page(
+        outcome: Outcome,
+        address: str,
+        *,
+        card: VerdictCard | None = None,
+        notice: Notice | None = None,
+        job_id: int | None = None,
+        stored_from: str | None = None,
+    ) -> WalletPage:
+        return WalletPage(outcome, address, short_address(address), card, notice, job_id, stored_from)
+
+    def _verdict(self, address: str, stored: StoredResult) -> WalletPage:
+        result = stored.result
+        enough = result.p_value is not None
+        card = VerdictCard(
+            verdict=result.verdict.value,
+            filled_dots=FILLED_DOTS[result.verdict],
+            odds_line=phrases.odds_sentence(result.p_value) if enough else phrases.not_enough_data(result.tested_count),
+            bets=phrases.count(result.tested_count),
+            bets_word=phrases.resolved_bets_word(result.tested_count),
+            real_pnl=phrases.money(result.real_pnl),
+            stored=phrases.stored_at(stored.stored_at),
+        )
+        return self._page(Outcome.VERDICT, address, card=card)
+

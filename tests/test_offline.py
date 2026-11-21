@@ -19,6 +19,7 @@ from liquidoracle.core.skilltest import skill_test
 from liquidoracle.data import sample_json, synthetic
 from liquidoracle.data.errors import NotAvailableOffline
 from liquidoracle.data.offline import OfflineClient, sample_files
+from liquidoracle.data.polymarket import PolymarketClient
 from liquidoracle.data.store import LIVE_DB, OFFLINE_DB, Store
 from liquidoracle.records import ListedPosition, Read, Verdict
 from liquidoracle.services.fetch import fetch_wallet, skill_result
@@ -205,11 +206,12 @@ def test_offline_mode_gets_offline_client_and_offline_db(tmp_path: Path) -> None
 
 
 def test_live_run_gets_live_db(tmp_path: Path) -> None:
-    """AD-13: a live run uses instance/live.db, never the offline file; its client arrives in Story 2.1."""
+    """AD-13: a live run uses instance/live.db, never the offline file, the Polymarket client and a job queue (Story 2.5)."""
     sources = cli.open_sources(Settings(offline=False), tmp_path)
     try:
         assert sources.store.path == tmp_path / LIVE_DB
-        assert sources.client is None
+        assert isinstance(sources.client, PolymarketClient)
+        assert sources.jobs is not None and sources.jobs.store is sources.store
         assert not (tmp_path / OFFLINE_DB).exists()
     finally:
         sources.store.close()

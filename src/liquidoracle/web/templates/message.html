@@ -7,6 +7,7 @@
       <p class="message{% if page.notice.error %} message-error{% endif %}">
         {% if page.notice.error %}<span class="visually-hidden">Error: </span>{% endif %}{% with notice = page.notice %}{% include "notice.html" %}{% endwith %}
       </p>
+      {% if page.notice.hint %}<p class="hint-line">{{ page.notice.hint }}</p>{% endif %}
       <p class="address-line">Wallet address <code class="address">{{ page.address }}</code></p>
       <p><a href="{{ url_for('check_a_wallet') }}">Check a wallet</a></p>
       {% if samples %}{% include "samples.html" %}{% endif %}
