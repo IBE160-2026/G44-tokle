@@ -73,8 +73,18 @@ class OfflineClient:
         return client
 
     def real_addresses(self) -> tuple[str, ...]:
-        """The real Sample Wallets' addresses (files in `sample_data/real/`), in file order (UX-DR17)."""
-        return tuple(a for a, path in self._get_index().wallets.items() if path.parent.name == REAL_DIR.name)
+        """The real Sample Wallets' addresses, from the file names in `sample_data/real/` (UX-DR17).
+
+        Read from the names alone, so the Lookup page never parses the other 1,005 files: an
+        old coin-flipper file left from before a format change would otherwise break the page
+        (review, Story 2.6). `build-sample` names each file after its Wallet's address.
+        """
+        files = self._list_files() if self._list_files is not None else self._files
+        return tuple(
+            path.stem for path in files
+            if path.parent.name == REAL_DIR.name and path.parent.parent.name == REAL_DIR.parent.name
+            and ADDRESS.fullmatch(path.stem)
+        )
 
     def addresses(self) -> tuple[str, ...]:
         """Every Sample Wallet's address, in file order. Offline only: `load-sample` and the Sample list."""

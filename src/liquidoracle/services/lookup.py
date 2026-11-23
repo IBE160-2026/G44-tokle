@@ -20,8 +20,8 @@ from enum import StrEnum
 from liquidoracle.core import phrases
 from liquidoracle.core.skilltest import SIMULATIONS
 from liquidoracle.data import synthetic
-from liquidoracle.data.offline import OfflineClient
 from liquidoracle.data.errors import NotAvailableOffline
+from liquidoracle.data.offline import OfflineClient
 from liquidoracle.data.store import NO_HISTORY, JobStatus, Store
 from liquidoracle.data.window import WINDOW_LIMIT
 from liquidoracle.records import Verdict
@@ -256,7 +256,6 @@ class Lookup:
         return NOT_LOADED if self._store.wallet_count() == 0 else None
 
     # --- helpers ---------------------------------------------------------------------------------
-
 
     def _offline_page(self, address: str) -> WalletPage:
         """Story 1.7's Offline Mode page: the stored snapshot, whatever its age, or why there is none."""

@@ -206,6 +206,24 @@ def test_ux_dr17_real_wallets_group(tmp_path: Path) -> None:
     store.close()
 
 
+def test_lookup_page_survives_an_old_coin_flipper_file(tmp_path: Path) -> None:
+    """FR-14, UX-DR17 (review, Story 2.6): after a pull, coin-flipper files from before a format change
+    must not break the Lookup page; the Real Wallets group reads only file names."""
+    synthetic.write_small(tmp_path)
+    synthetic.write_coin_flippers(tmp_path, 1)
+    old = next((tmp_path / synthetic.COIN_FLIPPER_DIR).glob("*.json"))
+    old.write_text(old.read_text(encoding="utf-8").replace('"activity_from": null,', ""), encoding="utf-8")
+    real = "0x" + "b" * 40
+    (tmp_path / REAL_DIR).mkdir(parents=True)
+    (tmp_path / REAL_DIR / f"{real}.json").write_text("{}", encoding="utf-8")  # only its name is read here
+    (tmp_path / REAL_DIR / "dataset.json").write_text("{}", encoding="utf-8")
+    store = Store(tmp_path / OFFLINE_DB)
+    app = create_app(Settings(offline=True), Lookup(OfflineClient(sample_files(tmp_path)), store, seed=SEED))
+    page = html(app.test_client(), "/")
+    assert f'href="/wallet/{real}"' in page and "Synthetic Wallets" in page
+    store.close()
+
+
 def test_no_real_wallets_group_without_real_files(offline: FlaskClient) -> None:
     """UX-DR17: with no files in sample_data/real/ the Real Wallets group is not shown."""
     assert "Real Wallets" not in html(offline, "/")
