@@ -216,6 +216,7 @@ Arrows are the only allowed imports. `core` imports only `records`, the standard
   - Price history is stored as one short window per buy fill, [t − 2 min, t + 32 min], merged where they overlap. Fetching packs the windows of one token into requests of at most 14 days, storing only the points inside the short windows (measured: 1.06 requests per token, the same as the spike's per-outcome estimate; one request per window would be 3.9).
   - A test fails if the committed Sample Dataset exceeds 25 MB `[ASSUMPTION]`. No Git LFS.
   - The committed Sample Dataset is rebuilt by one script from the raw capture (kept outside the repository, `spike/FINDINGS.md`), never trimmed by hand, so the trim is repeatable and reviewable. (Edvard, 2026-10-23.)
+  - **Real Wallets (Story 2.6).** `liquidoracle build-sample` checks the capture zip and its additions file (Gamma records and 0xd218e4's newest CLOSED pages, fetched once; Edvard, 2026-11-23) against their SHA-256 files, runs `positions_near` on each picked Wallet over the whole capture, and keeps only the rows that window read; each file stores where the capture's activity stopped (`activity_from`, `activity_until`), so `OfflineClient` answers past it as a cut-short read and the normal "not fully read" rule applies. The build reads every file back and refuses to finish unless the window is identical.
 
 ### AD-15 — Randomness comes from an explicit Seed, independent of order [ADOPTED]
 

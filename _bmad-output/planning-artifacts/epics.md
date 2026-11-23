@@ -628,10 +628,11 @@ So that I can check real results offline and see how the committed data was made
 
 **Acceptance Criteria:**
 
-**Given** the raw capture zip (kept outside the repository)
-**When** the build-sample script runs on it
-**Then** it first checks the zip against its SHA-256 file and refuses to run on a mismatch
+**Given** the raw capture zip and its additions file (both kept outside the repository)
+**When** the build-sample script runs on them
+**Then** it first checks each against its SHA-256 file and refuses to run on a mismatch
 **And** it reads the 10 Sample Wallets named in the pick file (not the spares) and writes their positions lists, activity rows and Gamma Markets as `records` JSON with the one serializer into `sample_data/` (AD-14).
+**And** the additions file holds what the capture lacks, fetched once, read-only, with the app's own client: the Gamma records of every Market the windows read (the capture holds none), and 0xd218e4's newest CLOSED pages (the capture kept only its oldest 60,000 CLOSED rows), so that Wallet's data comes from two dates, 23 October and 23 November 2026 (Edvard, 2026-11-23, Story 2.6).
 
 **Given** the capture
 **When** the windows are built
