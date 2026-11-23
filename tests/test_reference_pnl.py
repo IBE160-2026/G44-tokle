@@ -9,12 +9,16 @@ Where each reference number came from:
   a second fresh AI helper from the PRD and a note on the data fields alone, committed with its
   output before this test existed. The note, `tests/reference/fields.md`, was written by the main
   Claude Code session from the data files and says only what each field is (Edvard's condition).
+- Story 2.8 (FR-4 changed on 2026-11-23): a third fresh AI helper changed only the script's fee check to the new
+  FR-4 sentence (a fee also passes at any whole-percent rate from 1% to 10%), given the script, its notes,
+  `fields.md`, the two Wallet files and FR-4 as committed in b959f44, never the app's code; its new CSVs and the
+  top section of `script-notes.md` were committed before the app's fee check changed.
 
 The helpers' notes name the paths of their own scratch folders. In the repository, a script is
 re-run as `python -I -S tests/reference/<script> sample_data/real/<address>.json ... <out_dir>`;
 it writes `<first 8 characters>-real-pnl.csv` (and, for `real_pnl_reference.py`, `-fee-check.csv`).
 
-If a value differs, the cause (app, script or helper) is found and logged in the Story 2.7 spec;
+If a value differs, the cause (app, script or helper) is found and logged in the spec of the story that changed it (2.7, 2.8);
 a reference is never changed to match the app without a written reason.
 """
 
@@ -29,9 +33,11 @@ from pathlib import Path
 
 import pytest
 
+from liquidoracle.core.positions import build_positions
 from liquidoracle.data.offline import OfflineClient
 from liquidoracle.data.store import Store
 from liquidoracle.records import SkillTestResult
+from liquidoracle.data.window import positions_near
 from liquidoracle.services.fetch import fetch_wallet, stored_result
 
 REPO = Path(__file__).resolve().parents[1]
@@ -75,6 +81,26 @@ def reference_total(address: str) -> dict[str, str]:
 
 def counts(total: dict[str, str]) -> dict[str, int]:
     return {key: int(value) for key, value in (part.split("=") for part in total["reason"].split(";"))}
+
+
+def reference_failed_fees(address: str) -> int:
+    """FR-4: fee-check rows marked FAILED on the reference's Resolved Positions and Slivers (0 without a fee file)."""
+    fee_file = REFERENCE / f"{address[:8]}-fee-check.csv"
+    if not fee_file.exists():
+        return 0
+    with reference_csv(address).open(encoding="utf-8", newline="") as f:
+        counted = {(r["condition_id"], r["token_id"]) for r in csv.DictReader(f) if r["status"] in ("resolved", "sliver")}
+    with fee_file.open(encoding="utf-8", newline="") as f:
+        return sum(1 for r in csv.DictReader(f)
+                   if r["result"].startswith("FAILED") and (r["condition_id"], r["token_id"]) in counted)
+
+
+def app_failed_fees(address: str) -> int:
+    """The app's failed-fee count on counted Positions; the stored result does not carry it yet (Epic 3)."""
+    window = positions_near(OfflineClient([REAL / f"{address}.json"]), address)
+    built = build_positions(window.activity, {m.condition_id: m for m in window.markets}, listed=window.positions,
+                            not_fully_read=window.not_fully_read())
+    return built.failed_fee_count
 
 
 def cents(value: float) -> Decimal:
@@ -121,11 +147,13 @@ def test_app_real_pnl_equals_the_independent_reference_to_the_cent(address: str,
 @pytest.mark.parametrize("address", sorted(SOURCES))
 def test_app_counts_and_own_fees_equal_the_independent_reference(address: str, tmp_path: Path) -> None:
     """FR-3, FR-4: the app tests as many Resolved Positions and Slivers, and counts the same Own Fees
-    to the cent, as the reference, so errors in the total cannot cancel out unseen."""
+    to the cent, and fails as many fees on them (0 since Story 2.8), as the reference, so errors in the total
+    cannot cancel out unseen."""
     total = reference_total(address)
     result = app_result(address, tmp_path)
-    expected = (counts(total)["resolved"], counts(total)["sliver"], Decimal(total["own_fees"] or "0"))
-    got = (result.tested_count, result.sliver_count, cents(result.own_fees))
+    expected = (counts(total)["resolved"], counts(total)["sliver"], Decimal(total["own_fees"] or "0"),
+                reference_failed_fees(address))
+    got = (result.tested_count, result.sliver_count, cents(result.own_fees), app_failed_fees(address))
     assert got == expected, f"{address}: app {got} vs {expected} from the {SOURCES[address]}"
 
 

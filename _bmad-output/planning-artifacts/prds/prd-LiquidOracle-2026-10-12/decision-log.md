@@ -2,6 +2,12 @@
 
 Why the PRD says what it says. The PRD itself keeps only the requirements (`prd.md`); this file keeps the reasons, dates and earlier wording that used to sit inside it. The full audit trail of the BMAD workflow, one line per decision, is `.memlog.md` in this folder; git history has every earlier version of `prd.md`.
 
+## 2026-11-23: the fee check accepts an earlier rate
+
+FR-4 checks each Own Fee against the Market's fee schedule, but Gamma lists only a Market's rate today. On 2026-11-21 (Story 2.3) Edvard kept the check strict: a fee paid at an older rate fails and counts as 0. Story 2.7's independent script then showed that every fee failing the check in the reference Wallets (9 fees: 7 on 0x0f4b0a, $0.28; 2 on 0x091596, $44.48) fits the fee formula exactly at another whole-percent rate (4%, 5%, 7%) instead of the listed 1% or 3%, and that Polymarket changed the rate of 5 of 0x091596's Markets between 20 and 23 November 2026. So the strict check throws out real fees and makes Real PnL look slightly better than it was.
+
+**Decision (Edvard, 2026-11-23, the AI's recommendation):** a fee passes when it fits the schedule's formula at the listed rate or at any whole-percent rate from 1% to 10% `[ASSUMPTION]`. Negative fees, fees that fit no whole-percent rate, and fees in Markets with no schedule still fail. Rejected: keeping the strict check (Real PnL drifts further from the truth each time a rate changes) and trusting every recorded fee (drops the check FR-4 promises). The p-value and Verdict do not change either way (FR-5). Built in Story 2.8.
+
 ## 2026-11-20: stage 3 parked at the checkpoint
 
 The plan's rule (Edvard, 2026-11-05) was that stage 3 is dropped if stage 1 is not done by 20 November. On that day Epic 1 had just been built and Epics 2 and 3 (also stage 1) had not started. Edvard decided that stage 3 is **parked, not deleted**: FR-15 and FR-19 to FR-24 stay in the PRD, Epics 7 and 8 stay in the epics, and they are picked back up if all of stage 2, the Copy Test (2c) included, is done before the code freeze on 1 December (the AI recommended the whole of stage 2 rather than the minimum, since stage 3 is the first thing cut; Edvard agreed). If they are not reached, the README says so with this reason (NFR-12).

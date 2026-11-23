@@ -4,7 +4,7 @@
 
 ## Goal
 
-The user pastes any Polymarket address and gets a Verdict from live data. A second lookup within 24 hours is instant and makes no network call, Polymarket outages are handled without a raw error, and the 10 real Sample Wallets work offline. The epic also proves the app's Real PnL against numbers that do not come from the app, and brings in linked-bet handling (negative-risk events, ladders, and the measured share of links not detected). It is part of stage 1, which must stand alone. Its target was 11 to 19 November 2026, so it starts late. If it runs late, ladder detection slips first; negative-risk coupling never slips.
+The user pastes any Polymarket address and gets a Verdict from live data. A second lookup within 24 hours is instant and makes no network call, Polymarket outages are handled without a raw error, and the 10 real Sample Wallets work offline. The epic also proves the app's Real PnL against numbers that do not come from the app, counts fees that were real when paid even if Polymarket has since changed the Market's rate, and brings in linked-bet handling (negative-risk events, ladders, and the measured share of links not detected). It is part of stage 1, which must stand alone. Its target was 11 to 19 November 2026, so it starts late. If it runs late, ladder detection slips first; negative-risk coupling never slips.
 
 ## Stories
 
@@ -15,6 +15,7 @@ The user pastes any Polymarket address and gets a Verdict from live data. A seco
 - Story 2.5: Look up a live Wallet
 - Story 2.6: Real Wallets in the Sample Dataset
 - Story 2.7: Real PnL checked independently
+- Story 2.8: The fee check accepts an earlier rate
 
 ## Requirements & Constraints
 
@@ -28,6 +29,7 @@ The user pastes any Polymarket address and gets a Verdict from live data. A seco
 - A Wallet with up to 1,000 Resolved Positions gets its Verdict within 10 seconds from stored data.
 - Real results are recorded whatever they come out as; nothing is tuned to match an estimate.
 - Real PnL on three real Sample Wallets equals a reference calculation made from the PRD and the Wallet's data alone, without the app's code, to the cent; at least one of the three paid fees (0x0f4b0a and 0x091596 did). 0x29306d's reference is a fresh AI helper's calculation (replacing Edvard's hand calculation, 2026-11-23); 0x0f4b0a and 0x091596 come from a separate script that imports nothing from `liquidoracle`. A reference is never changed to match the app without a written reason.
+- Fees that were real when paid must count: Polymarket changes Market rates later (both down and up) and Gamma lists only today's rate, so a Wallet's Real PnL must not look better because of a later rate change. After the fee rule change, the reference values are the independent script's "failed fees counted as recorded" totals (0x0f4b0a −188.77, 0x091596 −49,615.70); the app must equal them to the cent, 0x29306d is checked again, and the script's fee rule is changed to the same requirement sentence without reading the app's code. Every Sample Dataset Wallet's stored result that changes is noted.
 
 ## Technical Decisions
 
@@ -37,7 +39,7 @@ The user pastes any Polymarket address and gets a Verdict from live data. A seco
 - **Errors:** `data/` raises typed errors; `services/` turns them into the EXPERIENCE.md messages.
 - **Resolved:** Gamma says closed, outcome prices exactly {0, 1}, and a `closedTime`. Resolution time is `closedTime`, never the Wallet's `last_event_at`. A Market closed with a `closedTime` but unclear prices is in the window; the builder leaves it out.
 - **One source per number:** positions lists (`/v2/positions`, OPEN and CLOSED) say which Positions exist and shares bought; activity rows (`/v2/activity`, types TRADE, REDEEM, SPLIT, MERGE, CONVERSION, `start` and `limit` always sent, `is_combo` rows dropped) give Entry Price, shares held, first buy, Own Fees, splits and merges; Gamma gives resolution, outcomes, fee schedule, start date and tags (20 Markets per request, `include_tag=true`). REDEEM rows are never a share source; v2 `entry_fees_usdc` is never used.
-- **Own Fees:** cash paid − shares × price on buy fills in Markets with fees enabled, checked against the Market's Gamma `feeSchedule`: expected = shares × rate × (p(1−p))^exponent, tolerance $0.0001. A fee within it of 0 is a maker fill and counts as exactly 0; anything else that misses fails (negative fees, no schedule, and fees paid before Polymarket lowered a Market's rate, since Gamma shows only today's rate; kept strict on purpose). A failing fee counts as 0, is recorded with its value for the card, and its Position stays in the test.
+- **Own Fees:** cash paid − shares × price on buy fills in Markets with fees enabled, checked against the Market's Gamma `feeSchedule`: expected = shares × rate × (p(1−p))^exponent, tolerance $0.0001, always with the listed exponent. Since Story 2.8 a fee passes at the listed rate **or at any whole-percent rate from 1% to 10%** (an assumption), because Polymarket changes rates; this replaces Story 2.3's strict listed-rate-only check (all 9 fees that failed in Story 2.7 fit 4%, 5% or 7% where 1% or 3% is listed). A fee within the tolerance of 0 is a maker fill and counts as exactly 0. Still failing: a negative fee, a fee that fits no such rate (including one above the 10% rate), and any non-zero fee in a Market with no schedule. A failing fee counts as 0 in Real PnL and the Scan ranking, is recorded with its value for the card, and its Position stays in the test. Fees shift Real PnL and every Simulation equally, so the p-value and Verdict do not depend on this.
 - **Exclusions:** the builder takes the window's listed Positions too, and every one of them comes out (tested, Sliver or left out). One reason each, the first that applies: not fully read, unclear resolution, split or merged, only in activity rows, share gap (|activity bought − listed bought| ÷ the larger above 1%; 1 when there is no buy fill), sold before resolution, not explained (shares held outside 0 < s ≤ bought, or sold before bought). The left-out share and the over-10% flag come from the Position set. Nothing new is stored: all of it is recomputed from the snapshot's rows.
 - **One window function:** `positions_near(wallet, cutoff, side, limit)` in `data/window.py`, running on any client's three raw reads (positions list, activity rows, Markets) so live and offline take the same path. A Market straddling the 2,000th place is left out of the window whole. Activity for the window is read from the earliest Gamma start date to the latest `closedTime`, capped by `ACTIVITY_ROW_CAP` (150,000 rows, same as the Sample capture); a read cut short by timeouts counts as a cap. On a cap, exactly the Positions whose Market `closedTime` lies in or after the second of the last row read are left out as "not fully read".
 - **Snapshots:** each Wallet fetch writes a snapshot with a `fetch_id` that becomes visible in one final step; a per-Wallet lock allows one fetch of a Wallet at a time. New tables go in `schema.sql` with a raised `user_version`. Only `data/store.py` runs SQL.
@@ -58,6 +60,6 @@ The user pastes any Polymarket address and gets a Verdict from live data. A seco
 
 ## Cross-Story Dependencies
 
-- 2.1 (client, limiter, retries) comes first; 2.2 builds the window and snapshot on it; 2.3 and 2.4 extend Epic 1's Position builder and Skill Test; 2.5 wires live lookups into Epic 1's pages; 2.6 needs 2.2 and 2.3's rules to build the real Sample Wallets; 2.7 checks Real PnL on three of them.
+- 2.1 (client, limiter, retries) comes first; 2.2 builds the window and snapshot on it; 2.3 and 2.4 extend Epic 1's Position builder and Skill Test; 2.5 wires live lookups into Epic 1's pages; 2.6 needs 2.2 and 2.3's rules to build the real Sample Wallets; 2.7 checks Real PnL on three of them; 2.8 changes 2.3's fee check and the 2.7 independent script's fee rule together, then re-runs 2.7's reference comparison and notes any changed Sample Wallet results from 2.6.
 - 2.2's Gamma read must not run on the Sample Wallets until Edvard's Domain definitions and hand labels are committed (Epic 7 rule, 2026-11-05).
 - Epic 4's Scan reuses the client, the "protocol contract address" error kind and the snapshot freezing.

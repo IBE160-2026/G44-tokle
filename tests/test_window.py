@@ -466,18 +466,19 @@ def test_unredeemed_losers_from_the_open_list_count_as_losses() -> None:
     assert {p.outcome for p in built.tested if p.token_id not in open_tokens} == {1.0}
 
 
-def test_real_fees_pass_except_one_charged_before_the_rate_changed() -> None:
-    """AD-12 (Edvard, 2026-11-21): on 0x091596 every fee passes but the $44.31 paid at 5% on 11 July 2026 in a
-    Market Gamma now lists at 3%; it counts as 0, is recorded, and its Position stays in the test (a Sliver here)."""
+def test_real_fees_pass_also_one_charged_before_the_rate_changed() -> None:
+    """FR-4, AD-12 (Edvard, 2026-11-23, Story 2.8; strict until then): on this 0x091596 fixture (Gamma of 20 Nov)
+    every fee passes, also the $44.31 paid at 5% on 11 July 2026 in a Market Gamma lists at 3% (a Sliver here),
+    which failed under Story 2.3's strict check. Own Fees 1,087.52 + 44.31 = 1,131.82, worked out on the fixture."""
     built, window = built_from("fees-and-open")
-    failed = [p for p in (*built.tested, *built.slivers) if p.failed_fee_count]
-    assert len(failed) == 1 and failed[0] in built.slivers
-    assert not any(p.failed_fee_count for p in built.left_out)
-    assert failed[0].condition_id.startswith("0x375409bc")
-    assert (built.failed_fee_count, built.failed_fee_total) == (1, pytest.approx(44.3074, abs=1e-4))
+    counted = (*built.tested, *built.slivers)
     rates = {m.condition_id: m.fee_rate for m in window.markets}
-    assert rates[failed[0].condition_id] == 0.03
-    assert sum(p.own_fees for p in (*built.tested, *built.slivers)) > 1000  # the other large fees still count
+    earlier = [p for p in built.slivers if p.condition_id.startswith("0x375409bc")]
+    assert len(earlier) == 1 and rates[earlier[0].condition_id] == 0.03
+    assert earlier[0].own_fees == pytest.approx(151.7974 + 44.3074, abs=1e-4)  # its other fees passed already
+    assert (built.failed_fee_count, built.failed_fee_total) == (0, 0.0)
+    assert not any(p.failed_fee_count for p in built.left_out)  # no fee fails anywhere in the window
+    assert sum(p.own_fees for p in counted) == pytest.approx(1131.8228, abs=1e-4)
 
 
 def test_a_conversion_leaves_out_its_whole_event_on_real_data() -> None:
@@ -521,15 +522,18 @@ def test_a_stored_lookup_carries_the_uncoupled_share(store: Store) -> None:
     assert stored is not None and stored.result.uncoupled_share == 2 / 14
 
 
-def test_the_second_fee_wallet_fails_only_fees_from_before_a_rate_cut() -> None:
-    """AD-12 (Edvard, 2026-11-21): on 0x0f4b0a every fee in a 3% Market passes; the 7 that fail ($0.28) were charged
-    at 4-5% in Markets Gamma now lists at 1%."""
+def test_the_second_fee_wallet_counts_fees_from_before_a_rate_cut() -> None:
+    """FR-4, AD-12 (Edvard, 2026-11-23, Story 2.8; strict until then): on this 0x0f4b0a fixture the 7 fees ($0.28)
+    charged at 4-5% in Markets Gamma lists at 1%, which failed under Story 2.3, now pass and count: Own Fees
+    0.2521 + 0.2779 = 0.5300, worked out on the fixture."""
     built, window = built_from("fees")
     rates = {m.condition_id: m.fee_rate for m in window.markets}
     counted = (*built.tested, *built.slivers)
-    assert {rates[p.condition_id] for p in counted if p.failed_fee_count} == {0.01}
-    assert all(p.failed_fee_count == 0 for p in counted if rates[p.condition_id] == 0.03)
-    assert (built.failed_fee_count, built.failed_fee_total) == (7, pytest.approx(0.2779, abs=1e-4))
+    at_one_percent = [p for p in counted if rates[p.condition_id] == 0.01 and p.own_fees > 0]
+    assert len(at_one_percent) == 7
+    assert (built.failed_fee_count, built.failed_fee_total) == (0, 0.0)
+    assert not any(p.failed_fee_count for p in built.left_out)  # no fee fails anywhere in the window
+    assert sum(p.own_fees for p in counted) == pytest.approx(0.5300, abs=1e-4)
 
 
 def test_a_stored_lookup_applies_the_list_checks(store: Store) -> None:

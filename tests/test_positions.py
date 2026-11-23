@@ -517,12 +517,28 @@ def test_a_negative_fee_fails_counts_as_zero_and_keeps_the_position() -> None:
     assert (result.failed_fee_count, result.failed_fee_total) == (1, pytest.approx(-0.50))
 
 
-def test_a_fee_off_schedule_fails() -> None:
-    """AD-12: 1.25 where the schedule says 0.75 (a 5% fill in a Market now at 3%) fails, as does 0.7502."""
-    for fee in (1.25, 0.7502, 0.3):
+def test_a_fee_at_an_earlier_whole_percent_rate_passes() -> None:
+    """FR-4, AD-12 (Edvard, 2026-11-23, Story 2.8): Gamma lists only today's rate, so 1.25 (5%), 0.25 (1%) and
+    2.50 (10%, the cap) pass in a Market now at 3%, and count."""
+    for fee in (1.25, 0.25, 2.50, 1.25009):
+        position = only(build([fee_buy(fee)], market(fees=True)))
+        assert position.own_fees == pytest.approx(fee, abs=1e-9)
+        assert position.failed_fee_count == 0
+
+
+def test_a_fee_between_rates_or_above_the_cap_fails() -> None:
+    """FR-4, AD-12 (Story 2.8): 0.875 (3.5%), 0.7502 (off 3% by more than $0.0001), 0.3 (1.2%), 0.125 (0.5%, below
+    the 1% floor) and 2.75 (11%, above the 10% cap) fit no allowed rate: each fails, counts as 0 and is recorded."""
+    for fee in (0.875, 0.7502, 0.3, 0.125, 2.75):
         position = only(build([fee_buy(fee)], market(fees=True)))
         assert position.own_fees == 0.0
         assert (position.failed_fee_count, position.failed_fees) == (1, pytest.approx(fee))
+
+
+def test_a_listed_rate_outside_the_whole_percents_still_passes() -> None:
+    """FR-4 (Story 2.8): the listed rate always counts, even 12.5%: 100 x 0.125 x 0.25 = 3.125."""
+    assert fee_passes(3.125, 100, 0.50, market(fees=True, schedule=(0.125, 1.0)))
+    assert not fee_passes(3.125, 100, 0.50, market(fees=True))
 
 
 def test_with_no_schedule_only_a_zero_fee_passes() -> None:
@@ -537,6 +553,13 @@ def test_the_exponent_is_applied_to_p_times_one_minus_p() -> None:
     squared = market(fees=True, schedule=(0.03, 2.0))
     assert fee_passes(0.1875, 100, 0.50, squared)
     assert not fee_passes(0.75, 100, 0.50, squared)
+
+
+def test_an_earlier_rate_keeps_the_listed_exponent() -> None:
+    """FR-4, AD-12 (Story 2.8): with exponent 2, 5% gives 100 x 0.05 x 0.0625 = 0.3125, which passes; with
+    exponent 1 the same 0.3125 is 1.25% and fails."""
+    assert fee_passes(0.3125, 100, 0.50, market(fees=True, schedule=(0.03, 2.0)))
+    assert not fee_passes(0.3125, 100, 0.50, market(fees=True))
 
 
 def test_only_counted_positions_carry_failed_fees_to_the_card() -> None:

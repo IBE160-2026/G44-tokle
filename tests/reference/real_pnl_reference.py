@@ -33,10 +33,13 @@ SOURCE_GAP_SHARE = Decimal("0.01")
 #  - a recorded fee whose size is at most FEE_ZERO is "no fee recorded"
 #    (maker fill, or a Market without fees): it counts as 0 and is not a failure;
 #  - a recorded fee passes when it is within max(FEE_TOL_ABS, FEE_TOL_REL x expected)
-#    of the fee the Market's schedule gives for that fill.
+#    of the fee the Market's schedule formula gives for that fill, at the listed rate
+#    or at any whole-percent rate from 1% to 10% (FR-4 as changed on 2026-11-23:
+#    "Polymarket changes a Market's rate and lists only today's").
 FEE_ZERO = Decimal("0.0001")
 FEE_TOL_ABS = Decimal("0.0001")
 FEE_TOL_REL = Decimal("0.01")
+WHOLE_PERCENT_RATES = [Decimal(n) / 100 for n in range(1, 11)]  # 0.01, 0.02, ... 0.1
 
 # Left-out reasons, in the order they are listed in the reason column.
 R_SOLD = "fully sold before resolution"
@@ -111,17 +114,20 @@ def outcome_of(m, token_id):
     return Decimal(1) if price == 1 else Decimal(0)
 
 
-def schedule_fee(size, price, m):
+def schedule_fee(size, price, m, rate=None):
     """Fee the Market's schedule gives for buying `size` shares at `price`:
     size * rate * (price * (1 - price)) ** exponent (exponent 1 gives the
-    Glossary's s * rate * p * (1 - p)). 0 if the Market charges no fee.
-    None if the schedule is enabled but incomplete."""
-    if not m or not m.get("fees_enabled"):
-        return Decimal(0)
-    rate = dec(m.get("fee_rate"))
-    exponent = dec(m.get("fee_exponent"))
+    Glossary's s * rate * p * (1 - p)), with the Market's listed exponent.
+    Without `rate`: at the listed rate; 0 if the Market charges no fee;
+    None if the schedule is enabled but incomplete.
+    With `rate`: at that rate instead (FR-4's whole-percent rates)."""
     if rate is None:
-        return None
+        if not m or not m.get("fees_enabled"):
+            return Decimal(0)
+        rate = dec(m.get("fee_rate"))
+        if rate is None:
+            return None
+    exponent = dec(m.get("fee_exponent")) if m else None
     base = price * (1 - price)
     if exponent is None or exponent == 1:
         shape = base
@@ -130,16 +136,30 @@ def schedule_fee(size, price, m):
     return size * rate * shape
 
 
-def check_fee(recorded, expected):
-    """Returns (counted_fee, result)."""
-    if abs(recorded) <= FEE_ZERO:
-        return Decimal(0), "no fee recorded"
-    if expected is None:
-        return Decimal(0), "FAILED (fee schedule incomplete)"
+def fee_fits(recorded, expected):
     tolerance = max(FEE_TOL_ABS, FEE_TOL_REL * expected)
-    if abs(recorded - expected) <= tolerance:
-        return recorded, "passed"
-    return Decimal(0), "FAILED"
+    return abs(recorded - expected) <= tolerance
+
+
+def check_fee(recorded, expected, listed_rate, earlier):
+    """Returns (counted_fee, result, expected fee to show).
+
+    `expected` is the fee at the listed rate (`listed_rate` names that rate);
+    `earlier` is [(rate, fee at that rate)] for the whole-percent rates 1% to 10%.
+    A fee that fits the listed rate passes at it; otherwise the closest-fitting
+    whole-percent rate (a tie goes to the lower rate) is the one shown."""
+    if abs(recorded) <= FEE_ZERO:
+        return Decimal(0), "no fee recorded", expected
+    if expected is not None and fee_fits(recorded, expected):
+        return recorded, f"passed at listed rate {listed_rate}", expected
+    fitting = [(abs(recorded - fee), rate, fee) for rate, fee in earlier
+               if fee_fits(recorded, fee)]
+    if fitting:
+        _, rate, fee = min(fitting)
+        return recorded, f"passed at rate {fmt(rate)} (listed {listed_rate})", fee
+    if expected is None:
+        return Decimal(0), "FAILED (fee schedule incomplete)", expected
+    return Decimal(0), "FAILED", expected
 
 
 def analyse(data):
@@ -207,7 +227,14 @@ def analyse(data):
             size, price, usdc = dec(r["size"]), dec(r["price"]), dec(r["usdc_size"])
             recorded = usdc - size * price
             expected = schedule_fee(size, price, m)
-            counted, result = check_fee(recorded, expected)
+            earlier = [(rate, schedule_fee(size, price, m, rate)) for rate in WHOLE_PERCENT_RATES]
+            if not m or not m.get("fees_enabled"):
+                listed_rate = "no fee"
+            elif m.get("fee_rate") is None:
+                listed_rate = "none"
+            else:
+                listed_rate = fmt(dec(m["fee_rate"]))
+            counted, result, shown = check_fee(recorded, expected, listed_rate, earlier)
             own_fees += counted
             if result.startswith("FAILED"):
                 failed.append(recorded)
@@ -220,7 +247,7 @@ def analyse(data):
                     "fees_enabled": str(bool(m and m.get("fees_enabled"))).lower(),
                     "fee_rate": fmt(dec(m.get("fee_rate"))) if m else "",
                     "fee_exponent": fmt(dec(m.get("fee_exponent"))) if m else "",
-                    "expected_fee": fmt(expected) if expected is not None else "",
+                    "expected_fee": fmt(shown) if shown is not None else "",
                     "result": result,
                 })
         # Sell-side fees (not Own Fees; kept only for the notes' alternative).
