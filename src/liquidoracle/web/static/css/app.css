@@ -39,6 +39,8 @@
   --neutral-tint: #1B222C;
   --dot-empty: #4A535F;
   --chart-bar: #5E6774;
+  --chart-tail: #6193CF;
+  --chart-active: #BDC0C5;
   --error: #F28B82;
   --pill: #0E1116;
   --on-pill: #E7EAEE;
@@ -82,6 +84,8 @@
   --neutral-tint: #F1F2F4;
   --dot-empty: #C5CAD1;
   --chart-bar: #8E959F;
+  --chart-tail: #3F74B3;
+  --chart-active: #43474E;
   --error: #B42318;
   --pill: #1A2029;
   --on-pill: #FFFFFF;
@@ -244,8 +248,8 @@ main:has(.verdict-card) { padding-top: var(--space-7); }
   margin: var(--space-1) 0 0; padding: 14px 18px; border-radius: var(--rounded-sm);
   background: var(--accent-tint-soft); border: 1px solid var(--accent-tint);
 }
-.about-text p { margin: 0 0 6px; }
-.about-text p:last-child { margin: 0; }
+.about-text p { margin: 0; }
+.about-text p + p { margin-top: 6px; }  /* a hidden last paragraph (Story 3.2) leaves no gap */
 .chart { margin: var(--space-5) 0 0; }
 .chart-y-title { margin: 0 0 var(--space-2); font-size: 13px; line-height: 1.2; color: var(--ink-muted); }
 .chart-frame { position: relative; margin-left: 52px; padding-top: 34px; }
@@ -281,6 +285,53 @@ main:has(.verdict-card) { padding-top: var(--space-7); }
 }
 .chart .t-short { display: none; }
 .chart-hint { margin: var(--space-2) 0 0; font-size: 13px; color: var(--ink-muted); }
+
+/* Exploring the chart (UX-DR26, UX-DR27, UX-DR28; Story 3.2). Only chart.js shows these parts. The
+   slider covers the plot, the marker button sits on the marker line above it, and the tooltip and
+   tail label float above both. */
+.chart-bar { transition: fill 120ms; transform-box: fill-box; transform-origin: 50% 100%; }
+.chart-bar.is-active { fill: var(--chart-active); }
+.chart-bar.is-tail { fill: var(--chart-tail); }
+.chart-explore { position: absolute; inset: 0; z-index: 1; cursor: crosshair; border-radius: 4px; }
+.chart-explore:focus-visible { outline-offset: 4px; }
+.chart-marker-button {
+  position: absolute; top: -6px; bottom: 0; z-index: 2; width: 28px; transform: translateX(-50%);
+  padding: 0; border: 0; border-radius: var(--rounded-sm); background: transparent; cursor: pointer;
+}
+.chart-marker-button:focus-visible { outline-offset: 1px; }  /* from the dot's top, the ring stays under the marker label */
+.chart-tip, .chart-tail-label {
+  position: absolute; z-index: 3; padding: 6px 10px; border: 1px solid transparent; border-radius: var(--rounded-sm);
+  font-size: 13px; line-height: 1.35; font-variant-numeric: tabular-nums;
+  visibility: hidden; opacity: 0; transition: opacity 120ms, visibility 0s linear 120ms;
+}
+.chart-tip { white-space: nowrap; background: var(--ink); color: var(--surface-raised); }
+.chart-tip strong { font-weight: 650; }
+.chart-tip.is-shown { visibility: visible; opacity: 1; transition-delay: 0s; }
+.chart-tail-label {
+  top: var(--space-3); width: max-content; max-width: 34%; transform: translateX(14px);
+  background: var(--accent-tint); color: var(--ink); font-weight: 600;
+}
+.chart-tail-label.is-left { transform: translateX(calc(-100% - 14px)); text-align: right; }
+.chart-plot.show-tail .chart-tail-label { visibility: visible; opacity: 1; transition-delay: 0s; }
+/* Build-up (UX-DR28): chart.js adds pre-build only when motion is allowed, then is-building once
+   the chart is in view: the bars grow left to right (420 ms, 4 ms apart), then the marker drops
+   14 px and fades in (260 ms after 560 ms); all done in about 0.82 s, inside chart.js's BUILD_MS. */
+.chart-plot.pre-build .chart-bar { transform: scaleY(0); }
+.chart-plot.pre-build .chart-marker-line { opacity: 0; }
+.chart-plot.pre-build .chart-dot, .chart-plot.pre-build .chart-marker-label { opacity: 0; translate: 0 -14px; }
+.chart-plot.is-building .chart-bar {
+  transition: transform 420ms cubic-bezier(.2, .7, .2, 1) calc(var(--i) * 4ms), fill 120ms;
+}
+.chart-plot.is-building .chart-marker-line,
+.chart-plot.is-building .chart-dot,
+.chart-plot.is-building .chart-marker-label {
+  transition: opacity 260ms ease-out 560ms, translate 260ms cubic-bezier(.2, .7, .2, 1) 560ms;
+}
+@media print {  /* a chart printed before it scrolled into view is still drawn in full */
+  .chart-plot.pre-build .chart-bar { transform: none; }
+  .chart-plot.pre-build .chart-marker-line, .chart-plot.pre-build .chart-dot,
+  .chart-plot.pre-build .chart-marker-label { opacity: 1; translate: none; }
+}
 .chart-alt { margin: var(--space-3) 0 0; padding: var(--space-3) 18px; border-radius: var(--rounded-sm); background: var(--neutral-tint); }
 @media (max-width: 639px) {
   .chart-plot { height: 200px; }
@@ -288,6 +339,8 @@ main:has(.verdict-card) { padding-top: var(--space-7); }
   .chart .t-short { display: inline; }
   .chart-tick.is-minor { display: none; }
   .chart-marker-label { font-size: 13px; }
+  .chart-tail-label { max-width: 46%; }
+  .chart-marker-button { width: 24px; }
 }
 @media (max-width: 399px) {
   .chart-ends { display: none; }
@@ -297,6 +350,7 @@ main:has(.verdict-card) { padding-top: var(--space-7); }
   .chart-grid { stroke: GrayText; }
   .chart-marker-line { stroke: Highlight; }
   .chart-dot { forced-color-adjust: none; background: Highlight; }
+  .chart-bar.is-tail, .chart-bar.is-active { fill: Highlight; }
 }
 
 /* Fetching state (UX-DR22, DESIGN.md S1): three accent dots pulsing in turn, still with reduce motion */
@@ -309,6 +363,7 @@ h1.checking { font-size: 28px; line-height: 1.25; }
 @keyframes fetch-pulse { 0%, 80%, 100% { opacity: .25; } 40% { opacity: 1; } }
 @media (prefers-reduced-motion: reduce) {
   .fetch-dots span { animation: none; opacity: 1; }
+  .chart-bar, .chart-tip, .chart-tail-label, .chart-dot, .chart-marker-label, .chart-marker-line { transition: none; }
 }
 .reload-note { margin: var(--space-4) 0 0; font-size: 14px; color: var(--ink-muted); }
 

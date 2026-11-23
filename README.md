@@ -37,9 +37,10 @@ uv run liquidoracle run --offline
 
 Then open **http://127.0.0.1:8044** in your browser. Under *Sample Wallets*, the *Real Wallets* group lists 10 real Polymarket Wallets by short address; click one to see its Verdict card (what each one shows, and why, is in [`docs/real-wallets.md`](docs/real-wallets.md)). Under *Synthetic Wallets*, pick **Sharp trader**: its Verdict card says *Skilled (high confidence)*. The thin wallet shows *Not enough data*, and a coin-flipper shows *No evidence of skill*. The list shows one of the 1,000 coin-flippers; to check another, open any file in `instance/synthetic/coin-flippers/`, copy the value after `"address":` (0x and 40 characters) and paste it into the address field. Stop the app with `Ctrl+C`.
 
-The app starts in the dark theme. The round button at the top right switches to the light theme and back, and the browser remembers your pick. Every page also works without JavaScript. The app has two small JavaScript files, in `src/liquidoracle/web/static/js/`:
+The app starts in the dark theme. The round button at the top right switches to the light theme and back, and the browser remembers your pick. Every page also works without JavaScript. The app has three small JavaScript files, in `src/liquidoracle/web/static/js/`:
 
 - `theme.js`: the light and dark theme button.
+- `chart.js`: lets you explore the luck chart on a Verdict page. Point at a bar, or step through the bars with the arrow keys, to see its range and how many replays ended there; point at the blue *This Wallet* line, or Tab to it, to light up the replays that did as well or better. Click it or press Enter to keep that highlight on; click again or press Esc to clear it. The first time the chart comes into view, the bars grow in (not when your system is set to reduce motion). Without it, the chart and the sentence under it show the same result, just without the pointing.
 - `progress.js`: while a live lookup fetches, it asks the app once a second whether the fetch is done, then shows the result in place and moves the keyboard focus to its heading. Without it, the page has a "Reload this page" link instead.
 
 The app runs only on your own computer (it listens on 127.0.0.1, not on the network).
