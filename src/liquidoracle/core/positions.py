@@ -29,6 +29,10 @@ _GAP_DECIMALS = 9
 # schedule [ASSUMPTION: $0.0001]. Real taker fees miss the schedule by at most $0.00001 (Story 2.3).
 FEE_TOLERANCE = 0.0001
 
+# FR-4 / AD-12 (Edvard, 2026-11-23, Story 2.8): Gamma lists only a Market's rate today and Polymarket
+# changes rates, so a fee also passes at any whole-percent rate from 1% to 10% [ASSUMPTION].
+WHOLE_PERCENT_RATES = tuple(k / 100 for k in range(1, 11))
+
 # FR-11 / AD-11: above this share of the window left out, the card says only part was judged [ASSUMPTION].
 LEFT_OUT_NOTE_ABOVE = 0.10
 
@@ -47,17 +51,19 @@ def mostly_left_out(position_set: PositionSet) -> bool:
 
 
 def fee_passes(fee: float, shares: float, price: float, market: Market) -> bool:
-    """AD-12: is one buy fill's Own Fee 0 (maker) or the Market's scheduled taker fee, within the tolerance?
+    """FR-4, AD-12: is one buy fill's Own Fee 0 (maker) or a taker fee the Market's schedule allows?
 
-    Expected fee = shares x rate x (p(1 - p))^exponent. A negative fee, or a non-zero fee in a Market
-    with no schedule, fails.
+    Expected fee = shares x rate x (p(1 - p))^exponent, with the listed exponent and either the listed rate
+    or one of `WHOLE_PERCENT_RATES` (Story 2.8). A negative fee, a fee that fits none of those rates within the
+    tolerance, or a non-zero fee in a Market with no schedule, fails.
     """
     if abs(fee) <= FEE_TOLERANCE:
         return True
     if market.fee_rate is None or market.fee_exponent is None:
         return False
-    expected = shares * market.fee_rate * (price * (1.0 - price)) ** market.fee_exponent
-    return abs(fee - expected) <= FEE_TOLERANCE
+    fee_per_unit_rate = shares * (price * (1.0 - price)) ** market.fee_exponent
+    rates = (market.fee_rate, *WHOLE_PERCENT_RATES)
+    return any(abs(fee - fee_per_unit_rate * rate) <= FEE_TOLERANCE for rate in rates)
 
 
 def build_positions(

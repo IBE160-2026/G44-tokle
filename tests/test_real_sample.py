@@ -537,12 +537,12 @@ RECORDED = {
     "0xcf0d7f69cf162918b33fc1ea7449583fa537132d": ("Likely skilled", 139, 822_007),
     "0x73648309111de9f9d4e2a58a50f803fa7d30d44e": ("No evidence of skill", 229, -633),
     "0xd218e474776403a330142299f7796e8ba32eb5c9": ("Not enough data", 0, 0),
-    "0xd3a6e523c440f94f9259398fbcf7b5cc5ccffd55": ("No evidence of skill", 641, 118_065),
+    "0xd3a6e523c440f94f9259398fbcf7b5cc5ccffd55": ("No evidence of skill", 641, 117_604),  # 118_065 before Story 2.8 (fees)
     "0x63d43bbb87f85af03b8f2f9e2fad7b54334fa2f1": ("Not enough data", 0, 0),
     "0x94884db79666a1a34c46d03fb4f8e9cbcaf6b5a6": ("No evidence of skill", 1_423, -1_103),
     "0x7298060b1844a4c4ca0578146ab3f5e76aa1fcfc": ("Not enough data", 0, 0),
-    "0x0f4b0a6b7f82108924ac9c8320ed91028f504183": ("No evidence of skill", 210, -188),
-    "0x0915962b4c6bc4505e7434a0de815a596a6667c3": ("Not enough data", 14, -49_571),
+    "0x0f4b0a6b7f82108924ac9c8320ed91028f504183": ("No evidence of skill", 210, -189),  # -188 before Story 2.8
+    "0x0915962b4c6bc4505e7434a0de815a596a6667c3": ("Not enough data", 14, -49_616),  # -49_571 before Story 2.8
     "0x29306ddc4724e24a23bf1c8679aa034376ea9dcb": ("Not enough data", 18, 295),
 }
 
