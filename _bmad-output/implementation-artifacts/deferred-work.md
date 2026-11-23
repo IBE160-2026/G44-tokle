@@ -67,3 +67,9 @@ Findings and goals set aside by `bmad-build`, each with where it came from.
 - source_spec: `_bmad-output/implementation-artifacts/spec-2-8-the-fee-check-accepts-an-earlier-rate.md`
   summary: The independent reference script also tries whole-percent rates in a Market without fees or without a schedule, where the app ignores the fee (no fees) or fails it (no schedule).
   evidence: Story 2.8, the helper's unclear point 1. No such fee exists in the two reference Wallets (largest 0.0000045), so the totals agree; it would matter only for a new reference Wallet.
+- source_spec: `_bmad-output/implementation-artifacts/spec-3-1-the-luck-chart.md`
+  summary: The Verdict header (Verdict and address card) does not stack below 900 px, so at phone widths the whole Verdict page scrolls sideways.
+  evidence: Seen in Story 3.1's 360 and 600 px screenshots; the grid `.verdict-head` has a 300 px minimum column from Story 1.7. Story 3.4 already plans "two-column parts stack below 900 px" (UX-DR10).
+- source_spec: `_bmad-output/implementation-artifacts/spec-3-1-the-luck-chart.md`
+  summary: For Story 3.5 (Edvard, 2026-11-23): a screen reader never hears "below all 10,000 Simulations", because the marker label is inside the chart's aria-hidden block and the text alternative (PRD §8 sentence) then says only "more than half the time"; decide whether the text alternative gets a beyond clause.
+  evidence: Story 3.1 review finding 7. "Above all" is carried by the odds phrase ("fewer than 1 time in 10,000"), "below all" is not. Rare: it needs a Wallet worse than every replay. Changing the sentence changes the planned wording (FR-9, UX-DR24), so it is Edvard's call.

@@ -30,4 +30,45 @@
         <p class="stored">{{ card.stored }}</p>
       </div>
     </section>
+    {% if page.chart %}
+    {% set chart = page.chart %}
+    {# The chart card (FR-9, UX-DR24, UX-DR25): every number and word comes from services/chart.py. #}
+    <section class="card chart-card" aria-labelledby="chart-title">
+      <div class="chart-head">
+        <h2 id="chart-title">Simulated results <small>{{ chart.title_note }}</small></h2>
+        <details class="about">
+          <summary>About this chart</summary>
+          <div class="about-text">
+            {% for paragraph in chart.about %}<p>{{ paragraph }}</p>{% endfor %}
+          </div>
+        </details>
+      </div>
+
+      <div class="chart" aria-hidden="true">
+        <p class="chart-y-title">{{ chart.y_title }}</p>
+        <div class="chart-frame{% if chart.beyond %} has-beyond{% endif %}">
+          <div class="chart-plot">
+            <svg class="chart-svg" viewBox="0 0 {{ chart.view_width }} 100" preserveAspectRatio="none" focusable="false">
+              {% for line in chart.gridlines %}<line class="chart-grid" x1="0" x2="{{ chart.view_width }}" y1="{{ '%.3f' % (100 - line.level) }}" y2="{{ '%.3f' % (100 - line.level) }}" vector-effect="non-scaling-stroke"/>{% endfor %}
+              {% for bar in chart.bars %}<rect class="chart-bar" x="{{ '%.3f' % bar.x }}" y="{{ '%.3f' % (100 - bar.height) }}" width="{{ '%.3f' % bar.width }}" height="{{ '%.3f' % bar.height }}"/>{% endfor %}
+              <line class="chart-marker-line" x1="{{ '%.3f' % chart.marker_x }}" x2="{{ '%.3f' % chart.marker_x }}" y1="0" y2="100" vector-effect="non-scaling-stroke"/>
+            </svg>
+            {% for line in chart.gridlines %}<span class="chart-y-label" style="bottom: {{ '%.3f' % line.level }}%">{{ line.label }}</span>{% endfor %}
+            <span class="chart-dot" style="left: {{ '%.3f' % chart.marker_left }}%"></span>
+            <span class="chart-marker-label anchor-{{ chart.anchor }}" style="left: {{ '%.3f' % chart.marker_left }}%">{{ chart.marker_label }}{% if chart.beyond %}<br>{{ chart.beyond }}{% endif %}</span>
+          </div>
+          <div class="chart-axis">
+            {% for tick in chart.ticks %}<span class="chart-tick{% if tick.minor %} is-minor{% endif %}" style="left: {{ '%.3f' % tick.left }}%"><span class="t-full">{{ tick.label }}</span><span class="t-short">{{ tick.short }}</span></span>{% endfor %}
+          </div>
+          <div class="chart-ends">
+            <span class="chart-end"><span class="t-full">{{ chart.low_label }}</span><span class="t-short">{{ chart.low_short }}</span></span>
+            <span class="chart-end"><span class="t-full">{{ chart.high_label }}</span><span class="t-short">{{ chart.high_short }}</span></span>
+          </div>
+        </div>
+      </div>
+      <p class="chart-hint">{{ chart.hint }}</p>
+
+      <p class="chart-alt">{{ chart.text }}</p>
+    </section>
+    {% endif %}
 {% endblock %}

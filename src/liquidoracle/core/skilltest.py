@@ -36,6 +36,7 @@ class _Run:
     own_fees: float
     real_cents: int
     at_or_above: int
+    at_or_below: int
     p_value: float
     bins: tuple[ChartBin, ...]
 
@@ -55,14 +56,15 @@ def skill_test(position_set: PositionSet, *, seed: int, unit_id: str, scope: str
         return SkillTestResult(
             scope=scope, seed=seed, verdict=Verdict.NOT_ENOUGH_DATA, tested_count=tested,
             sliver_count=slivers, real_pnl=_real_pnl(bets), own_fees=_own_fees(bets),
-            simulations=0, at_or_above=None, p_value=None, bins=(),
+            simulations=0, at_or_above=None, at_or_below=None, p_value=None, bins=(),
             uncoupled_share=uncoupled_share(position_set.tested),
         )
     run = _engine(bets, seed=seed, unit_id=unit_id)
     return SkillTestResult(
         scope=scope, seed=seed, verdict=verdict_for(run.p_value), tested_count=tested,
         sliver_count=slivers, real_pnl=run.real_pnl, own_fees=run.own_fees,
-        simulations=SIMULATIONS, at_or_above=run.at_or_above, p_value=run.p_value, bins=run.bins,
+        simulations=SIMULATIONS, at_or_above=run.at_or_above, at_or_below=run.at_or_below,
+        p_value=run.p_value, bins=run.bins,
         uncoupled_share=uncoupled_share(position_set.tested),
     )
 
@@ -117,6 +119,7 @@ def _engine(bets: Sequence[Position], *, seed: int, unit_id: str) -> _Run:
         totals[start:start + rows] = base + draws.won(generator, rows).astype(np.int64) @ gain
 
     at_or_above = int(np.count_nonzero(totals >= real_cents))
+    at_or_below = int(np.count_nonzero(totals <= real_cents))  # FR-9: 0 means below every Simulation
     real_pnl = _real_pnl(ordered)
     own_fees = _own_fees(ordered)
     return _Run(
@@ -124,6 +127,7 @@ def _engine(bets: Sequence[Position], *, seed: int, unit_id: str) -> _Run:
         own_fees=own_fees,
         real_cents=real_cents,
         at_or_above=at_or_above,
+        at_or_below=at_or_below,
         p_value=(1 + at_or_above) / (SIMULATIONS + 1),
         bins=_bins(totals / 100.0 - own_fees, real_pnl),
     )

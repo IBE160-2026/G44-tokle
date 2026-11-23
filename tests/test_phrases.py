@@ -284,3 +284,59 @@ def test_ux_dr23_stored_on():
     assert phrases.stored_at(moment) == f"Data stored {phrases.stored_on(moment)}"
     with pytest.raises(ValueError):
         phrases.stored_on(-1)
+
+
+# --- Story 3.1: the luck chart's words (FR-9, UX-DR24, UX-DR25) ---------------------------------
+
+
+@pytest.mark.parametrize(
+    ("amount", "full", "short"),
+    [
+        (0.0, "$0", "$0"),
+        (-0.0, "$0", "$0"),
+        (500.0, "$500", "$500"),
+        (-1500.0, "−$1,500", "−$1.5k"),
+        (200_000.0, "$200,000", "$200k"),
+        (-12_500.0, "−$12,500", "−$12.5k"),
+        (1_250.0, "$1,250", "$1.25k"),
+        (2_500_000.0, "$2,500,000", "$2.5M"),
+        (1.25, "$1.25", "$1.25"),
+        (-0.2, "−$0.20", "−$0.20"),
+    ],
+)
+def test_ux_dr25_axis_money(amount, full, short):
+    """UX-DR25: axis amounts in whole dollars, short below 640 px ("−$100k"); cents kept only off whole dollars."""
+    assert phrases.axis_money(amount) == full
+    assert phrases.axis_money(amount, short=True) == short
+
+
+def test_ux_dr25_end_bar_and_marker_labels():
+    """UX-DR25, FR-9: "−$200,000 or less", "$200,000 or more", "This Wallet: $40,180" and the beyond lines."""
+    assert phrases.end_bar_label(-200_000.0, above=False) == "−$200,000 or less"
+    assert phrases.end_bar_label(200_000.0, above=True, short=True) == "$200k or more"
+    assert phrases.marker_label(40_180.4) == "This Wallet: $40,180"
+    assert phrases.marker_label(-1_240.0) == "This Wallet: −$1,240"
+    assert phrases.beyond_all(above=True) == "above all 10,000 Simulations"
+    assert phrases.beyond_all(above=False) == "below all 10,000 Simulations"
+
+
+def test_prd8_chart_text_alternative():
+    """PRD §8, UX-DR24: the example from EXPERIENCE.md, word for word."""
+    assert phrases.chart_text(40_180.0, 212, 0.25) == (
+        "This Wallet made $40,180 on 212 resolved bets. "
+        "In 10,000 replays with no edge, a result this good came up about 1 time in 4."
+    )
+    assert phrases.chart_text(-226.0, 100, 0.7).startswith("This Wallet made −$226 on 100 resolved bets.")
+
+
+def test_ux_dr24_about_this_chart():
+    """UX-DR24 (Edvard, 2026-11-23): three paragraphs; the average is $0, or minus the fees when they round to a dollar."""
+    first, second, third = phrases.about_chart(212, 0.0)
+    assert first.startswith("Each replay (a Simulation) keeps this Wallet's 212 resolved bets, prices and stakes")
+    assert second == "The bars count how many of the 10,000 replays ended at each result. On average, luck alone lands at $0."
+    assert third.startswith('The blue line labelled "This Wallet" is this Wallet\'s Real PnL: what it made on the 212 bets')
+    assert "arrow keys" not in " ".join((first, second, third))  # Story 3.2 adds how to explore
+    assert phrases.about_chart(212, 0.4)[1].endswith("lands at $0.")
+    assert phrases.about_chart(212, 1_087.34)[1].endswith(
+        "On average, luck alone lands at −$1,087, what this Wallet paid in fees."
+    )

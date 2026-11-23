@@ -36,7 +36,7 @@
 - [x] 2026-11-20 [story-1-7-verdict-card](989-2026-11-20-16-52-21-story-1-7-verdict-card.md) — set Story 1.7 to `done` in `sprint-status.yaml` when its PR is merged (Epic 1 then complete) (løst 2026-11-20: 27f0419)
 - [x] 2026-11-20 [story-1-7-verdict-card](989-2026-11-20-16-52-21-story-1-7-verdict-card.md) — check that the new README-commands CI job passes on its first run on GitHub (løst 2026-11-21: Edvard, CI passed on PR #24)
 - [x] 2026-11-20 [story-1-7-verdict-card](989-2026-11-20-16-52-21-story-1-7-verdict-card.md) — Story 2.1: once live runs get a client, the lookup service must not show the Sample list or the "not loaded" box in live mode (it keys them off "no client") (flyttet 2026-11-20 til Story 2.5, der klienten kobles inn)
-- [ ] 2026-11-20 [story-1-7-verdict-card](989-2026-11-20-16-52-21-story-1-7-verdict-card.md) — Story 3.1: the chart's axis labels and text alternative take their numbers from `core/phrases`
+- [x] 2026-11-20 [story-1-7-verdict-card](989-2026-11-20-16-52-21-story-1-7-verdict-card.md) — Story 3.1: the chart's axis labels and text alternative take their numbers from `core/phrases` (løst 2026-11-23: 696f6cd)
 - [ ] 2026-11-20 [story-1-7-verdict-card](989-2026-11-20-16-52-21-story-1-7-verdict-card.md) — Story 3.3: decide whether split-or-merged Positions count in the Exit PnL total and whether sell fees count (moved from 1.7)
 - [ ] 2026-11-20 [story-1-7-verdict-card](989-2026-11-20-16-52-21-story-1-7-verdict-card.md) — Story 3.4: the Verdict page scrolls sideways at 320 px wide (the head grid doesn't stack yet)
 - [x] 2026-11-20 [story-2-1-polymarket-client](988-2026-11-20-22-15-07-story-2-1-polymarket-client.md) — set Story 2.1 to `done` in `sprint-status.yaml` when its PR is merged (løst 2026-11-21: 72427a1)
@@ -70,4 +70,6 @@
 - [x] 2026-11-23 [story-2-7-real-pnl-independent](982-2026-11-23-09-49-41-story-2-7-real-pnl-independent.md) — set Story 2.7 to `done` in `sprint-status.yaml` when its PR is merged (løst 2026-11-23: 48fe6c9)
 - [ ] 2026-11-23 [story-2-8-fee-check-earlier-rate](981-2026-11-23-11-13-44-story-2-8-fee-check-earlier-rate.md) — Epic 6: the Follower Fee also uses today's listed rate (`deferred-work.md`)
 - [ ] 2026-11-23 [story-2-8-fee-check-earlier-rate](981-2026-11-23-11-13-44-story-2-8-fee-check-earlier-rate.md) — reference script tries whole-percent rates in Markets without fees or schedule, unlike the app; matters only for a new reference Wallet (`deferred-work.md`)
-- [ ] 2026-11-23 [story-2-8-fee-check-earlier-rate](981-2026-11-23-11-13-44-story-2-8-fee-check-earlier-rate.md) — set Story 2.8 to `done` in `sprint-status.yaml` when its PR is merged
+- [x] 2026-11-23 [story-2-8-fee-check-earlier-rate](981-2026-11-23-11-13-44-story-2-8-fee-check-earlier-rate.md) — set Story 2.8 to `done` in `sprint-status.yaml` when its PR is merged (løst 2026-11-23: 63d3462)
+- [ ] 2026-11-23 [story-3-1-luck-chart](980-2026-11-23-12-04-02-story-3-1-luck-chart.md) — Story 3.5: decide whether the chart's text alternative says "below all 10,000 Simulations" for screen readers (`deferred-work.md`)
+- [ ] 2026-11-23 [story-3-1-luck-chart](980-2026-11-23-12-04-02-story-3-1-luck-chart.md) — set Story 3.1 to `done` in `sprint-status.yaml` when its PR is merged

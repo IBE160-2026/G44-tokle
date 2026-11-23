@@ -276,6 +276,75 @@ def test_fr10_thin_wallet_not_enough_data(offline: FlaskClient) -> None:
     assert "a trader with no edge" not in page
 
 
+# --- the chart card (FR-9, UX-DR24, UX-DR25; Story 3.1) -----------------------------------------
+
+STOP_LOSS = synthetic.address_of("stop-loss-trader")
+
+
+def chart_card(page: str) -> str:
+    found = re.search(r'<section class="card chart-card".*?</section>', page, re.S)
+    assert found, "no chart card"
+    return found.group(0)
+
+
+def test_fr9_chart_card_follows_the_verdict_card(offline: FlaskClient) -> None:
+    """FR-9, UX-DR19, UX-DR24: after the Verdict card come the title, About (closed), the chart, the hint and
+    the text alternative, in that order, complete without JavaScript (AD-18)."""
+    page = html(offline, f"/wallet/{SHARP}")
+    card = chart_card(page)
+    assert page.index('class="verdict-card"') < page.index('class="card chart-card"')
+    assert '<h2 id="chart-title">Simulated results <small>(10,000 replays with no edge)</small></h2>' in card
+    assert re.search(r'<details class="about">\s*<summary>About this chart</summary>', card)  # closed by default
+    order = [card.index(part) for part in ("<details", "<svg", 'class="chart-hint"', 'class="chart-alt"')]
+    assert order == sorted(order)
+    assert card.count('class="chart-bar"') == 42
+    assert (
+        '<p class="chart-alt">This Wallet made $2,000 on 100 resolved bets. '
+        "In 10,000 replays with no edge, a result this good came up about 1 time in 5,000.</p>"
+    ) in card
+    assert "chart.js" not in page and "<script" not in card  # Story 3.2 adds the only chart script
+    # The marker reaches the page where the service put it: the axis' top edge, label hanging inwards.
+    assert '<line class="chart-marker-line" x1="42.000" x2="42.000"' in card
+    assert '<span class="chart-marker-label anchor-end" style="left: 95.455%">This Wallet: $2,000</span>' in card
+    assert '<span class="t-full">−$2,000 or less</span><span class="t-short">−$2k or less</span>' in card
+
+
+def test_ux_dr25_bars_and_axes_are_hidden_from_screen_readers(offline: FlaskClient) -> None:
+    """UX-DR25, NFR-9: the drawing and all its labels sit inside one aria-hidden block; the hint and the text
+    alternative stay outside it, so the text alternative carries the meaning."""
+    card = chart_card(html(offline, f"/wallet/{SHARP}"))
+    hidden = re.search(r'<div class="chart" aria-hidden="true">(.*)</div>\s*<p class="chart-hint">', card, re.S)
+    assert hidden, "the chart block is not hidden from screen readers"
+    for part in ("<svg", "chart-y-label", "chart-tick", "chart-end", "chart-marker-label"):
+        assert part in hidden.group(1), part
+    assert "This Wallet: $2,000" in hidden.group(1)
+
+
+def test_fr9_above_all_label_on_the_page(offline: FlaskClient) -> None:
+    """FR-9: the stop-loss trader beat every replay, so the marker's second line says so."""
+    card = chart_card(html(offline, f"/wallet/{STOP_LOSS}"))
+    assert "This Wallet: $1,650<br>above all 10,000 Simulations" in card
+    assert 'class="chart-frame has-beyond"' in card
+
+
+def test_fr10_not_enough_data_shows_no_chart_card(offline: FlaskClient) -> None:
+    """FR-10, UX-DR23: *Not enough data* has no chart card."""
+    page = html(offline, f"/wallet/{THIN}")
+    assert "chart-card" not in page and "Simulated results" not in page
+
+
+def test_ux_dr25_chart_styles() -> None:
+    """UX-DR25, UX-DR12: 200 px tall and short labels below 640 px, end labels hidden below 400 px, and
+    the bars and marker in system colours under forced colours."""
+    css = (WEB / "static" / "css" / "app.css").read_text(encoding="utf-8")
+    narrow = re.search(r"@media \(max-width: 639px\) \{(.*?)\n\}", css, re.S).group(1)
+    assert ".chart-plot { height: 200px; }" in narrow and ".chart .t-short { display: inline; }" in narrow
+    assert ".chart-tick.is-minor { display: none; }" in narrow
+    assert re.search(r"@media \(max-width: 399px\) \{\s*\.chart-ends \{ display: none; \}", css)
+    forced = "".join(re.findall(r"@media \(forced-colors: active\) \{(.*?)\n\}", css, re.S))
+    assert ".chart-bar { fill: CanvasText; }" in forced and ".chart-marker-line { stroke: Highlight; }" in forced
+
+
 class FakeLookup:
     """Hands the page a fixed card, to show the variant no Sample Wallet has (Likely skilled)."""
 

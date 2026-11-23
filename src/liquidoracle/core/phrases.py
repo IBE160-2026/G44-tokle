@@ -92,6 +92,79 @@ def resolved_bets_word(number: int) -> str:
     return "resolved bet" if _whole(number, "count") == 1 else "resolved bets"
 
 
+# --- Story 3.1: the luck chart's words (FR-9, UX-DR24, UX-DR25) --------------------------------
+
+CHART_TITLE_NOTE = f"({SIMULATIONS:,} replays with no edge)"  # after "Simulated results" (UX-DR24)
+
+_CENT = Decimal("0.01")
+
+
+def axis_money(amount: float, *, short: bool = False) -> str:
+    """An amount on the chart's dollar axis (UX-DR25): "$50,000", or short "$50k" / "$1.25M".
+
+    Whole dollars like `money()`; an edge that is not a whole dollar (a tiny Wallet's axis) keeps
+    its cents, "$12.50", so two ticks never read the same.
+    """
+    cents = Decimal(repr(_real(amount, "amount"))).quantize(_CENT, rounding=ROUND_HALF_UP)
+    if cents == 0:
+        return "$0"
+    sign = MINUS if cents < 0 else ""
+    size = abs(cents)
+    if size != size.to_integral_value():
+        return f"{sign}${size:,.2f}"
+    if short and size >= 1_000:
+        scaled, unit = (size / 1_000_000, "M") if size >= 1_000_000 else (size / 1_000, "k")
+        digits = f"{scaled:.2f}".rstrip("0").rstrip(".")
+        return f"{sign}${digits}{unit}"
+    return f"{sign}${int(size):,}"
+
+
+def end_bar_label(edge: float, *, above: bool, short: bool = False) -> str:
+    """An end bar's label (UX-DR25): "−$200,000 or less" for the low one, "$200,000 or more" for the high one."""
+    return f"{axis_money(edge, short=short)} {'or more' if above else 'or less'}"
+
+
+def marker_label(real_pnl: float) -> str:
+    """The Wallet marker's label (UX-DR25): "This Wallet: $40,180"."""
+    return f"This Wallet: {money(real_pnl)}"
+
+
+def beyond_all(*, above: bool) -> str:
+    """The marker's second line when the Real PnL is beyond every Simulation (FR-9): "above all 10,000 Simulations"."""
+    return f"{'above' if above else 'below'} all {SIMULATIONS:,} Simulations"
+
+
+def chart_text(real_pnl: float, tested_count: int, p_value: float) -> str:
+    """The chart's always-visible text alternative (PRD §8, UX-DR24)."""
+    return (
+        f"This Wallet made {money(real_pnl)} on {count(tested_count)} {resolved_bets_word(tested_count)}. "
+        f"In {SIMULATIONS:,} replays with no edge, a result this good came up {odds(p_value)}."
+    )
+
+
+def about_chart(tested_count: int, own_fees: float) -> tuple[str, str, str]:
+    """The three paragraphs of "About this chart" (UX-DR24; wording approved by Edvard, 2026-11-23).
+
+    Only what is true without JavaScript; Story 3.2 adds how to point at the bars. A replay's
+    average is the Real PnL's luck-free value, $0 less the Own Fees (they lower every replay).
+    """
+    bets = f"{count(tested_count)} {resolved_bets_word(tested_count)}"
+    average = money(-own_fees)
+    landing = (
+        "On average, luck alone lands at $0."
+        if average == "$0"
+        else f"On average, luck alone lands at {average}, what this Wallet paid in fees."
+    )
+    return (
+        f"Each replay (a Simulation) keeps this Wallet's {bets}, prices and stakes, but lets every bet win "
+        "or lose by chance, at the odds its price implied. That is one way a trader with no edge could have done.",
+        f"The bars count how many of the {SIMULATIONS:,} replays ended at each result. {landing}",
+        "The blue line labelled \"This Wallet\" is this Wallet's Real PnL: what it made on the "
+        f"{count(tested_count)} bets it held to resolution. The more of the curve lies to its left, "
+        "the harder the result is to explain by luck.",
+    )
+
+
 _MONTHS = ("Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec")
 
 
