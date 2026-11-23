@@ -7,6 +7,7 @@ live client. The committed `sample_data/real/` files are checked last, with sock
 
 from __future__ import annotations
 
+import dataclasses
 import json
 import time
 import zipfile
@@ -18,13 +19,14 @@ from typing import Any
 import pytest
 
 import liquidoracle.__main__ as cli
-from liquidoracle.data import real_sample, sample_json
+from liquidoracle.data import real_sample, sample_json, synthetic
 from liquidoracle.data.offline import REAL_DIR, OfflineClient, sample_files
 from liquidoracle.data.real_sample import ADDITIONS_NAME, CAPTURE_NAME, BuildError, build, fetch_additions
 from liquidoracle.data.store import Store
 from liquidoracle.data.window import positions_near
 from liquidoracle.records import ActivityRow, ListedPosition, Read, SampleWallet
 from liquidoracle.services.fetch import fetch_wallet, stored_result
+from liquidoracle.services.lookup import Lookup, Outcome
 
 REPO = Path(__file__).resolve().parents[1]
 SEED = 44
@@ -156,6 +158,22 @@ def test_offline_read_starting_before_the_capture_is_cut_short_at_once() -> None
     assert read == Read((), False)
     inside = bounded(activity_from=150).activity_rows(W1, start=150, end=250)
     assert [r.timestamp for r in inside.rows] == [200] and inside.complete
+
+
+def test_shared_markets_do_not_make_the_client_reread_files(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """AD-13 (found in Story 2.6): real Wallets share Markets. Fetching the second Wallet reads its own
+    file once, not the first file again for every shared Market."""
+    synthetic.write_small(tmp_path)
+    sharp = sample_json.read_wallet(tmp_path / synthetic.SMALL_DIR / "sharp-trader.json")
+    first, second = tmp_path / "a.json", tmp_path / "b.json"
+    sample_json.write_wallet(first, dataclasses.replace(sharp, address=W1))
+    sample_json.write_wallet(second, dataclasses.replace(sharp, address=W2))  # the same 100 Markets
+    reads: list[str] = []
+    real_read = sample_json.read_wallet
+    monkeypatch.setattr(sample_json, "read_wallet", lambda path: reads.append(Path(path).name) or real_read(path))
+    window = positions_near(OfflineClient([first, second]), W2)
+    assert len(window.markets) == 100
+    assert reads == ["b.json"]
 
 
 def test_synthetic_files_have_no_bounds() -> None:
@@ -323,6 +341,23 @@ def test_trim_drops_open_rows_older_than_the_window(tmp_path: Path) -> None:
     assert {cid(1), cid(2)}.isdisjoint(m.condition_id for m in wallet.markets)
 
 
+def test_a_file_that_replays_another_window_is_not_kept(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """AD-14: if a written file gives another window than the whole capture, the build stops and keeps nothing."""
+    zip_path, live = small_capture(tmp_path)
+    root = repo(tmp_path / "repo")
+    fetch_additions(zip_path, live, pick=PICKED, log=lambda _: None)  # type: ignore[arg-type]
+    trimmed = real_sample._trimmed  # noqa: SLF001
+
+    def drop_one(*args: Any) -> Any:
+        wallet, window = trimmed(*args)
+        return dataclasses.replace(wallet, positions=wallet.positions[1:]), window
+
+    monkeypatch.setattr(real_sample, "_trimmed", drop_one)
+    with pytest.raises(BuildError, match=f"{W1}: the written file gives another window"):
+        build(zip_path, root, pick=PICKED, log=lambda _: None)
+    assert not (root / REAL_DIR / f"{W1}.json").exists()
+
+
 def test_neg_risk_check_names_markets_that_are_not_yes_no(tmp_path: Path) -> None:
     """AD-20 (Story 2.4's open check): every negRisk Market in the files is checked for Yes/No outcomes."""
     zip_path, live = small_capture(tmp_path)
@@ -355,6 +390,11 @@ def test_build_sample_command_stops_plainly_without_the_zip(tmp_path: Path, monk
 
 
 COMMITTED = REPO / REAL_DIR
+CAPPED = (
+    "0xd218e474776403a330142299f7796e8ba32eb5c9",
+    "0x63d43bbb87f85af03b8f2f9e2fad7b54334fa2f1",
+    "0x7298060b1844a4c4ca0578146ab3f5e76aa1fcfc",
+)
 
 
 def committed_wallets() -> list[str]:
@@ -384,3 +424,27 @@ def test_nfr10_each_real_wallet_gets_its_verdict_within_10_seconds(address: str,
     assert result is not None
     print(f"NFR-10: {address} Verdict {result.result.verdict.value} from stored data in {elapsed:.2f} s")
     assert elapsed < 10.0
+
+
+@pytest.mark.parametrize("address", committed_wallets() if (COMMITTED / "dataset.json").is_file() else [])
+def test_fr14_each_real_wallet_opens_a_verdict_page_offline(address: str, tmp_path: Path) -> None:
+    """FR-14, UX-DR17: each committed real Wallet, loaded as load-sample does, opens a Verdict page."""
+    client = OfflineClient(sorted(COMMITTED.glob("0x*.json")))
+    store = Store(tmp_path / "offline.db")
+    fetch_wallet(client, store, address)
+    page = Lookup(client, store, seed=SEED).wallet_page(address)
+    store.close()
+    assert page.outcome is Outcome.VERDICT and page.card is not None
+
+
+@pytest.mark.parametrize("address", CAPPED)
+def test_fr12_capped_real_wallets_are_not_fully_read(address: str, tmp_path: Path) -> None:
+    """FR-12, AD-7: where the capture stopped before the window's trades, every window Position is
+    "not fully read" (0xd218e4 and 0x63d43b both ways, 0x729806 before the date), never patched."""
+    client = OfflineClient([COMMITTED / f"{address}.json"])
+    store = Store(tmp_path / "offline.db")
+    fetch_wallet(client, store, address)
+    snapshot = store.latest_snapshot(address)
+    store.close()
+    assert snapshot is not None and len(snapshot.positions) > 0
+    assert len(snapshot.not_fully_read()) == len(snapshot.positions)

@@ -141,11 +141,22 @@ class OfflineClient:
         return Read(tuple(rows), not cut)
 
     def markets(self, condition_ids: Iterable[str]) -> tuple[Market, ...]:
+        """The Markets asked for, each once, in the order asked.
+
+        The file read last (the Wallet being fetched) is asked first, then each other file once:
+        real Wallets share Markets, and reading files in turn per Market re-read 10 MB files
+        thousands of times (found in Story 2.6; Synthetic Wallets never share a Market).
+        """
+        wanted = list(dict.fromkeys(condition_ids))
+        found = {c: self._memory_markets[c] for c in wanted if c in self._memory_markets}
+        with self._lock:
+            cached = self._cached
+        if cached is not None:
+            found.update((c, cached[2][c]) for c in wanted if c not in found and c in cached[2])
         index = self._get_index()
-        found: list[Market] = []
-        for condition_id in dict.fromkeys(condition_ids):  # each id once, in the order asked
-            if condition_id in self._memory_markets:
-                found.append(self._memory_markets[condition_id])
+        by_file: dict[Path, list[str]] = {}
+        for condition_id in wanted:
+            if condition_id in found:
                 continue
             path = index.markets.get(condition_id)
             if path is None and self._refresh():
@@ -153,8 +164,11 @@ class OfflineClient:
                 path = index.markets.get(condition_id)
             if path is None:
                 raise NotAvailableOffline(f"Market {condition_id} is not in the Sample Dataset")
-            found.append(self._read(path)[1][condition_id])
-        return tuple(found)
+            by_file.setdefault(path, []).append(condition_id)
+        for path, ids in by_file.items():
+            markets = self._read(path)[1]
+            found.update((c, markets[c]) for c in ids)
+        return tuple(found[c] for c in wanted)
 
     def _wallet(self, wallet: str) -> SampleWallet:
         address = wallet.strip().lower()
