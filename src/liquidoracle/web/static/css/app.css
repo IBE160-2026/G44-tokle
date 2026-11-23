@@ -38,6 +38,7 @@
   --accent-tint-soft: #132235;
   --neutral-tint: #1B222C;
   --dot-empty: #4A535F;
+  --chart-bar: #5E6774;
   --error: #F28B82;
   --pill: #0E1116;
   --on-pill: #E7EAEE;
@@ -80,6 +81,7 @@
   --accent-tint-soft: #F1F5FB;
   --neutral-tint: #F1F2F4;
   --dot-empty: #C5CAD1;
+  --chart-bar: #8E959F;
   --error: #B42318;
   --pill: #1A2029;
   --on-pill: #FFFFFF;
@@ -224,6 +226,77 @@ main:has(.verdict-card) { padding-top: var(--space-7); }
 @media (forced-colors: active) {
   .dot.is-filled { forced-color-adjust: none; background: CanvasText; border-color: CanvasText; }
   .dot { border-color: CanvasText; }
+}
+
+/* Chart card and luck chart (FR-9, UX-DR24, UX-DR25; Story 3.1). Layout from mockups/verdict.html;
+   the bars, gridlines and marker line are one stretched SVG, the text is HTML so it never stretches. */
+.chart-head { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: var(--space-2) var(--space-5); }
+.chart-head h2 small { font: 400 15px/1.4 var(--sans); color: var(--ink-muted); }
+.about summary {
+  cursor: pointer; list-style: none; color: var(--accent); padding: var(--space-1) 6px; margin: 0 -6px;
+  border-radius: var(--rounded-sm); text-align: right;  /* stays at the right when the box opens below */
+}
+.about summary::-webkit-details-marker { display: none; }
+.about summary::after { content: " ▾" / ""; font-size: 13px; }
+.about[open] summary::after { content: " ▴" / ""; }
+.about[open] { flex-basis: 100%; order: 3; }
+.about-text {
+  margin: var(--space-1) 0 0; padding: 14px 18px; border-radius: var(--rounded-sm);
+  background: var(--accent-tint-soft); border: 1px solid var(--accent-tint);
+}
+.about-text p { margin: 0 0 6px; }
+.about-text p:last-child { margin: 0; }
+.chart { margin: var(--space-5) 0 0; }
+.chart-y-title { margin: 0 0 var(--space-2); font-size: 13px; line-height: 1.2; color: var(--ink-muted); }
+.chart-frame { position: relative; margin-left: 52px; padding-top: 34px; }
+.chart-frame.has-beyond { padding-top: 54px; }  /* room for the label's second line */
+.chart-plot { position: relative; height: 240px; border-bottom: 1px solid var(--border-strong); }
+.chart-svg { position: absolute; inset: 0; display: block; width: 100%; height: 100%; overflow: visible; }
+.chart-grid { stroke: var(--border); stroke-width: 1; }
+.chart-bar { fill: var(--chart-bar); }
+.chart-marker-line { stroke: var(--accent); stroke-width: 3; }
+.chart-y-label {
+  position: absolute; right: calc(100% + 10px); transform: translateY(50%); white-space: nowrap;
+  font: 13px/1 var(--sans); font-variant-numeric: tabular-nums; color: var(--ink-muted);
+}
+.chart-dot {
+  position: absolute; top: 0; width: 12px; height: 12px; border-radius: 50%;
+  background: var(--accent); transform: translate(-50%, -50%);
+}
+.chart-marker-label {
+  position: absolute; bottom: calc(100% + 10px); white-space: nowrap;
+  font-size: 15px; line-height: 1.3; font-weight: 650; color: var(--accent);
+}
+.chart-marker-label.anchor-middle { transform: translateX(-50%); text-align: center; }
+.chart-marker-label.anchor-start { transform: translateX(-8px); }
+.chart-marker-label.anchor-end { transform: translateX(calc(-100% + 8px)); text-align: right; }
+.chart-axis { position: relative; height: 28px; }
+.chart-tick {
+  position: absolute; top: 6px; transform: translateX(-50%); white-space: nowrap;
+  font: 13px/1.4 var(--sans); font-variant-numeric: tabular-nums; color: var(--ink-muted);
+}
+.chart-ends {
+  display: flex; justify-content: space-between; gap: var(--space-3);
+  font-size: 13px; font-variant-numeric: tabular-nums; color: var(--ink-muted);
+}
+.chart .t-short { display: none; }
+.chart-hint { margin: var(--space-2) 0 0; font-size: 13px; color: var(--ink-muted); }
+.chart-alt { margin: var(--space-3) 0 0; padding: var(--space-3) 18px; border-radius: var(--rounded-sm); background: var(--neutral-tint); }
+@media (max-width: 639px) {
+  .chart-plot { height: 200px; }
+  .chart .t-full { display: none; }
+  .chart .t-short { display: inline; }
+  .chart-tick.is-minor { display: none; }
+  .chart-marker-label { font-size: 13px; }
+}
+@media (max-width: 399px) {
+  .chart-ends { display: none; }
+}
+@media (forced-colors: active) {
+  .chart-bar { fill: CanvasText; }
+  .chart-grid { stroke: GrayText; }
+  .chart-marker-line { stroke: Highlight; }
+  .chart-dot { forced-color-adjust: none; background: Highlight; }
 }
 
 /* Fetching state (UX-DR22, DESIGN.md S1): three accent dots pulsing in turn, still with reduce motion */

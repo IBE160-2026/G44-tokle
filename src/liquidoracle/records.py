@@ -242,8 +242,10 @@ class SkillTestResult:
     The Wallet and `fetch_id` it belongs to are the store's key (Story 1.6), not fields here.
 
     `real_pnl` is the exact sum, Own Fees included (FR-4). For *Not enough data*, `p_value`
-    and `at_or_above` are None, `simulations` is 0 and there are no `bins` (FR-6, FR-10).
-    `at_or_above` is the exact count of Simulations at or above the Real PnL (FR-5).
+    `at_or_above` and `at_or_below` are None, `simulations` is 0 and there are no `bins` (FR-6, FR-10).
+    `at_or_above` is the exact count of Simulations at or above the Real PnL (FR-5);
+    `at_or_below` the count at or below it, so the chart can say "below all" only when no
+    Simulation tied or fell below it (FR-9, AD-25; Story 3.1).
     `uncoupled_share` is the share of tested Positions whose Gamma event holds another tested
     Position not coupled with it, for the FR-11 note (AD-20).
     """
@@ -257,6 +259,7 @@ class SkillTestResult:
     own_fees: float
     simulations: int
     at_or_above: int | None
+    at_or_below: int | None
     p_value: float | None
     bins: tuple[ChartBin, ...]
     uncoupled_share: float
