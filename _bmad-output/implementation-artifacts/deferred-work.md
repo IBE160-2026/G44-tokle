@@ -26,6 +26,7 @@ Findings and goals set aside by `bmad-build`, each with where it came from.
 - source_spec: `_bmad-output/implementation-artifacts/spec-2-2-a-wallet-s-bets-as-one-complete-snapshot.md`
   summary: A real Sample Wallet whose capture stopped at the 150,000-row cap could read as complete offline but capped live, because OfflineClient only knows the rows in its file.
   evidence: maybe-false, would be medium for Story 2.6 (0xd218e4 and 0x63d43b hit the cap in the capture). Settle it when 2.6 writes the real Wallets: store where each capture stopped and make OfflineClient's activity read incomplete past it.
+  resolved: Story 2.6 (2026-11-23): each real Wallet's file stores `activity_from` / `activity_until`; OfflineClient answers a read starting before the first or reaching the second as cut short, so 0xd218e4, 0x63d43b and 0x729806 come out "not fully read" offline, as a live lookup of 0x63d43b does.
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-2-3-every-exclusion-and-fee-on-real-data.md`
   summary: Neg-risk conversion outputs (listed Positions with no TRADE row whose shares came from a CONVERSION in another Market of the same event) are left out as "share gap"; Story 2.4, which reads the events, should decide whether they belong under "split or merged" instead.
@@ -37,6 +38,16 @@ Findings and goals set aside by `bmad-build`, each with where it came from.
 - source_spec: `_bmad-output/implementation-artifacts/spec-2-4-linked-bets-on-real-data.md`
   summary: A CONVERSION is matched through `Market.neg_risk_id`, which is set only for Yes/No negRisk Markets with two tokens; a negRisk Market of another shape would have its event's CONVERSION dropped and its converted Positions tested.
   evidence: maybe-false, would be medium (Story 2.4 review, all three reviewers). 108 of 108 negRisk Markets in the raw Gamma data are Yes/No, and Polymarket's negative-risk events are built from Yes/No Markets; such a Market is now logged ("left uncoupled"). Settle it in Story 2.6 by checking the outcomes of every negRisk Market in the 10 real Sample Wallets' Gamma records; if any is not Yes/No, keep the raw negRiskMarketID for CONVERSION matching apart from the coupling.
+  resolved: Story 2.6 (2026-11-23): all 7,376 negRisk Markets in the 10 real Wallets' files are Yes/No (`neg_risk_check` in `sample_data/real/dataset.json`); nothing to change.
 - source_spec: `_bmad-output/implementation-artifacts/spec-2-5-look-up-a-live-wallet.md`
   summary: `progress.js` (polling, swapping in the result, focus on the new heading, giving up after 30 failed polls) runs in no automated test; only the Python side of the progress contract is tested.
   evidence: Story 2.5 review (verification gap, blind hunter). The repo has no JavaScript test runner. Edvard checks one live lookup in a browser; a browser test belongs with Story 3.4's layout and accessibility pass if a runner is added then.
+- source_spec: `_bmad-output/implementation-artifacts/spec-2-6-real-wallets-in-the-sample-dataset.md`
+  summary: 0x091596's Real PnL from the committed real file is -49,571.22, while Story 2.4 noted -49,571.39 on its fixture (cut from the same capture, Gamma fetched 2026-11-20); find the 17-cent cause when Story 2.7 checks this Wallet against the independent script.
+  evidence: Story 2.6 build (2026-11-23). Own Fees 1,087.34 here. Likely a fee-schedule or Gamma difference between the two fetches, or a Position on the edge of the window; not checked yet. Story 2.7 compares to the cent, so it must be explained there.
+- source_spec: `_bmad-output/implementation-artifacts/spec-2-6-real-wallets-in-the-sample-dataset.md`
+  summary: The 17-cent gap above is explained: between the Gamma fetches of 20 and 23 November 2026, Polymarket changed the fee rate of 5 of 0x091596's Markets (for example 4% to 1%, 4% to 5%), and the strict fee check compares each fee with today's rate, so a different set of fees passes. Story 2.7 must compute its reference values from the committed real file's frozen Gamma records, not from a new fetch or the 2.4 fixture.
+  evidence: Story 2.6 review (blind hunter asked to check the obvious cause): the fixture's and the additions file's feeSchedule differ for 0x1480b819d0, 0x2053d8515f, 0x5ec80dc407, 0xce9a5fa30f and 0xf7b7e74caa; positions are identical (66 tokens).
+- source_spec: `_bmad-output/implementation-artifacts/spec-2-6-real-wallets-in-the-sample-dataset.md`
+  summary: Story 4.6 builds before and after windows around 1 July 2025 from the same capture; for 0xd218e4 and 0x63d43b the capture holds trades only from May 2025, so their before part may also come out entirely "not fully read", which the Hold-up Test (Epic 5) would feel.
+  evidence: maybe-false, would be medium (Story 2.6 review, blind hunter). Settle it in Story 4.6 by running its before window on the capture and counting not-fully-read Positions per Wallet before planning the Hold-up Test's real-data checks.

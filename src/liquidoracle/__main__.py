@@ -1,4 +1,4 @@
-"""The `liquidoracle` command: run, load-sample, make-synthetic.
+"""The `liquidoracle` command: run, load-sample, make-synthetic, build-sample.
 
 This is the imperative shell's entry point. It reads the flags, builds the one
 frozen settings object (AD-13) and starts the web app with the serving rules of
@@ -48,6 +48,16 @@ def build_parser() -> argparse.ArgumentParser:
         help="load the Sample Dataset into instance/offline.db (run from the repository folder; takes under a minute)",
     )
     commands.add_parser("make-synthetic", help="generate the Synthetic Wallets (run from the repository folder)")
+    build = commands.add_parser(
+        "build-sample",
+        help="rebuild the real Sample Wallets from the raw capture zip (not in the repository; run from the repository folder)",
+    )
+    build.add_argument("capture", type=Path, help="the capture zip, with its .sha256 and the additions file next to it")
+    build.add_argument(
+        "--fetch",
+        action="store_true",
+        help="first fetch what the capture lacks into the additions file (network, read-only; done once)",
+    )
     return parser
 
 
@@ -59,7 +69,9 @@ def main(argv: list[str] | None = None) -> int:
         return load_sample(Path.cwd())
     if args.command == "make-synthetic":
         return make_synthetic(Path.cwd())
-    if args.command != "run":  # argparse allows only the three commands; never start by accident
+    if args.command == "build-sample":
+        return build_sample(Path.cwd(), args.capture, fetch=args.fetch)
+    if args.command != "run":  # argparse allows only these commands; never start by accident
         raise AssertionError(f"unhandled command {args.command!r}")
 
     env_file = Path.cwd() / ".env"
@@ -89,6 +101,37 @@ def make_synthetic(root: Path) -> int:
     folder = synthetic.write_coin_flippers(root)
     print(f"Wrote {len(small)} Synthetic Wallets to {root / synthetic.SMALL_DIR}")
     print(f"Wrote {synthetic.COIN_FLIPPERS} coin-flippers to {folder} (not committed)")
+    return 0
+
+
+def build_sample(root: Path, capture: Path, *, fetch: bool) -> int:
+    """AD-14, FR-12 (Story 2.6): write `sample_data/real/` from the capture zip and its additions file.
+
+    Without `--fetch` it makes no network call. With it, the Gamma records and 0xd218e4's newest
+    CLOSED pages the capture lacks are first fetched once, read-only, through the app's own client.
+    """
+    import zipfile
+
+    from liquidoracle.data import real_sample
+    from liquidoracle.data.errors import PolymarketUnavailable
+    from liquidoracle.data.polymarket import PolymarketClient
+    from liquidoracle.settings import MAX_REQUESTS_PER_SECOND
+
+    if not in_repository(root, "build-sample"):
+        return 2
+    started = time.monotonic()
+    try:
+        if fetch:
+            path = real_sample.fetch_additions(capture, PolymarketClient(MAX_REQUESTS_PER_SECOND), pick=real_sample.PICK)
+            print(f"Wrote {path} and its .sha256 ({time.monotonic() - started:.0f} s)")
+        built = real_sample.build(capture, root, pick=real_sample.PICK)
+    # LookupError covers KeyError, NotAvailableOffline and NoPolymarketHistory (review, Story 2.6).
+    except (real_sample.BuildError, PolymarketUnavailable, zipfile.BadZipFile, OSError, ValueError, LookupError) as error:
+        print(f"build-sample stopped: {error}", file=sys.stderr)
+        return 2
+    size = sum(item.file_bytes for item in built)
+    print(f"Done: {len(built)} real Wallets in {root / real_sample.REAL_DIR}, {size / 1e6:.1f} MB "
+          f"({time.monotonic() - started:.0f} s).")
     return 0
 
 

@@ -230,7 +230,14 @@ class PolymarketClient:
         return self._walk(f"{DATA_API}/v2/activity", params, limit, _activity_row, row_cap=row_cap)
 
     def markets(self, condition_ids: Iterable[str]) -> tuple[Market, ...]:
-        """Gamma's records for these Markets, at most 20 per request, in the order asked (AD-7, AD-10).
+        """Gamma's records for these Markets, in the order asked; see `raw_markets` (AD-7, AD-10)."""
+        return tuple(_parse(_market, raw, "Gamma /markets") for raw in self.raw_markets(condition_ids))
+
+    def raw_markets(self, condition_ids: Iterable[str]) -> tuple[Mapping[str, Any], ...]:
+        """Gamma's raw answers for these Markets, at most 20 per request, in the order asked (AD-7, AD-10).
+
+        Each answer is checked with the Market parser before it is kept. The build-sample script
+        stores these raw answers once next to the capture (Story 2.6); the app uses `markets`.
 
         Every request sends `include_tag=true`, so the event tags come with the Market (AD-10).
 
@@ -240,7 +247,7 @@ class PolymarketClient:
         caller decides what that means.
         """
         wanted = list(dict.fromkeys(condition_ids))
-        found: dict[str, Market] = {}
+        found: dict[str, Mapping[str, Any]] = {}
         for i in range(0, len(wanted), GAMMA_BATCH):
             batch = wanted[i : i + GAMMA_BATCH]
             for closed in ("true", "false"):
@@ -258,7 +265,7 @@ class PolymarketClient:
                 for raw in document:
                     market = _parse(_market, raw, "Gamma /markets")
                     if market.condition_id in ask:
-                        found[market.condition_id] = market
+                        found[market.condition_id] = raw
         return tuple(found[c] for c in wanted if c in found)
 
     # Paging -----------------------------------------------------------------------------------
@@ -496,6 +503,21 @@ def _listed_position(raw: Mapping[str, Any], status: str) -> ListedPosition:
     )
 
 
+def parse_listed_position(raw: Mapping[str, Any], status: str) -> ListedPosition:
+    """A positions-list row the Data API sent earlier, for the build-sample script (Story 2.6)."""
+    return _parse(lambda row: _listed_position(row, status), raw, "a captured positions-list row")
+
+
+def parse_activity_row(raw: Mapping[str, Any]) -> ActivityRow | None:
+    """An activity row the Data API sent earlier, or None for a combo row (Story 2.6)."""
+    return _parse(_activity_row, raw, "a captured activity row")
+
+
+def parse_market(raw: Mapping[str, Any]) -> Market:
+    """A Gamma Market answer stored earlier (Story 2.6)."""
+    return _parse(_market, raw, "a stored Gamma Market")
+
+
 def _activity_row(raw: Mapping[str, Any]) -> ActivityRow | None:
     """A `/v2/activity` row, or None for an `is_combo` row (AD-10). Only TRADE rows keep token and side."""
     if raw.get("is_combo") is True:
@@ -518,18 +540,21 @@ def _market(raw: Mapping[str, Any]) -> Market:
     """A Gamma Market. `clobTokenIds` and `outcomePrices` arrive as JSON text; times as ISO text (AD-7).
 
     `closed`, the token ids and the prices are required: they decide "Resolved", so a missing
-    one is an unreadable answer, never a guess. `feesEnabled` may be absent (False).
+    one is an unreadable answer, never a guess. `feesEnabled` may be absent (False). The one
+    exception: an open Market Gamma has not priced yet comes without `outcomePrices` (found on
+    0xd218e4, Story 2.6); it is read with no prices, since an open Market is never resolved.
     """
-    token_ids = _json_list(raw["clobTokenIds"], "clobTokenIds")
-    prices = [float(p) for p in _json_list(raw["outcomePrices"], "outcomePrices")]
-    if len(token_ids) < 2 or len(token_ids) != len(prices):
-        raise ValueError("clobTokenIds and outcomePrices must list the same two or more outcomes")
-    if not all(math.isfinite(p) for p in prices):
-        raise ValueError("outcomePrices is not finite")
     closed = raw["closed"]
     fees_enabled = raw.get("feesEnabled", False)
     if not isinstance(closed, bool) or not isinstance(fees_enabled, bool):
         raise ValueError("closed or feesEnabled is not true or false")
+    token_ids = _json_list(raw["clobTokenIds"], "clobTokenIds")
+    unpriced = closed is False and raw.get("outcomePrices") is None  # left out (as Gamma sends it) or null
+    prices = [] if unpriced else [float(p) for p in _json_list(raw["outcomePrices"], "outcomePrices")]
+    if len(token_ids) < 2 or (not unpriced and len(token_ids) != len(prices)):
+        raise ValueError("clobTokenIds and outcomePrices must list the same two or more outcomes")
+    if not all(math.isfinite(p) for p in prices):
+        raise ValueError("outcomePrices is not finite")
     fee_rate, fee_exponent = _fee_schedule(raw.get("feeSchedule"))
     return Market(
         condition_id=_text(raw, "conditionId"),

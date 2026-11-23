@@ -433,6 +433,40 @@ def test_gamma_market_with_mismatched_outcomes_is_unreadable() -> None:
         client(transport).markets(["0xabc"])
 
 
+def test_open_market_without_prices_is_read_unpriced() -> None:
+    """AD-7, Story 2.6 (found on 0xd218e4): an open Market Gamma has not priced yet comes without
+    `outcomePrices`. It is read with no prices, so one unpriced Market no longer makes the whole
+    answer unreadable."""
+    unpriced = gamma_market("0xb", closed=False, closedTime=None)
+    del unpriced["outcomePrices"]  # the shape Gamma really sends (1 of 5,330 open Markets in the fetch)
+    transport = FakeTransport([ok([gamma_market("0xa")]), ok([unpriced])])
+    first, second = client(transport).markets(["0xa", "0xb"])
+    assert (first.condition_id, first.resolved) == ("0xa", True)
+    assert (second.condition_id, second.closed, second.outcome_prices, second.resolved) == ("0xb", False, (), False)
+
+
+def test_closed_market_without_prices_stays_unreadable() -> None:
+    """AD-7: prices decide "Resolved", so a closed Market without them is never guessed at."""
+    transport = FakeTransport([ok([gamma_market("0xabc", outcomePrices=None)])])
+    with pytest.raises(PolymarketUnavailable):
+        client(transport).markets(["0xabc"])
+
+
+def test_open_market_with_null_prices_is_read_unpriced_too() -> None:
+    """AD-7 (review, Story 2.6): an explicit null reads the same as a left-out key for an open Market."""
+    transport = FakeTransport([ok([]), ok([gamma_market("0xb", closed=False, closedTime=None, outcomePrices=None)])])
+    (market,) = client(transport).markets(["0xb"])
+    assert (market.outcome_prices, market.resolved) == ((), False)
+
+
+def test_raw_markets_keeps_gammas_answers_in_the_order_asked() -> None:
+    """AD-14, Story 2.6: the build-sample script stores Gamma's raw answers; each is checked by the parser first."""
+    transport = FakeTransport(answer=gamma_like(missing={"0xb"}))
+    raws = client(transport).raw_markets(["0xc", "0xb", "0xa"])
+    assert [raw["conditionId"] for raw in raws] == ["0xc", "0xa"]
+    assert raws[0] == gamma_market("0xc")
+
+
 def test_no_ids_no_request() -> None:
     """NFR-6: nothing to ask, nothing sent."""
     transport = FakeTransport()

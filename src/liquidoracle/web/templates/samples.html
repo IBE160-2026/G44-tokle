@@ -1,6 +1,14 @@
 <section class="card" aria-labelledby="samples-title">
   <h2 id="samples-title">Sample Wallets</h2>
   <p class="sub">Offline Mode uses only the stored sample data. Pick one to see its Verdict.</p>
+  {% if samples.real %}
+  <h3 class="group-label" id="real-label">Real Wallets</h3>
+  <ul class="wallet-list" aria-labelledby="real-label">
+    {% for item in samples.real %}
+    <li><a class="wallet-link" href="{{ url_for('wallet', raw=item.address) }}"><span class="name mono">{{ item.label }}</span><span class="chev" aria-hidden="true">›</span></a></li>
+    {% endfor %}
+  </ul>
+  {% endif %}
   <h3 class="group-label" id="synthetic-label">Synthetic Wallets</h3>
   <ul class="wallet-list" aria-labelledby="synthetic-label">
     {% for item in samples.items %}

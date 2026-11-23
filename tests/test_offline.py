@@ -219,15 +219,15 @@ def test_live_run_gets_live_db(tmp_path: Path) -> None:
 
 # --- Size of the committed Sample Dataset (FR-12) ----------------------------------------------
 
-MAX_SAMPLE_BYTES = 25_000_000  # [ASSUMPTION] FR-12, AD-14: no Git LFS
+MAX_SAMPLE_BYTES = 50_000_000  # [ASSUMPTION] FR-12, AD-14: no Git LFS (25 MB until Story 2.6; Edvard, 2026-11-23)
 
 
 def sample_data_bytes(folder: Path) -> int:
     return sum(p.stat().st_size for p in folder.rglob("*") if p.is_file())
 
 
-def test_committed_sample_dataset_is_under_25_mb() -> None:
-    """FR-12, AD-14: the committed Sample Dataset stays under 25 MB."""
+def test_committed_sample_dataset_is_under_the_size_limit() -> None:
+    """FR-12, AD-14: the committed Sample Dataset stays under 50 MB."""
     assert 0 < sample_data_bytes(REPO / "sample_data") < MAX_SAMPLE_BYTES
 
 

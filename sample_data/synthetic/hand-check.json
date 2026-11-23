@@ -101,6 +101,8 @@
    "usdc_size": 50.0
   }
  ],
+ "activity_from": null,
+ "activity_until": null,
  "address": "0xa1f0253f4abe1d5792793f07e6413a453449b969",
  "markets": [
   {

@@ -7,6 +7,7 @@ loaded, through Flask's test client, with sockets blocked. Markup checks follow 
 
 from __future__ import annotations
 
+import dataclasses
 import re
 import sqlite3
 from collections.abc import Iterator
@@ -16,8 +17,8 @@ import pytest
 from flask import Flask
 from flask.testing import FlaskClient
 
-from liquidoracle.data import synthetic
-from liquidoracle.data.offline import OfflineClient, sample_files
+from liquidoracle.data import sample_json, synthetic
+from liquidoracle.data.offline import REAL_DIR, OfflineClient, sample_files
 from liquidoracle.data.store import OFFLINE_DB, Store
 from liquidoracle.services.fetch import fetch_wallet
 from liquidoracle.services.jobs import Jobs
@@ -183,6 +184,49 @@ def test_ux_dr17_sample_wallets_list(offline: FlaskClient) -> None:
     assert (SHARP, "Sharp trader") in links and (COIN_FLIPPER, "Coin-flipper") in links
     assert len(links) == 6
     assert "and 999 more coin-flippers, checked by address" in page
+
+
+def test_ux_dr17_real_wallets_group(tmp_path: Path) -> None:
+    """UX-DR17, FR-12 (Story 2.6): a *Real Wallets* group comes first, each real Wallet's short address
+    in monospace, linking to its Verdict page. Without real files the group is not shown."""
+    synthetic.write_small(tmp_path)
+    real = "0x" + "a" * 36 + "d3f5"
+    sharp = sample_json.read_wallet(tmp_path / synthetic.SMALL_DIR / "sharp-trader.json")
+    sample_json.write_wallet(tmp_path / REAL_DIR / f"{real}.json", dataclasses.replace(sharp, address=real, name="real-aaaaaa"))
+    client = OfflineClient(sample_files(tmp_path))
+    store = Store(tmp_path / OFFLINE_DB)
+    fetch_wallet(client, store, real)
+    app = create_app(Settings(offline=True), Lookup(client, store, seed=SEED)).test_client()
+    page = html(app, "/")
+    assert page.index('id="real-label">Real Wallets</h3>') < page.index('id="synthetic-label">Synthetic Wallets</h3>')
+    assert re.findall(r'<a class="wallet-link" href="/wallet/(0x[0-9a-f]{40})"><span class="name mono">([^<]+)</span>', page) == [
+        (real, "0xaaaa…d3f5")
+    ]
+    assert h1s(html(app, f"/wallet/{real}")) == ["Verdict: Skilled (high confidence)"]  # sharp-trader's bets
+    store.close()
+
+
+def test_lookup_page_survives_an_old_coin_flipper_file(tmp_path: Path) -> None:
+    """FR-14, UX-DR17 (review, Story 2.6): after a pull, coin-flipper files from before a format change
+    must not break the Lookup page; the Real Wallets group reads only file names."""
+    synthetic.write_small(tmp_path)
+    synthetic.write_coin_flippers(tmp_path, 1)
+    old = next((tmp_path / synthetic.COIN_FLIPPER_DIR).glob("*.json"))
+    old.write_text(old.read_text(encoding="utf-8").replace('"activity_from": null,', ""), encoding="utf-8")
+    real = "0x" + "b" * 40
+    (tmp_path / REAL_DIR).mkdir(parents=True)
+    (tmp_path / REAL_DIR / f"{real}.json").write_text("{}", encoding="utf-8")  # only its name is read here
+    (tmp_path / REAL_DIR / "dataset.json").write_text("{}", encoding="utf-8")
+    store = Store(tmp_path / OFFLINE_DB)
+    app = create_app(Settings(offline=True), Lookup(OfflineClient(sample_files(tmp_path)), store, seed=SEED))
+    page = html(app.test_client(), "/")
+    assert f'href="/wallet/{real}"' in page and "Synthetic Wallets" in page
+    store.close()
+
+
+def test_no_real_wallets_group_without_real_files(offline: FlaskClient) -> None:
+    """UX-DR17: with no files in sample_data/real/ the Real Wallets group is not shown."""
+    assert "Real Wallets" not in html(offline, "/")
 
 
 def test_not_loaded_box_on_the_lookup_page(tmp_path: Path) -> None:

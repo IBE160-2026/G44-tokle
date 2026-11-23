@@ -20,8 +20,8 @@ from enum import StrEnum
 from liquidoracle.core import phrases
 from liquidoracle.core.skilltest import SIMULATIONS
 from liquidoracle.data import synthetic
-from liquidoracle.data.client import WalletClient
 from liquidoracle.data.errors import NotAvailableOffline
+from liquidoracle.data.offline import OfflineClient
 from liquidoracle.data.store import NO_HISTORY, JobStatus, Store
 from liquidoracle.data.window import WINDOW_LIMIT
 from liquidoracle.records import Verdict
@@ -51,7 +51,7 @@ PROFILE_HINT = (
 )
 
 # The Sample Wallets list (UX-DR17): the stage 1 Synthetic Wallets, and one coin-flipper for all 1,000
-# (Edvard, 2026-11-20). The Real Wallets group arrives with Story 2.6.
+# (Edvard, 2026-11-20). The Real Wallets group (Story 2.6) lists every real Wallet's short address.
 SAMPLE_LIST = (
     ("sharp-trader", "Sharp trader"),
     (synthetic.coin_flipper_name(0), "Coin-flipper"),
@@ -141,6 +141,7 @@ class SampleItem:
 class SampleList:
     items: tuple[SampleItem, ...]
     note: str  # "and 999 more coin-flippers, checked by address"
+    real: tuple[SampleItem, ...] = ()  # the Real Wallets group: short addresses as labels (UX-DR17)
 
 
 @dataclass(frozen=True, slots=True)
@@ -176,7 +177,7 @@ class Lookup:
     job queue. Exactly one of them is given.
     """
 
-    def __init__(self, client: WalletClient | None, store: Store, *, seed: int, jobs: Jobs | None = None) -> None:
+    def __init__(self, client: OfflineClient | None, store: Store, *, seed: int, jobs: Jobs | None = None) -> None:
         if (client is None) == (jobs is None):
             raise ValueError("a Lookup needs either the Offline Mode client or a live run's job queue")
         self._client = client
@@ -245,7 +246,8 @@ class Lookup:
             return None
         items = tuple(SampleItem(label, synthetic.address_of(name)) for name, label in SAMPLE_LIST)
         others = synthetic.COIN_FLIPPERS - 1
-        return SampleList(items, f"and {phrases.count(others)} more coin-flippers, checked by address")
+        real = tuple(SampleItem(short_address(a), a) for a in self._client.real_addresses())
+        return SampleList(items, f"and {phrases.count(others)} more coin-flippers, checked by address", real)
 
     def not_loaded(self) -> Notice | None:
         """The *not loaded* box for the Lookup page: Offline Mode with nothing in the database."""

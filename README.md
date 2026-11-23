@@ -6,7 +6,7 @@ The app only reads public data. It never places orders, holds keys or touches a 
 
 Course project in **IBE160 Programmering med KI** at Høgskolen i Molde, autumn 2026. Group G44: Edvard Tokle.
 
-> **Status (Story 2.5):** stage 1's core works in Offline Mode and live. Offline, you can check the Synthetic Wallets (made-up Wallets whose right answers are known). Live, you can paste any Polymarket address and get its Verdict card. The 10 real Sample Wallets come in Story 2.6; the luck chart and the honesty notes come in Epic 3 (plan: [`_bmad-output/planning-artifacts/epics.md`](_bmad-output/planning-artifacts/epics.md)).
+> **Status (Story 2.6):** stage 1's core works in Offline Mode and live. Offline, you can check 10 real Polymarket Wallets and the Synthetic Wallets (made-up Wallets whose right answers are known). Live, you can paste any Polymarket address and get its Verdict card. The luck chart and the honesty notes come in Epic 3 (plan: [`_bmad-output/planning-artifacts/epics.md`](_bmad-output/planning-artifacts/epics.md)).
 
 ## Prerequisites
 
@@ -32,10 +32,10 @@ uv run liquidoracle run --offline
 ```
 
 1. `uv sync` installs Python and the packages.
-2. `uv run liquidoracle load-sample` loads the Sample Dataset into the database `instance/offline.db` (about 75 MB, never committed). It regenerates the 1,000 coin-flipper Wallets in `instance/synthetic/coin-flippers/`, then loads them and the other Synthetic Wallets. It takes about 15 to 30 seconds. It always writes `instance/offline.db`, never the live database, and running it again replaces each Wallet's stored data. After pulling a newer version, run it again if the app says the Sample Dataset is not loaded: a change to the database layout empties `instance/offline.db`.
+2. `uv run liquidoracle load-sample` loads the Sample Dataset into the database `instance/offline.db` (about 110 MB, never committed). It regenerates the 1,000 coin-flipper Wallets in `instance/synthetic/coin-flippers/`, then loads them, the other Synthetic Wallets and the 10 real Wallets (1,015 in all). It takes about 20 to 40 seconds. It always writes `instance/offline.db`, never the live database, and running it again replaces each Wallet's stored data. After pulling a newer version, run it again if the app says the Sample Dataset is not loaded: a change to the database layout empties `instance/offline.db`.
 3. `uv run liquidoracle run --offline` starts the app in Offline Mode: sample data only, no network.
 
-Then open **http://127.0.0.1:8044** in your browser. Under *Sample Wallets*, pick **Sharp trader**: its Verdict card says *Skilled (high confidence)*. The thin wallet shows *Not enough data*, and a coin-flipper shows *No evidence of skill*. The list shows one of the 1,000 coin-flippers; to check another, open any file in `instance/synthetic/coin-flippers/`, copy the value after `"address":` (0x and 40 characters) and paste it into the address field. Stop the app with `Ctrl+C`.
+Then open **http://127.0.0.1:8044** in your browser. Under *Sample Wallets*, the *Real Wallets* group lists 10 real Polymarket Wallets by short address; click one to see its Verdict card (what each one shows, and why, is in [`docs/real-wallets.md`](docs/real-wallets.md)). Under *Synthetic Wallets*, pick **Sharp trader**: its Verdict card says *Skilled (high confidence)*. The thin wallet shows *Not enough data*, and a coin-flipper shows *No evidence of skill*. The list shows one of the 1,000 coin-flippers; to check another, open any file in `instance/synthetic/coin-flippers/`, copy the value after `"address":` (0x and 40 characters) and paste it into the address field. Stop the app with `Ctrl+C`.
 
 The app starts in the dark theme. The round button at the top right switches to the light theme and back, and the browser remembers your pick. Every page also works without JavaScript. The app has two small JavaScript files, in `src/liquidoracle/web/static/js/`:
 
@@ -53,6 +53,16 @@ uv run liquidoracle run
 Without `--offline` the app reads Polymarket's public data (no key, no account, read-only, at most 5 requests a second). Paste a Wallet address: the one shown on the Wallet's Polymarket profile page, 0x and 40 characters. The page says "Checking 0x…" while a background thread fetches the Wallet's latest 2,000 resolved bets; that takes a few seconds for a small Wallet and can take a minute for a very large one. Then the Verdict card appears.
 
 Live data is stored in `instance/live.db` (never committed). Looking up the same Wallet again within 24 hours uses the stored data and makes no network call; the card's "Data stored …" line says when it was fetched. If Polymarket does not answer, the page says so and offers the Wallet's older stored data, if there is any. An address that never traded on Polymarket gets "No Polymarket history found".
+
+### Where the real Sample Wallets come from
+
+The 10 real Wallets in `sample_data/real/` were built by one command from a raw capture of Polymarket's public data (23 October 2026, about 175 MB) that is **not in the repository**: it is kept outside it, with a SHA-256 file to prove it has not changed. The capture holds no market records (Gamma) and only the oldest 60,000 closed positions of one very large Wallet, so those were fetched once on 23 November 2026, read-only, into an additions file kept next to the capture with its own SHA-256 file. The command checks both files, runs the app's own rules on each Wallet, keeps only the rows those rules read, and checks that each written file gives exactly the same result. Running it twice gives identical files; nothing in `sample_data/` is edited by hand.
+
+```sh
+uv run liquidoracle build-sample <folder>/sample-capture-cutoff-2025-07-01.zip
+```
+
+You cannot run it without the capture, and you don't need it to run the app or the tests. `sample_data/real/dataset.json` records the default Cut-off Date (1 July 2025), both files' SHA-256 and how the set was built. Where the capture stopped reading a Wallet's trades (it read at most 150,000 rows each way from the Cut-off Date), the bets it cannot fully see are left out as "not fully read", as in a live lookup that hits the limit. For three of the 10 (0xd218e4, 0x63d43b and 0x729806) that is every bet, so their Verdict card shows *Not enough data*; [`docs/real-wallets.md`](docs/real-wallets.md) explains why.
 
 `uv run liquidoracle make-synthetic` rebuilds the Synthetic Wallets: made-up Wallets whose correct answers are known in advance, used to check the Skill Test. Run it from the repository folder. It rewrites the five small Wallets in `sample_data/synthetic/` (committed; the output is identical every time, so `git status` stays clean) and writes 1,000 coin-flipper Wallets (about 90 MB) to `instance/synthetic/coin-flippers/`, which is never committed. You don't need it to run the app or the tests.
 
@@ -98,7 +108,7 @@ src/liquidoracle/   the app: __main__.py (commands), settings.py, records.py,
                     web/ (pages, templates, CSS, the bundled IBM Plex Serif font under the SIL Open Font License),
                     services/ (workflows), core/ (pure maths), data/ (outside systems)
 tests/              automated tests; tests/online/ never runs in CI
-sample_data/        Sample Dataset and the hand labels
+sample_data/        Sample Dataset: real/ (10 real Wallets), synthetic/, and the hand labels
 spike/              data spike and architecture probes (historical, not used by the app)
 _bmad-output/       the plan: brief, PRD, UX, architecture, epics, story specs
 docs/ai-logs/       logs of the AI sessions

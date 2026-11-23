@@ -1,8 +1,9 @@
 """The one serializer for Sample Dataset files (AD-14).
 
 One JSON file per Wallet, holding its activity rows, positions-list rows, Markets and price
-points as `records` types. Keys are sorted, line endings are LF and files are written as bytes,
-so the same Wallet gives the same bytes on every OS and Python version (FR-13). Reading is
+points as `records` types, and where a real Wallet's capture stopped reading activity (Story
+2.6). Keys are sorted, line endings are LF and files are written as bytes, so the same Wallet
+gives the same bytes on every OS and Python version (FR-13). Reading is
 strict: a missing or unknown key, a wrongly typed value, NaN or Infinity is an error, never a
 silent default or conversion.
 """
@@ -16,6 +17,8 @@ from typing import Any
 
 from liquidoracle.records import ActivityRow, ListedPosition, Market, PricePoint, SampleWallet
 
+WALLET_KEYS = {"address", "name", "activity", "positions", "markets", "prices", "activity_from", "activity_until"}
+
 
 def dumps(wallet: SampleWallet, *, compact: bool = False) -> str:
     """The file text for one Wallet. `compact` drops the indentation (used for the large groups)."""
@@ -26,6 +29,8 @@ def dumps(wallet: SampleWallet, *, compact: bool = False) -> str:
         "positions": [asdict(row) for row in wallet.positions],
         "markets": [asdict(market) for market in wallet.markets],
         "prices": [asdict(point) for point in wallet.prices],
+        "activity_from": wallet.activity_from,
+        "activity_until": wallet.activity_until,
     }
     if compact:
         text = json.dumps(document, sort_keys=True, separators=(",", ":"), allow_nan=False)
@@ -40,7 +45,7 @@ def loads(text: str) -> SampleWallet:
         document = json.loads(text, parse_constant=_refuse_constant)
         if not isinstance(document, dict):
             raise TypeError("the file is not a JSON object")
-        _check_keys(document, {"address", "name", "activity", "positions", "markets", "prices"}, "wallet")
+        _check_keys(document, WALLET_KEYS, "wallet")
         return SampleWallet(
             address=_str(document["address"]),
             name=_str(document["name"]),
@@ -48,6 +53,8 @@ def loads(text: str) -> SampleWallet:
             positions=tuple(_listed_position(row) for row in _list(document["positions"])),
             markets=tuple(_market(row) for row in _list(document["markets"])),
             prices=tuple(_price_point(row) for row in _list(document["prices"])),
+            activity_from=_optional_int(document["activity_from"]),
+            activity_until=_optional_int(document["activity_until"]),
         )
     except (ValueError, KeyError, TypeError, AttributeError) as error:
         raise ValueError(f"not a Sample Dataset Wallet file: {error}") from error
@@ -66,7 +73,7 @@ def read_ids(path: Path) -> tuple[str, tuple[str, ...]]:
     """
     try:
         document = json.loads(path.read_bytes().decode("utf-8"), parse_constant=_refuse_constant)
-        _check_keys(document, {"address", "name", "activity", "positions", "markets", "prices"}, "wallet")
+        _check_keys(document, WALLET_KEYS, "wallet")
         address = _str(document["address"])
         markets = tuple(_str(market["condition_id"]) for market in _list(document["markets"]))
         return address, markets
@@ -119,6 +126,10 @@ def _int(value: Any) -> int:
     return value
 
 
+def _optional_int(value: Any) -> int | None:
+    return None if value is None else _int(value)
+
+
 def _float(value: Any) -> float:
     if not isinstance(value, (int, float)) or isinstance(value, bool):
         raise TypeError(f"expected a number, not {value!r}")
@@ -149,6 +160,14 @@ def _activity_row(row: Any) -> ActivityRow:
         token_id=None if row["token_id"] is None else _str(row["token_id"]),
         side=_one_of(row["side"], (None, "BUY", "SELL")),
     )
+
+
+def listed_position(row: Any) -> ListedPosition:
+    """One positions-list row read strictly; the build-sample script's additions file uses it (Story 2.6)."""
+    try:
+        return _listed_position(row)
+    except (KeyError, TypeError, AttributeError) as error:
+        raise ValueError(f"not a positions-list row: {error}") from error
 
 
 def _listed_position(row: Any) -> ListedPosition:

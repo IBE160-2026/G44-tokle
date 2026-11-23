@@ -208,10 +208,10 @@ Checks:
 **Description:** Lets the examiner run and check the app without our keys or a working Polymarket API. Realizes UJ-3.
 
 #### FR-12: Sample Dataset
-The repository contains stored data for about 10 real Wallets (a mix of Verdicts, including at least one *Not enough data*) and the Synthetic Wallets, each with its Positions and the recorded price history around each buy fill. Large synthetic groups (the 1,000 coin-flippers) are not committed: loading the Sample Dataset regenerates them from the generator's fixed Seed. The committed Sample Dataset stays under 25 MB `[ASSUMPTION]`, checked by a test, so cloning needs no extra tools such as Git LFS.
+The repository contains stored data for about 10 real Wallets (a mix of Verdicts, including at least one *Not enough data*) and the Synthetic Wallets, each with its Positions and the recorded price history around each buy fill. Large synthetic groups (the 1,000 coin-flippers) are not committed: loading the Sample Dataset regenerates them from the generator's fixed Seed. The committed Sample Dataset stays under 50 MB `[ASSUMPTION]` (raised from 25 MB by Edvard, 2026-11-23, Story 2.6: the 10 real Wallets' needed rows come to about 35 MB), checked by a test, so cloning needs no extra tools such as Git LFS.
 - The real Wallets' price history is captured as early as possible and kept for good, because one-minute prices for past dates may stop being available (addendum).
 - The Sample Dataset has one default Cut-off Date, 1 July 2025 (§9 Q6). The real Wallets have Positions both before and after it, so the Hold-up Test and Copy Test run offline with that date. Online, the user can choose any date (FR-16).
-- Stated limitation, one-way: for the two largest real Wallets (0xd218e4…, 0x63d43b…), the captured activity after the Cut-off Date stops at the 150,000-row cap (12 and 20 August 2025), so 808 and 418 of their 2,000 after-part Positions may miss later buy fills and are left out under the cap rule (FR-3). This cannot be repaired later: if the cap rule changes, the missing price windows can no longer be fetched once one-minute prices for those dates are gone.
+- Stated limitation, one-way: for the two largest real Wallets (0xd218e4…, 0x63d43b…), the captured activity after the Cut-off Date stops at the 150,000-row cap (12 and 20 August 2025), so 808 and 418 of their 2,000 after-part Positions may miss later buy fills and are left out under the cap rule (FR-3). This cannot be repaired later: if the cap rule changes, the missing price windows can no longer be fetched once one-minute prices for those dates are gone. For the lookup window (the latest 2,000 Positions, Story 2.6) the capture holds too little for three Wallets: those two, and 0x729806…, whose activity before the Cut-off Date also stopped at the cap (from November 2024). Each window's trades start before what the capture holds, so every Position is "not fully read" and the three show *Not enough data* offline (recorded in `docs/real-wallets.md`, 2026-11-23).
 
 #### FR-13: Synthetic Wallets
 A script generates the Synthetic Wallets in the table below from a fixed Seed. It also generates the price paths: forecaster, slow drift towards the Outcome over hours; speed trader, a jump to the Outcome seconds after the buy; coin-flippers, no edge. Running it twice gives identical files.
@@ -441,7 +441,7 @@ Each is a starting value, not measured. Edvard confirms or changes it with real 
 - §3 Sliver, §4.1 FR-3: less than 1% of the bought shares (and fewer than 1 share) left at resolution makes a Position a Sliver, not a counted bet.
 - §4.1 FR-3: partly sold Positions enter the Skill Test with the shares held at resolution, at the original Entry Price.
 - §4.3 FR-11: more than 10% of Positions left out gets a plain sentence; more than 20% in events with undetected links gets a note.
-- §4.4 FR-12: the committed Sample Dataset stays under 25 MB.
+- §4.4 FR-12: the committed Sample Dataset stays under 50 MB (25 MB until 2026-11-23).
 - §4.5 FR-16: 200 Wallets is a sensible default Scan size.
 - §4.5 FR-16: the Scan funnel uses Markets resolved in the 90 days before the Cut-off Date, the top 100 by volume, and a shortlist of 3 × the Scan size.
 - §4.5 FR-16, FR-11: a Wallet with more than 2,000 Resolved Positions is ranked and Skill Tested on its latest 2,000.
