@@ -1,0 +1,32 @@
+{
+ "additions": {
+  "fetched_on": "2026-11-23",
+  "file": "sample-additions-2026-11-23.json",
+  "sha256": "a63c906681a1d16051a067317709e4e9e554495dfef283c5c1fe8aacf75677ba"
+ },
+ "built_by": "uv run liquidoracle build-sample <folder>/sample-capture-cutoff-2025-07-01.zip",
+ "capture": {
+  "file": "sample-capture-cutoff-2025-07-01.zip",
+  "sha256": "2bbb60a64f2d6c6bdc1d26e791a107c55d485c488b86e6a66031eecbbe60e87f"
+ },
+ "cutoff": "2025-07-01",
+ "neg_risk_check": {
+  "neg_risk_markets": 7376,
+  "not_yes_no": []
+ },
+ "two_dates": [
+  "0xd218e474776403a330142299f7796e8ba32eb5c9: CLOSED list fetched 2026-11-23, the rest captured 2026-10-23"
+ ],
+ "wallets": [
+  "0xcf0d7f69cf162918b33fc1ea7449583fa537132d",
+  "0x73648309111de9f9d4e2a58a50f803fa7d30d44e",
+  "0xd218e474776403a330142299f7796e8ba32eb5c9",
+  "0xd3a6e523c440f94f9259398fbcf7b5cc5ccffd55",
+  "0x63d43bbb87f85af03b8f2f9e2fad7b54334fa2f1",
+  "0x94884db79666a1a34c46d03fb4f8e9cbcaf6b5a6",
+  "0x7298060b1844a4c4ca0578146ab3f5e76aa1fcfc",
+  "0x0f4b0a6b7f82108924ac9c8320ed91028f504183",
+  "0x0915962b4c6bc4505e7434a0de815a596a6667c3",
+  "0x29306ddc4724e24a23bf1c8679aa034376ea9dcb"
+ ]
+}
