@@ -53,6 +53,7 @@ development_status:
   2-5-look-up-a-live-wallet: done
   2-6-real-wallets-in-the-sample-dataset: done
   2-7-real-pnl-checked-by-hand: done
+  2-8-the-fee-check-accepts-an-earlier-rate: in-progress
   epic-2-retrospective: optional
 
   epic-3: backlog

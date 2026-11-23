@@ -2,7 +2,7 @@
 title: "PRD: LiquidOracle"
 status: final
 created: 2026-10-12
-updated: 2026-11-18
+updated: 2026-11-23
 ---
 
 # PRD: LiquidOracle
@@ -145,7 +145,7 @@ The system combines a Wallet's fills into Positions and marks which are Resolved
 
 #### FR-4: Real PnL
 The system computes Real PnL from a Wallet's Resolved Positions and Slivers.
-- Own Fees are checked against the Market's fee schedule. A fee that fails the check is not counted (it counts as 0) and is shown on the Verdict card (FR-11).
+- Own Fees are checked against the Market's fee schedule. Polymarket changes a Market's rate and lists only today's, so a fee passes when it fits the schedule's formula at the listed rate or at any whole-percent rate from 1% to 10% `[ASSUMPTION]`. A fee that fails the check is not counted (it counts as 0) and is shown on the Verdict card (FR-11).
 - For three Wallets in the Sample Dataset, Real PnL equals a reference calculation stored with the tests (to the cent), made from the PRD's definitions and the Wallet's data alone, without the app's code. At least one of the three paid trading fees, and its reference calculation subtracts them.
 
 #### FR-5: Luck Distribution and p-value
@@ -441,6 +441,7 @@ Each is a starting value, not measured. Edvard confirms or changes it with real 
 - §3 Sliver, §4.1 FR-3: less than 1% of the bought shares (and fewer than 1 share) left at resolution makes a Position a Sliver, not a counted bet.
 - §4.1 FR-3: partly sold Positions enter the Skill Test with the shares held at resolution, at the original Entry Price.
 - §4.3 FR-11: more than 10% of Positions left out gets a plain sentence; more than 20% in events with undetected links gets a note.
+- §4.1 FR-4: a fee that fits the fee formula at a whole-percent rate from 1% to 10% was real when paid, even if the Market lists another rate today.
 - §4.4 FR-12: the committed Sample Dataset stays under 50 MB (25 MB until 2026-11-23).
 - §4.5 FR-16: 200 Wallets is a sensible default Scan size.
 - §4.5 FR-16: the Scan funnel uses Markets resolved in the 90 days before the Cut-off Date, the top 100 by volume, and a shortlist of 3 × the Scan size.
