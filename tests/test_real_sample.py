@@ -370,6 +370,87 @@ def test_neg_risk_check_names_markets_that_are_not_yes_no(tmp_path: Path) -> Non
     assert dataset["neg_risk_check"] == {"neg_risk_markets": 2, "not_yes_no": [cid(2)]}
 
 
+def test_read_capture_stores_where_the_capped_reads_stopped(tmp_path: Path) -> None:
+    """AD-7, AD-14: a capped newest-first read is whole only from the second after its oldest row;
+    a capped oldest-first read stopped in the second of its newest row."""
+    w = {"closed": [raw_position(1)], "before": [raw_trade(1, T0 + 50), raw_trade(1, T0 + 10)], "before_capped": True,
+         "after": [raw_trade(1, T0 + 100), raw_trade(1, T0 + 300)], "after_capped": True}
+    captured = real_sample.read_capture(capture_zip(tmp_path, {W1: w}), [W1])[W1]
+    assert (captured.activity_from, captured.activity_until) == (T0 + 11, T0 + 300)
+    uncapped = real_sample.read_capture(capture_zip(tmp_path, {W1: {"closed": [raw_position(1)]}}), [W1])[W1]
+    assert (uncapped.activity_from, uncapped.activity_until) == (None, None)
+
+
+def test_a_cut_open_list_stops_the_build(tmp_path: Path) -> None:
+    """AD-14: the capture flags a cut list; a cut OPEN list has no rule, so the build refuses it."""
+    w = {"closed": [raw_position(1)], "open": [raw_position(2)], "capped": True}  # fewer CLOSED rows than the cap
+    with pytest.raises(BuildError, match=f"{W1}: the capture's OPEN list was cut short"):
+        real_sample.read_capture(capture_zip(tmp_path, {W1: w}), [W1])
+
+
+def test_an_empty_or_malformed_sha256_file_is_refused(tmp_path: Path) -> None:
+    """AD-14: a SHA-256 file with no hash, or another text, never passes the check."""
+    zip_path, _ = small_capture(tmp_path)
+    sums = zip_path.with_name(CAPTURE_NAME + ".sha256")
+    for text in ("", "not a hash\n"):
+        sums.write_text(text, encoding="utf-8")
+        with pytest.raises(BuildError, match="does not match"):
+            real_sample.checked(zip_path)
+
+
+def test_fetch_refuses_to_add_to_a_changed_additions_file(tmp_path: Path) -> None:
+    """AD-14 (review): an edited additions file is never added to and given a fresh SHA-256 by --fetch."""
+    zip_path, live = small_capture(tmp_path)
+    fetch_additions(zip_path, live, pick=PICKED, log=lambda _: None)  # type: ignore[arg-type]
+    additions = zip_path.with_name(ADDITIONS_NAME)
+    additions.write_bytes(additions.read_bytes().replace(b"Sports", b"Sp0rts"))
+    with pytest.raises(BuildError, match=ADDITIONS_NAME):
+        fetch_additions(zip_path, live, pick=PICKED, log=lambda _: None)  # type: ignore[arg-type]
+
+
+def test_a_failed_build_leaves_the_committed_set_as_it_was(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """AD-14 (review): files are replayed in a staging folder; one bad Wallet, even the second,
+    leaves sample_data/real/ exactly as it was, and no staging folder behind."""
+    zip_path, root, _ = built(tmp_path)
+    before = snapshot(root / REAL_DIR)
+    trimmed = real_sample._trimmed  # noqa: SLF001
+
+    def break_second(captured: Any, *rest: Any) -> Any:
+        wallet, window = trimmed(captured, *rest)
+        if captured.address == W2:
+            wallet = dataclasses.replace(wallet, positions=wallet.positions[1:])
+        return wallet, window
+
+    monkeypatch.setattr(real_sample, "_trimmed", break_second)
+    with pytest.raises(BuildError, match=W2):
+        build(zip_path, root, pick=PICKED, log=lambda _: None)
+    assert snapshot(root / REAL_DIR) == before
+    assert not (root / real_sample.STAGING_DIR).exists()
+
+
+def test_build_sample_command_builds_from_the_zip_without_network(tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
+                                                                  capsys: pytest.CaptureFixture[str]) -> None:
+    """AD-14: without --fetch the command makes no network call (sockets are blocked) and writes the set."""
+    zip_path, live = small_capture(tmp_path)
+    fetch_additions(zip_path, live, pick=PICKED, log=lambda _: None)  # type: ignore[arg-type]
+    monkeypatch.setattr(real_sample, "PICK", PICKED)
+    monkeypatch.chdir(repo(tmp_path / "repo"))
+    assert cli.main(["build-sample", str(zip_path)]) == 0
+    assert "Done: 2 real Wallets" in capsys.readouterr().out
+    assert sorted(p.name for p in (tmp_path / "repo" / REAL_DIR).iterdir()) == sorted([f"{W1}.json", f"{W2}.json", "dataset.json"])
+
+
+def test_build_sample_command_stops_plainly_on_a_broken_zip(tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
+                                                            capsys: pytest.CaptureFixture[str]) -> None:
+    """AD-14 (review): a file that is not a zip, with a matching SHA-256 file, stops with one plain line."""
+    broken = tmp_path / CAPTURE_NAME
+    broken.write_bytes(b"not a zip")
+    real_sample.write_sha256(broken)
+    monkeypatch.chdir(repo(tmp_path / "repo"))
+    assert cli.main(["build-sample", str(broken)]) == 2
+    assert "build-sample stopped:" in capsys.readouterr().err
+
+
 def test_build_sample_command_outside_the_repository_writes_nothing(tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
                                                                     capsys: pytest.CaptureFixture[str]) -> None:
     """AD-14: build-sample runs only from the repository folder."""
@@ -448,3 +529,32 @@ def test_fr12_capped_real_wallets_are_not_fully_read(address: str, tmp_path: Pat
     store.close()
     assert snapshot is not None and len(snapshot.positions) > 0
     assert len(snapshot.not_fully_read()) == len(snapshot.positions)
+
+
+# The committed real Wallets' results as recorded in docs/real-wallets.md (Verdict, tested bets,
+# Real PnL in whole dollars). A change to any rule that moves one must update that note too.
+RECORDED = {
+    "0xcf0d7f69cf162918b33fc1ea7449583fa537132d": ("Likely skilled", 139, 822_007),
+    "0x73648309111de9f9d4e2a58a50f803fa7d30d44e": ("No evidence of skill", 229, -633),
+    "0xd218e474776403a330142299f7796e8ba32eb5c9": ("Not enough data", 0, 0),
+    "0xd3a6e523c440f94f9259398fbcf7b5cc5ccffd55": ("No evidence of skill", 641, 118_065),
+    "0x63d43bbb87f85af03b8f2f9e2fad7b54334fa2f1": ("Not enough data", 0, 0),
+    "0x94884db79666a1a34c46d03fb4f8e9cbcaf6b5a6": ("No evidence of skill", 1_423, -1_103),
+    "0x7298060b1844a4c4ca0578146ab3f5e76aa1fcfc": ("Not enough data", 0, 0),
+    "0x0f4b0a6b7f82108924ac9c8320ed91028f504183": ("No evidence of skill", 210, -188),
+    "0x0915962b4c6bc4505e7434a0de815a596a6667c3": ("Not enough data", 14, -49_571),
+    "0x29306ddc4724e24a23bf1c8679aa034376ea9dcb": ("Not enough data", 18, 295),
+}
+
+
+@pytest.mark.parametrize("address", sorted(RECORDED))
+def test_nfr13_each_real_wallet_gives_its_recorded_result(address: str, tmp_path: Path) -> None:
+    """FR-12, NFR-13 (review): each committed real Wallet gives the Verdict, tested bets and Real PnL
+    recorded in docs/real-wallets.md, so the note cannot go stale without a test failing."""
+    client = OfflineClient([COMMITTED / f"{address}.json"])
+    store = Store(tmp_path / "offline.db")
+    fetch_wallet(client, store, address)
+    result = stored_result(store, address, seed=SEED)
+    store.close()
+    assert result is not None
+    assert (result.result.verdict.value, result.result.tested_count, round(result.result.real_pnl)) == RECORDED[address]

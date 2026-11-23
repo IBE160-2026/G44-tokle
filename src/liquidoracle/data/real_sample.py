@@ -14,8 +14,10 @@ cut short offline and the normal "not fully read" rule applies (AD-7, AD-11).
 
 from __future__ import annotations
 
+import dataclasses
 import hashlib
 import json
+import shutil
 import zipfile
 from collections import Counter
 from collections.abc import Callable, Iterable, Mapping, Sequence
@@ -40,6 +42,8 @@ CAPTURE_NAME = "sample-capture-cutoff-2025-07-01.zip"
 ADDITIONS_NAME = "sample-additions-2026-11-23.json"
 REAL_DIR = Path("sample_data") / "real"
 DATASET_FILE = "dataset.json"  # the Cut-off Date and where the set came from (FR-12)
+STAGING_DIR = Path("instance") / "build-sample"  # git-ignored: files wait here until all of them pass
+CAPTURED_ON = "2026-10-23"  # the capture's date (spike/FINDINGS.md)
 CUTOFF = "2025-07-01"  # the default Cut-off Date (Edvard, 2026-10-23), stored with the Sample Dataset
 CAPTURE_DIR = "sample/capture/"
 # The 10 Sample Wallets, as spike/FINDINGS.md's table names them (Edvard, 2026-10-23; not the spares).
@@ -216,7 +220,11 @@ def fetch_additions(
     checked(zip_path)
     captured = read_capture(zip_path, pick)
     path = zip_path.with_name(ADDITIONS_NAME)
-    additions = read_additions(path) if path.is_file() else Additions(fetched_on=datetime.now(UTC).date().isoformat())
+    if path.is_file():
+        checked(path)  # an edited or damaged file is never added to and signed again (review, Story 2.6)
+        additions = read_additions(path)
+    else:
+        additions = Additions(fetched_on=datetime.now(UTC).date().isoformat())
     for address in pick:
         client = _FetchingClient(captured[address], live, additions)
         window = positions_near(client, address)
@@ -232,7 +240,6 @@ class _FetchingClient:
         self._captured = captured
         self._live = live
         self._additions = additions
-        self._offline = OfflineClient.in_memory([_full_wallet(captured, additions, with_closed=True)])
 
     def positions_list(self, wallet: str, status: str, **options: Any) -> Read[ListedPosition]:
         if status == "CLOSED" and self._captured.closed_capped and wallet not in self._additions.closed:
@@ -241,12 +248,14 @@ class _FetchingClient:
                 raise BuildError(f"{wallet}: Polymarket's CLOSED list could not be read whole; try again later")
             self._additions.closed[wallet] = read.rows
             return read
-        return OfflineClient.in_memory([_full_wallet(self._captured, self._additions, with_closed=True)]).positions_list(
-            wallet, status, **options
-        )
+        return self._capture().positions_list(wallet, status, **options)
 
     def activity_rows(self, wallet: str, **options: Any) -> Read[ActivityRow]:
-        return self._offline.activity_rows(wallet, **options)
+        return self._capture().activity_rows(wallet, **options)
+
+    def _capture(self) -> OfflineClient:
+        """The capture as it stands, with any CLOSED pages fetched so far."""
+        return OfflineClient.in_memory([_full_wallet(self._captured, self._additions)])
 
     def markets(self, condition_ids: Iterable[str]) -> tuple[Market, ...]:
         wanted = list(dict.fromkeys(condition_ids))
@@ -258,11 +267,9 @@ class _FetchingClient:
         return tuple(parse_market(self._additions.gamma[c]) for c in wanted if c in self._additions.gamma)
 
 
-def _full_wallet(captured: Captured, additions: Additions, *, with_closed: bool) -> SampleWallet:
+def _full_wallet(captured: Captured, additions: Additions) -> SampleWallet:
     """The whole capture of one Wallet as a Sample Wallet, its CLOSED list from the additions when cut."""
-    closed = captured.closed_rows
-    if captured.closed_capped:
-        closed = additions.closed.get(captured.address, ()) if with_closed else ()
+    closed = additions.closed.get(captured.address, ()) if captured.closed_capped else captured.closed_rows
     return SampleWallet(
         address=captured.address,
         name=name_of(captured.address),
@@ -306,25 +313,56 @@ def build(zip_path: Path, root: Path, *, pick: Sequence[str] = PICK, log: Callab
         if captured[address].closed_capped and address not in additions.closed:
             raise BuildError(f"{address}: its CLOSED list was cut in the capture and is not in the additions file")
 
-    out = root / REAL_DIR
-    out.mkdir(parents=True, exist_ok=True)
-    built: list[Built] = []
-    for address in pick:
-        wallet, window = _trimmed(captured[address], additions, markets)
-        path = out / f"{address}.json"
-        sample_json.write_wallet(path, wallet, compact=True)
-        replay = positions_near(OfflineClient([path]), address)
-        if replay != window:
-            path.unlink()
-            raise BuildError(f"{address}: the written file gives another window than the capture; nothing kept")
-        built.append(Built(address, path, len(window.positions), window.activity_read_until, path.stat().st_size))
-        log(f"{address}: {len(window.positions):,} Positions in the window, file {path.stat().st_size / 1e6:.1f} MB")
+    # Every file is written and replayed in a staging folder (git-ignored) first; `sample_data/real/`
+    # is touched only once all of them pass, so a failed build leaves it as it was (review, Story 2.6).
+    staging = root / STAGING_DIR
+    shutil.rmtree(staging, ignore_errors=True)
+    staging.mkdir(parents=True)
+    try:
+        built = [_written(captured[address], additions, markets, staging, log) for address in pick]
+        dataset = _dataset(zip_path, capture_sha, additions_path, additions_sha, additions, captured, pick, built)
+        (staging / DATASET_FILE).write_bytes((json.dumps(dataset, indent=1, sort_keys=True) + "\n").encode("utf-8"))
+        out = root / REAL_DIR
+        out.mkdir(parents=True, exist_ok=True)
+        for old in out.glob("*.json"):
+            old.unlink()
+        for new in sorted(staging.glob("*.json")):
+            new.replace(out / new.name)
+    finally:
+        shutil.rmtree(staging, ignore_errors=True)
+    return [dataclasses.replace(item, path=root / REAL_DIR / item.path.name) for item in built]
 
-    written = {item.path.name for item in built} | {DATASET_FILE}
-    for stale in out.glob("*.json"):
-        if stale.name not in written:
-            stale.unlink()
-    dataset = {
+
+def _written(
+    captured: Captured, additions: Additions, markets: Mapping[str, Market], folder: Path, log: Callable[[str], None]
+) -> Built:
+    """One Wallet's trimmed file in `folder`, kept only if it replays the window of the whole capture."""
+    wallet, window = _trimmed(captured, additions, markets)
+    path = folder / f"{captured.address}.json"
+    sample_json.write_wallet(path, wallet, compact=True)
+    try:
+        replay = positions_near(OfflineClient([path]), captured.address)
+    except LookupError as error:  # NotAvailableOffline, NoPolymarketHistory: the file cannot replay at all
+        raise BuildError(f"{captured.address}: the written file cannot be read back ({error})") from None
+    if replay != window:
+        raise BuildError(f"{captured.address}: the written file gives another window than the capture; nothing kept")
+    size = path.stat().st_size
+    log(f"{captured.address}: {len(window.positions):,} Positions in the window, file {size / 1e6:.1f} MB")
+    return Built(captured.address, path, len(window.positions), window.activity_read_until, size)
+
+
+def _dataset(
+    zip_path: Path,
+    capture_sha: str,
+    additions_path: Path,
+    additions_sha: str,
+    additions: Additions,
+    captured: Mapping[str, Captured],
+    pick: Sequence[str],
+    built: Sequence[Built],
+) -> dict[str, Any]:
+    """dataset.json: the Cut-off Date, both sources with their SHA-256, and the build's checks (FR-12)."""
+    return {
         "cutoff": CUTOFF,
         "wallets": list(pick),
         "capture": {"file": zip_path.name, "sha256": capture_sha},
@@ -332,12 +370,10 @@ def build(zip_path: Path, root: Path, *, pick: Sequence[str] = PICK, log: Callab
         "built_by": f"uv run liquidoracle build-sample <folder>/{zip_path.name}",
         "neg_risk_check": neg_risk_check(additions, built),
         "two_dates": sorted(
-            f"{address}: CLOSED list fetched {additions.fetched_on}, the rest captured 2026-10-23"
+            f"{address}: CLOSED list fetched {additions.fetched_on}, the rest captured {CAPTURED_ON}"
             for address in pick if captured[address].closed_capped
         ),
     }
-    (out / DATASET_FILE).write_bytes((json.dumps(dataset, indent=1, sort_keys=True) + "\n").encode("utf-8"))
-    return built
 
 
 def neg_risk_check(additions: Additions, built: Sequence[Built]) -> dict[str, Any]:
@@ -391,7 +427,7 @@ def _trimmed(captured: Captured, additions: Additions, markets: Mapping[str, Mar
     rows; the activity rows the window keeps, and when the read was cut short also its last row, so
     the replay stops in the same second.
     """
-    full = _full_wallet(captured, additions, with_closed=True)
+    full = _full_wallet(captured, additions)
     recorder = _Recorder(OfflineClient.in_memory([full], markets.values()))
     try:
         window = positions_near(recorder, captured.address)

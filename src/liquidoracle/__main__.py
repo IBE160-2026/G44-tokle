@@ -110,6 +110,8 @@ def build_sample(root: Path, capture: Path, *, fetch: bool) -> int:
     Without `--fetch` it makes no network call. With it, the Gamma records and 0xd218e4's newest
     CLOSED pages the capture lacks are first fetched once, read-only, through the app's own client.
     """
+    import zipfile
+
     from liquidoracle.data import real_sample
     from liquidoracle.data.errors import PolymarketUnavailable
     from liquidoracle.data.polymarket import PolymarketClient
@@ -120,10 +122,11 @@ def build_sample(root: Path, capture: Path, *, fetch: bool) -> int:
     started = time.monotonic()
     try:
         if fetch:
-            path = real_sample.fetch_additions(capture, PolymarketClient(MAX_REQUESTS_PER_SECOND))
+            path = real_sample.fetch_additions(capture, PolymarketClient(MAX_REQUESTS_PER_SECOND), pick=real_sample.PICK)
             print(f"Wrote {path} and its .sha256 ({time.monotonic() - started:.0f} s)")
-        built = real_sample.build(capture, root)
-    except (real_sample.BuildError, PolymarketUnavailable, OSError, ValueError, KeyError) as error:
+        built = real_sample.build(capture, root, pick=real_sample.PICK)
+    # LookupError covers KeyError, NotAvailableOffline and NoPolymarketHistory (review, Story 2.6).
+    except (real_sample.BuildError, PolymarketUnavailable, zipfile.BadZipFile, OSError, ValueError, LookupError) as error:
         print(f"build-sample stopped: {error}", file=sys.stderr)
         return 2
     size = sum(item.file_bytes for item in built)
