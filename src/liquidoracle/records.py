@@ -113,7 +113,12 @@ class ListedPosition:
 
 @dataclass(frozen=True, slots=True)
 class SampleWallet:
-    """Everything the Sample Dataset stores for one Wallet (AD-14), as the client would return it."""
+    """Everything the Sample Dataset stores for one Wallet (AD-14), as the client would return it.
+
+    `activity_from` and `activity_until` say where a real Wallet's capture stopped reading activity
+    (Story 2.6): rows before `activity_from`, and rows from the second `activity_until` on, may be
+    missing. None means nothing is missing on that side (every Synthetic Wallet).
+    """
 
     address: str
     name: str
@@ -121,6 +126,8 @@ class SampleWallet:
     positions: tuple[ListedPosition, ...]
     markets: tuple[Market, ...]
     prices: tuple[PricePoint, ...] = ()
+    activity_from: int | None = None
+    activity_until: int | None = None
 
 
 @dataclass(frozen=True, slots=True)

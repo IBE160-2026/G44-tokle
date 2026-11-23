@@ -18,9 +18,13 @@ from liquidoracle.data.errors import NotAvailableOffline
 from liquidoracle.data.polymarket import LIST_STATUSES, PAGE_LIMIT
 from liquidoracle.records import ActivityRow, ListedPosition, Market, Read, SampleWallet
 
-# Folders that hold Sample Wallet files, relative to the repository folder. Story 2.6 adds the real Wallets.
-SAMPLE_DIRS = (synthetic.SMALL_DIR, synthetic.COIN_FLIPPER_DIR)
-NOT_WALLET_FILES = frozenset({"expected.json"})  # the hand answers next to the Synthetic Wallets
+# Folders that hold Sample Wallet files, relative to the repository folder: the real Wallets
+# (Story 2.6, written by `build-sample`) and the Synthetic Wallets.
+REAL_DIR = Path("sample_data") / "real"
+SAMPLE_DIRS = (REAL_DIR, synthetic.SMALL_DIR, synthetic.COIN_FLIPPER_DIR)
+# Files next to the Wallets that are not Wallets: the Synthetic Wallets' hand answers, and the real
+# Wallets' Cut-off Date and sources.
+NOT_WALLET_FILES = frozenset({"expected.json", "dataset.json"})
 ADDRESS = re.compile(r"0x[0-9a-f]{40}")  # FR-1: a proxy-wallet address, lower case
 
 
@@ -55,10 +59,26 @@ class OfflineClient:
         self._index: _Index | None = None
         self._cached: tuple[Path, SampleWallet, dict[str, Market]] | None = None
         self._lock = threading.Lock()
+        self._memory: dict[str, SampleWallet] = {}
+        self._memory_markets: dict[str, Market] = {}
+
+    @classmethod
+    def in_memory(cls, wallets: Sequence[SampleWallet], markets: Iterable[Market] = ()) -> OfflineClient:
+        """Serves Wallets already in memory and these Markets, no files (the build-sample script, Story 2.6)."""
+        client = cls(())
+        client._memory = {wallet.address: wallet for wallet in wallets}
+        client._memory_markets = {market.condition_id: market for market in markets}
+        for wallet in wallets:
+            client._memory_markets.update((market.condition_id, market) for market in wallet.markets)
+        return client
+
+    def real_addresses(self) -> tuple[str, ...]:
+        """The real Sample Wallets' addresses (files in `sample_data/real/`), in file order (UX-DR17)."""
+        return tuple(a for a, path in self._get_index().wallets.items() if path.parent.name == REAL_DIR.name)
 
     def addresses(self) -> tuple[str, ...]:
         """Every Sample Wallet's address, in file order. Offline only: `load-sample` and the Sample list."""
-        return tuple(self._get_index().wallets)
+        return tuple(self._memory) + tuple(self._get_index().wallets)
 
     def positions_list(
         self,
@@ -99,21 +119,34 @@ class OfflineClient:
         """The Wallet's activity rows from `start` to `end` (both included), oldest first, at most `row_cap`.
 
         Rows with the same time keep their file order; identical rows stay separate fills.
+
+        A real Wallet's file says where its capture stopped (Story 2.6). A read starting before
+        `activity_from` is cut short at once, with no rows, since an oldest-first read cannot skip
+        the missing start; a read reaching the second `activity_until` is cut short there. So the
+        window's normal "not fully read" rule applies, as for a live read cut short (AD-7).
         """
         if row_cap is not None and row_cap < 1:  # as the live client (AD-13)
             raise ValueError(f"row_cap must be 1 or more, not {row_cap}")
+        sample = self._wallet(wallet)
+        if sample.activity_from is not None and start < sample.activity_from:
+            return Read((), False)
+        cut = sample.activity_until is not None and (end is None or end >= sample.activity_until)
+        last = sample.activity_until if cut else end
         rows = sorted(
-            (row for row in self._wallet(wallet).activity if row.timestamp >= start and (end is None or row.timestamp <= end)),
+            (row for row in sample.activity if row.timestamp >= start and (last is None or row.timestamp <= last)),
             key=lambda row: row.timestamp,
         )
         if row_cap is not None and len(rows) > row_cap:
             return Read(tuple(rows[:row_cap]), False)
-        return Read(tuple(rows), True)
+        return Read(tuple(rows), not cut)
 
     def markets(self, condition_ids: Iterable[str]) -> tuple[Market, ...]:
         index = self._get_index()
         found: list[Market] = []
         for condition_id in dict.fromkeys(condition_ids):  # each id once, in the order asked
+            if condition_id in self._memory_markets:
+                found.append(self._memory_markets[condition_id])
+                continue
             path = index.markets.get(condition_id)
             if path is None and self._refresh():
                 index = self._get_index()
@@ -125,6 +158,8 @@ class OfflineClient:
 
     def _wallet(self, wallet: str) -> SampleWallet:
         address = wallet.strip().lower()
+        if address in self._memory:
+            return self._memory[address]
         path = self._get_index().wallets.get(address)
         if path is None and self._refresh():
             path = self._get_index().wallets.get(address)
