@@ -35,7 +35,7 @@ Requirement IDs are the PRD's own (FR-1 to FR-24; FR-15 keeps its old number and
 - FR-1 (S1): Look up a Wallet. The user enters an address on the start page and gets its result page. Invalid format: error, nothing fetched. Valid address with no Polymarket history: "No Polymarket history found for this address" plus the hint to use the profile-page (proxy wallet) address.
 - FR-2 (S1): Fetch and cache data. Trades, positions and related Markets are fetched from Polymarket's public APIs and stored in the database. A second lookup within 24 hours `[ASSUMPTION]` makes no network call. If Polymarket does not answer, the page says so and offers stored data if any. Requests never exceed published rate limits.
 - FR-3 (S1): Build Positions. Fills combine into Positions (Entry Price = share-weighted average). Both sources are required: closed and open positions (unredeemed losers live only in the open list). Resolved = Market closed, outcome prices exactly 0 and 1, has a resolution time from Market data; anything else is "unclear resolution". Shares held at resolution = bought − sold from activity rows (never redemptions). Left out of the Skill Test, counted and shown with a reason: fully sold; split/merge/conversion in that Market; token only in activity rows; shares held not in (0, shares bought]; source gap above 1% `[ASSUMPTION]` (gap stored); unclear resolution; history not read in full. Same rules before and after the Cut-off Date. Partly sold Positions are tested on shares still held at the original Entry Price `[ASSUMPTION]`; sold shares count toward Exit PnL. Known limit (early exits) is accepted and shown (FR-11).
-- FR-4 (S1): Real PnL = Σ s·(o − p) over Resolved Positions minus Own Fees. Check: three Sample Dataset Wallets match a stored hand calculation to the cent; at least one paid fees.
+- FR-4 (S1): Real PnL = Σ s·(o − p) over Resolved Positions minus Own Fees. Check: three Sample Dataset Wallets match a stored reference calculation, made without the app's code, to the cent; at least one paid fees.
 - FR-5 (S1): Luck Distribution and p-value from 10,000 Simulations; p = (1 + #Simulations ≥ Real PnL) / 10,001. Checks: hand-check Wallet (10 at 0.50, all won) p in [0.0003, 0.002]; a fixed fee per Position lowers Real PnL by exactly the total fee and leaves p and Verdict unchanged; sharp trader (100 at 0.50, 70 won) p < 0.01; favourite buyer (100 at 0.90, 90 won) p ≥ 0.05; 1,000 coin-flippers: p < 0.05 for at most 7%, p < 0.01 for at most 2%.
 - FR-6 (S1): Verdict from thresholds: *Skilled (high confidence)* p < 0.01, *Likely skilled* p < 0.05, *No evidence of skill*, *Not enough data* below 30 Resolved Positions. Check: 29 gives *Not enough data* and no p-value; 30 gives a Verdict.
 - FR-7 (S1): Reproducibility. Each Skill Test runs with a stored Seed; same data and Seed give the identical p-value and Verdict.
@@ -52,7 +52,7 @@ Requirement IDs are the PRD's own (FR-1 to FR-24; FR-15 keeps its old number and
 - FR-16 (S2): Scan and Watchlist. Choose a Cut-off Date and size (default 200 `[ASSUMPTION]`), Scan the top Wallets by Real PnL before the date, see the Watchlist sorted by p-value with Minimum Luck Passes. Ranking uses only Positions resolved before the date. Candidates come from Market-anchored position lists (closed and open) of the funnel: Markets resolved in the 90 days before the date, top 100 by volume, shortlist 3 × size `[ASSUMPTION: 90, 100, 3×]`, then full fetch and ranking. The page states the population, "N of 100 Markets used", and that the shortlist is approximate. Partly read Markets give no candidates ("not used: partial"); Wallets not fully read are kept and marked everywhere. Big Wallets ranked and tested on their latest 2,000 before the date. A new date means a new Scan; stored data reused. Offline Scan with the default date puts at least sharp trader, steady sharp, forecaster and speed trader on the Watchlist. Progress shown; interrupted Scans resume without refetching. The Watchlist is stored with Scan date and Cut-off Date, never sent anywhere.
 - FR-17 (S2): Hold-up Test. Before-Cut-off Passers vs Comparison Group, both picked from the same Scan by the same rule on the before part only, both tested on the after part (first 2,000 per Wallet): Resolved Positions, Real PnL, p-value, Verdict per group. Minimum After-bets 10 `[ASSUMPTION]` in both groups; dropped counts shown; >20 pp `[ASSUMPTION]` difference in dropped share gives the warning (planted 60% vs 10% shows it). Steady-sharp Wallets pass after; lucky-streak Wallets show *No evidence of skill* after. Groups under 30 show *Not enough data*. The pooled after part shares one draw per Market (planted 7 Passers × 40 shared Markets: p < 0.05 in at most 7% of 1,000 runs). Not-fully-read counts shown.
 - FR-18 (S2): Copy Test, in three parts. The page shows the Random Group Check first, then the per-Wallet numbers.
-- FR-18a (S2): Follower PnL and Follower Return. Per Passer, over its Copy Sample (≤ 100 after Positions `[ASSUMPTION]`, drawn with the Seed), Follower PnL and Follower Return at 1, 5 and 30 minutes next to own Real PnL; each fill copied at its own time; positions with no price left out and counted; "priced N of M"; Spread Allowance 0.5 c `[ASSUMPTION]` and its limits stated (upper bound); per-Wallet numbers marked not luck-checked, 1 and 30 min marked extra with no Copy Verdict. Checks: speed trader ≤ 0 at 5 min; forecaster > 0 at 30 min; hand-calculated three-Position set with a fee, the Spread Allowance and a multi-fill Position matches to the cent.
+- FR-18a (S2): Follower PnL and Follower Return. Per Passer, over its Copy Sample (≤ 100 after Positions `[ASSUMPTION]`, drawn with the Seed), Follower PnL and Follower Return at 1, 5 and 30 minutes next to own Real PnL; each fill copied at its own time; positions with no price left out and counted; "priced N of M"; Spread Allowance 0.5 c `[ASSUMPTION]` and its limits stated (upper bound); per-Wallet numbers marked not luck-checked, 1 and 30 min marked extra with no Copy Verdict. Checks: speed trader ≤ 0 at 5 min; forecaster > 0 at 30 min; three-Position set with a fee, the Spread Allowance and a multi-fill Position matches a reference calculation made without the app's code to the cent.
 - FR-18b (S2): Random Group Check at the Main Copy Delay (5 min): Passers' average Follower Return against 10,000 random groups from the Copy Pool; Copy p-value and Copy Verdict; *Not enough data* with no Passer in the Pool or fewer than 1,000 `[ASSUMPTION]` groups; only 5 min gives a Copy Verdict; "no random group did as well in 10,000 draws" wording; shared-Markets count shown. Checks: planted 10 forecasters + 100 coin-flippers p < 0.01; 1,000 planted coin-flipper Scans p < 0.05 in at most 7%; shared-Markets gate (10 Passers × 40 shared Markets ≤ 7%); Pool of 6 with 3 Passers shows *Not enough data*; same Seed same p.
 - FR-18c (S2): Price history and fallback. One-minute prices only, never silently coarser, kept for good; the source checked daily; if one-minute prices for the default date are gone at the real-data run, the frozen 50-Wallet insurance pool is used, with its limits stated.
 
@@ -179,7 +179,7 @@ Stage marks as in EXPERIENCE.md. A page or element of a later stage is absent un
 | FR-1 | 1, 2 | Lookup form and address checks (1); "no Polymarket history" from live data (2) |
 | FR-2 | 2 | Fetch, 24-hour cache, Polymarket not answering, pacing |
 | FR-3 | 1, 2 | Positions from fills, shares held, resolved rule, fully sold left out (1); both position lists and every exclusion reason on real data (2) |
-| FR-4 | 1, 2 | Real PnL on Synthetic Wallets (1); hand calculations on three real Wallets, one with fees (2) |
+| FR-4 | 1, 2 | Real PnL on Synthetic Wallets (1); independent reference calculations on three real Wallets, one with fees (2) |
 | FR-5 | 1 | 10,000 Simulations, p-value, the five checks |
 | FR-6 | 1 | Verdict thresholds, 29 vs 30 |
 | FR-7 | 1 | Seed, identical results |
@@ -211,7 +211,7 @@ The examiner clones the repository, runs the three README commands, picks a Synt
 
 ### Epic 2: Check a real Wallet (S1, target 11 to 13 and 17 to 19 Nov)
 The user pastes any Polymarket address and gets a Verdict from live data; a second lookup is instant, outages are handled, and the 10 real Sample Wallets work offline.
-**FRs covered:** FR-1 (no history), FR-2, FR-3 (all exclusions), FR-4 (hand calculations), FR-12 (real Wallets)
+**FRs covered:** FR-1 (no history), FR-2, FR-3 (all exclusions), FR-4 (independent reference calculations), FR-12 (real Wallets)
 
 ### Epic 3: A Verdict you can trust (S1, target 20 to 23 Nov)
 The user sees the luck chart with the Wallet's marker and its text alternative, and the honesty notes; the page works by keyboard and screen reader, in both themes and at any width. Stage 1 is done: all tests pass and the README is updated.
@@ -652,7 +652,7 @@ So that I can check real results offline and see how the committed data was made
 **And** each real Wallet's uncoupled share (AD-20, moved here from Story 2.4) is recorded in the same note.
 **And** the Verdict time from stored data for the largest real Wallets (NFR-10, within 10 seconds), and the live lookup time including the Polymarket fetch for at least one of them, are measured and noted; the fetch time has no 10-second target, since NFR-10 covers stored data (Edvard, 2026-11-21, Story 2.5).
 
-### Story 2.7: Real PnL checked by hand
+### Story 2.7: Real PnL checked independently
 
 As the examiner,
 I want the app's Real PnL for three real Wallets checked against numbers that do not come from the app,
@@ -661,8 +661,8 @@ So that a mistake in the app's maths cannot pass its own test.
 **Acceptance Criteria:**
 
 **Given** 0x29306d (23 bets)
-**When** Edvard calculates its Real PnL by hand in a spreadsheet, following FR-3 and the Glossary (resolved Markets only, fully sold left out, partly sold at shares held, Own Fees subtracted)
-**Then** the spreadsheet is committed (as CSV) before the test compares it with the app (Edvard, 2026-10-24).
+**When** a fresh AI helper works out its Real PnL step by step, given only the PRD and the Wallet's file in the Sample Dataset and never the app's code, following FR-3, FR-4 and the Glossary (resolved Markets only, fully sold left out, partly sold at shares held, Own Fees subtracted)
+**Then** its working is committed as CSV, one row per Position, before any test compares it with the app (Edvard, 2026-11-23; this replaces his own spreadsheet, planned on 2026-10-24).
 
 **Given** 0x0f4b0a (fees $0.60) and 0x091596 (fees $1,138; its Romania event is left out because of a CONVERSION, Story 2.4)
 **When** their reference values are computed
@@ -672,8 +672,8 @@ So that a mistake in the app's maths cannot pass its own test.
 **Given** the three reference values
 **When** the test runs
 **Then** the app's Real PnL for each equals its reference to the cent (FR-4)
-**And** the test file says which number came from where: Edvard's hand calculation for 0x29306d, the independent script for the other two
-**And** if a value differs, the cause is found and logged (app, script or hand calculation) and the expected value is never changed to match without a written reason.
+**And** the test file says which number came from where: the fresh helper's calculation for 0x29306d, the independent script for the other two
+**And** if a value differs, the cause is found and logged (app, script or helper's calculation) and the expected value is never changed to match without a written reason.
 
 ## Epic 3: A Verdict you can trust
 
@@ -1091,8 +1091,8 @@ So that I can tell forecasters from speed traders.
 **Then** the speed trader has Follower PnL ≤ 0 at 5 minutes and the forecaster Follower PnL > 0 at 30 minutes (FR-18a).
 
 **Given** a hand-made set of three Positions in a Market with a fee, including a Position bought in more than one fill
-**When** Edvard calculates its Follower PnL and Follower Return by hand from the PRD definitions, including the Spread Allowance (same rule as FR-4: his calculation is committed before the test compares it)
-**Then** the app's numbers equal his to the cent, and the test file says the reference values are his hand calculation (FR-18a; Edvard, 2026-10-24).
+**When** a fresh AI helper works out its Follower PnL and Follower Return step by step, given only the PRD and the set's data and never the app's code, including the Spread Allowance (same rule as FR-4: its calculation is committed before the test compares it)
+**Then** the app's numbers equal the helper's to the cent, and the test file says the reference values are the helper's calculation (FR-18a; Edvard, 2026-11-23, replacing his own hand calculation planned on 2026-10-24).
 
 ### Story 6.3: The Random Group Check
 

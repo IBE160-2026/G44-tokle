@@ -51,3 +51,12 @@ Findings and goals set aside by `bmad-build`, each with where it came from.
 - source_spec: `_bmad-output/implementation-artifacts/spec-2-6-real-wallets-in-the-sample-dataset.md`
   summary: Story 4.6 builds before and after windows around 1 July 2025 from the same capture; for 0xd218e4 and 0x63d43b the capture holds trades only from May 2025, so their before part may also come out entirely "not fully read", which the Hold-up Test (Epic 5) would feel.
   evidence: maybe-false, would be medium (Story 2.6 review, blind hunter). Settle it in Story 4.6 by running its before window on the capture and counting not-fully-read Positions per Wallet before planning the Hold-up Test's real-data checks.
+- source_spec: `_bmad-output/implementation-artifacts/spec-2-7-real-pnl-checked-independently.md`
+  summary: Every fee that fails the strict check fits Polymarket's fee formula at 1.67x to 7x the Market's listed rate, so the check (against today's rate) drops fees that were real when paid; Own Fees are then too low for 0x0f4b0a (7 fees, 0.28) and 0x091596 (2 fees, 44.48).
+  evidence: Story 2.7 review; helper 2's `tests/reference/*-fee-check.csv` and `script-notes.md`; ties to the Story 2.6 rate-change entry. Needs Edvard's call on whether FR-4's check should allow a rate that was listed when the fee was paid.
+- source_spec: `_bmad-output/implementation-artifacts/spec-2-7-real-pnl-checked-independently.md`
+  summary: Own Fees count the fee on every buy of a Position, also on shares later sold; for 0x091596 that is 636.90 of 1,087.34 (about 510 on five Slivers), while FR-3 puts sold shares in Exit PnL.
+  evidence: Story 2.7 review; helper 2's judgment call J6. App and reference agree (Glossary: fees "paid on the buys of a Position"), so nothing fails; whether the Glossary means this is Edvard's call.
+- source_spec: `_bmad-output/implementation-artifacts/spec-2-7-real-pnl-checked-independently.md`
+  summary: FR-3 says a Position is left out when the Wallet "converted shares in that Market", but a CONVERSION row names the negative-risk event, and the app (Edvard, Story 2.4) leaves out the whole event; the PRD wording could say so.
+  evidence: Story 2.7 review; helper 2's judgment call J9 reached the same reading from the data alone.

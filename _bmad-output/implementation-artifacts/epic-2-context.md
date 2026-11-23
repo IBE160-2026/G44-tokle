@@ -14,7 +14,7 @@ The user pastes any Polymarket address and gets a Verdict from live data. A seco
 - Story 2.4: Linked bets on real data
 - Story 2.5: Look up a live Wallet
 - Story 2.6: Real Wallets in the Sample Dataset
-- Story 2.7: Real PnL checked by hand
+- Story 2.7: Real PnL checked independently
 
 ## Requirements & Constraints
 
@@ -27,6 +27,7 @@ The user pastes any Polymarket address and gets a Verdict from live data. A seco
 - Every Position the test cannot judge fairly is left out with one stored reason, counted, and reported; the same rules apply before and after the Cut-off Date.
 - A Wallet with up to 1,000 Resolved Positions gets its Verdict within 10 seconds from stored data.
 - Real results are recorded whatever they come out as; nothing is tuned to match an estimate.
+- Real PnL on three real Sample Wallets equals a reference calculation made from the PRD and the Wallet's data alone, without the app's code, to the cent; at least one of the three paid fees (0x0f4b0a and 0x091596 did). 0x29306d's reference is a fresh AI helper's calculation (replacing Edvard's hand calculation, 2026-11-23); 0x0f4b0a and 0x091596 come from a separate script that imports nothing from `liquidoracle`. A reference is never changed to match the app without a written reason.
 
 ## Technical Decisions
 
