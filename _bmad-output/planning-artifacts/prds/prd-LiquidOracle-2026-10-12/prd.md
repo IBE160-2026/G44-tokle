@@ -146,7 +146,7 @@ The system combines a Wallet's fills into Positions and marks which are Resolved
 #### FR-4: Real PnL
 The system computes Real PnL from a Wallet's Resolved Positions and Slivers.
 - Own Fees are checked against the Market's fee schedule. A fee that fails the check is not counted (it counts as 0) and is shown on the Verdict card (FR-11).
-- For three Wallets in the Sample Dataset, Real PnL equals a hand calculation stored with the tests (to the cent). At least one of the three paid trading fees, and its hand calculation subtracts them.
+- For three Wallets in the Sample Dataset, Real PnL equals a reference calculation stored with the tests (to the cent), made from the PRD's definitions and the Wallet's data alone, without the app's code. At least one of the three paid trading fees, and its reference calculation subtracts them.
 
 #### FR-5: Luck Distribution and p-value
 The system runs 10,000 Simulations and computes the p-value.
@@ -393,7 +393,7 @@ Each stage ends with all its tests passing and the README updated, so the projec
 ## 7. Success Metrics
 
 **Primary**
-- **SM-1**: All Skill Test correctness tests pass (hand-check, coin-flipper, sharp trader, favourite-buyer, thin wallet, reproducibility, hand-calculated Real PnL). Validates FR-4 to FR-7.
+- **SM-1**: All Skill Test correctness tests pass (hand-check, coin-flipper, sharp trader, favourite-buyer, thin wallet, reproducibility, independently calculated Real PnL). Validates FR-4 to FR-7.
 - **SM-2**: The examiner can run the app and the tests from the README with no network and no keys. Validates FR-12 to FR-14.
 
 **Secondary**
