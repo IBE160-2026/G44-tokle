@@ -285,7 +285,7 @@ For each Before-Cut-off Passer, over its Copy Sample, the system shows Follower 
 Checks:
 - The speed-trader Synthetic Wallet has Follower PnL ≤ 0 at a 5-minute Copy Delay.
 - The forecaster Synthetic Wallet has Follower PnL > 0 at a 30-minute Copy Delay.
-- For a hand-made set of three Positions in a Market with a fee, including the Spread Allowance and a Position bought in more than one fill, Follower PnL and Follower Return equal a hand calculation stored with the tests (to the cent).
+- For a hand-made set of three Positions in a Market with a fee, including the Spread Allowance and a Position bought in more than one fill, Follower PnL and Follower Return equal a reference calculation stored with the tests (to the cent), made from the PRD's definitions and the set's data alone, without the app's code.
 
 ##### FR-18b: Random Group Check
 At the Main Copy Delay, the Passers' score is the average Follower Return of the Passers in the Copy Pool, each Wallet counting equally. The system draws 10,000 random groups of the same size from the Copy Pool (no Wallet twice in one group) and scores each the same way. Copy p-value = (1 + number of random groups scoring ≥ the Passers) / (1 + 10,000). Copy Verdict: *Beat random picks* (Copy p-value < 0.05), *No better than random picks*, or *Not enough data* when no Passer is in the Copy Pool or fewer than 1,000 different groups of that size can be drawn from it. `[ASSUMPTION: 1,000]` It runs with a Seed, like the Skill Test.
