@@ -637,7 +637,7 @@ So that I can check real results offline and see how the committed data was made
 **Given** the capture
 **When** the windows are built
 **Then** the lookup window (latest 2,000) is built by the app's own rules (AD-7, AD-8, AD-11), and the default Cut-off Date, 1 July 2025, is stored with the Sample Dataset (FR-12); Story 4.6 extends this same script with the before and after windows around it, once Story 4.1 exists
-**And** whatever the capture lacks is left out by the normal rules, as "not fully read" for the two largest Wallets, never patched by hand (FR-12 one-way limitation)
+**And** whatever the capture lacks is left out by the normal rules, as "not fully read" for the two largest Wallets, never patched by hand (FR-12 one-way limitation); in the lookup window this leaves every Position of 0xd218e4, 0x63d43b and 0x729806 "not fully read" (Story 2.6, 2026-11-23)
 **And** price windows are not included yet; Epic 6 extends this same script to add the Copy Sample's windows.
 
 **Given** the same zip

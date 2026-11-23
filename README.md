@@ -62,7 +62,7 @@ The 10 real Wallets in `sample_data/real/` were built by one command from a raw 
 uv run liquidoracle build-sample <folder>/sample-capture-cutoff-2025-07-01.zip
 ```
 
-You cannot run it without the capture, and you don't need it to run the app or the tests. `sample_data/real/dataset.json` records the default Cut-off Date (1 July 2025), both files' SHA-256 and how the set was built. Where the capture stopped reading a Wallet's trades (the two largest Wallets hit its 150,000-row limit), the bets after that point are left out as "not fully read", as in a live lookup that hits the limit.
+You cannot run it without the capture, and you don't need it to run the app or the tests. `sample_data/real/dataset.json` records the default Cut-off Date (1 July 2025), both files' SHA-256 and how the set was built. Where the capture stopped reading a Wallet's trades (it read at most 150,000 rows each way from the Cut-off Date), the bets it cannot fully see are left out as "not fully read", as in a live lookup that hits the limit. For three of the 10 (0xd218e4, 0x63d43b and 0x729806) that is every bet, so their Verdict card shows *Not enough data*; [`docs/real-wallets.md`](docs/real-wallets.md) explains why.
 
 `uv run liquidoracle make-synthetic` rebuilds the Synthetic Wallets: made-up Wallets whose correct answers are known in advance, used to check the Skill Test. Run it from the repository folder. It rewrites the five small Wallets in `sample_data/synthetic/` (committed; the output is identical every time, so `git status` stays clean) and writes 1,000 coin-flipper Wallets (about 90 MB) to `instance/synthetic/coin-flippers/`, which is never committed. You don't need it to run the app or the tests.
 
