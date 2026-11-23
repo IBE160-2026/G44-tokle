@@ -434,9 +434,11 @@ def test_gamma_market_with_mismatched_outcomes_is_unreadable() -> None:
 
 
 def test_open_market_without_prices_is_read_unpriced() -> None:
-    """AD-7, Story 2.6 (found on 0xd218e4): an open Market Gamma has not priced yet sends `outcomePrices: null`.
-    It is read with no prices, so one unpriced Market no longer makes the whole answer unreadable."""
-    unpriced = gamma_market("0xb", closed=False, closedTime=None, outcomePrices=None)
+    """AD-7, Story 2.6 (found on 0xd218e4): an open Market Gamma has not priced yet comes without
+    `outcomePrices`. It is read with no prices, so one unpriced Market no longer makes the whole
+    answer unreadable."""
+    unpriced = gamma_market("0xb", closed=False, closedTime=None)
+    del unpriced["outcomePrices"]  # the shape Gamma really sends (1 of 5,330 open Markets in the fetch)
     transport = FakeTransport([ok([gamma_market("0xa")]), ok([unpriced])])
     first, second = client(transport).markets(["0xa", "0xb"])
     assert (first.condition_id, first.resolved) == ("0xa", True)
@@ -448,6 +450,13 @@ def test_closed_market_without_prices_stays_unreadable() -> None:
     transport = FakeTransport([ok([gamma_market("0xabc", outcomePrices=None)])])
     with pytest.raises(PolymarketUnavailable):
         client(transport).markets(["0xabc"])
+
+
+def test_open_market_with_null_prices_is_read_unpriced_too() -> None:
+    """AD-7 (review, Story 2.6): an explicit null reads the same as a left-out key for an open Market."""
+    transport = FakeTransport([ok([]), ok([gamma_market("0xb", closed=False, closedTime=None, outcomePrices=None)])])
+    (market,) = client(transport).markets(["0xb"])
+    assert (market.outcome_prices, market.resolved) == ((), False)
 
 
 def test_raw_markets_keeps_gammas_answers_in_the_order_asked() -> None:

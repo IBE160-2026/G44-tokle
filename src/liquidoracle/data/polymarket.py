@@ -541,7 +541,7 @@ def _market(raw: Mapping[str, Any]) -> Market:
 
     `closed`, the token ids and the prices are required: they decide "Resolved", so a missing
     one is an unreadable answer, never a guess. `feesEnabled` may be absent (False). The one
-    exception: an open Market Gamma has not priced yet sends `outcomePrices: null` (found on
+    exception: an open Market Gamma has not priced yet comes without `outcomePrices` (found on
     0xd218e4, Story 2.6); it is read with no prices, since an open Market is never resolved.
     """
     closed = raw["closed"]
@@ -549,7 +549,7 @@ def _market(raw: Mapping[str, Any]) -> Market:
     if not isinstance(closed, bool) or not isinstance(fees_enabled, bool):
         raise ValueError("closed or feesEnabled is not true or false")
     token_ids = _json_list(raw["clobTokenIds"], "clobTokenIds")
-    unpriced = closed is False and raw.get("outcomePrices") is None
+    unpriced = closed is False and raw.get("outcomePrices") is None  # left out (as Gamma sends it) or null
     prices = [] if unpriced else [float(p) for p in _json_list(raw["outcomePrices"], "outcomePrices")]
     if len(token_ids) < 2 or (not unpriced and len(token_ids) != len(prices)):
         raise ValueError("clobTokenIds and outcomePrices must list the same two or more outcomes")

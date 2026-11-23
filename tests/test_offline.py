@@ -226,7 +226,7 @@ def sample_data_bytes(folder: Path) -> int:
     return sum(p.stat().st_size for p in folder.rglob("*") if p.is_file())
 
 
-def test_committed_sample_dataset_is_under_25_mb() -> None:
+def test_committed_sample_dataset_is_under_the_size_limit() -> None:
     """FR-12, AD-14: the committed Sample Dataset stays under 50 MB."""
     assert 0 < sample_data_bytes(REPO / "sample_data") < MAX_SAMPLE_BYTES
 

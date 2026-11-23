@@ -1,8 +1,9 @@
 """The one serializer for Sample Dataset files (AD-14).
 
 One JSON file per Wallet, holding its activity rows, positions-list rows, Markets and price
-points as `records` types, and where a real Wallet's capture stopped reading activity (Story 2.6). Keys are sorted, line endings are LF and files are written as bytes,
-so the same Wallet gives the same bytes on every OS and Python version (FR-13). Reading is
+points as `records` types, and where a real Wallet's capture stopped reading activity (Story
+2.6). Keys are sorted, line endings are LF and files are written as bytes, so the same Wallet
+gives the same bytes on every OS and Python version (FR-13). Reading is
 strict: a missing or unknown key, a wrongly typed value, NaN or Infinity is an error, never a
 silent default or conversion.
 """
