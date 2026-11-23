@@ -132,7 +132,8 @@ def test_ux_dr22_first_lookup_queues_a_job_and_shows_the_fetching_state(run: Liv
     assert '<span class="fetch-dots" aria-hidden="true">' in text
     assert '<p class="fetching" role="status">' in text and "Fetching trades from Polymarket…" in text
     assert f'<a href="/wallet/{run.wallet}?job={job_id}">Reload this page</a>' in text
-    assert '<script src="/static/js/progress.js" defer></script>' in text
+    # chart.js comes first, so progress.js can hand it the swapped-in Verdict (Story 3.2).
+    assert '<script src="/static/js/chart.js" defer></script>\n    <script src="/static/js/progress.js" defer></script>' in text
     assert f'data-progress="/jobs/{job_id}/progress"' in text
     assert run.transport.calls == []  # a page never talks to Polymarket (AD-5)
 

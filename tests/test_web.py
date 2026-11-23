@@ -86,8 +86,9 @@ PAGES = ["/", "/?address=", f"/wallet/{SHARP}", f"/wallet/{THIN}", f"/wallet/{UN
 @pytest.mark.parametrize("url", PAGES)
 def test_every_page_has_the_frame(offline: FlaskClient, url: str) -> None:
     """AD-18, UX-DR4/5/6/8: English, one main heading, the skip link as the first Tab stop, the top bar
-    with logo and Check a wallet, the favicon and the Offline pill. The only script is the theme.js
-    file (no inline code), and its toggle is hidden until that script shows it (UX-DR2)."""
+    with logo and Check a wallet, the favicon and the Offline pill. The scripts are files (no inline
+    code): theme.js on every page, chart.js only with a luck chart; the toggle is hidden until theme.js
+    shows it (UX-DR2)."""
     page = offline.get(url).get_data(as_text=True)
     assert page.startswith("<!doctype html>\n<html lang=\"en\">")
     assert len(h1s(page)) == 1
@@ -98,8 +99,12 @@ def test_every_page_has_the_frame(offline: FlaskClient, url: str) -> None:
     assert 'class="brand-mark"' in page and ">Check a wallet</a>" in page
     assert 'rel="icon" type="image/svg+xml" href="/static/img/favicon.svg"' in page
     assert "Offline Mode</strong> · sample data only" in page
-    assert re.findall(r"<script[^>]*>(.*?)</script>", page, re.S) == [""]
-    assert '<script src="/static/js/theme.js"></script>' in page
+    scripts = re.findall(r"<script([^>]*)>(.*?)</script>", page, re.S)
+    assert all(code == "" for _, code in scripts)
+    expected = [' src="/static/js/theme.js"']
+    if 'class="card chart-card"' in page:
+        expected.append(' src="/static/js/chart.js" defer')
+    assert [src for src, _ in scripts] == expected
     toggle = re.search(r'<button class="theme-toggle"[^>]*>', page).group(0)
     assert 'aria-label="Dark theme"' in toggle and 'aria-pressed="true"' in toggle and " hidden" in toggle
     assert not re.search(r"https?://", page)  # nothing is loaded from the internet (UX-DR3)
@@ -302,22 +307,30 @@ def test_fr9_chart_card_follows_the_verdict_card(offline: FlaskClient) -> None:
         '<p class="chart-alt">This Wallet made $2,000 on 100 resolved bets. '
         "In 10,000 replays with no edge, a result this good came up about 1 time in 5,000.</p>"
     ) in card
-    assert "chart.js" not in page and "<script" not in card  # Story 3.2 adds the only chart script
+    assert "<script" not in card  # chart.js is loaded once, after the card (Story 3.2)
     # The marker reaches the page where the service put it: the axis' top edge, label hanging inwards.
     assert '<line class="chart-marker-line" x1="42.000" x2="42.000"' in card
-    assert '<span class="chart-marker-label anchor-end" style="left: 95.455%">This Wallet: $2,000</span>' in card
+    assert '<span class="chart-marker-label anchor-end" style="left: 95.455%" aria-hidden="true">This Wallet: $2,000</span>' in card
     assert '<span class="t-full">−$2,000 or less</span><span class="t-short">−$2k or less</span>' in card
 
 
 def test_ux_dr25_bars_and_axes_are_hidden_from_screen_readers(offline: FlaskClient) -> None:
-    """UX-DR25, NFR-9: the drawing and all its labels sit inside one aria-hidden block; the hint and the text
-    alternative stay outside it, so the text alternative carries the meaning."""
+    """UX-DR25, NFR-9: every part of the drawing (bars, gridlines, ticks, end labels, marker and its label) is
+    hidden from screen readers; since Story 3.2 each part carries aria-hidden itself, so the slider and the
+    marker button beside them can be reached. The text alternative stays readable and carries the meaning."""
     card = chart_card(html(offline, f"/wallet/{SHARP}"))
-    hidden = re.search(r'<div class="chart" aria-hidden="true">(.*)</div>\s*<p class="chart-hint">', card, re.S)
-    assert hidden, "the chart block is not hidden from screen readers"
-    for part in ("<svg", "chart-y-label", "chart-tick", "chart-end", "chart-marker-label"):
-        assert part in hidden.group(1), part
-    assert "This Wallet: $2,000" in hidden.group(1)
+    drawing = {
+        "svg": r'<svg class="chart-svg"[^>]*>', "y title": r'<p class="chart-y-title"[^>]*>',
+        "y labels": r'<span class="chart-y-label"[^>]*>', "dot": r'<span class="chart-dot"[^>]*>',
+        "marker label": r'<span class="chart-marker-label[^>]*>', "ticks": r'<div class="chart-axis"[^>]*>',
+        "end labels": r'<div class="chart-ends"[^>]*>', "tail label": r'<div class="chart-tail-label[^>]*>',
+        "tooltip": r'<div class="chart-tip"[^>]*>',
+    }
+    for name, pattern in drawing.items():
+        tags = re.findall(pattern, card)
+        assert tags and all('aria-hidden="true"' in tag for tag in tags), name
+    assert re.search(r'<span class="chart-marker-label[^>]*aria-hidden="true">This Wallet: \$2,000</span>', card)
+    assert 'aria-hidden' not in re.search(r'<p class="chart-alt">', card).group(0)
 
 
 def test_fr9_above_all_label_on_the_page(offline: FlaskClient) -> None:
@@ -343,6 +356,113 @@ def test_ux_dr25_chart_styles() -> None:
     assert re.search(r"@media \(max-width: 399px\) \{\s*\.chart-ends \{ display: none; \}", css)
     forced = "".join(re.findall(r"@media \(forced-colors: active\) \{(.*?)\n\}", css, re.S))
     assert ".chart-bar { fill: CanvasText; }" in forced and ".chart-marker-line { stroke: Highlight; }" in forced
+
+
+# --- Story 3.2: exploring the chart (UX-DR26, UX-DR27, UX-DR28) -----------------------------------
+# chart.js only shows, hides and moves what the page already holds, so these tests check what it is
+# given; the script itself is checked in a browser (spec-3-2, Edvard 2026-11-23: no JS test runner yet).
+
+JS = WEB / "static" / "js" / "chart.js"
+
+
+def tag(card: str, pattern: str) -> str:
+    found = re.search(pattern, card)
+    assert found, pattern
+    return found.group(0)
+
+
+def test_ux_dr26_slider_and_button_wait_for_the_script(offline: FlaskClient) -> None:
+    """UX-DR26, UX-DR27, AD-18, 3.2 matrix "No JS": the slider, the marker button, the tail label, the tooltip, the
+    explore hint and About's fourth paragraph are all hidden until chart.js shows them; the 3.1 hint is not."""
+    card = chart_card(html(offline, f"/wallet/{SHARP}"))
+    slider = tag(card, r'<div class="chart-explore"[^>]*>')
+    for part in ('role="slider"', 'tabindex="0"', 'aria-label="Replays by result"', 'aria-describedby="chart-explore-hint"',
+                 'aria-valuemin="1"', 'aria-valuemax="42"', 'aria-valuenow="41"',
+                 'aria-valuetext="$1,900 to $2,000: 0 replays"', "data-explore hidden"):
+        assert part in slider, part
+    button = tag(card, r'<button class="chart-marker-button"[^>]*>')
+    for part in ('type="button"', 'aria-pressed="false"', 'style="left: 95.455%"', 'aria-describedby="chart-tail-text"',
+                 'aria-label="This Wallet: $2,000. Highlight the replays that did this well or better"', "data-explore hidden"):
+        assert part in button, part
+    assert '<p class="visually-hidden" id="chart-tail-text" hidden>1 of 10,000 replays did this well or better</p>' in card
+    assert re.search(r'<div class="chart-tail-label is-left"[^>]*data-explore hidden>1 of 10,000 replays did this well or better</div>', card)
+    assert re.search(r'<div class="chart-tip" aria-hidden="true" data-explore hidden></div>', card)
+    assert ('<p class="chart-hint" data-no-explore>Each bar is a range of results. '
+            "The taller the bar, the more replays ended there.</p>") in card
+    assert ('<p class="chart-hint" id="chart-explore-hint" data-explore hidden>Point at a bar, or use the arrow keys, '
+            "to see how many replays ended there.</p>") in card
+    assert re.search(r"<p data-explore hidden>Point at a bar, or step through the bars with the arrow keys", card)
+    # Without chart.js nothing in the card but About can take focus: the slider and button are script parts.
+    focusable = re.findall(r'<(?:button|a|input)\b[^>]*>|<[^>]*tabindex="0"[^>]*>', card)
+    assert len(focusable) == 2 and all("data-explore hidden" in t for t in focusable)
+
+
+def test_ux_dr26_every_bar_carries_its_tooltip_words(offline: FlaskClient) -> None:
+    """UX-DR26: each bar holds its range and replay count for the tooltip and the slider, in order; the end bars
+    read as their labels, and each bar knows its place in the build-up."""
+    card = chart_card(html(offline, f"/wallet/{SHARP}"))
+    bars = re.findall(r'<rect class="chart-bar"[^>]*style="--i: (\d+)" data-range="([^"]*)" data-count="([^"]*)"/>', card)
+    assert len(bars) == 42 and [int(i) for i, _, _ in bars] == list(range(42))
+    assert bars[0][1:] == ("−$2,000 or less", "0 replays")
+    assert bars[-1][1:] == ("$2,000 or more", "1 replay")
+    assert bars[40][1] == "$1,900 to $2,000"
+    assert sum(int(count.split()[0].replace(",", "")) for _, _, count in bars) == 10_000
+
+
+@pytest.mark.parametrize(
+    ("address", "tail_from", "sentence"),
+    [
+        (SHARP, 40, "1 of 10,000 replays did this well or better"),
+        (STOP_LOSS, 42, "No replay did this well or better"),
+    ],
+)
+def test_ux_dr27_tail_data_on_the_page(offline: FlaskClient, address: str, tail_from: int, sentence: str) -> None:
+    """UX-DR27, 3.2 matrix "Normal" and "None reached": the page tells chart.js the first bar to light (none
+    for stop-loss-trader) and the Highlight on/off words, with the tail sentence from the exact count."""
+    card = chart_card(html(offline, f"/wallet/{address}"))
+    chart = tag(card, r'<div class="chart" [^>]*>')
+    assert f'data-tail-from="{tail_from}"' in chart and "data-marker-bar=" in chart
+    assert f'data-highlight-on="Highlight on: {sentence}" data-highlight-off="Highlight off"' in card
+    assert f">{sentence}</div>" in card
+
+
+def test_ux_dr26_chart_script_follows_the_card_once(offline: FlaskClient) -> None:
+    """AD-18, 3.2 matrix "Not enough data": chart.js is loaded once, after the card, only when there is a chart."""
+    page = html(offline, f"/wallet/{SHARP}")
+    assert page.count('<script src="/static/js/chart.js" defer></script>') == 1
+    assert page.index("</section>", page.index('class="card chart-card"')) < page.index("js/chart.js")
+    assert "chart.js" not in html(offline, f"/wallet/{THIN}")
+
+
+def test_ad25_chart_script_writes_no_words() -> None:
+    """AD-25, UX-DR26: chart.js reads every word and number from the page; it has no money, counts or sentences
+    of its own, and swapped-in pages are enhanced through progress.js."""
+    script = JS.read_text(encoding="utf-8")
+    code = re.sub(r"/\*.*?\*/|//[^\n]*", "", script, flags=re.S)  # comments may quote examples
+    assert "'" not in code and "`" not in code  # every string is double-quoted, so the scan below sees them all
+    for text in re.findall(r'"([^"\\]*)"', code):
+        assert not re.search(r"\$|\d,\d|replay|Highlight|did this well", text), text
+    assert "innerHTML" not in code  # the tooltip is built from text nodes
+    assert "window.LiquidOracleChart = { enhance: enhance };" in code
+    progress = (WEB / "static" / "js" / "progress.js").read_text(encoding="utf-8")
+    assert "window.LiquidOracleChart.enhance(main)" in progress
+
+
+def test_ux_dr27_ux_dr28_explore_styles() -> None:
+    """UX-DR27, UX-DR28, UX-DR11, UX-DR12: tail and active bars in DESIGN.md's colours, Highlight under forced
+    colours, the build-up only from pre-build, and no motion with reduce motion on."""
+    css = (WEB / "static" / "css" / "app.css").read_text(encoding="utf-8")
+    assert ".chart-bar.is-tail { fill: var(--chart-tail); }" in css
+    assert ".chart-bar.is-active { fill: var(--chart-active); }" in css
+    forced = "".join(re.findall(r"@media \(forced-colors: active\) \{(.*?)\n\}", css, re.S))
+    assert ".chart-bar.is-tail, .chart-bar.is-active { fill: Highlight; }" in forced
+    assert ".chart-plot.pre-build .chart-bar { transform: scaleY(0); }" in css
+    reduced = re.search(r"@media \(prefers-reduced-motion: reduce\) \{(.*?)\n\}", css, re.S).group(1)
+    assert re.search(r"\.chart-bar, [^{]*\.chart-marker-line \{ transition: none; \}", reduced)
+    script = JS.read_text(encoding="utf-8")
+    assert '"(prefers-reduced-motion: reduce)"' in script and 'plot.classList.add("pre-build")' in script
+    printed = re.search(r"@media print \{(.*?)\n\}", css, re.S).group(1)  # never left half-built on paper
+    assert ".chart-plot.pre-build .chart-bar { transform: none; }" in printed
 
 
 class FakeLookup:

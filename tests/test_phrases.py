@@ -340,3 +340,39 @@ def test_ux_dr24_about_this_chart():
     assert phrases.about_chart(212, 1_087.34)[1].endswith(
         "On average, luck alone lands at −$1,087, what this Wallet paid in fees."
     )
+
+
+# --- Story 3.2: exploring the chart (UX-DR26, UX-DR27) ------------------------------------------
+
+
+def test_ux_dr26_bar_range_and_replay_count():
+    """UX-DR26: the slider's spoken example "$30,000 to $35,000: 289 replays"; end bars read as their labels."""
+    assert f"{phrases.bar_range(30_000.0, 35_000.0)}: {phrases.replays(289)}" == "$30,000 to $35,000: 289 replays"
+    assert phrases.bar_range(-5_000.0, 0.0) == "−$5,000 to $0"
+    assert phrases.bar_range(1.25, 1.5) == "$1.25 to $1.50"
+    assert phrases.bar_range(None, -195_000.0) == "−$195,000 or less"
+    assert phrases.bar_range(195_000.0, None) == "$195,000 or more"
+    assert (phrases.replays(0), phrases.replays(1), phrases.replays(10_000)) == ("0 replays", "1 replay", "10,000 replays")
+    with pytest.raises(ValueError):
+        phrases.bar_range(None, None)
+
+
+@pytest.mark.parametrize(
+    ("at_or_above", "sentence"),
+    [
+        (2_500, "2,500 of 10,000 replays did this well or better"),
+        (1, "1 of 10,000 replays did this well or better"),
+        (0, "No replay did this well or better"),
+        (10_000, "All 10,000 replays did this well or better"),
+    ],
+)
+def test_ux_dr27_tail_sentence(at_or_above, sentence):
+    """UX-DR27: the tail label from the exact count, with its two edge sentences."""
+    assert phrases.tail_sentence(at_or_above) == sentence
+
+
+@pytest.mark.parametrize("bad", [-1, 10_001])
+def test_ux_dr27_tail_sentence_refuses_impossible_counts(bad):
+    """UX-DR27: a count outside 0 to 10,000 is a bug upstream, not a sentence."""
+    with pytest.raises(ValueError):
+        phrases.tail_sentence(bad)

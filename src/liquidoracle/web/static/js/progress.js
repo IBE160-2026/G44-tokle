@@ -4,7 +4,8 @@
    On the fetching page it polls GET /jobs/<id>/progress ({status, phase, done, total, message})
    once a second. When the job is no longer queued or running, it fetches the page again (the
    server renders the result: Verdict, no history, Polymarket did not answer), puts its content in
-   place of this block, and moves focus to the new page's main heading. */
+   place of this block, and moves focus to the new page's main heading. A luck chart in the new
+   content is handed to chart.js, which the fetching page also loads. */
 (function () {
   "use strict";
 
@@ -56,6 +57,8 @@
         if (answer.url && window.history && window.history.replaceState) {
           window.history.replaceState(null, "", answer.url); // a reload now shows this same result
         }
+        // Scripts in swapped-in HTML do not run, so the luck chart is enhanced here (chart.js, Story 3.2).
+        if (window.LiquidOracleChart) window.LiquidOracleChart.enhance(main);
         var heading = main.querySelector("h1");
         if (heading) {
           heading.setAttribute("tabindex", "-1");

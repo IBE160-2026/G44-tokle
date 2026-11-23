@@ -32,7 +32,10 @@
     </section>
     {% if page.chart %}
     {% set chart = page.chart %}
-    {# The chart card (FR-9, UX-DR24, UX-DR25): every number and word comes from services/chart.py. #}
+    {# The chart card (FR-9, UX-DR24 to UX-DR27): every number and word comes from services/chart.py.
+       The drawing is hidden from screen readers; the text alternative carries the meaning. Parts marked
+       data-explore stay hidden until chart.js shows them (Story 3.2), so without it the card is complete
+       and has nothing that needs a script. #}
     <section class="card chart-card" aria-labelledby="chart-title">
       <div class="chart-head">
         <h2 id="chart-title">Simulated results <small>{{ chart.title_note }}</small></h2>
@@ -40,35 +43,44 @@
           <summary>About this chart</summary>
           <div class="about-text">
             {% for paragraph in chart.about %}<p>{{ paragraph }}</p>{% endfor %}
+            <p data-explore hidden>{{ chart.about_explore }}</p>
           </div>
         </details>
       </div>
 
-      <div class="chart" aria-hidden="true">
-        <p class="chart-y-title">{{ chart.y_title }}</p>
+      <div class="chart" data-marker-bar="{{ chart.marker_bar }}" data-tail-from="{{ chart.tail_from }}">
+        <p class="chart-y-title" aria-hidden="true">{{ chart.y_title }}</p>
         <div class="chart-frame{% if chart.beyond %} has-beyond{% endif %}">
           <div class="chart-plot">
-            <svg class="chart-svg" viewBox="0 0 {{ chart.view_width }} 100" preserveAspectRatio="none" focusable="false">
+            <svg class="chart-svg" viewBox="0 0 {{ chart.view_width }} 100" preserveAspectRatio="none" aria-hidden="true" focusable="false">
               {% for line in chart.gridlines %}<line class="chart-grid" x1="0" x2="{{ chart.view_width }}" y1="{{ '%.3f' % (100 - line.level) }}" y2="{{ '%.3f' % (100 - line.level) }}" vector-effect="non-scaling-stroke"/>{% endfor %}
-              {% for bar in chart.bars %}<rect class="chart-bar" x="{{ '%.3f' % bar.x }}" y="{{ '%.3f' % (100 - bar.height) }}" width="{{ '%.3f' % bar.width }}" height="{{ '%.3f' % bar.height }}"/>{% endfor %}
+              {% for bar in chart.bars %}<rect class="chart-bar" x="{{ '%.3f' % bar.x }}" y="{{ '%.3f' % (100 - bar.height) }}" width="{{ '%.3f' % bar.width }}" height="{{ '%.3f' % bar.height }}" style="--i: {{ loop.index0 }}" data-range="{{ bar.range_text }}" data-count="{{ bar.count_text }}"/>{% endfor %}
               <line class="chart-marker-line" x1="{{ '%.3f' % chart.marker_x }}" x2="{{ '%.3f' % chart.marker_x }}" y1="0" y2="100" vector-effect="non-scaling-stroke"/>
             </svg>
-            {% for line in chart.gridlines %}<span class="chart-y-label" style="bottom: {{ '%.3f' % line.level }}%">{{ line.label }}</span>{% endfor %}
-            <span class="chart-dot" style="left: {{ '%.3f' % chart.marker_left }}%"></span>
-            <span class="chart-marker-label anchor-{{ chart.anchor }}" style="left: {{ '%.3f' % chart.marker_left }}%">{{ chart.marker_label }}{% if chart.beyond %}<br>{{ chart.beyond }}{% endif %}</span>
+            {% for line in chart.gridlines %}<span class="chart-y-label" style="bottom: {{ '%.3f' % line.level }}%" aria-hidden="true">{{ line.label }}</span>{% endfor %}
+            <span class="chart-dot" style="left: {{ '%.3f' % chart.marker_left }}%" aria-hidden="true"></span>
+            <span class="chart-marker-label anchor-{{ chart.anchor }}" style="left: {{ '%.3f' % chart.marker_left }}%" aria-hidden="true">{{ chart.marker_label }}{% if chart.beyond %}<br>{{ chart.beyond }}{% endif %}</span>
+            <div class="chart-explore" role="slider" tabindex="0" aria-label="Replays by result" aria-describedby="chart-explore-hint" aria-valuemin="1" aria-valuemax="{{ chart.bars | length }}" aria-valuenow="{{ chart.marker_bar + 1 }}" aria-valuetext="{{ chart.bars[chart.marker_bar].range_text }}: {{ chart.bars[chart.marker_bar].count_text }}" data-explore hidden></div>
+            <button class="chart-marker-button" type="button" style="left: {{ '%.3f' % chart.marker_left }}%" aria-pressed="false" aria-label="{{ chart.marker_button_label }}" aria-describedby="chart-tail-text" data-explore hidden></button>
+            <div class="chart-tail-label{% if chart.tail_left %} is-left{% endif %}" style="left: {{ '%.3f' % chart.marker_left }}%" aria-hidden="true" data-explore hidden>{{ chart.tail_text }}</div>
+            <div class="chart-tip" aria-hidden="true" data-explore hidden></div>
           </div>
-          <div class="chart-axis">
+          <div class="chart-axis" aria-hidden="true">
             {% for tick in chart.ticks %}<span class="chart-tick{% if tick.minor %} is-minor{% endif %}" style="left: {{ '%.3f' % tick.left }}%"><span class="t-full">{{ tick.label }}</span><span class="t-short">{{ tick.short }}</span></span>{% endfor %}
           </div>
-          <div class="chart-ends">
+          <div class="chart-ends" aria-hidden="true">
             <span class="chart-end"><span class="t-full">{{ chart.low_label }}</span><span class="t-short">{{ chart.low_short }}</span></span>
             <span class="chart-end"><span class="t-full">{{ chart.high_label }}</span><span class="t-short">{{ chart.high_short }}</span></span>
           </div>
         </div>
       </div>
-      <p class="chart-hint">{{ chart.hint }}</p>
+      <p class="chart-hint" data-no-explore>{{ chart.hint }}</p>
+      <p class="chart-hint" id="chart-explore-hint" data-explore hidden>{{ chart.explore_hint }}</p>
+      <p class="visually-hidden" id="chart-tail-text" hidden>{{ chart.tail_text }}</p>
+      <p class="visually-hidden chart-live" aria-live="polite" data-highlight-on="{{ chart.highlight_on }}" data-highlight-off="{{ chart.highlight_off }}"></p>
 
       <p class="chart-alt">{{ chart.text }}</p>
     </section>
+    <script src="{{ url_for('static', filename='js/chart.js') }}" defer></script>
     {% endif %}
 {% endblock %}

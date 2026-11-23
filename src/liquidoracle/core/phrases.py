@@ -165,6 +165,38 @@ def about_chart(tested_count: int, own_fees: float) -> tuple[str, str, str]:
     )
 
 
+# --- Story 3.2: exploring the chart (UX-DR26, UX-DR27) -----------------------------------------
+
+
+def bar_range(low: float | None, high: float | None) -> str:
+    """A bar's range in the tooltip and the slider (UX-DR26): "$30,000 to $35,000"; an end bar reads as its label."""
+    if low is None and high is not None:
+        return end_bar_label(high, above=False)
+    if high is None and low is not None:
+        return end_bar_label(low, above=True)
+    if low is None or high is None:
+        raise ValueError("a bar needs at least one edge")
+    return f"{axis_money(low)} to {axis_money(high)}"
+
+
+def replays(number: int) -> str:
+    """A count of replays (UX-DR26): "1 replay", "289 replays"."""
+    whole = _whole(number, "count")
+    return f"{count(whole)} {'replay' if whole == 1 else 'replays'}"
+
+
+def tail_sentence(at_or_above: int) -> str:
+    """The tail label (UX-DR27) from the exact count of Simulations at or above the Real PnL, never from the bars."""
+    reached = _whole(at_or_above, "at_or_above")
+    if not 0 <= reached <= SIMULATIONS:
+        raise ValueError(f"at_or_above must be 0 to {SIMULATIONS:,}, got {reached}")
+    if reached == 0:
+        return "No replay did this well or better"
+    if reached == SIMULATIONS:
+        return f"All {SIMULATIONS:,} replays did this well or better"
+    return f"{count(reached)} of {SIMULATIONS:,} replays did this well or better"
+
+
 _MONTHS = ("Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec")
 
 

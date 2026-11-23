@@ -11,7 +11,7 @@ from dataclasses import replace
 import numpy as np
 import pytest
 
-from liquidoracle.core import skilltest
+from liquidoracle.core import phrases, skilltest
 from liquidoracle.core.positions import build_positions
 from liquidoracle.data import synthetic
 from liquidoracle.records import Position, PositionSet, SampleWallet, SkillTestResult
@@ -178,3 +178,72 @@ def test_ux_dr25_layout_end_bars_gaps_and_ticks() -> None:
 def test_ux_dr25_gridline_steps_are_round(peak: int, step: int) -> None:
     """UX-DR25: at most four gridlines above 0, at 1, 2 or 5 times a power of ten."""
     assert chart._grid_step(peak) == step
+
+
+# --- Story 3.2: what chart.js shows (UX-DR26, UX-DR27) ------------------------------------------
+# chart.js writes no words and counts nothing; every tooltip line, slider step, lit bar and tail
+# sentence is decided here, so these tests cover the I/O matrix of spec-3-2.
+
+
+def test_ux_dr27_normal_tail_from_the_marker_bar() -> None:
+    """UX-DR27, 3.2 matrix "Normal" and "Real PnL on the top axis edge": sharp-trader's $2,000 is the axis' top
+    edge, which the last axis bar holds (ChartBin), so the tail starts there; the sentence is the exact count."""
+    result = result_of(SMALL["sharp-trader"])
+    drawn = luck_chart(result)
+    assert result.bins[-2].high == 2000.0 == result.real_pnl
+    assert drawn.marker_bar == drawn.tail_from == skilltest.CHART_BARS  # bin 40: the last axis bar
+    assert drawn.tail_text == "1 of 10,000 replays did this well or better"
+    assert drawn.marker_button_label == "This Wallet: $2,000. Highlight the replays that did this well or better"
+
+
+def test_ux_dr27_none_reached_lights_nothing() -> None:
+    """UX-DR27, 3.2 matrix "None reached": stop-loss-trader beat every replay; no bar is lit."""
+    drawn = luck_chart(result_of(SMALL["stop-loss-trader"]))
+    assert drawn.tail_from == len(drawn.bars) == skilltest.CHART_BARS + 2
+    assert drawn.tail_text == "No replay did this well or better"
+
+
+def test_ux_dr27_all_reached_lights_every_bar() -> None:
+    """UX-DR27, 3.2 matrix "All reached": a Wallet that lost every bet ties the lowest replay, so all 10,000 did as well."""
+    result = planted(0.05, won=False)
+    assert result.at_or_above == skilltest.SIMULATIONS
+    drawn = luck_chart(result)
+    assert drawn.tail_from == 0
+    assert drawn.tail_text == "All 10,000 replays did this well or better"
+
+
+@pytest.mark.parametrize("share", [0.0, 0.3, 0.5, 0.5125, 0.77, 1.0])
+def test_ux_dr27_marker_bar_holds_the_real_pnl(share: float) -> None:
+    """UX-DR27: the marker's bar is the one whose range holds the Real PnL, by core's rule (low edge in, top edge
+    in the last axis bar); a value exactly on an inner edge belongs to the bar that starts there."""
+    result = result_of(SMALL["favourite-buyer"])
+    low, high = axis_edges(result)
+    moved = replace(result, real_pnl=low + share * (high - low))
+    drawn = luck_chart(moved)
+    held = moved.bins[drawn.marker_bar]
+    assert 1 <= drawn.marker_bar <= skilltest.CHART_BARS
+    assert held.low is not None and held.high is not None
+    assert held.low <= moved.real_pnl < held.high or (moved.real_pnl == held.high == high)
+    assert drawn.tail_from == drawn.marker_bar  # some but not all replays reached it
+    assert drawn.tail_left is (share > 0.5)  # the tail label hangs towards the middle, so it stays on the card
+
+
+def test_ux_dr26_every_bar_carries_its_range_and_count() -> None:
+    """UX-DR26: each bar's tooltip and slider text are the phrases for its own stored bin; the end bars read as labels."""
+    result = result_of(SMALL["sharp-trader"])
+    drawn = luck_chart(result)
+    assert [(b.range_text, b.count_text) for b in drawn.bars] == [
+        (phrases.bar_range(b.low, b.high), phrases.replays(b.count)) for b in result.bins
+    ]
+    assert drawn.bars[0].range_text == drawn.low_label == "−$2,000 or less"
+    assert drawn.bars[-1].range_text == drawn.high_label == "$2,000 or more"
+    assert drawn.bars[1].range_text == "−$2,000 to −$1,900"
+
+
+def test_ux_dr26_explore_words_come_only_with_the_script() -> None:
+    """UX-DR26 (Edvard, 2026-11-23): the explore hint and About's fourth paragraph; the 3.1 hint is unchanged."""
+    drawn = luck_chart(result_of(SMALL["sharp-trader"]))
+    assert drawn.hint == "Each bar is a range of results. The taller the bar, the more replays ended there."
+    assert drawn.explore_hint == "Point at a bar, or use the arrow keys, to see how many replays ended there."
+    assert drawn.about_explore.startswith("Point at a bar, or step through the bars with the arrow keys")
+    assert len(drawn.about) == 3

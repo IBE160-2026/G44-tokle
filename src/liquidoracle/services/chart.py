@@ -1,4 +1,4 @@
-"""The luck chart, ready to draw (FR-9, UX-DR24, UX-DR25, AD-18, AD-25; Story 3.1).
+"""The luck chart, ready to draw and explore (FR-9, UX-DR24 to UX-DR27, AD-18, AD-25; Stories 3.1, 3.2).
 
 `luck_chart` turns one Skill Test result into finished geometry and words, so the template only
 places them and never counts or formats anything. The bars are the result's own 42 bins (AD-25):
@@ -12,6 +12,7 @@ and gridlines are in percent of the plot; HTML labels use `left` percentages of 
 
 from __future__ import annotations
 
+import bisect
 import math
 from dataclasses import dataclass
 from enum import StrEnum
@@ -33,6 +34,16 @@ EDGE_ZONE = 25.0
 # The hint line (Edvard, 2026-11-23): only what is true without JavaScript; Story 3.2 adds how to explore.
 HINT = "Each bar is a range of results. The taller the bar, the more replays ended there."
 Y_TITLE = "Number of replays"
+# Shown only when chart.js runs (Edvard, 2026-11-23, Story 3.2): the hint line it swaps in, and the
+# fourth paragraph of "About this chart".
+EXPLORE_HINT = "Point at a bar, or use the arrow keys, to see how many replays ended there."
+ABOUT_EXPLORE = (
+    "Point at a bar, or step through the bars with the arrow keys, to see its range and how many replays "
+    "ended there. Point at or select the blue line to light up the replays that did as well as this Wallet or better."
+)
+MARKER_BUTTON = "Highlight the replays that did this well or better"
+HIGHLIGHT_ON = "Highlight on"  # announced when the marker button pins the tail (UX-DR27)
+HIGHLIGHT_OFF = "Highlight off"
 
 
 class Anchor(StrEnum):
@@ -49,6 +60,8 @@ class Bar:
     width: float
     height: float  # percent of the plot
     count: int
+    range_text: str  # "$30,000 to $35,000", for the tooltip and the slider (UX-DR26)
+    count_text: str  # "289 replays"
 
 
 @dataclass(frozen=True, slots=True)
@@ -87,6 +100,16 @@ class LuckChart:
     marker_label: str
     beyond: str | None  # "above all 10,000 Simulations", or None
     anchor: Anchor
+    # Exploring (Story 3.2): chart.js only shows, hides and moves these; it writes no words itself.
+    explore_hint: str
+    about_explore: str
+    marker_button_label: str  # "This Wallet: $40,180. Highlight the replays that did this well or better"
+    marker_bar: int  # index of the bin holding the Real PnL, where the slider starts
+    tail_from: int  # the first bin lit by the marker button; len(bars) when none is lit (UX-DR27)
+    tail_text: str  # from the exact count at or above the Real PnL, never from the bars
+    tail_left: bool  # the tail label sits left of the marker, so it stays on the card (right half)
+    highlight_on: str  # "Highlight on: 2,500 of 10,000 replays did this well or better"
+    highlight_off: str
 
 
 def luck_chart(result: SkillTestResult) -> LuckChart:
@@ -104,7 +127,10 @@ def luck_chart(result: SkillTestResult) -> LuckChart:
     step = _grid_step(peak)
     top = step * math.ceil(peak / step)  # the top gridline: the tallest bar rounded up to whole steps
     bars = tuple(
-        Bar(x=slot + BAR_INSET, width=1 - 2 * BAR_INSET, height=100.0 * b.count / top, count=b.count)
+        Bar(
+            x=slot + BAR_INSET, width=1 - 2 * BAR_INSET, height=100.0 * b.count / top, count=b.count,
+            range_text=phrases.bar_range(b.low, b.high), count_text=phrases.replays(b.count),
+        )
         for slot, b in zip(_slots(), bins, strict=True)
     )
     gridlines = tuple(Gridline(level=100.0 * v / top, label=phrases.count(v)) for v in range(0, top + 1, step))
@@ -137,6 +163,18 @@ def luck_chart(result: SkillTestResult) -> LuckChart:
     else:
         anchor = Anchor.MIDDLE
 
+    # The bin holding the Real PnL, by core's own rule (ChartBin): a bar holds its low edge, and the
+    # last axis bar also holds the top edge. Bin 0 is the low end bar, so axis bar i is bin i + 1.
+    marker_bar = 1 + min(max(bisect.bisect_right(edges, result.real_pnl) - 1, 0), CHART_BARS - 1)
+    if result.at_or_above == 0:
+        tail_from = len(bins)  # no replay reached it: nothing lights up
+    elif result.at_or_above == result.simulations:
+        tail_from = 0  # every replay did: every bar lights up
+    else:
+        tail_from = marker_bar
+    marker_label = phrases.marker_label(result.real_pnl)
+    tail_text = phrases.tail_sentence(result.at_or_above)
+
     return LuckChart(
         title_note=phrases.CHART_TITLE_NOTE,
         about=phrases.about_chart(result.tested_count, result.own_fees),
@@ -153,9 +191,18 @@ def luck_chart(result: SkillTestResult) -> LuckChart:
         high_short=phrases.end_bar_label(high, above=True, short=True),
         marker_x=marker_x,
         marker_left=marker_left,
-        marker_label=phrases.marker_label(result.real_pnl),
+        marker_label=marker_label,
         beyond=beyond,
         anchor=anchor,
+        explore_hint=EXPLORE_HINT,
+        about_explore=ABOUT_EXPLORE,
+        marker_button_label=f"{marker_label}. {MARKER_BUTTON}",
+        marker_bar=marker_bar,
+        tail_from=tail_from,
+        tail_text=tail_text,
+        tail_left=marker_left > 50.0,
+        highlight_on=f"{HIGHLIGHT_ON}: {tail_text}",
+        highlight_off=HIGHLIGHT_OFF,
     )
 
 
