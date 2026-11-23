@@ -54,9 +54,16 @@ Findings and goals set aside by `bmad-build`, each with where it came from.
 - source_spec: `_bmad-output/implementation-artifacts/spec-2-7-real-pnl-checked-independently.md`
   summary: Every fee that fails the strict check fits Polymarket's fee formula at 1.67x to 7x the Market's listed rate, so the check (against today's rate) drops fees that were real when paid; Own Fees are then too low for 0x0f4b0a (7 fees, 0.28) and 0x091596 (2 fees, 44.48).
   evidence: Story 2.7 review; helper 2's `tests/reference/*-fee-check.csv` and `script-notes.md`; ties to the Story 2.6 rate-change entry. Needs Edvard's call on whether FR-4's check should allow a rate that was listed when the fee was paid.
+  resolved: Story 2.8 (Edvard, 2026-11-23): FR-4 and AD-12 now pass a fee at the listed rate or any whole-percent rate from 1% to 10%; all 9 fees pass, plus 0xd3a6e5's 26 ($461.79), and the references moved to -188.77 and -49,615.70.
 - source_spec: `_bmad-output/implementation-artifacts/spec-2-7-real-pnl-checked-independently.md`
   summary: Own Fees count the fee on every buy of a Position, also on shares later sold; for 0x091596 that is 636.90 of 1,087.34 (about 510 on five Slivers), while FR-3 puts sold shares in Exit PnL.
   evidence: Story 2.7 review; helper 2's judgment call J6. App and reference agree (Glossary: fees "paid on the buys of a Position"), so nothing fails; whether the Glossary means this is Edvard's call.
 - source_spec: `_bmad-output/implementation-artifacts/spec-2-7-real-pnl-checked-independently.md`
   summary: FR-3 says a Position is left out when the Wallet "converted shares in that Market", but a CONVERSION row names the negative-risk event, and the app (Edvard, Story 2.4) leaves out the whole event; the PRD wording could say so.
   evidence: Story 2.7 review; helper 2's judgment call J9 reached the same reading from the data alone.
+- source_spec: `_bmad-output/implementation-artifacts/spec-2-8-the-fee-check-accepts-an-earlier-rate.md`
+  summary: The Follower Fee (Glossary, FR-18a) uses the Market's listed rate, which Gamma gives only for today; a follower's fee in the past may have been charged at an earlier rate, as Story 2.8 found for Own Fees.
+  evidence: Story 2.8 planning. Settle it in Epic 6: either accept the listed rate as the simulated follower's cost and say so, or use the rate the copied Wallet's own fill in that Market fitted.
+- source_spec: `_bmad-output/implementation-artifacts/spec-2-8-the-fee-check-accepts-an-earlier-rate.md`
+  summary: The independent reference script also tries whole-percent rates in a Market without fees or without a schedule, where the app ignores the fee (no fees) or fails it (no schedule).
+  evidence: Story 2.8, the helper's unclear point 1. No such fee exists in the two reference Wallets (largest 0.0000045), so the totals agree; it would matter only for a new reference Wallet.
