@@ -2,7 +2,7 @@
 title: 'Story 2.6: Real Wallets in the Sample Dataset'
 type: 'feature'
 created: '2026-11-23'
-status: 'in-review'
+status: 'done'
 baseline_commit: '03c83f765f4cc677a64f4cafda8c0074d50d5f08'
 route: 'dispatch'
 review_loop_iteration: 0
