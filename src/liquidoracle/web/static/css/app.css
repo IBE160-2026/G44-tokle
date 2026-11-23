@@ -183,6 +183,7 @@ h1.page-title-small { font-size: 36px; line-height: 1.12; }
   border-radius: var(--rounded-md); border: 1px solid var(--border); color: var(--ink); text-decoration: none;
 }
 .wallet-link .name { flex: 1; min-width: 0; }
+.wallet-link .name.mono { font-family: var(--mono); }  /* Real Wallets: short addresses (UX-DR17) */
 .wallet-link .chev { color: var(--ink-muted); }
 .info-tag {
   display: inline-block; padding: 1px 9px; border: 1px solid var(--border-strong); border-radius: var(--rounded-full);
