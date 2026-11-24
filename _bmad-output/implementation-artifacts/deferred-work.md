@@ -44,6 +44,7 @@ Findings and goals set aside by `bmad-build`, each with where it came from.
   summary: `progress.js` (polling, swapping in the result, focus on the new heading, giving up after 30 failed polls) runs in no automated test; only the Python side of the progress contract is tested.
   evidence: Story 2.5 review (verification gap, blind hunter). The repo has no JavaScript test runner. Edvard checks one live lookup in a browser; a browser test belongs with Story 3.4's layout and accessibility pass if a runner is added then.
   update: Story 3.2 (2026-11-23, Edvard's call 3a) adds `chart.js` (tooltip, slider keys, marker pin/unpin, Esc, build-up, enhancing after the `progress.js` swap) to this item. Python tests cover everything the page hands the script; the behaviour was checked once with a throwaway Playwright script driving the installed Edge (45 checks, not in the repo). If 3.4 adds a runner, port those checks.
+  update: Story 3.4 (Edvard, 2026-11-24) adds the runner: browser tests in `tests/browser/` (Playwright for Python driving the installed Chrome or Edge; on CI they fail rather than skip when no browser starts). They cover `copy-address.js`, the breakpoints and hover/reduced motion. Porting the 45 `chart.js` checks and testing `progress.js` is now part of Story 3.5 (epics).
 - source_spec: `_bmad-output/implementation-artifacts/spec-2-6-real-wallets-in-the-sample-dataset.md`
   summary: 0x091596's Real PnL from the committed real file is -49,571.22, while Story 2.4 noted -49,571.39 on its fixture (cut from the same capture, Gamma fetched 2026-11-20); find the 17-cent cause when Story 2.7 checks this Wallet against the independent script.
   evidence: Story 2.6 build (2026-11-23). Own Fees 1,087.34 here. Likely a fee-schedule or Gamma difference between the two fetches, or a Position on the edge of the window; not checked yet. Story 2.7 compares to the cent, so it must be explained there.
@@ -72,6 +73,7 @@ Findings and goals set aside by `bmad-build`, each with where it came from.
 - source_spec: `_bmad-output/implementation-artifacts/spec-3-1-the-luck-chart.md`
   summary: The Verdict header (Verdict and address card) does not stack below 900 px, so at phone widths the whole Verdict page scrolls sideways.
   evidence: Seen in Story 3.1's 360 and 600 px screenshots; the grid `.verdict-head` has a 300 px minimum column from Story 1.7. Story 3.4 already plans "two-column parts stack below 900 px" (UX-DR10).
+  resolved: Story 3.4 (2026-11-24): `.verdict-head` stacks below 900 px; browser tests check that no page scrolls sideways at 320, 360, 600 and 900 px (they fail on the old stylesheet for every Verdict page at 320, 360 and 600 px).
 - source_spec: `_bmad-output/implementation-artifacts/spec-3-1-the-luck-chart.md`
   summary: For Story 3.5 (Edvard, 2026-11-23): a screen reader never hears "below all 10,000 Simulations", because the marker label is inside the chart's aria-hidden block and the text alternative (PRD §8 sentence) then says only "more than half the time"; decide whether the text alternative gets a beyond clause.
   evidence: Story 3.1 review finding 7. "Above all" is carried by the odds phrase ("fewer than 1 time in 10,000"), "below all" is not. Rare: it needs a Wallet worse than every replay. Changing the sentence changes the planned wording (FR-9, UX-DR24), so it is Edvard's call.
@@ -82,3 +84,9 @@ Findings and goals set aside by `bmad-build`, each with where it came from.
 - source_spec: `_bmad-output/implementation-artifacts/spec-3-3-the-honesty-notes.md`
   summary: The honesty notes' window and computed-on lines exist only for the `lookup` scope; the after part's "first 2,000" line and the Watchlist's two-window line (FR-11, epics Story 3.3 AC) are not built, and `phrases.computed_on` refuses any other scope.
   evidence: Story 3.3 review (blind hunter). No after part or Watchlist result exists before Epic 4 (scan scopes) and Epic 5 (Hold-up), so there is nothing to show yet; build the wording with the first story that stores a `scan_whole`, `scan_before` or `holdup_after` result.
+- source_spec: `_bmad-output/implementation-artifacts/spec-3-4-theme-copy-and-finish.md`
+  summary: No browser test clicks the copy button on a Verdict that `progress.js` swapped in after a live lookup, the case the page-wide click listener in `copy-address.js` was built for.
+  evidence: Story 3.4 review (verification gap, blind hunter). The browser tests open only Offline Mode pages; a live job needs a fake Polymarket in the browser fixture, which Story 3.5's `progress.js` tests build anyway. Added to the Story 3.5 note in epics.md.
+- source_spec: `_bmad-output/implementation-artifacts/spec-3-4-theme-copy-and-finish.md`
+  summary: The new forced-colours rules (Highlight border for the copied state and for hover and focus on the copy, theme and primary buttons) run in no test; Playwright's `forced_colors="active"` can check them.
+  evidence: Story 3.4 review (verification gap). Story 3.5's first acceptance criterion covers forced-colours rules; added to its note in epics.md.
