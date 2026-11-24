@@ -809,9 +809,12 @@ So that I can trust both the claims and the build.
 **Then** tests confirm one main heading per page and headings in order, a label tied to every field, errors tied to their fields, `lang="en"`, the skip link first, the Verdict read as "Verdict: …", forced-colours rules present, and no page needing JavaScript (UX-DR8, UX-DR12, UX-DR13, NFR-9).
 
 **Given** the short checklist below
-**When** Edvard walks it himself with NVDA and the keyboard only (browser and NVDA version noted)
-**Then** `docs/accessibility-check.md` is committed with the checklist and what he actually found for each item, pass or fail with what happened, including anything that failed, not just a line saying it passed (Edvard, 2026-10-24)
-**And** each failure is either fixed (and re-checked) or listed with the reason it stays.
+**When** the browser tests walk it with the keyboard only and read what the browser hands a screen reader (each element's role, name and state, the reading order, and the text of the live regions), in Chrome or Edge
+**Then** `docs/accessibility-check.md` is committed with the checklist, the test that checks each item, and what it actually found, pass or fail with what happened, including anything that failed, not just a line saying it passed
+**And** each failure is either fixed (and re-checked) or listed with the reason it stays
+**And** the document says what these tests cannot prove: the words NVDA itself speaks and its browse mode are not checked, since no screen reader runs in the tests.
+
+(Edvard, 2026-11-24, at Story 3.5: replaces his own NVDA and keyboard walk-through, his call of 2026-10-24, with browser tests. Kept from that call: the checklist, and that what was found, failures included, is committed.)
 
 Checklist:
 1. First Tab stop is "Skip to content"; Enter jumps to the main content.
@@ -828,6 +831,8 @@ Checklist:
 12. At 200% zoom and in a 320 px wide window there is no sideways page scrolling.
 
 **Also (Edvard, 2026-11-24, from Story 3.4):** the browser tests from Story 3.4 gain `chart.js` (tooltip, slider keys, marker pin and unpin, Esc, build-up, enhancing after the swap; the 45 checks Story 3.2 ran once in a throwaway script) and `progress.js` (polling, swapping in the result, focus on the new heading, giving up, and the copy button working on the swapped-in Verdict), plus a forced-colours run (Windows High Contrast) of the copy button's copied, hover and focus states.
+
+**Built in two parts (Edvard, 2026-11-24):** part A is the browser tests for the scripts in the note above; part B is the accessibility checks and checklist above and closing stage 1 below. Story 3.5 is done only when part B is.
 
 **Given** the end of stage 1
 **When** it is closed
