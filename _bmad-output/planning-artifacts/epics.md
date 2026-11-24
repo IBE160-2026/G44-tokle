@@ -794,6 +794,8 @@ The theme and its toggle (UX-DR2) were built in Story 1.7 (Edvard, 2026-11-20); 
 **Then** only clickable things react, hover and focus look the same plus the focus ring, transitions take 120 ms, and buttons lift 1 px; with reduced motion nothing moves (UX-DR9, UX-DR11)
 **And** the layouts follow the three breakpoints, two-column parts stack below 900 px, and anything that slipped from Story 1.7 is done here (UX-DR10).
 
+**Settled at spec time (Edvard, 2026-11-24):** JavaScript gets browser tests (Playwright for Python, AD-17) driving the installed Chrome or Edge: the copy button, no sideways scroll at 320, 360, 600 and 900 px, no lift with reduced motion. On GitHub they must run and fail if they cannot (his addition); on a computer without Chrome or Edge they skip with a reason.
+
 ### Story 3.5: Accessibility check, and stage 1 done
 
 As the examiner,
@@ -824,6 +826,8 @@ Checklist:
 10. Theme toggle is read as "Dark theme, toggle button" with its pressed state.
 11. Keyboard only: every action works, the focus ring is always visible, nothing traps focus.
 12. At 200% zoom and in a 320 px wide window there is no sideways page scrolling.
+
+**Also (Edvard, 2026-11-24, from Story 3.4):** the browser tests from Story 3.4 gain `chart.js` (tooltip, slider keys, marker pin and unpin, Esc, build-up, enhancing after the swap; the 45 checks Story 3.2 ran once in a throwaway script) and `progress.js` (polling, swapping in the result, focus on the new heading, giving up, and the copy button working on the swapped-in Verdict), plus a forced-colours run (Windows High Contrast) of the copy button's copied, hover and focus states.
 
 **Given** the end of stage 1
 **When** it is closed
