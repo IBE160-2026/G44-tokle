@@ -8,6 +8,7 @@ Findings and goals set aside by `bmad-build`, each with where it came from.
 - source_spec: `_bmad-output/implementation-artifacts/spec-1-2-positions-from-fills.md`
   summary: Exit PnL ignores sell fees, and split-or-merged Positions carry an Exit PnL against a buy-only Entry Price.
   evidence: Review findings 12 and 13. The PRD Glossary defines Exit PnL as shares sold x (sell price - p) and Own Fees on buys only, so the builder follows the plan. Decide when the Exit PnL card (FR-11, Story 1.7) sums it: whether split-or-merged Positions are in the total, and whether sell fees count.
+  resolved: Story 3.3 (Edvard, 2026-11-24): the Exit PnL total sums tested Positions, Slivers and Positions sold before resolution, with the Glossary formula (no sell fees); split-or-merged and other left-out Positions are out. PRD FR-11 and decision-log.
 - source_spec: `_bmad-output/implementation-artifacts/spec-1-2-positions-from-fills.md`
   summary: No test can show that `core/positions` sorts fills before summing.
   evidence: Review finding 21. Python's `sum()` is compensated since 3.12, so no realistic input differs. Revisit only if the sums move to numpy or another summation.
@@ -77,3 +78,7 @@ Findings and goals set aside by `bmad-build`, each with where it came from.
 - source_spec: `_bmad-output/implementation-artifacts/spec-3-2-exploring-the-chart.md`
   summary: The tail label gives the raw count ("1 of 10,000 replays did this well or better") while the odds line gives the p-value ("about 1 time in 5,000", PRD: (1 + count) / (1 + 10,000)), so with a small count the two look like they disagree; decide in Story 3.3 whether the honesty notes (or About) explain the +1.
   evidence: Edvard noticed it on sharp-trader in the browser (2026-11-23) and chose to note it for Story 3.3 (option c) over leaving it or adding an About line now. Both numbers are correct and planned (PRD p-value definition, UX-DR27 exact count).
+  resolved: Story 3.3 (Edvard, 2026-11-24): About's JavaScript-only paragraph ends with a sentence on the +1 (EXPERIENCE.md, About this chart).
+- source_spec: `_bmad-output/implementation-artifacts/spec-3-3-the-honesty-notes.md`
+  summary: The honesty notes' window and computed-on lines exist only for the `lookup` scope; the after part's "first 2,000" line and the Watchlist's two-window line (FR-11, epics Story 3.3 AC) are not built, and `phrases.computed_on` refuses any other scope.
+  evidence: Story 3.3 review (blind hunter). No after part or Watchlist result exists before Epic 4 (scan scopes) and Epic 5 (Hold-up), so there is nothing to show yet; build the wording with the first story that stores a `scan_whole`, `scan_before` or `holdup_after` result.
