@@ -47,4 +47,4 @@ The user sees, on the Verdict page, the luck chart with the Wallet's marker and 
 - 3.1 draws the chart from the bins and exact count stored since Story 1.4; 3.2's `chart.js` enhances 3.1's SVG and must not be needed for the card to be complete.
 - 3.3 needs the stored lookup to expose the Position builder's figures (failed fees, left-out share, uncoupled share, window size) from Epic 2.
 - 3.4 builds on the theme and toggle already done in Story 1.7.
-- 3.5 closes stage 1: it depends on 3.1 to 3.4 and on Edvard's own NVDA and keyboard walk-through, recorded in `docs/accessibility-check.md`.
+- 3.5 closes stage 1: it depends on 3.1 to 3.4. It is built in two parts: A, browser tests for `chart.js`, `progress.js` and the copy button on a swapped-in Verdict, plus a forced-colours run; B, the accessibility checks, where browser tests walk the 12-item checklist with the keyboard and read what a screen reader is given (replacing Edvard's own NVDA walk-through, his call of 2026-11-24), recorded in `docs/accessibility-check.md`, and the stage 1 close.

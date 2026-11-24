@@ -100,7 +100,16 @@ uv run pytest
 
 Every test runs with the network blocked. Tests that need the real network live in `tests/online/` and are skipped unless you ask for them: `uv run pytest -m online --force-enable-socket tests/online`. Today that is two smoke tests, three requests in all (more if Polymarket is busy; no key): one reads the first page of one Sample Wallet's closed positions, the other checks that a random, never-used address gets empty lists rather than an error.
 
-The browser tests in `tests/browser/` open the real pages in the Chrome or Edge already on your computer and check what only a browser can show: the copy button, that no page scrolls sideways at 320, 360, 600 and 900 px, and that buttons do not move when your system is set to reduce motion. They are driven by Playwright for Python, a test-only package that `uv sync` installs (about 40 MB, with its own small Node.js helper inside); no browser is downloaded. They start the app on 127.0.0.1 only, and any request a page makes to anywhere else is blocked and fails the test. Without Chrome or Edge they are skipped and the test summary says why; on GitHub Actions (where `CI` is set) a browser that cannot start fails the run instead, so a green check means they ran.
+The browser tests in `tests/browser/` open the real pages in the Chrome or Edge already on your computer and check what only a browser can show. To run only them:
+
+```sh
+uv run pytest tests/browser
+```
+
+- **What they cover:** the copy button; that no page scrolls sideways at 320, 360, 600 and 900 px; that buttons do not move when your system is set to reduce motion; the Windows High Contrast (forced colours) rules; `chart.js` (`test_chart_script.py`: the chart's keys, the tooltip, the marker's highlight, the build-up, and the chart without the script); and `progress.js` (`test_progress_script.py`: a live lookup polling, swapping in the Verdict or the matching message page, and giving up after 30 failed polls in a row).
+- **What they need:** Google Chrome or Microsoft Edge. Playwright for Python drives it; it is a test-only package that `uv sync` installs (about 40 MB, with its own small Node.js helper inside), and no browser is downloaded. Without Chrome or Edge the tests are skipped and the test summary says why; on GitHub Actions (where `CI` is set) a browser that cannot start fails the run instead, so a green check means they ran.
+- **No network:** they start the app on 127.0.0.1 only, and any request a page makes to anywhere else is blocked and fails the test. The live-lookup tests run the app with its real job queue and worker in front of a stand-in Polymarket that serves the Synthetic Wallets from files.
+- **Time:** each live-lookup test takes a few seconds; the slowest ones move the page's clock through 30 or more failed polls.
 
 Checks marked `slow` repeat a whole test 100 times by default. `uv run pytest --repetitions 1000` runs them in full, as CI does on Linux with Python 3.14.
 

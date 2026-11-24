@@ -1,23 +1,22 @@
-"""The pages in a real browser: copy button, breakpoints, hover and reduced motion (Story 3.4).
+"""The pages in a real browser: copy button, breakpoints, hover, reduced motion and forced colours (Stories 3.4, 3.5).
 
 Each test opens a fresh browser context (its own window size, theme, motion setting, platform and
-clipboard rights) on the app that `conftest.py` starts on 127.0.0.1. Every request the page makes
-to anywhere else is blocked and fails the test, so the browser never reaches the network either
-(AD-17) and nothing is loaded from the internet (UX-DR3).
+clipboard rights) on the app that `conftest.py` starts on 127.0.0.1, through `make_page` (`pages.py`).
+Every request the page makes to anywhere else is blocked and fails the test, so the browser never
+reaches the network either (AD-17) and nothing is loaded from the internet (UX-DR3).
 """
 
 from __future__ import annotations
 
-from collections.abc import Iterator
-from datetime import datetime, timedelta, timezone
-
 import pytest
-from playwright.sync_api import Browser, BrowserContext, Page, Route, expect
+from pages import MAC_CHROME, MAC_SAFARI, NO_CLIPBOARD, REFUSE, assert_no_sideways_scroll, box, style
+from playwright.sync_api import expect
 
 from liquidoracle.data import synthetic
 
 STOP_LOSS = synthetic.address_of("stop-loss-trader")  # has the Exit PnL warning beside the stats
 SHARP = synthetic.address_of("sharp-trader")
+FAVOURITE = synthetic.address_of("favourite-buyer")  # its marker sits mid-chart, with bars on both sides
 THIN = synthetic.address_of("thin-wallet")  # Not enough data: the dashed Verdict, no chart
 COIN_FLIPPER = synthetic.address_of(synthetic.coin_flipper_name(0))
 UNKNOWN = "0x" + "0" * 40  # not in the Sample Dataset: the "Not available offline" message page
@@ -28,70 +27,8 @@ PAGES = [
 ]
 WIDTHS = [320, 360, 600, 900]
 LIFTED = "matrix(1, 0, 0, 1, 0, -1)"
-START = datetime(2026, 11, 24, 12, 0, tzinfo=timezone.utc)
-
-# Platforms, so the copy error's wording does not depend on the machine the tests run on (macOS on CI).
-WINDOWS = ("Object.defineProperty(navigator, 'userAgentData', { configurable: true, value: { platform: 'Windows' } });"
-           "Object.defineProperty(navigator, 'platform', { configurable: true, value: 'Win32' });")
-MAC_CHROME = "Object.defineProperty(navigator, 'userAgentData', { configurable: true, value: { platform: 'macOS' } });"
-MAC_SAFARI = ("Object.defineProperty(navigator, 'userAgentData', { configurable: true, value: undefined });"
-              "Object.defineProperty(navigator, 'platform', { configurable: true, value: 'MacIntel' });")
-REFUSE = "Object.defineProperty(navigator, 'clipboard', { configurable: true, value: { writeText: () => Promise.reject(new Error('refused')) } });"
-NO_CLIPBOARD = "Object.defineProperty(navigator, 'clipboard', { configurable: true, value: undefined });"
-LIGHT = "try { localStorage.setItem('lo-theme', 'light'); } catch (e) {}"
 CTRL_C = "Copy failed. Select the address and press Ctrl+C."
 CMD_C = "Copy failed. Select the address and press ⌘C."
-
-
-@pytest.fixture
-def make_page(browser: Browser, app_url: str) -> Iterator:
-    contexts: list[BrowserContext] = []
-    elsewhere: list[str] = []
-
-    def stay_local(route: Route) -> None:
-        if route.request.url.startswith(app_url + "/"):
-            route.continue_()
-        else:
-            elsewhere.append(route.request.url)
-            route.abort()
-
-    def make(path: str, width: int = 1280, **options) -> Page:
-        scripts = [options.pop("platform", WINDOWS), *options.pop("scripts", [])]
-        if options.pop("theme", "dark") == "light":
-            scripts.append(LIGHT)
-        clock = options.pop("clock", False)
-        context = browser.new_context(viewport={"width": width, "height": 800}, **options)
-        contexts.append(context)
-        context.route("**/*", stay_local)
-        for script in scripts:
-            context.add_init_script(script)
-        page = context.new_page()
-        if clock:
-            page.clock.install(time=START)
-        page.goto(app_url + path)
-        if clock:
-            page.clock.pause_at(START + timedelta(seconds=5))  # from here only run_for moves time
-        return page
-
-    yield make
-    for context in contexts:
-        context.close()
-    assert elsewhere == [], f"the page asked for something outside the app: {elsewhere}"
-
-
-def box(page: Page, selector: str) -> dict:
-    found = page.locator(selector).first.bounding_box()
-    assert found is not None, selector
-    return found
-
-
-def style(page: Page, selector: str, prop: str) -> str:
-    return page.locator(selector).first.evaluate(f"(el) => getComputedStyle(el).getPropertyValue('{prop}')")
-
-
-def assert_no_sideways_scroll(page: Page, label: str) -> None:
-    overflow = page.evaluate("() => document.documentElement.scrollWidth - document.documentElement.clientWidth")
-    assert overflow <= 0, f"{label} scrolls {overflow} px sideways"
 
 
 @pytest.mark.parametrize("width", WIDTHS)
@@ -300,3 +237,82 @@ def test_ux_dr9_cards_and_text_do_not_react(make_page, path: str, selectors: tup
         page.hover(selector, position={"x": 12, "y": 12})  # near a corner, inside the rounding, away from links
         page.wait_for_timeout(200)
         assert [style(page, selector, prop) for prop in LOOKS] == before, selector
+
+
+SYSTEM_COLOUR = """(name) => {
+  const probe = document.createElement('span');
+  probe.style.color = name;
+  document.body.append(probe);
+  const value = getComputedStyle(probe).color;
+  probe.remove();
+  return value;
+}"""
+
+
+def test_ux_dr9_forced_colours_copied_state(make_page) -> None:
+    """UX-DR9, UX-DR21, 3.5 matrix "Forced colours": in Windows High Contrast the copied state shows as a
+    Highlight border (the accent tint is dropped), and the border goes back when "Copied" ends."""
+    page = make_page(f"/wallet/{SHARP}", forced_colors="active", reduced_motion="reduce", clock=True,
+                     permissions=["clipboard-read", "clipboard-write"])
+    highlight = page.evaluate(SYSTEM_COLOUR, "Highlight")
+    button = page.locator(".copy-button")
+    expect(button).not_to_have_css("border-top-color", highlight)
+    button.click()
+    page.mouse.move(0, 799)
+    button.blur()  # neither hovered nor focused (Chrome draws a Highlight border on both): only "Copied" can draw it
+    expect(page.locator(".copy-label")).to_have_text("Copied")
+    expect(button).to_have_css("border-top-color", highlight)
+    page.clock.run_for(2100)
+    expect(page.locator(".copy-label")).to_have_text("")
+    expect(button).not_to_have_css("border-top-color", highlight)
+
+
+# Whether one of the app's own forced-colours rules gives the element, in its present state, a Highlight border.
+OWN_HIGHLIGHT_RULE = """(el) => [...document.styleSheets].flatMap((sheet) => [...sheet.cssRules])
+  .filter((rule) => rule.media && rule.media.mediaText.includes('forced-colors: active'))
+  .flatMap((media) => [...media.cssRules])
+  .some((rule) => rule.style && /highlight/i.test(rule.style.getPropertyValue('border-color')) && el.matches(rule.selectorText))"""
+
+
+@pytest.mark.parametrize(("path", "selector"), BUTTONS)
+def test_ux_dr9_forced_colours_hover_and_focus(make_page, path: str, selector: str) -> None:
+    """UX-DR9, 3.5 matrix "Forced colours": the copy, theme and primary buttons show a Highlight border under the
+    pointer and under keyboard focus, and none at rest. Chrome and Edge also draw that border on a hovered or
+    focused button by themselves, so the test also checks that the app's own rule applies (other browsers)."""
+    page = make_page(path, forced_colors="active", reduced_motion="reduce")
+    highlight = page.evaluate(SYSTEM_COLOUR, "Highlight")
+    button = page.locator(selector)
+    expect(button).not_to_have_css("border-top-color", highlight)
+    assert not button.evaluate(OWN_HIGHLIGHT_RULE)
+    button.hover()
+    expect(button).to_have_css("border-top-color", highlight)
+    assert button.evaluate(OWN_HIGHLIGHT_RULE), "no rule of the app's own gives the hovered button its border"
+    page.mouse.move(0, 799)
+    expect(button).not_to_have_css("border-top-color", highlight)
+    button.focus()
+    page.keyboard.press("Shift")  # keyboard focus, so :focus-visible applies
+    expect(button).to_have_css("border-top-color", highlight)
+    assert button.evaluate(OWN_HIGHLIGHT_RULE), "no rule of the app's own gives the focused button its border"
+
+
+def bar_fills(page) -> list[str]:
+    return page.locator(".chart-bar").evaluate_all("(all) => all.map((b) => getComputedStyle(b).fill)")
+
+
+def test_ux_dr25_forced_colours_tail_and_active_bars(make_page) -> None:
+    """UX-DR25, UX-DR27, 3.5 matrix "Forced colours": bars are CanvasText; the tail bars the marker lights and
+    the bar the slider is on are Highlight."""
+    page = make_page(f"/wallet/{FAVOURITE}", forced_colors="active", reduced_motion="reduce")
+    highlight, ink = (page.evaluate(SYSTEM_COLOUR, name) for name in ("Highlight", "CanvasText"))
+    assert highlight != ink
+    tail_from = int(page.locator(".chart").get_attribute("data-tail-from"))
+    count = page.locator(".chart-bar").count()
+    assert 0 < tail_from < count, f"the test needs bars on both sides of the tail (tail from bar {tail_from} of {count})"
+    assert bar_fills(page) == [ink] * count
+    page.locator(".chart-marker-button").focus()
+    expect(page.locator(".chart-bar").nth(count - 1)).to_have_css("fill", highlight)
+    assert bar_fills(page) == [ink] * tail_from + [highlight] * (count - tail_from)
+    page.locator(".chart-explore").focus()
+    page.keyboard.press("Home")
+    expect(page.locator(".chart-bar").first).to_have_css("fill", highlight)
+    assert bar_fills(page) == [highlight] + [ink] * (count - 1)
