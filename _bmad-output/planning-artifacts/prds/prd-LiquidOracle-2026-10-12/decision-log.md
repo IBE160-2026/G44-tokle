@@ -2,6 +2,14 @@
 
 Why the PRD says what it says. The PRD itself keeps only the requirements (`prd.md`); this file keeps the reasons, dates and earlier wording that used to sit inside it. The full audit trail of the BMAD workflow, one line per decision, is `.memlog.md` in this folder; git history has every earlier version of `prd.md`.
 
+## 2026-11-24: honesty notes, settled while planning Story 3.3
+
+FR-11 left three things open that only show once the honesty notes are built.
+
+- **The window line had an "of N" the app cannot know.** The window stops reading a Wallet's positions list once it has the latest 2,000 Positions (AD-7, for speed), and the Sample Dataset holds only what the window reads. **Decision (Edvard, 2026-11-24, the AI's recommendation):** the line drops N: "Based on the latest 2,000 bets; older results are not included." The snapshot stores whether the cap applied. Rejected: reading the whole list to count N (slow for big Wallets, impossible offline) and "of at least N" (true but odd). Earlier wording: "Based on the latest 2,000 of N Resolved Positions; older results are not included."
+- **"N of M held to resolution" did not say what N counts.** The mockup's example used the tested count. **Decision (Edvard, 2026-11-24, the AI's recommendation, with his own checks):** N counts the Positions not sold before resolution (Slivers count as sold), so the sentence is literally true; bets left out for other reasons (split or merged, say) still count as held. He asked to check that the AI's example adds up and that still-open bets never count as held: the window holds only Positions in closed Markets. On a follow-up, Positions "not fully read" are left out of both N and M, because the app cannot see whether they were sold.
+- **What the Exit PnL total includes** (open since Story 1.2). **Decision (Edvard, 2026-11-24, the AI's recommendation):** the tested Positions, Slivers and Positions sold before resolution, with the Glossary's formula (no sell fees). Split-or-merged and other left-out Positions are out: their Entry Price or fills cannot be trusted. On 0xcf0d7f this gives −$195,091 against −$23,285 if they were in.
+
 ## 2026-11-23: the fee check accepts an earlier rate
 
 FR-4 checks each Own Fee against the Market's fee schedule, but Gamma lists only a Market's rate today. On 2026-11-21 (Story 2.3) Edvard kept the check strict: a fee paid at an older rate fails and counts as 0. Story 2.7's independent script then showed that every fee failing the check in the reference Wallets (9 fees: 7 on 0x0f4b0a, $0.28; 2 on 0x091596, $44.48) fits the fee formula exactly at another whole-percent rate (4%, 5%, 7%) instead of the listed 1% or 3%, and that Polymarket changed the rate of 5 of 0x091596's Markets between 20 and 23 November 2026. So the strict check throws out real fees and makes Real PnL look slightly better than it was.

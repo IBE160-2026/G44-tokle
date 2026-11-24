@@ -760,7 +760,7 @@ So that I know how far to trust it.
 **Given** any Verdict, including *Not enough data*
 **When** the Verdict page renders
 **Then** the card "What this test can't see" is always shown and never collapsed, with three columns: the share of the Real PnL from the largest bet ("70% of the Real PnL came from the single largest bet.", or the amount when the Real PnL is $0 or below, or the over-100% sentence); "N of M positions held to resolution" with the Exit PnL; the fixed limits note and "This is not financial advice." (FR-11, UX-DR29, UX-DR14)
-**And** under them the "Left out of the test" line with a count per reason, the fees not counted with their recorded total, and, when they apply, the over-10% sentence, the linked-bets note over 20%, and the window line ("Based on the latest 2,000 of N bets"; "first 2,000" for an after part)
+**And** under them the "Left out of the test" line with a count per reason, the fees not counted with their recorded total, and, when they apply, the over-10% sentence, the linked-bets note over 20%, and the window line ("Based on the latest 2,000 bets; older results are not included."; "first 2,000" for an after part; no total N, because the window stops reading at 2,000: Edvard, 2026-11-24)
 **And** last, "Computed on … · Seed 44" with the result's own scope and Seed (FR-11, AD-22)
 **And** the Verdict page keeps its fixed order: Verdict card, (Explanation in stage 3), chart card, honesty notes card, (Domain table in stage 3) (UX-DR19).
 
@@ -772,6 +772,8 @@ So that I know how far to trust it.
 **Given** the honesty notes
 **When** they are tested
 **Then** every number comes from the one Position builder's record (AD-11) and every phrase from `core/phrases` (AD-25). This story never slips.
+
+**Settled at spec time (Edvard, 2026-11-24):** "N of M held to resolution" counts the bets whose history was read in full (M) and those of them not sold before resolution or kept only as a Sliver (N); the Exit PnL sums the tested bets, Slivers and bets sold before resolution; About's JavaScript-only paragraph explains why the tail label's count and the odds differ (the +1, Story 3.2's note). Reasons in the PRD decision log.
 
 ### Story 3.4: Theme, copy and finish
 
