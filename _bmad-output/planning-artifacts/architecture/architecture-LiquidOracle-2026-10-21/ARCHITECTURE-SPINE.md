@@ -250,6 +250,7 @@ Arrows are the only allowed imports. `core` imports only `records`, the standard
   - GitHub Actions runs `uv sync --locked` then `uv run pytest` on every push, on Windows, macOS and Linux × Python 3.12 and 3.14.
   - One more job runs the README's three commands as shell steps on a fresh checkout, then requests one Sample Wallet's Verdict page and checks its expected Verdict text.
   - `.python-version` names the Python that `uv` installs.
+  - Browser tests live in `tests/browser/` (Playwright for Python, a dev dependency). They start the app on 127.0.0.1 and drive the Chrome or Edge already installed; sockets there are allowed to 127.0.0.1 only, never to the network, and every request a page makes outside the app is blocked and fails the test. With `CI` set (GitHub sets `CI=true`) a browser that cannot start fails the run; on a computer without `CI` the tests skip and say which browsers were tried. (Edvard, 2026-11-24, Story 3.4: a green check on GitHub must mean the browser tests ran.)
   - Checks that repeat a whole test 1,000 times (FR-5 coin-flippers, FR-17 and FR-18 planted runs) are marked `slow`. They run in full once per push on Linux with Python 3.14; the other five jobs run the same checks with 100 repetitions. Only the number of repetitions drops: each test still uses 10,000 Simulations, and the determinism checks run unchanged on every job (same Seed gives identical results; two `PYTHONHASHSEED` subprocess runs agree; and a stored golden result, the exact count of Simulations at or above the Real PnL for fixed Wallets and a fixed Seed, is reproduced on every system). Why: float ordering is exactly what differs between systems (the tie bug), so every system must prove it matches. (Edvard, 2026-10-24.)
 
 ### AD-18 — Pages are server-rendered; JavaScript only enhances [ADOPTED]
@@ -359,6 +360,7 @@ Arrows are the only allowed imports. `core` imports only `records`, the standard
 | SQLite | Python standard library `sqlite3` |
 | pytest | 9.1.1 |
 | pytest-socket | 0.8.1 |
+| Playwright for Python (dev only, browser tests) | 1.64.1 |
 | GitHub Actions: setup-uv, checkout | v10.3.0, v7.0.1 |
 | Language model | `claude-haiku-5-5` |
 | IBM Plex Serif (static WOFF2) | @ibm/plex-serif 2.0.0 |

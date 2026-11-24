@@ -9,5 +9,6 @@
       <p class="reload-note"><a href="{{ url_for('wallet', raw=page.address, job=page.job_id) }}">Reload this page</a> to see the result.</p>
     </div>
     <script src="{{ url_for('static', filename='js/chart.js') }}" defer></script>
+    <script src="{{ url_for('static', filename='js/copy-address.js') }}" defer></script>
     <script src="{{ url_for('static', filename='js/progress.js') }}" defer></script>
 {% endblock %}

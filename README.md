@@ -6,7 +6,7 @@ The app only reads public data. It never places orders, holds keys or touches a 
 
 Course project in **IBE160 Programmering med KI** at Høgskolen i Molde, autumn 2026. Group G44: Edvard Tokle.
 
-> **Status (Story 3.3):** stage 1's core works in Offline Mode and live. Offline, you can check 10 real Polymarket Wallets and the Synthetic Wallets (made-up Wallets whose right answers are known). Live, you can paste any Polymarket address and get its Verdict card. Each Verdict page also shows the luck chart and the honesty notes, "What this test can't see": how much of the result came from one bet, how many bets were held to resolution and what early sales made or lost (with a warning when they lost money), which bets were left out and why, and the Seed. Stage 1 finishes with Stories 3.4 and 3.5 (plan: [`_bmad-output/planning-artifacts/epics.md`](_bmad-output/planning-artifacts/epics.md)).
+> **Status (Story 3.4):** stage 1's core works in Offline Mode and live, in the dark or light theme and on screens from 320 px wide. Offline, you can check 10 real Polymarket Wallets and the Synthetic Wallets (made-up Wallets whose right answers are known). Live, you can paste any Polymarket address and get its Verdict card. Each Verdict page also shows the luck chart and the honesty notes, "What this test can't see": how much of the result came from one bet, how many bets were held to resolution and what early sales made or lost (with a warning when they lost money), which bets were left out and why, and the Seed. Stage 1 finishes with Story 3.5 (plan: [`_bmad-output/planning-artifacts/epics.md`](_bmad-output/planning-artifacts/epics.md)).
 
 ## Prerequisites
 
@@ -15,6 +15,7 @@ Course project in **IBE160 Programmering med KI** at Høgskolen i Molde, autumn 
   - macOS and Linux: `curl -LsSf https://astral.sh/uv/install.sh | sh`
   - Check it with `uv --version`. If it's older than 0.13, run `uv self update`.
 - **git**, to clone the repository.
+- **Google Chrome or Microsoft Edge**, only for the browser tests (see *Tests*). The app itself works in any modern browser.
 
 ## Install and run
 
@@ -37,9 +38,10 @@ uv run liquidoracle run --offline
 
 Then open **http://127.0.0.1:8044** in your browser. Under *Sample Wallets*, the *Real Wallets* group lists 10 real Polymarket Wallets by short address; click one to see its Verdict card (what each one shows, and why, is in [`docs/real-wallets.md`](docs/real-wallets.md)). Under *Synthetic Wallets*, pick **Sharp trader**: its Verdict card says *Skilled (high confidence)*. The thin wallet shows *Not enough data*, and a coin-flipper shows *No evidence of skill*. The list shows one of the 1,000 coin-flippers; to check another, open any file in `instance/synthetic/coin-flippers/`, copy the value after `"address":` (0x and 40 characters) and paste it into the address field. Stop the app with `Ctrl+C`.
 
-The app starts in the dark theme. The round button at the top right switches to the light theme and back, and the browser remembers your pick. Every page also works without JavaScript. The app has three small JavaScript files, in `src/liquidoracle/web/static/js/`:
+The app starts in the dark theme. The round button at the top right switches to the light theme and back, and the browser remembers your pick. Every page also works without JavaScript. The app has four small JavaScript files, in `src/liquidoracle/web/static/js/`:
 
 - `theme.js`: the light and dark theme button.
+- `copy-address.js`: the copy button next to the address on a Verdict page. It shows "Copied" for 2 seconds; if the browser refuses, it says so and selects the address, so you can press Ctrl+C (⌘C on a Mac). Without it, the button is not shown and you select the address yourself.
 - `chart.js`: lets you explore the luck chart on a Verdict page. Point at a bar, or step through the bars with the arrow keys, to see its range and how many replays ended there; point at the blue *This Wallet* line, or Tab to it, to light up the replays that did as well or better. Click it or press Enter to keep that highlight on; click again or press Esc to clear it. The first time the chart comes into view, the bars grow in (not when your system is set to reduce motion). Without it, the chart and the sentence under it show the same result, just without the pointing.
 - `progress.js`: while a live lookup fetches, it asks the app once a second whether the fetch is done, then shows the result in place and moves the keyboard focus to its heading. Without it, the page has a "Reload this page" link instead.
 
@@ -98,6 +100,8 @@ uv run pytest
 
 Every test runs with the network blocked. Tests that need the real network live in `tests/online/` and are skipped unless you ask for them: `uv run pytest -m online --force-enable-socket tests/online`. Today that is two smoke tests, three requests in all (more if Polymarket is busy; no key): one reads the first page of one Sample Wallet's closed positions, the other checks that a random, never-used address gets empty lists rather than an error.
 
+The browser tests in `tests/browser/` open the real pages in the Chrome or Edge already on your computer and check what only a browser can show: the copy button, that no page scrolls sideways at 320, 360, 600 and 900 px, and that buttons do not move when your system is set to reduce motion. They are driven by Playwright for Python, a test-only package that `uv sync` installs (about 40 MB, with its own small Node.js helper inside); no browser is downloaded. They start the app on 127.0.0.1 only, and any request a page makes to anywhere else is blocked and fails the test. Without Chrome or Edge they are skipped and the test summary says why; on GitHub Actions (where `CI` is set) a browser that cannot start fails the run instead, so a green check means they ran.
+
 Checks marked `slow` repeat a whole test 100 times by default. `uv run pytest --repetitions 1000` runs them in full, as CI does on Linux with Python 3.14.
 
 GitHub Actions runs the tests on every push on Windows, macOS and Linux with Python 3.12 and 3.14 ([`.github/workflows/tests.yml`](.github/workflows/tests.yml)). One more job runs the three commands above on a fresh checkout and checks that the sharp trader's page says *Skilled (high confidence)*.
@@ -108,7 +112,7 @@ GitHub Actions runs the tests on every push on Windows, macOS and Linux with Pyt
 src/liquidoracle/   the app: __main__.py (commands), settings.py, records.py,
                     web/ (pages, templates, CSS, the bundled IBM Plex Serif font under the SIL Open Font License),
                     services/ (workflows), core/ (pure maths), data/ (outside systems)
-tests/              automated tests; tests/online/ never runs in CI
+tests/              automated tests; tests/browser/ drives Chrome or Edge, tests/online/ never runs in CI
 sample_data/        Sample Dataset: real/ (10 real Wallets), synthetic/, and the hand labels
 spike/              data spike and architecture probes (historical, not used by the app)
 _bmad-output/       the plan: brief, PRD, UX, architecture, epics, story specs

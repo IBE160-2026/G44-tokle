@@ -294,6 +294,23 @@ def test_opening_a_socket_fails() -> None:
         socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
 
+def test_only_browser_tests_open_sockets_and_only_locally() -> None:
+    """AD-17 (Story 3.4): no test turns the socket block off; only tests/browser/conftest.py allows sockets,
+    and only to 127.0.0.1, where the browser tests start the app."""
+    allowing = re.compile(r"enable_socket|socket_enabled|allow_hosts|force-enable-socket|allow-hosts|allow-unix-socket")
+    online = TESTS / "online"
+    found = []
+    for path in sorted([*TESTS.rglob("*.py"), REPO / "pyproject.toml", *(REPO / ".github" / "workflows").glob("*.yml")]):
+        if online in path.parents or path.name == "test_architecture.py":
+            continue
+        if allowing.search(path.read_text(encoding="utf-8")):
+            found.append(path.relative_to(REPO).as_posix())
+    assert found == ["tests/browser/conftest.py"]
+    conftest = (TESTS / "browser" / "conftest.py").read_text(encoding="utf-8")
+    assert 'LOCAL = "127.0.0.1"' in conftest and "pytest.mark.allow_hosts([LOCAL])" in conftest
+    assert conftest.count("allow_hosts") == 1
+
+
 def test_online_tests_are_deselected_by_default() -> None:
     """AD-17: tests in tests/online/ are marked `online` and do not run unless asked for."""
     command = [sys.executable, "-m", "pytest", "--collect-only", "-q", "-p", "no:cacheprovider", "tests/online"]

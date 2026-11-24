@@ -1,8 +1,8 @@
 /*
   LiquidOracle stylesheet (Story 1.7). Tokens from DESIGN.md (UX-DR1). The dark theme is the
   default and `data-theme="light"` (set by theme.js) gives the light one (UX-DR2; Edvard,
-  2026-11-20). Hover and lift states (UX-DR9) and the responsive details (UX-DR10) were moved to
-  Story 3.4. Layout adapted from mockups/lookup.html and
+  2026-11-20). Hover and lift states (UX-DR9, UX-DR11) and the responsive details (UX-DR10) are
+  Story 3.4's, near the end of this file. Layout adapted from mockups/lookup.html and
   mockups/verdict.html. Nothing is loaded from the internet (UX-DR3).
 
   IBM Plex Serif 600 and 700 (@ibm/plex-serif 2.0.0, SIL Open Font License, LICENSE.txt beside the
@@ -33,6 +33,7 @@
   --border: #272E38;
   --border-strong: #6C7582;
   --accent: #6EA8EE;
+  --accent-hover: #7DB0EE;
   --on-accent: #0E1116;
   --accent-tint: #17304F;
   --accent-tint-soft: #132235;
@@ -69,6 +70,8 @@
   --top-bar-height: 64px;
   --pill-edge: #6C7582;  /* the pill's border-dark-theme */
   --card-shadow: none;  /* shadow-light-theme only */
+  --lift-shadow: 0 3px 10px rgba(0, 0, 0, .45);  /* buttons under the pointer or focus (DESIGN.md motion) */
+  --quick: 120ms ease-out;
   color-scheme: dark;
 }
 
@@ -81,6 +84,7 @@
   --border: #E3E5E8;
   --border-strong: #868D97;
   --accent: #1D5BA6;
+  --accent-hover: #1C5396;
   --on-accent: #FFFFFF;
   --accent-tint: #E8F0FA;
   --accent-tint-soft: #F1F5FB;
@@ -97,6 +101,7 @@
   --on-pill: #FFFFFF;
   --pill-edge: transparent;
   --card-shadow: 0 1px 2px rgba(20, 25, 34, .04);
+  --lift-shadow: 0 3px 8px rgba(20, 25, 34, .10);
   color-scheme: light;
 }
 
@@ -218,20 +223,35 @@ main:has(.verdict-card) { padding-top: var(--space-7); }
 .dots { display: inline-flex; gap: 10px; flex: none; }
 .dot { width: 30px; height: 30px; border-radius: 50%; border: 6px solid var(--dot-empty); }
 .dot.is-filled { background: var(--accent); border-color: var(--accent); }
-.odds { margin: 10px 0 0; font: 400 26px/1.3 var(--serif-text); color: var(--ink-muted); }
+.odds { margin: 10px 0 0; font: 400 26px/1.3 var(--serif-text); color: var(--ink-muted); text-wrap: balance; }
 .address-card {
   background: var(--surface-raised); border: 1px solid var(--border); border-radius: var(--rounded-md);
   padding: var(--space-4) 20px; box-shadow: var(--card-shadow);
 }
 .address-card .label { margin: 0 0 6px; font-size: 14px; color: var(--ink-muted); }
 .address { font: 14px/1.5 var(--mono); overflow-wrap: anywhere; }
+/* Copy button (UX-DR21; Story 3.4): shown only once copy-address.js has marked the page. */
+.address-row { display: flex; align-items: center; gap: var(--space-3); }
+.address-row .address { flex: 1; min-width: 0; }
+.icon-button {
+  flex: none; display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  height: 36px; min-width: 36px; padding: 0 var(--space-2); cursor: pointer;
+  border: 1px solid transparent; border-radius: var(--rounded-sm); background: transparent; color: var(--ink-muted);
+  font: 600 13px var(--sans);
+}
+.icon-button svg { width: 18px; height: 18px; }
+.copy-button { display: none; }
+:root.has-copy .copy-button { display: inline-flex; }
+.icon-button.is-copied { color: var(--accent); background: var(--accent-tint); border-color: var(--accent-tint); }
+.copy-error { margin: var(--space-2) 0 0; font-size: 14px; color: var(--error); }
 .rule { border: 0; border-top: 1px solid var(--border); margin: 28px 0 20px; }
 .stats .label { margin: 0; color: var(--ink-muted); }
 .stats .line { margin: 2px 0; font-size: 20px; line-height: 1.35; font-variant-numeric: tabular-nums; }
 .stats .line strong { font-weight: 650; }
 .stats .sep { margin: 0 var(--space-3); color: var(--ink-muted); }
 .stats .stored { margin: 0; font-size: 14px; color: var(--ink-muted); }
-.stats-row { display: grid; grid-template-columns: minmax(0, 1fr) minmax(300px, 620px); gap: 20px var(--space-7); align-items: start; }
+/* From 900 px up the stats keep at least 280 px, so their line never folds word by word beside the warning (Story 3.4). */
+.stats-row { display: grid; grid-template-columns: minmax(280px, 1fr) minmax(300px, 620px); gap: 20px var(--space-7); align-items: start; }
 .stats-row > .stats:only-child { grid-column: 1 / -1; }
 
 /* Warning box (FR-11, UX-DR15; DESIGN.md warning-box): the Exit PnL warning and the over-10% sentence. */
@@ -260,8 +280,8 @@ main:has(.verdict-card) { padding-top: var(--space-7); }
 .left-out p { margin: 0; }
 .left-out > * + * { margin-top: var(--space-2); }
 .computed-on { margin: var(--space-4) 0 0; font-size: 13px; color: var(--ink-muted); }
-@media (max-width: 899px) {
-  .stats-row { grid-template-columns: minmax(0, 1fr); }
+@media (max-width: 899px) {  /* UX-DR10: two-column parts stack (Story 3.4 adds the Verdict header) */
+  .verdict-head, .stats-row { grid-template-columns: minmax(0, 1fr); }
   .limits-grid { grid-template-columns: minmax(0, 1fr); }
   .limits-grid > div { padding: var(--space-4) 0; }
   .limits-grid > div + div { border-left: 0; border-top: 1px solid var(--border); }
@@ -395,6 +415,44 @@ main:has(.verdict-card) { padding-top: var(--space-7); }
   .chart-bar.is-tail, .chart-bar.is-active { fill: Highlight; }
 }
 
+/* Interaction states (UX-DR9, DESIGN.md Interaction states; Story 3.4). Only clickable things react,
+   and keyboard focus looks exactly like hover (plus the focus ring). Every hover rule sits in
+   @media (hover: hover) and has its :focus-visible twin below it; only buttons lift. */
+.brand, .mainnav a, .about summary, .wallet-link { transition: color var(--quick), background-color var(--quick), border-color var(--quick), text-decoration-color var(--quick); }
+.theme-toggle, .icon-button, .btn-primary {
+  transition: color var(--quick), background-color var(--quick), border-color var(--quick), transform var(--quick), box-shadow var(--quick);
+}
+.about summary { text-decoration: underline transparent; text-underline-offset: 3px; }
+@media (hover: hover) {
+  .brand:hover { color: var(--accent); }
+  .mainnav a:hover { color: var(--ink); border-bottom-color: var(--border-strong); }
+  .mainnav a[aria-current="page"]:hover { color: var(--accent); border-bottom-color: var(--accent); }
+  .theme-toggle:hover { background: var(--neutral-tint); border-color: var(--border-strong); transform: translateY(-1px); box-shadow: var(--lift-shadow); }
+  .icon-button:hover { color: var(--ink); background: var(--neutral-tint); border-color: var(--border); transform: translateY(-1px); box-shadow: var(--lift-shadow); }
+  .icon-button.is-copied:hover { color: var(--accent); background: var(--accent-tint); border-color: var(--accent-tint); }
+  .about summary:hover { text-decoration-color: currentColor; background: var(--accent-tint-soft); }
+  .wallet-link:hover { background: var(--accent-tint-soft); }
+  .btn-primary:hover { background: var(--accent-hover); border-color: var(--accent-hover); transform: translateY(-1px); box-shadow: var(--lift-shadow); }
+}
+.brand:focus-visible { color: var(--accent); }
+.mainnav a:focus-visible { color: var(--ink); border-bottom-color: var(--border-strong); }
+.mainnav a[aria-current="page"]:focus-visible { color: var(--accent); border-bottom-color: var(--accent); }
+.theme-toggle:focus-visible { background: var(--neutral-tint); border-color: var(--border-strong); transform: translateY(-1px); box-shadow: var(--lift-shadow); }
+.icon-button:focus-visible { color: var(--ink); background: var(--neutral-tint); border-color: var(--border); transform: translateY(-1px); box-shadow: var(--lift-shadow); }
+.icon-button.is-copied:focus-visible { color: var(--accent); background: var(--accent-tint); border-color: var(--accent-tint); }
+.about summary:focus-visible { text-decoration-color: currentColor; background: var(--accent-tint-soft); }
+.wallet-link:focus-visible { background: var(--accent-tint-soft); outline-offset: -2px; border-radius: var(--rounded-md); }
+.btn-primary:focus-visible { background: var(--accent-hover); border-color: var(--accent-hover); transform: translateY(-1px); box-shadow: var(--lift-shadow); }
+.theme-toggle:active, .icon-button:active, .btn-primary:active { transform: none; box-shadow: none; }  /* back down on press */
+/* Windows High Contrast drops the tints and the lift shadow, so a Highlight border carries the state. */
+@media (forced-colors: active) {
+  .icon-button.is-copied { border-color: Highlight; }  /* the copied state shows without its tint */
+  .icon-button:focus-visible, .theme-toggle:focus-visible, .btn-primary:focus-visible { border-color: Highlight; }
+}
+@media (forced-colors: active) and (hover: hover) {
+  .icon-button:hover, .theme-toggle:hover, .btn-primary:hover { border-color: Highlight; }
+}
+
 /* Fetching state (UX-DR22, DESIGN.md S1): three accent dots pulsing in turn, still with reduce motion */
 h1.checking { font-size: 28px; line-height: 1.25; }
 .fetching { display: flex; align-items: center; gap: 10px; margin: var(--space-3) 0 0; font-size: 14px; color: var(--ink-muted); }
@@ -403,12 +461,37 @@ h1.checking { font-size: 28px; line-height: 1.25; }
 .fetch-dots span:nth-child(2) { animation-delay: .2s; }
 .fetch-dots span:nth-child(3) { animation-delay: .4s; }
 @keyframes fetch-pulse { 0%, 80%, 100% { opacity: .25; } 40% { opacity: 1; } }
-@media (prefers-reduced-motion: reduce) {
+@media (prefers-reduced-motion: reduce) {  /* UX-DR11: nothing moves; colours change at once */
   .fetch-dots span { animation: none; opacity: 1; }
   .chart-bar, .chart-tip, .chart-tail-label, .chart-dot, .chart-marker-label, .chart-marker-line { transition: none; }
+  .brand, .mainnav a, .about summary, .wallet-link, .theme-toggle, .icon-button, .btn-primary { transition: none; }
+  .theme-toggle:hover, .theme-toggle:focus-visible, .icon-button:hover, .icon-button:focus-visible,
+  .btn-primary:hover, .btn-primary:focus-visible { transform: none; }
 }
 .reload-note { margin: var(--space-4) 0 0; font-size: 14px; color: var(--ink-muted); }
 
 /* Message pages (UX-DR23) */
 .hint-line { margin: var(--space-3) 0 0; color: var(--ink-muted); }
 .btn-link { display: inline-flex; align-items: center; text-decoration: none; }
+
+/* Phone sizes and the smallest screens (UX-DR10, DESIGN.md Smaller screens; Story 3.4). The chart's own
+   639 and 399 px rules sit with the chart above. */
+@media (max-width: 639px) {
+  .wrap { padding: 0 var(--space-4); }
+  main, main:has(.verdict-card) { padding: 28px 0 48px; }
+  h1 { font-size: 36px; line-height: 1.12; }
+  .verdict { font-size: 40px; gap: 18px; }
+  .dot { width: 24px; height: 24px; border-width: 5px; }
+  .odds { font-size: 21px; }
+  .card { padding: 20px 18px; }
+  .stats .line { font-size: 18px; }
+  .field-row { flex-direction: column; }
+  .field-row .text-input { flex: none; }  /* stacked, its 18rem basis would become its height */
+  .btn-primary { width: 100%; }
+  .btn-link { justify-content: center; }
+  .bar-tools { margin-left: 0; width: 100%; justify-content: flex-end; }
+  .offline-pill { padding: 6px var(--space-3); }
+}
+@media (max-width: 399px) {
+  .verdict { font-size: 34px; }
+}
