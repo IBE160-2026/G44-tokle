@@ -7,6 +7,7 @@ nothing above `data/` sees raw JSON (AD-2). Time is UTC epoch seconds, money is 
 
 from __future__ import annotations
 
+import math
 from dataclasses import dataclass
 from enum import StrEnum
 
@@ -203,6 +204,44 @@ class PositionSet:
         return sum((p.failed_fees for p in (*self.tested, *self.slivers)), 0.0)
 
     @property
+    def read_count(self) -> int:
+        """FR-11's M: the window's Positions whose history was read in full (all but "not fully read")."""
+        unread = sum(1 for p in self.left_out if p.reason is ExclusionReason.NOT_FULLY_READ)
+        return self.window_size - unread
+
+    @property
+    def held_count(self) -> int:
+        """FR-11's N: of those, the ones not sold before resolution; a Sliver sold over 99%, so it counts as sold.
+
+        A bet left out for another reason (split or merged, say) was still held (Edvard, 2026-11-24, Story 3.3).
+        """
+        sold = sum(1 for p in self.left_out if p.reason is ExclusionReason.SOLD_BEFORE_RESOLUTION)
+        return self.read_count - sold - len(self.slivers)
+
+    @property
+    def exit_pnl(self) -> float:
+        """FR-11's Exit PnL: Σ shares sold x (sell price - p) over the tested Positions, Slivers and Positions sold
+        before resolution (Edvard, 2026-11-24, Story 3.3). Other left-out Positions are out: their fills or Entry
+        Price cannot be trusted. No sell fees (PRD Glossary)."""
+        sold = (p for p in self.left_out if p.reason is ExclusionReason.SOLD_BEFORE_RESOLUTION)
+        return math.fsum(p.exit_pnl or 0.0 for p in (*self.tested, *self.slivers, *sold))
+
+    @property
+    def any_sold(self) -> bool:
+        """FR-11: did any Position counted in the Exit PnL sell shares before resolution?"""
+        sold = (p for p in self.left_out if p.reason is ExclusionReason.SOLD_BEFORE_RESOLUTION)
+        return any(p.shares_sold > 0 for p in (*self.tested, *self.slivers, *sold))
+
+    @property
+    def largest_bet(self) -> float | None:
+        """FR-11: the largest single bet's PnL, s x (o - p) - Own Fees, among the Positions in Real PnL; None when there are none."""
+        bets = (*self.tested, *self.slivers)
+        if not bets:
+            return None
+        # Tested Positions and Slivers always have an outcome and an Entry Price (the builder's rules).
+        return max(math.fsum((p.shares_held * ((p.outcome or 0.0) - (p.entry_price or 0.0)), -p.own_fees)) for p in bets)
+
+    @property
     def excluded_counts(self) -> dict[ExclusionReason, int]:
         counts = {reason: 0 for reason in ExclusionReason}
         for position in self.left_out:
@@ -286,6 +325,7 @@ class Window:
     `activity` every activity row of those Markets. `activity_read_until` is None when the
     activity read was complete; otherwise it is the time of the last row read, and the
     Positions whose Market resolved in that second or later are "not fully read" (AD-7, AD-11).
+    `capped` is True when the limit left older Positions out, for FR-11's window line (Story 3.3).
     """
 
     wallet: str
@@ -294,6 +334,7 @@ class Window:
     markets: tuple[Market, ...]
     activity: tuple[ActivityRow, ...]
     activity_read_until: int | None
+    capped: bool = False
 
     def not_fully_read(self) -> tuple[ListedPosition, ...]:
         """The window's Positions whose Market resolved in or after the second of the last activity row read."""

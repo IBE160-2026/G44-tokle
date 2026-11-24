@@ -6,7 +6,7 @@ The app only reads public data. It never places orders, holds keys or touches a 
 
 Course project in **IBE160 Programmering med KI** at Høgskolen i Molde, autumn 2026. Group G44: Edvard Tokle.
 
-> **Status (Story 2.6):** stage 1's core works in Offline Mode and live. Offline, you can check 10 real Polymarket Wallets and the Synthetic Wallets (made-up Wallets whose right answers are known). Live, you can paste any Polymarket address and get its Verdict card. The luck chart and the honesty notes come in Epic 3 (plan: [`_bmad-output/planning-artifacts/epics.md`](_bmad-output/planning-artifacts/epics.md)).
+> **Status (Story 3.3):** stage 1's core works in Offline Mode and live. Offline, you can check 10 real Polymarket Wallets and the Synthetic Wallets (made-up Wallets whose right answers are known). Live, you can paste any Polymarket address and get its Verdict card. Each Verdict page also shows the luck chart and the honesty notes, "What this test can't see": how much of the result came from one bet, how many bets were held to resolution and what early sales made or lost (with a warning when they lost money), which bets were left out and why, and the Seed. Stage 1 finishes with Stories 3.4 and 3.5 (plan: [`_bmad-output/planning-artifacts/epics.md`](_bmad-output/planning-artifacts/epics.md)).
 
 ## Prerequisites
 

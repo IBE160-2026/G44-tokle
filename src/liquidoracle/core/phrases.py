@@ -14,11 +14,13 @@ Rounding is decimal and takes halves away from zero, never Python's round-half-t
 from __future__ import annotations
 
 import math
+from collections.abc import Mapping
 from datetime import datetime, timezone, tzinfo
 from decimal import ROUND_HALF_UP, Decimal
 from numbers import Integral, Real
 
 from liquidoracle.core.skilltest import MIN_RESOLVED, SIMULATIONS
+from liquidoracle.records import ExclusionReason
 
 MINUS = "−"  # UX-DR14: a real minus sign, not the hyphen "-"
 
@@ -195,6 +197,183 @@ def tail_sentence(at_or_above: int) -> str:
     if reached == SIMULATIONS:
         return f"All {SIMULATIONS:,} replays did this well or better"
     return f"{count(reached)} of {SIMULATIONS:,} replays did this well or better"
+
+
+# --- Story 3.3: the honesty notes (FR-11, UX-DR15, UX-DR29) ------------------------------------
+
+HONESTY_TITLE = "What this test can't see"
+EXIT_WARNING = (  # FR-11, word for word: a bold first sentence, a normal second one (UX-DR15)
+    "Positions this Wallet sold before resolution lost money in total.",
+    "This Verdict covers only bets held to resolution.",
+)
+LIMITS_TEXT = (  # FR-11's fixed note, word for word from mockups/verdict.html
+    "Long shots tend to be overpriced, so a Wallet that mostly buys favourites can beat the odds from that known "
+    "pattern alone. The Verdict covers only bets held to resolution, so early exits are not measured and can make "
+    "a Wallet look better or worse than it is. Wallets are often looked up because they already looked good, and "
+    "picking by results makes luck look more like skill."
+)
+NOT_ADVICE = "This is not financial advice."
+LEFT_OUT_LABEL = "Left out of the test:"
+
+# The reasons as the card names them (UX-DR29), in the builder's order (AD-11).
+REASON_WORDS = {
+    ExclusionReason.NOT_FULLY_READ: "not fully read",
+    ExclusionReason.UNCLEAR_RESOLUTION: "unclear resolution",
+    ExclusionReason.SPLIT_OR_MERGED: "split or merged",
+    ExclusionReason.ONLY_IN_ACTIVITY: "missing from Polymarket's positions list",
+    ExclusionReason.SHARE_GAP: "Polymarket's two lists disagree",
+    ExclusionReason.SOLD_BEFORE_RESOLUTION: "sold before resolution",
+    ExclusionReason.NOT_EXPLAINED: "not explained by the activity",
+}
+
+_LESS_THAN_A_DOLLAR = "less than $1"
+
+
+def share(fraction: float) -> str:
+    """A share in whole percent (FR-11): "70%". Never "100%" below all of it, never "0%" above none:
+    "99%" and "less than 1%" instead (Story 3.3)."""
+    value = _real(fraction, "share")
+    if value < 0:
+        raise ValueError(f"a share must be at least 0, got {fraction!r}")
+    if value == 0:
+        return "0%"
+    # Scaled in decimal: the float 0.285 * 100 is 28.4999…, which would round half down (Story 3.3 review).
+    percent = int(Decimal(repr(value)).scaleb(2).to_integral_value(rounding=ROUND_HALF_UP))
+    if percent == 0:
+        return "less than 1%"
+    if percent >= 100 and value < 1:
+        return "99%"
+    return f"{percent:,}%"
+
+
+def _capital(text: str) -> str:
+    return text[:1].upper() + text[1:]
+
+
+def _cents(amount: float) -> int:
+    return int(Decimal(repr(_real(amount, "amount"))).quantize(_CENT, rounding=ROUND_HALF_UP).scaleb(2))
+
+
+def small_money(amount: float) -> str:
+    """Money as `money()` does, but an amount that is not zero in cents and would show as "$0" reads
+    "less than $1" (Story 3.3), so the card never prints "$0" for money that exists."""
+    if _cents(amount) != 0 and money(amount) == "$0":
+        return _LESS_THAN_A_DOLLAR
+    return money(amount)
+
+
+def largest_bet(real_pnl: float, largest: float | None) -> tuple[str, str, str]:
+    """The first honesty column (FR-11, EXPERIENCE.md Voice and Tone) as (label, figure, sentence); empty parts are "".
+
+    The share of the Real PnL from the largest single bet; its amount when the Real PnL is $0 or below as the
+    card shows it (whole dollars, so float noise and a few cents are $0) or when the share is over 100% (compared
+    in whole cents, so a Sliver losing a fraction of a cent is not "the other bets lost money"); a sentence when
+    there is no bet (Story 3.3 review).
+    """
+    if largest is None:
+        return "", "", "No resolved bets to measure."
+    largest = _real(largest, "largest bet")
+    real_cents = _cents(real_pnl)
+    if real_cents <= 0 or money(real_pnl) == "$0":
+        return "Largest single bet:", _signed_small_money(largest), ""
+    if _cents(largest) > real_cents:
+        amount = small_money(largest)
+        return (
+            "",
+            amount,
+            f"More than all of the Real PnL came from the single largest bet ({amount}); "
+            "the other bets lost money overall.",
+        )
+    return "", _capital(share(min(max(largest / real_pnl, 0.0), 1.0))), "of the Real PnL came from the single largest bet."
+
+
+def held(held_count: int, read_count: int) -> tuple[str, str]:
+    """The second honesty column's figure and words (FR-11; Edvard, 2026-11-24): "33 of 100", "positions held to resolution."."""
+    held_n, read_n = _whole(held_count, "count"), _whole(read_count, "count")
+    if held_n > read_n:
+        raise ValueError(f"{held_n} held cannot be more than {read_n} read")
+    if read_n == 0:
+        return "", "No bet's history was read in full, so this cannot be counted."
+    return f"{count(held_n)} of {count(read_n)}", "positions held to resolution."
+
+
+def exit_line(exit_pnl: float, *, any_sold: bool) -> str:
+    """The Exit PnL under the held count (FR-11): "Shares sold before resolution: −$1,675 (Exit PnL)."."""
+    return "".join(exit_parts(exit_pnl, any_sold=any_sold))
+
+
+def exit_parts(exit_pnl: float, *, any_sold: bool) -> tuple[str, str, str]:
+    """`exit_line` as (before, amount, after), so the page can set the amount in bold on one line (mockup)."""
+    if not any_sold:
+        return "No shares were sold before resolution.", "", ""
+    return "Shares sold before resolution: ", _signed_small_money(exit_pnl), " (Exit PnL)."
+
+
+def _signed_small_money(amount: float) -> str:
+    """`money()`, but a gain or loss that is not zero in cents and would show as "$0" says so in words."""
+    cents = _cents(amount)
+    if cents != 0 and money(amount) == "$0":
+        return f"a {'loss' if cents < 0 else 'gain'} of {_LESS_THAN_A_DOLLAR}"
+    return money(amount)
+
+
+def exit_warning_applies(exit_pnl: float) -> bool:
+    """FR-11: the warning beside the stats when Exit PnL is below zero, in whole cents (float noise is no loss)."""
+    return _cents(exit_pnl) < 0
+
+
+def left_out(counts: Mapping[ExclusionReason, int]) -> str:
+    """The "Left out of the test" line (FR-11, UX-DR29): reasons above 0 in the builder's order, or "none"."""
+    parts = [f"{count(_whole(counts.get(r, 0), 'count'))} {words}" for r, words in REASON_WORDS.items() if counts.get(r, 0)]
+    return f"{LEFT_OUT_LABEL} {', '.join(parts) if parts else 'none'}."
+
+
+def fees_not_counted(failed_count: int, failed_total: float) -> str:
+    """Fees that failed the fee schedule check, with their recorded total (FR-4, FR-11)."""
+    n = _whole(failed_count, "count")
+    if n == 0:
+        return "Every fee matched the Market's fee schedule."
+    fees, verb = ("fee", "was") if n == 1 else ("fees", "were")
+    return (
+        f"{count(n)} {fees} did not match the Market's fee schedule and {verb} not counted ({small_money(failed_total)})."
+    )
+
+
+def mostly_left_out_sentence(left_out_share: float) -> str:
+    """FR-11's plain sentence when more than 10% of the window was left out (UX-DR29)."""
+    return f"Only part of this Wallet's activity was judged: {share(left_out_share)} of its bets were left out."
+
+
+def linked_bets_note(uncoupled_share: float) -> str:
+    """FR-11's note when more than 20% of the tested bets have an event-mate the app cannot link (AD-20)."""
+    return (
+        f"{_capital(share(uncoupled_share))} of the tested bets share an event with "
+        "another tested bet in a way the app cannot link, so some may depend on each other and the result can look "
+        "stronger than it is."
+    )
+
+
+def window_line(window_size: int) -> str:
+    """FR-11's window line for a capped lookup (Edvard, 2026-11-24: no total, the window stops reading at the cap)."""
+    n = _whole(window_size, "count")
+    return f"Based on the latest {count(n)} {'bet' if n == 1 else 'bets'}; older results are not included."
+
+
+def computed_on(scope: str, window_size: int, *, capped: bool, seed: int) -> str:
+    """The last honesty line (FR-11, AD-22): the set the result was computed on and its Seed, "Computed on the
+    latest 2,000 bets · Seed 44". Only the `lookup` scope exists before Epic 4."""
+    if scope != "lookup":
+        raise ValueError(f"no wording for the scope {scope!r} yet")
+    n = _whole(window_size, "count")
+    if n == 0:
+        bets = "no bets"
+    elif capped:
+        bets = f"the latest {count(n)} {'bet' if n == 1 else 'bets'}"
+    elif n == 1:
+        bets = "1 bet"
+    else:
+        bets = f"all {count(n)} bets"
+    return f"Computed on {bets} · Seed {_whole(seed, 'Seed')}"
 
 
 _MONTHS = ("Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec")

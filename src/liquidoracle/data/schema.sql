@@ -5,13 +5,15 @@
 -- One fetch of one Wallet's window (AD-7, AD-8, AD-19). Readers see it only once completed_at is set.
 -- activity_read_until is NULL when the activity read was complete; otherwise the time of the last
 -- row read, after which the window's Positions are "not fully read" (AD-7, AD-11).
+-- window_capped is 1 when window_limit left older Positions out, for FR-11's window line (Story 3.3).
 CREATE TABLE snapshot (
     fetch_id            INTEGER PRIMARY KEY AUTOINCREMENT,
     wallet              TEXT    NOT NULL,
     window_limit        INTEGER NOT NULL,
     started_at          INTEGER NOT NULL,
     completed_at        INTEGER,
-    activity_read_until INTEGER
+    activity_read_until INTEGER,
+    window_capped       INTEGER NOT NULL DEFAULT 0
 );
 CREATE INDEX snapshot_by_wallet ON snapshot (wallet, completed_at);
 

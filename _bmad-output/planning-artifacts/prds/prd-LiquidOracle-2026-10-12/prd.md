@@ -2,7 +2,7 @@
 title: "PRD: LiquidOracle"
 status: final
 created: 2026-10-12
-updated: 2026-11-23
+updated: 2026-11-24
 ---
 
 # PRD: LiquidOracle
@@ -191,9 +191,9 @@ For *Not enough data*, the page shows the number of Resolved Positions and how m
 #### FR-11: Honesty notes
 Every Verdict card shows:
 - the share of Real PnL coming from the single largest Position;
-- how many Positions were held to resolution out of all Positions (N of M), and the Exit PnL;
+- how many Positions were held to resolution (N of M), and the Exit PnL. M counts the Positions whose history was read in full; N is those of them not sold before resolution and not Slivers. The Exit PnL sums the tested Positions, Slivers and Positions sold before resolution, not the others left out (their fills or Entry Price cannot be trusted);
 - a visible warning next to the Verdict when Exit PnL is below zero: "Positions this Wallet sold before resolution lost money in total. This Verdict covers only bets held to resolution.";
-- when a Wallet has more than 2,000 Resolved Positions in the part tested, the line "Based on the latest 2,000 of N Resolved Positions; older results are not included." For the after part the line says "first 2,000" instead; a Watchlist result says it rests on the two windows around the Cut-off Date, and that Positions bought before the date and resolved after it are in neither;
+- when a Wallet has more than 2,000 Resolved Positions in the part tested, the line "Based on the latest 2,000 bets; older results are not included." (the window stops reading at 2,000, so the full count is not known). For the after part the line says "first 2,000" instead; a Watchlist result says it rests on the two windows around the Cut-off Date, and that Positions bought before the date and resolved after it are in neither;
 - how many Positions were left out of the test, for each reason (FR-3), and, when more than 10% `[ASSUMPTION]` of the Positions were left out for any reason together, a plain sentence that only part of the Wallet's activity was judged;
 - how many fees failed the check against the Market's fee schedule, with their recorded total (FR-4);
 - when more than 20% `[ASSUMPTION]` of the tested Positions sit in an event with another tested Position whose link the app cannot detect, a note that some bets may depend on each other and the result can look stronger than it is;

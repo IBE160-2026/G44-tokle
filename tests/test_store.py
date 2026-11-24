@@ -326,6 +326,15 @@ def test_a_market_resolved_in_the_cap_second_is_not_fully_read(store: Store) -> 
     assert snapshot is not None and snapshot.not_fully_read() == (LISTED,)
 
 
+@pytest.mark.parametrize("capped", [True, False])
+def test_the_window_cap_flag_is_stored_with_the_snapshot(store: Store, capped: bool) -> None:
+    """FR-11 (Story 3.3): whether the window's limit left older Positions out is stored and read back."""
+    fetch_id = write(store, finish=False)
+    store.finish_snapshot(fetch_id, window_capped=capped)
+    snapshot = store.latest_snapshot(WALLET)
+    assert snapshot is not None and snapshot.window_capped is capped
+
+
 def test_only_resolved_markets_are_served_from_the_store(store: Store) -> None:
     """AD-4: stored resolved Markets never expire; open or unclear ones are fetched again."""
     open_market = Market("0xopen", closed=False, closed_time=None, token_ids=("1", "2"), outcome_prices=(0.4, 0.6))
@@ -393,19 +402,29 @@ INSERT INTO market VALUES ('0xold', 1, 1, '["1","2"]', '[1.0,0.0]', 0, NULL, NUL
 PRAGMA user_version = 2;
 """
 
+# Story 2.5's snapshot table, before window_capped (Story 3.3).
+STORY_2_5_SCHEMA = """
+CREATE TABLE snapshot (fetch_id INTEGER PRIMARY KEY AUTOINCREMENT, wallet TEXT NOT NULL, window_limit INTEGER NOT NULL,
+    started_at INTEGER NOT NULL, completed_at INTEGER, activity_read_until INTEGER);
+INSERT INTO snapshot VALUES (1, 'w', 2000, 1, 2, NULL);
+PRAGMA user_version = 4;
+"""
 
-@pytest.mark.parametrize("old_schema", [EPIC_1_SCHEMA, STORY_2_2_SCHEMA], ids=["epic-1", "story-2-2"])
+
+@pytest.mark.parametrize(
+    "old_schema", [EPIC_1_SCHEMA, STORY_2_2_SCHEMA, STORY_2_5_SCHEMA], ids=["epic-1", "story-2-2", "story-2-5"]
+)
 def test_an_older_database_is_rebuilt_and_takes_a_window_snapshot(tmp_path: Path, old_schema: str) -> None:
-    """AD-6 (review, Story 2.2; Story 2.4): a database from Epic 1 (version 1) or Story 2.2 (version 2, no
-    event columns) gets the new tables, keeps none of its fetched rows, and a window snapshot can be written and
-    read back with its Markets' events."""
+    """AD-6 (review, Story 2.2; Stories 2.4, 3.3): a database from Epic 1 (version 1), Story 2.2 (version 2, no
+    event columns) or Story 2.5 (version 4, no window_capped) gets the new tables, keeps none of its fetched rows,
+    and a window snapshot can be written and read back with its Markets' events."""
     path = tmp_path / "old.db"
     with sqlite3.connect(path) as old:
         old.executescript(old_schema)
     old.close()
     db = Store(path)
     try:
-        assert raw(db, "PRAGMA user_version") == [(SCHEMA_VERSION,)] and SCHEMA_VERSION == 4
+        assert raw(db, "PRAGMA user_version") == [(SCHEMA_VERSION,)] and SCHEMA_VERSION == 5
         assert db.latest_snapshot("w") is None and db.resolved_markets(["0xold"]) == {}
         write(db)
         snapshot = db.latest_snapshot(WALLET)

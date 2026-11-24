@@ -13,6 +13,7 @@ import pytest
 from liquidoracle.core import phrases, skilltest
 from liquidoracle.core.positions import build_positions
 from liquidoracle.data import synthetic
+from liquidoracle.records import ExclusionReason as R
 
 SRC = Path(__file__).resolve().parents[1] / "src" / "liquidoracle"
 SEED = 44  # the Settings default (AD-15), as in test_skilltest.py
@@ -376,3 +377,97 @@ def test_ux_dr27_tail_sentence_refuses_impossible_counts(bad):
     """UX-DR27: a count outside 0 to 10,000 is a bug upstream, not a sentence."""
     with pytest.raises(ValueError):
         phrases.tail_sentence(bad)
+
+
+# --- Story 3.3: the honesty notes (FR-11) ---------------------------------------------------------
+
+
+@pytest.mark.parametrize(
+    ("fraction", "text"),
+    [(0.7, "70%"), (0.325, "33%"), (0.996, "99%"), (1.0, "100%"), (0.004, "less than 1%"), (0.0, "0%"), (0.005, "1%"),
+     (0.285, "29%"), (0.145, "15%"), (0.565, "57%")],  # halves whose float x 100 falls just short (Story 3.3 review)
+)
+def test_fr11_share_in_whole_percent(fraction, text):
+    """FR-11 (Story 3.3): whole percent, half up; never "100%" below all of it, never "0%" above none."""
+    assert phrases.share(fraction) == text
+
+
+@pytest.mark.parametrize(
+    ("real_pnl", "largest", "parts"),
+    [
+        (2_000.0, 1_400.0, ("", "70%", "of the Real PnL came from the single largest bet.")),
+        (295.06, 293.95, ("", "99%", "of the Real PnL came from the single largest bet.")),
+        (100_000.0, 300.0, ("", "Less than 1%", "of the Real PnL came from the single largest bet.")),
+        (8.0, 87.0, ("", "$87", "More than all of the Real PnL came from the single largest bet ($87); "
+                                  "the other bets lost money overall.")),
+        (-226.0, 90.0, ("Largest single bet:", "$90", "")),
+        (0.0, 3_200.0, ("Largest single bet:", "$3,200", "")),
+        (-1e-15, 10.0, ("Largest single bet:", "$10", "")),  # float noise is $0 in whole cents (favourite-buyer)
+        (-500.0, -12.0, ("Largest single bet:", "−$12", "")),
+        (-1_102.66, 0.01, ("Largest single bet:", "a gain of less than $1", "")),  # 0x94884d's best bet made 1 cent
+        (0.0, None, ("", "", "No resolved bets to measure.")),
+        # Story 3.3 review: a Real PnL the card shows as $0 takes the amount form; a share over 100% only by a
+        # fraction of a cent is 100%; the over-100% amount never reads "$0".
+        (0.30, 0.45, ("Largest single bet:", "a gain of less than $1", "")),
+        (50.0, 50.004, ("", "100%", "of the Real PnL came from the single largest bet.")),
+        (0.80, 1.20, ("", "$1", "More than all of the Real PnL came from the single largest bet ($1); "
+                                "the other bets lost money overall.")),
+    ],
+)
+def test_fr11_largest_bet_and_its_edge_cases(real_pnl, largest, parts):
+    """FR-11, EXPERIENCE.md Voice and Tone: the share, the amount at $0 or below, the over-100% sentence, no bets."""
+    assert phrases.largest_bet(real_pnl, largest) == parts
+
+
+def test_fr11_held_count_and_exit_pnl():
+    """FR-11 (Edvard, 2026-11-24): "N of M positions held to resolution" and the Exit PnL line, with their edge cases."""
+    assert phrases.held(33, 100) == ("33 of 100", "positions held to resolution.")
+    assert phrases.held(939, 1_173) == ("939 of 1,173", "positions held to resolution.")
+    assert phrases.held(0, 0) == ("", "No bet's history was read in full, so this cannot be counted.")
+    with pytest.raises(ValueError):
+        phrases.held(5, 4)
+    assert phrases.exit_line(-1_675.0, any_sold=True) == "Shares sold before resolution: −$1,675 (Exit PnL)."
+    assert phrases.exit_line(0.0, any_sold=False) == "No shares were sold before resolution."
+    assert phrases.exit_line(0.0, any_sold=True) == "Shares sold before resolution: $0 (Exit PnL)."
+    assert phrases.exit_line(-0.4, any_sold=True) == "Shares sold before resolution: a loss of less than $1 (Exit PnL)."
+    assert phrases.exit_line(0.4, any_sold=True) == "Shares sold before resolution: a gain of less than $1 (Exit PnL)."
+
+
+@pytest.mark.parametrize(("exit_pnl", "warns"), [(-1_675.0, True), (-0.01, True), (-0.004, False), (0.0, False), (5.0, False)])
+def test_fr11_exit_warning_only_below_zero_in_cents(exit_pnl, warns):
+    """FR-11: the warning shows when Exit PnL is below zero; float noise under half a cent is not a loss."""
+    assert phrases.exit_warning_applies(exit_pnl) is warns
+
+
+def test_fr11_left_out_line_fees_and_plain_sentences():
+    """FR-11, UX-DR29: reasons in the builder's order with counts above 0, the fee line, the 10% and 20% sentences."""
+    counts = {R.SOLD_BEFORE_RESOLUTION: 95, R.SPLIT_OR_MERGED: 287, R.UNCLEAR_RESOLUTION: 5, R.SHARE_GAP: 6,
+              R.NOT_EXPLAINED: 0}
+    assert phrases.left_out(counts) == (
+        "Left out of the test: 5 unclear resolution, 287 split or merged, 6 Polymarket's two lists disagree, "
+        "95 sold before resolution."
+    )
+    assert phrases.left_out({r: 0 for r in R}) == "Left out of the test: none."
+    assert phrases.left_out({R.NOT_FULLY_READ: 2_000, R.ONLY_IN_ACTIVITY: 1}) == (
+        "Left out of the test: 2,000 not fully read, 1 missing from Polymarket's positions list."
+    )
+    assert phrases.fees_not_counted(0, 0.0) == "Every fee matched the Market's fee schedule."
+    assert phrases.fees_not_counted(3, 0.4) == (
+        "3 fees did not match the Market's fee schedule and were not counted (less than $1)."
+    )
+    assert phrases.fees_not_counted(1, 44.48) == "1 fee did not match the Market's fee schedule and was not counted ($44)."
+    assert phrases.mostly_left_out_sentence(0.335) == (
+        "Only part of this Wallet's activity was judged: 34% of its bets were left out."
+    )
+    assert phrases.linked_bets_note(0.34).startswith("34% of the tested bets share an event with another tested bet")
+
+
+def test_fr11_window_and_computed_on_lines():
+    """FR-11, AD-22 (Edvard, 2026-11-24): the window line has no total; "Computed on … · Seed 44" names the set."""
+    assert phrases.window_line(2_000) == "Based on the latest 2,000 bets; older results are not included."
+    assert phrases.computed_on("lookup", 2_000, capped=True, seed=44) == "Computed on the latest 2,000 bets · Seed 44"
+    assert phrases.computed_on("lookup", 1_173, capped=False, seed=44) == "Computed on all 1,173 bets · Seed 44"
+    assert phrases.computed_on("lookup", 1, capped=False, seed=7) == "Computed on 1 bet · Seed 7"
+    assert phrases.computed_on("lookup", 0, capped=False, seed=44) == "Computed on no bets · Seed 44"
+    with pytest.raises(ValueError):
+        phrases.computed_on("scan_whole", 10, capped=False, seed=44)

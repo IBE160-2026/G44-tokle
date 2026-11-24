@@ -26,7 +26,8 @@ from pathlib import Path
 
 from liquidoracle.records import ActivityRow, ListedPosition, Market, unread_positions
 
-SCHEMA_VERSION = 4  # 2: the Wallet window (Story 2.2); 3: Market events (Story 2.4); 4: jobs (Story 2.5)
+# 2: the Wallet window (Story 2.2); 3: Market events (Story 2.4); 4: jobs (Story 2.5); 5: window_capped (Story 3.3)
+SCHEMA_VERSION = 5
 BUSY_TIMEOUT_SECONDS = 5.0  # [ASSUMPTION] AD-6: long enough for the worker's short writes
 SCHEMA_FILE = Path(__file__).with_name("schema.sql")
 
@@ -43,7 +44,8 @@ StoreError = sqlite3.Error
 class Snapshot:
     """One complete fetch of one Wallet's window (AD-8, AD-19), with the Markets its rows refer to.
 
-    `activity_read_until` is None when the activity read was complete (AD-7).
+    `activity_read_until` is None when the activity read was complete (AD-7). `window_capped` is True
+    when the window's limit left older Positions out (FR-11, Story 3.3).
     """
 
     fetch_id: int
@@ -54,6 +56,7 @@ class Snapshot:
     markets: tuple[Market, ...]
     window_limit: int
     activity_read_until: int | None
+    window_capped: bool = False
 
     def not_fully_read(self) -> tuple[ListedPosition, ...]:
         """The window's Positions whose Market resolved in or after the last activity row's second (AD-7, AD-11)."""
@@ -188,11 +191,14 @@ class Store:
                     found[market.condition_id] = market
         return found
 
-    def finish_snapshot(self, fetch_id: int, *, activity_read_until: int | None = None) -> None:
+    def finish_snapshot(
+        self, fetch_id: int, *, activity_read_until: int | None = None, window_capped: bool = False
+    ) -> None:
         """Make the snapshot visible and delete the Wallet's older snapshots, in one transaction.
 
         `activity_read_until` is the time of the last activity row read when the read was capped
-        or cut short (AD-7), None when it was complete. Refused when the snapshot is unknown or
+        or cut short (AD-7), None when it was complete. `window_capped` says the window's limit
+        left older Positions out (FR-11, Story 3.3). Refused when the snapshot is unknown or
         already finished, or when one of its rows names a Market that is not stored, so a visible
         snapshot is always complete. A CONVERSION row names its negative-risk event instead, which
         must be the `neg_risk_id` of a stored Market (AD-11, Story 2.4).
@@ -215,8 +221,8 @@ class Store:
             if missing is not None:
                 raise ValueError(f"snapshot {fetch_id} refers to Market {missing[0]}, which is not stored")
             db.execute(
-                "UPDATE snapshot SET completed_at = ?, activity_read_until = ? WHERE fetch_id = ?",
-                (self._now(), activity_read_until, fetch_id),
+                "UPDATE snapshot SET completed_at = ?, activity_read_until = ?, window_capped = ? WHERE fetch_id = ?",
+                (self._now(), activity_read_until, int(window_capped), fetch_id),
             )
             # Older snapshots of this Wallet, finished or abandoned, go; their rows follow (ON DELETE CASCADE).
             # Epic 4 keeps any snapshot a Scan refers to (AD-6, AD-19).
@@ -249,13 +255,13 @@ class Store:
         db.execute("BEGIN")  # one read transaction, so a finish in another thread cannot cut it in half
         try:
             head = db.execute(
-                "SELECT fetch_id, completed_at, window_limit, activity_read_until FROM snapshot"
+                "SELECT fetch_id, completed_at, window_limit, activity_read_until, window_capped FROM snapshot"
                 f" WHERE {where} ORDER BY fetch_id DESC LIMIT 1",  # `where` is fixed text built above
                 args,
             ).fetchone()
             if head is None:
                 return None
-            fetch_id, completed_at, window_limit, activity_read_until = head
+            fetch_id, completed_at, window_limit, activity_read_until, window_capped = head
             positions = tuple(
                 ListedPosition(*row)
                 for row in db.execute(
@@ -283,7 +289,8 @@ class Store:
                 )
             )
             return Snapshot(
-                fetch_id, wallet, completed_at, positions, activity, markets, window_limit, activity_read_until
+                fetch_id, wallet, completed_at, positions, activity, markets, window_limit, activity_read_until,
+                bool(window_capped),
             )
         finally:
             if db.in_transaction:

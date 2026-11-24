@@ -35,11 +35,14 @@ EDGE_ZONE = 25.0
 HINT = "Each bar is a range of results. The taller the bar, the more replays ended there."
 Y_TITLE = "Number of replays"
 # Shown only when chart.js runs (Edvard, 2026-11-23, Story 3.2): the hint line it swaps in, and the
-# fourth paragraph of "About this chart".
+# fourth paragraph of "About this chart". Its last sentence explains why the tail label's count and the
+# odds differ by the +1 of the p-value (Edvard, 2026-11-24, Story 3.3; EXPERIENCE.md, About this chart).
 EXPLORE_HINT = "Point at a bar, or use the arrow keys, to see how many replays ended there."
 ABOUT_EXPLORE = (
     "Point at a bar, or step through the bars with the arrow keys, to see its range and how many replays "
-    "ended there. Point at or select the blue line to light up the replays that did as well as this Wallet or better."
+    "ended there. Point at or select the blue line to light up the replays that did as well as this Wallet or better. "
+    "The odds above count this Wallet's own result as one more replay, so they read a little less rare than this "
+    "count and never claim zero."
 )
 MARKER_BUTTON = "Highlight the replays that did this well or better"
 HIGHLIGHT_ON = "Highlight on"  # announced when the marker button pins the tail (UX-DR27)
