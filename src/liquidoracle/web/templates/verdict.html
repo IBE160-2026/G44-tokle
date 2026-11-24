@@ -16,9 +16,22 @@
           {% endif %}
           <p class="odds">{{ card.odds_line }}</p>
         </div>
+        {# The address card (UX-DR21; Story 3.4). The copy button stays hidden until copy-address.js marks the
+           page (class has-copy on <html>), so without the script nothing is dead. Every word the script
+           shows is on the page: in the button's data- attributes and in the error line. #}
         <div class="address-card">
           <p class="label">Wallet address</p>
-          <code class="address">{{ page.address }}</code>
+          <div class="address-row">
+            <code class="address">{{ page.address }}</code>
+            {# The name is "Copy wallet address", plus "Copied" while it shows, so a speech-input user can say
+               the visible word (WCAG 2.5.3, review-accessibility.md). #}
+            <button class="icon-button copy-button" type="button" data-copied="Copied" data-done="Address copied" data-mac-text="Copy failed. Select the address and press ⌘C.">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" aria-hidden="true" focusable="false"><rect x="8.5" y="8.5" width="12" height="12" rx="2"/><path d="M15.5 8.5V5.5a2 2 0 0 0-2-2h-8a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h3"/></svg>
+              <span class="visually-hidden">Copy wallet address </span><span class="copy-label"></span>
+            </button>
+          </div>
+          <p class="copy-error" hidden><span class="visually-hidden">Error: </span><span class="copy-error-text">Copy failed. Select the address and press Ctrl+C.</span></p>
+          <p class="visually-hidden copy-status" role="status"></p>
         </div>
       </div>
 
@@ -39,6 +52,7 @@
         {% endif %}
       </div>
     </section>
+    <script src="{{ url_for('static', filename='js/copy-address.js') }}" defer></script>
     {% if page.chart %}
     {% set chart = page.chart %}
     {# The chart card (FR-9, UX-DR24 to UX-DR27): every number and word comes from services/chart.py.

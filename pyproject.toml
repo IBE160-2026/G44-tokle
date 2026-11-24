@@ -21,6 +21,7 @@ liquidoracle = "liquidoracle.__main__:main"
 dev = [
     "pytest==9.1.1",
     "pytest-socket==0.8.1",
+    "playwright==1.64.1",
 ]
 
 [build-system]

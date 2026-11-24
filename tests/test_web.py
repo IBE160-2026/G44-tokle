@@ -87,8 +87,8 @@ PAGES = ["/", "/?address=", f"/wallet/{SHARP}", f"/wallet/{THIN}", f"/wallet/{UN
 def test_every_page_has_the_frame(offline: FlaskClient, url: str) -> None:
     """AD-18, UX-DR4/5/6/8: English, one main heading, the skip link as the first Tab stop, the top bar
     with logo and Check a wallet, the favicon and the Offline pill. The scripts are files (no inline
-    code): theme.js on every page, chart.js only with a luck chart; the toggle is hidden until theme.js
-    shows it (UX-DR2)."""
+    code): theme.js on every page, copy-address.js with a Verdict card, chart.js only with a luck chart; the
+    toggle is hidden until theme.js shows it (UX-DR2)."""
     page = offline.get(url).get_data(as_text=True)
     assert page.startswith("<!doctype html>\n<html lang=\"en\">")
     assert len(h1s(page)) == 1
@@ -102,6 +102,8 @@ def test_every_page_has_the_frame(offline: FlaskClient, url: str) -> None:
     scripts = re.findall(r"<script([^>]*)>(.*?)</script>", page, re.S)
     assert all(code == "" for _, code in scripts)
     expected = [' src="/static/js/theme.js"']
+    if 'class="verdict-card"' in page:
+        expected.append(' src="/static/js/copy-address.js" defer')
     if 'class="card chart-card"' in page:
         expected.append(' src="/static/js/chart.js" defer')
     assert [src for src, _ in scripts] == expected
@@ -773,3 +775,100 @@ def test_fr11_linked_bets_note_reaches_the_page(loaded_lookup: Lookup) -> None:
     app: Flask = create_app(Settings(offline=True), NotesLookup(planted))  # type: ignore[arg-type]
     card = honesty_card(html(app.test_client(), f"/wallet/{SHARP}"))
     assert "<p>34% of the tested bets share an event.</p>" in card
+
+
+# Story 3.4: the copy button, interaction states and breakpoints. What only a browser can show (copying,
+# widths, hover, reduced motion) is in tests/browser/; these check what the server and stylesheet hand it.
+
+COPY_JS = WEB / "static" / "js" / "copy-address.js"
+
+
+def address_card(page: str) -> str:
+    start = page.index('<div class="address-card">')
+    return page[start:page.index("<hr", start)]
+
+
+def test_ux_dr21_copy_button_markup(offline: FlaskClient) -> None:
+    """UX-DR21, AD-18: the address card holds the full address, a named copy button with its words in data-
+    attributes, the error line with a hidden "Error: " (hidden until a copy fails) and a status line."""
+    card = address_card(html(offline, f"/wallet/{SHARP}"))
+    assert f'<code class="address">{SHARP}</code>' in card
+    button = re.search(r'<button class="icon-button copy-button"[^>]*>', card).group(0)
+    assert 'type="button"' in button and "aria-label" not in button
+    # WCAG 2.5.3: the name is the button's own text, so the visible "Copied" joins it while it shows.
+    assert '<span class="visually-hidden">Copy wallet address </span><span class="copy-label"></span>' in card
+    assert 'data-copied="Copied"' in button and 'data-done="Address copied"' in button
+    assert 'data-mac-text="Copy failed. Select the address and press ⌘C."' in button
+    assert ('<p class="copy-error" hidden><span class="visually-hidden">Error: </span>'
+            '<span class="copy-error-text">Copy failed. Select the address and press Ctrl+C.</span></p>') in card
+    assert '<p class="visually-hidden copy-status" role="status"></p>' in card
+
+
+def test_ad18_copy_button_shows_only_with_the_script() -> None:
+    """AD-18, UX-DR21: the stylesheet hides the copy button until copy-address.js marks the page, so without
+    JavaScript there is no dead button; the script marks the page and listens on the whole document, so a
+    Verdict that progress.js swaps in works too."""
+    css = (WEB / "static" / "css" / "app.css").read_text(encoding="utf-8")
+    assert ".copy-button { display: none; }" in css and ":root.has-copy .copy-button { display: inline-flex; }" in css
+    script = COPY_JS.read_text(encoding="utf-8")
+    assert 'root.classList.add("has-copy");' in script and 'document.addEventListener("click"' in script
+
+
+def test_ad25_copy_script_writes_no_words() -> None:
+    """AD-25, UX-DR21: copy-address.js reads every word from the page; its own strings are names only."""
+    code = re.sub(r"/\*.*?\*/|//[^\n]*", "", COPY_JS.read_text(encoding="utf-8"), flags=re.S)
+    assert "'" not in code and "`" not in code  # every string is double-quoted, so the scan below sees them all
+    for text in re.findall(r'"([^"\\]*)"', code):
+        assert re.fullmatch(r"[a-z.-]*|use strict|click", text), text
+    assert "innerHTML" not in code
+
+
+def css_rules(css: str) -> list[tuple[str, str]]:
+    """(media condition, selector) for every rule, one level of @media deep; comments removed."""
+    css = re.sub(r"/\*.*?\*/", "", css, flags=re.S)
+    rules, heads = [], []
+    for match in re.finditer(r"([^{}]+)\{|\}", css):
+        if match.group(0) == "}":
+            heads.pop()
+            continue
+        head = " ".join(match.group(1).split())
+        if not head.startswith("@"):
+            rules.append((next((h for h in heads if h.startswith("@media")), ""), head))
+        heads.append(head)
+    return rules
+
+
+def test_ux_dr9_every_hover_has_a_focus_twin() -> None:
+    """UX-DR9: every hover rule sits in a media query with (hover: hover), and a :focus-visible rule in the same
+    media without it styles the same thing, so keyboard focus looks like hover (also under forced colours);
+    hover never lands on cards, stats or text."""
+    css = (WEB / "static" / "css" / "app.css").read_text(encoding="utf-8")
+    rules = css_rules(css)
+    hover = [(media, s.strip()) for media, head in rules for s in head.split(",") if ":hover" in s]
+    assert hover, "no hover rules found"
+    focus = {(media, s.strip()) for media, head in rules for s in head.split(",") if ":focus-visible" in s}
+    for media, selector in hover:
+        if "reduced-motion" in media:
+            continue  # this block only takes the movement away again
+        assert "(hover: hover)" in media, selector
+        twin_media = re.sub(r"^@media \(hover: hover\)$|\s+and \(hover: hover\)", "", media)
+        assert (twin_media, selector.replace(":hover", ":focus-visible")) in focus, selector
+        assert not re.search(r"\.(card|verdict-card|stats|chart-alt|limits-grid|left-out)\b", selector), selector
+
+
+def test_ux_dr10_ux_dr11_breakpoints_and_motion_rules() -> None:
+    """UX-DR10, UX-DR11: only the 900, 640 and 400 px breakpoints; the Verdict header stacks below 900 px;
+    phone sizes below 640 px and the smallest Verdict below 400 px; nothing lifts or moves with reduce motion."""
+    css = (WEB / "static" / "css" / "app.css").read_text(encoding="utf-8")
+    widths = set(re.findall(r"@media \(max-width: (\d+)px\)", css))
+    assert widths == {"899", "639", "399"}
+    stack = re.search(r"@media \(max-width: 899px\) \{[^\n]*\n(.*?)\n\}", css, re.S).group(1)
+    assert ".verdict-head, .stats-row { grid-template-columns: minmax(0, 1fr); }" in stack
+    phone = "".join(re.findall(r"@media \(max-width: 639px\) \{[^\n]*\n(.*?)\n\}", css, re.S))
+    for rule in (".verdict { font-size: 40px; gap: 18px; }", ".odds { font-size: 21px; }", "h1 { font-size: 36px;",
+                 ".field-row { flex-direction: column; }", ".wrap { padding: 0 var(--space-4); }"):
+        assert rule in phone, rule
+    assert re.search(r"@media \(max-width: 399px\) \{\s*\.verdict \{ font-size: 34px; \}", css)
+    reduced = "".join(re.findall(r"@media \(prefers-reduced-motion: reduce\) \{[^\n]*\n(.*?)\n\}", css, re.S))
+    assert ".theme-toggle, .icon-button, .btn-primary { transition: none; }" in reduced
+    assert ".btn-primary:hover, .btn-primary:focus-visible { transform: none; }" in reduced

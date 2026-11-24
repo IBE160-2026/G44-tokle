@@ -43,13 +43,15 @@ jobs:
       - name: Check that the liquidoracle command is installed
         run: uv run liquidoracle --help
 
+      # GitHub sets CI=true, so a browser test whose Chrome or Edge cannot start fails instead of skipping
+      # (AD-17, Edvard 2026-11-24); -rs lists any skip with its reason in the log.
       - name: Run the tests
         shell: bash
         run: |
           if [ "${{ matrix.os }}" = "ubuntu-latest" ] && [ "${{ matrix.python }}" = "3.14" ]; then
-            uv run pytest --repetitions 1000
+            uv run pytest -rs --repetitions 1000
           else
-            uv run pytest
+            uv run pytest -rs
           fi
 
   readme:
