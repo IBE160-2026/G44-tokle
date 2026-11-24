@@ -12,7 +12,7 @@ from liquidoracle.core.skilltest import skill_test
 from liquidoracle.data.client import WalletClient
 from liquidoracle.data.store import Snapshot, Store
 from liquidoracle.data.window import WINDOW_LIMIT, positions_near
-from liquidoracle.records import SkillTestResult
+from liquidoracle.records import PositionSet, SkillTestResult
 
 
 def fetch_wallet(client: WalletClient, store: Store, wallet: str, *, limit: int = WINDOW_LIMIT) -> int:
@@ -29,16 +29,20 @@ def fetch_wallet(client: WalletClient, store: Store, wallet: str, *, limit: int 
         store.add_positions(fetch_id, window.positions)
         store.add_activity(fetch_id, window.activity)
         store.save_markets(window.markets)
-        store.finish_snapshot(fetch_id, activity_read_until=window.activity_read_until)
+        store.finish_snapshot(fetch_id, activity_read_until=window.activity_read_until, window_capped=window.capped)
     return fetch_id
 
 
 @dataclass(frozen=True, slots=True)
 class StoredResult:
-    """A Skill Test result and when the snapshot it rests on was completed (epoch seconds)."""
+    """A Skill Test result, when the snapshot it rests on was completed (epoch seconds), and what the honesty
+    notes need from that snapshot: the Position builder's record and whether the window was capped (FR-11, AD-11)."""
 
     result: SkillTestResult
     stored_at: int
+    positions: PositionSet
+    capped: bool
+    listed: int  # the window's positions-list rows: what the 2,000 cap counts (AD-8; Story 3.3 review)
 
 
 def skill_result(store: Store, wallet: str, *, seed: int) -> SkillTestResult | None:
@@ -54,7 +58,7 @@ def stored_result(store: Store, wallet: str, *, seed: int) -> StoredResult | Non
 
 
 def result_of(snapshot: Snapshot, *, seed: int) -> StoredResult:
-    """The Skill Test on one stored snapshot, with the time it was completed.
+    """The Skill Test on one stored snapshot, with the time it was completed and the Position set it ran on.
 
     The random unit is the Wallet's address (AD-15), the scope `lookup` (AD-22).
     """
@@ -64,4 +68,5 @@ def result_of(snapshot: Snapshot, *, seed: int) -> StoredResult:
         listed=snapshot.positions,
         not_fully_read=snapshot.not_fully_read(),
     )
-    return StoredResult(skill_test(position_set, seed=seed, unit_id=snapshot.wallet), snapshot.completed_at)
+    result = skill_test(position_set, seed=seed, unit_id=snapshot.wallet)
+    return StoredResult(result, snapshot.completed_at, position_set, snapshot.window_capped, len(snapshot.positions))

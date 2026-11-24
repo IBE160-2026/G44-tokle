@@ -27,6 +27,7 @@ from liquidoracle.data.window import WINDOW_LIMIT
 from liquidoracle.records import Verdict
 from liquidoracle.services.chart import LuckChart, luck_chart
 from liquidoracle.services.fetch import StoredResult, result_of, stored_result
+from liquidoracle.services.honesty import HonestyNotes, honesty_notes
 from liquidoracle.services.jobs import FETCHING, NO_HISTORY_MESSAGE, Jobs
 
 ADDRESS = re.compile(r"0x[0-9a-fA-F]{40}")  # FR-1: 0x and 40 hex characters, any case
@@ -131,6 +132,7 @@ class WalletPage:
     job_id: int | None = None  # QUEUED and FETCHING: the job the page follows
     stored_from: str | None = None  # UNAVAILABLE: "18 Nov 2026, 14:02" when a snapshot of this view exists
     chart: LuckChart | None = None  # VERDICT with a p-value: the chart card (FR-9); None for *Not enough data* (FR-10)
+    notes: HonestyNotes | None = None  # VERDICT: the honesty notes and Exit PnL warning, every Verdict (FR-11)
 
 
 @dataclass(frozen=True, slots=True)
@@ -295,8 +297,9 @@ class Lookup:
         job_id: int | None = None,
         stored_from: str | None = None,
         chart: LuckChart | None = None,
+        notes: HonestyNotes | None = None,
     ) -> WalletPage:
-        return WalletPage(outcome, address, short_address(address), card, notice, job_id, stored_from, chart)
+        return WalletPage(outcome, address, short_address(address), card, notice, job_id, stored_from, chart, notes)
 
     def _verdict(self, address: str, stored: StoredResult) -> WalletPage:
         result = stored.result
@@ -310,5 +313,7 @@ class Lookup:
             real_pnl=phrases.money(result.real_pnl),
             stored=phrases.stored_at(stored.stored_at),
         )
-        return self._page(Outcome.VERDICT, address, card=card, chart=luck_chart(result) if enough else None)
+        return self._page(
+            Outcome.VERDICT, address, card=card, chart=luck_chart(result) if enough else None, notes=honesty_notes(stored)
+        )
 

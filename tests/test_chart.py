@@ -247,3 +247,14 @@ def test_ux_dr26_explore_words_come_only_with_the_script() -> None:
     assert drawn.explore_hint == "Point at a bar, or use the arrow keys, to see how many replays ended there."
     assert drawn.about_explore.startswith("Point at a bar, or step through the bars with the arrow keys")
     assert len(drawn.about) == 3
+
+
+def test_ux_dr27_about_explains_why_the_tail_count_and_the_odds_differ() -> None:
+    """UX-DR27, FR-5 (Edvard, 2026-11-24, Story 3.3): the tail label's count and the odds differ by the p-value's +1,
+    so the script-only About paragraph, shown with the tail label, says why."""
+    drawn = luck_chart(result_of(SMALL["sharp-trader"]))
+    assert drawn.tail_text == "1 of 10,000 replays did this well or better"
+    assert drawn.about_explore.endswith(
+        "The odds above count this Wallet's own result as one more replay, so they read a little less rare than this "
+        "count and never claim zero."
+    )

@@ -24,10 +24,19 @@
 
       <hr class="rule">
 
-      <div class="stats">
-        <p class="label">Stats</p>
-        <p class="line"><strong>{{ card.bets }}</strong> {{ card.bets_word }}<span class="sep" aria-hidden="true">·</span><span class="visually-hidden">, </span>Real PnL <strong>{{ card.real_pnl }}</strong></p>
-        <p class="stored">{{ card.stored }}</p>
+      <div class="stats-row">
+        <div class="stats">
+          <p class="label">Stats</p>
+          <p class="line"><strong>{{ card.bets }}</strong> {{ card.bets_word }}<span class="sep" aria-hidden="true">·</span><span class="visually-hidden">, </span>Real PnL <strong>{{ card.real_pnl }}</strong></p>
+          <p class="stored">{{ card.stored }}</p>
+        </div>
+        {% if page.notes and page.notes.exit_warning %}
+        {# FR-11, UX-DR15: beside the stats, inside the Verdict card, never in the Verdict hero. #}
+        <div class="warning" role="note">
+          {% include "warning.svg.html" %}
+          <p><span class="visually-hidden">Warning: </span><strong>{{ page.notes.exit_warning[0] }}</strong><br>{{ page.notes.exit_warning[1] }}</p>
+        </div>
+        {% endif %}
       </div>
     </section>
     {% if page.chart %}
@@ -82,5 +91,42 @@
       <p class="chart-alt">{{ chart.text }}</p>
     </section>
     <script src="{{ url_for('static', filename='js/chart.js') }}" defer></script>
+    {% endif %}
+    {% if page.notes %}
+    {% set notes = page.notes %}
+    {# The honesty notes (FR-11, UX-DR29): on every Verdict, also *Not enough data*, never collapsed.
+       Every word and number comes from services/honesty.py. #}
+    <section class="card honesty-card" aria-labelledby="honesty-title">
+      <h2 id="honesty-title">{{ notes.title }}</h2>
+      <div class="limits-grid">
+        <div>
+          {% if notes.largest_label %}<p class="figure-label">{{ notes.largest_label }}</p>{% endif %}
+          {% if notes.largest_figure %}<p class="figure">{{ notes.largest_figure }}</p>{% endif %}
+          {% if notes.largest_text %}<p>{{ notes.largest_text }}</p>{% endif %}
+        </div>
+        <div>
+          {% if notes.held_figure %}<p class="figure">{{ notes.held_figure }}</p>{% endif %}
+          <p>{{ notes.held_text }}</p>
+          {% if notes.exit_text %}<p>{{ notes.exit_parts[0] }}{% if notes.exit_parts[1] %}<strong class="amount">{{ notes.exit_parts[1] }}</strong>{% endif %}{{ notes.exit_parts[2] }}</p>{% endif %}
+        </div>
+        <div class="limits-text">
+          <p>{{ notes.limits }}</p>
+          <p class="not-advice">{{ notes.not_advice }}</p>
+        </div>
+      </div>
+      <div class="left-out">
+        <p>{{ notes.left_out }}</p>
+        {% if notes.fees %}<p>{{ notes.fees }}</p>{% endif %}
+        {% if notes.mostly_left_out %}
+        <div class="warning" role="note">
+          {% include "warning.svg.html" %}
+          <p><span class="visually-hidden">Warning: </span>{{ notes.mostly_left_out }}</p>
+        </div>
+        {% endif %}
+        {% if notes.linked %}<p>{{ notes.linked }}</p>{% endif %}
+        {% if notes.window %}<p>{{ notes.window }}</p>{% endif %}
+      </div>
+      <p class="computed-on">{{ notes.computed_on }}</p>
+    </section>
     {% endif %}
 {% endblock %}

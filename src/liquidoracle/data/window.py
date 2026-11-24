@@ -56,15 +56,19 @@ def positions_near(
     # CLOSED newest first, no `end`, until a page's oldest last event is older than the
     # limit-th latest resolution time collected (AD-7).
     seen: dict[str, ListedPosition] = {row.token_id: row for row in open_list.rows}
+    stopped_early = False  # both clients ask `enough` only while more pages exist, so True means pages were left unread
 
     def enough(page: tuple[ListedPosition, ...]) -> bool:
+        nonlocal stopped_early
         if not page:
             return False
         markets.learn(row.condition_id for row in page)
         for row in page:
             seen.setdefault(row.token_id, row)  # a restarted walk sends its pages again
         times = sorted((markets.resolved_at(row) for row in seen.values() if markets.in_window(row)), reverse=True)
-        return len(times) >= limit and min(row.last_event_at for row in page) < times[limit - 1]
+        stop = len(times) >= limit and min(row.last_event_at for row in page) < times[limit - 1]
+        stopped_early = stopped_early or stop
+        return stop
 
     closed_list = client.positions_list(wallet, "CLOSED", sort_by="TIMESTAMP", sort_direction="DESC", until=enough)
     _require_whole(closed_list.complete, "CLOSED")
@@ -77,8 +81,11 @@ def positions_near(
         if markets.in_window(row):
             candidates.setdefault(row.token_id, row)  # a token on both lists is kept once, from OPEN
     chosen = _cap(list(candidates.values()), markets, limit)
+    # FR-11's window line (Story 3.3): older Positions were left out, by the cap or by the walk stopping early
+    # with exactly `limit` collected (Story 3.3 review).
+    capped = stopped_early or len(chosen) < len(candidates)
     if not chosen:
-        return Window(wallet, limit, (), (), (), None)
+        return Window(wallet, limit, (), (), (), None, capped)
     window_markets = tuple(markets.get(c) for c in sorted({row.condition_id for row in chosen}))
 
     # Every fill of the window: from the earliest start (or first buy, if earlier or the start is
@@ -99,7 +106,7 @@ def positions_near(
         row for row in read.rows
         if row.condition_id in ids or (row.type == "CONVERSION" and row.condition_id in events)
     )
-    return Window(wallet, limit, tuple(chosen), window_markets, activity, read_until)
+    return Window(wallet, limit, tuple(chosen), window_markets, activity, read_until, capped)
 
 
 def _cap(candidates: list[ListedPosition], markets: _MarketBook, limit: int) -> list[ListedPosition]:

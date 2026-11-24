@@ -27,7 +27,7 @@ from liquidoracle.data.offline import OfflineClient
 from liquidoracle.data.polymarket import PolymarketClient
 from liquidoracle.data.store import Store
 from liquidoracle.data.window import ACTIVITY_ROW_CAP, positions_near
-from liquidoracle.records import ExclusionReason, ListedPosition, Market, PositionSet, SampleWallet, Window
+from liquidoracle.records import ExclusionReason, ListedPosition, Market, PositionSet, Read, SampleWallet, Window
 from liquidoracle.services import fetch as fetch_module
 from liquidoracle.services.fetch import fetch_wallet, stored_result
 
@@ -92,6 +92,7 @@ def test_small_wallet_window_reads_each_list_once_and_covers_the_window_with_act
     assert len(in_window) == 23 and len(rows) == 24  # one Market is still open: outside the window
     assert set(window.positions) == set(in_window)
     assert window.limit == 2_000 and window.activity_read_until is None
+    assert window.capped is False  # FR-11 (Story 3.3): every Position fits, so no window line
 
     closed = calls_to(transport, "/v2/positions")
     assert [c["status"] for c in closed] == ["OPEN", "CLOSED"]
@@ -138,6 +139,7 @@ def test_the_closed_walk_stops_at_the_limit_th_resolution_time() -> None:
     assert len(closed_calls) == pages < -(-len(closed_rows) // 4)  # stopped early
     expected = expected_window(open_rows + closed_rows[: pages * 4], markets, limit)
     assert expected and window.positions == tuple(expected)
+    assert window.capped is True  # FR-11 (Story 3.3): older Positions were left out
 
 
 def test_a_market_straddling_the_limit_is_left_out_whole() -> None:
@@ -157,6 +159,7 @@ def test_a_market_straddling_the_limit_is_left_out_whole() -> None:
     window = positions_near(client, server.wallet, limit=limit)
     assert set(window.positions) == set(candidates[:first_pair])
     assert candidates[first_pair].condition_id not in {m.condition_id for m in window.markets}
+    assert window.capped is True and len(window.positions) < limit  # FR-11: capped, though under the limit
 
 
 def test_an_activity_cap_leaves_out_later_positions_as_not_fully_read(store: Store) -> None:
@@ -196,6 +199,55 @@ def test_a_capped_fetch_is_saved_with_where_it_stopped(store: Store, monkeypatch
     built = build_positions(expected.activity, {m.condition_id: m for m in expected.markets}, listed=expected.positions,
                             not_fully_read=expected.not_fully_read())
     assert stored is not None and stored.result.tested_count == built.tested_count
+    assert stored.positions == built and stored.capped is False  # FR-11, AD-11: the honesty notes' record (Story 3.3)
+
+
+class _TwoPageClient:
+    """A CLOSED list of two pages; like both real clients, it asks `until` only while another page exists."""
+
+    def __init__(self) -> None:
+        def row(n: int, last_event: int) -> ListedPosition:
+            return ListedPosition(f"0xm{n}", f"{n}", "CLOSED", 10.0, 100, last_event)
+
+        self.pages = [(row(1, 1_100), row(2, 800)), (row(3, 400),)]
+        self.closed_at = {"0xm1": 1_000, "0xm2": 900, "0xm3": 500}
+
+    def positions_list(self, wallet, status, *, sort_by=None, sort_direction=None, until=None):  # noqa: ANN001, ANN201
+        if status == "OPEN":
+            return Read((), True)
+        rows: list[ListedPosition] = []
+        for i, page in enumerate(self.pages):
+            rows += page
+            if i + 1 < len(self.pages) and until is not None and until(page):
+                break
+        return Read(tuple(rows), True)
+
+    def activity_rows(self, wallet, *, start, end=None, row_cap=None):  # noqa: ANN001, ANN201
+        return Read((), True)
+
+    def markets(self, condition_ids):  # noqa: ANN001, ANN201
+        return tuple(
+            Market(c, closed=True, closed_time=self.closed_at[c], token_ids=(c[3:], "x"), outcome_prices=(1.0, 0.0))
+            for c in condition_ids
+        )
+
+
+def test_a_walk_stopped_with_exactly_the_limit_is_still_capped() -> None:
+    """FR-11, AD-7 (Story 3.3 review): the CLOSED walk stops after page one with exactly `limit` Positions, none cut;
+    page two's older Position was never read, so the window is capped all the same."""
+    window = positions_near(_TwoPageClient(), "0xw", limit=2)
+    assert {p.token_id for p in window.positions} == {"1", "2"}
+    assert window.capped is True
+    whole = positions_near(_TwoPageClient(), "0xw", limit=3)  # page two is read: every Position fits
+    assert len(whole.positions) == 3 and whole.capped is False
+
+
+def test_a_capped_window_reaches_the_stored_result(store: Store) -> None:
+    """FR-11 (Story 3.3): a window cut at its limit goes through `fetch_wallet`, so the stored result knows."""
+    client, _, server = live("fees-and-open")
+    fetch_wallet(client, store, server.wallet, limit=5)
+    stored = stored_result(store, server.wallet, seed=44)
+    assert stored is not None and stored.capped is True and stored.positions.window_size <= 5
 
 
 def test_the_activity_cap_is_the_sample_capture_cap() -> None:

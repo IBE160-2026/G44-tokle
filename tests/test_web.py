@@ -645,3 +645,131 @@ def test_fr14_listed_coin_flipper_before_load_sample(tmp_path: Path) -> None:
     for address in re.findall(r'class="wallet-link" href="/wallet/(0x[0-9a-f]{40})"', html(client, "/")):
         assert h1s(html(client, f"/wallet/{address}")) == ["Sample Dataset not loaded"], address
     store.close()
+
+
+# --- the honesty notes and the Exit PnL warning (FR-11, UX-DR15, UX-DR29; Story 3.3) ----------
+
+
+def honesty_card(page: str) -> str:
+    found = re.search(r'<section class="card honesty-card".*?</section>', page, re.S)
+    assert found, "no honesty notes card"
+    return found.group(0)
+
+
+def stats_row(page: str) -> str:
+    found = re.search(r'<div class="stats-row">.*?</section>', page, re.S)
+    assert found, "no stats row"
+    return found.group(0)
+
+
+def test_fr11_honesty_notes_follow_the_chart_card(offline: FlaskClient) -> None:
+    """FR-11, UX-DR19, UX-DR29: Verdict card, chart card, then "What this test can't see" with its three columns,
+    the left-out block and the computed-on line, in that order, never collapsed."""
+    page = html(offline, f"/wallet/{SHARP}")
+    assert page.index('class="verdict-card"') < page.index('class="card chart-card"') < page.index('class="card honesty-card"')
+    card = honesty_card(page)
+    assert '<h2 id="honesty-title">What this test can&#39;t see</h2>' in card
+    assert "<details" not in card and not re.search(r"<[^>]*\shidden[\s>]", card)  # never collapsed or hidden
+    order = [card.index(part) for part in (
+        '<p class="figure">3%</p>', "of the Real PnL came from the single largest bet.",
+        '<p class="figure">100 of 100</p>', "positions held to resolution.", "No shares were sold before resolution.",
+        "Long shots tend to be overpriced", '<p class="not-advice">This is not financial advice.</p>',
+        "<p>Left out of the test: none.</p>", "<p>Every fee matched the Market&#39;s fee schedule.</p>",
+        '<p class="computed-on">Computed on all 100 bets · Seed 44</p>',
+    )]
+    assert order == sorted(order)
+    assert re.findall(r"<h[12][\s>]", page) == ["<h1 ", "<h2 ", "<h2 "]  # headings in order (UX-DR11)
+
+
+def test_fr10_fr11_not_enough_data_still_shows_the_honesty_notes(offline: FlaskClient) -> None:
+    """FR-10, FR-11, UX-DR23: thin-wallet has no chart card but its honesty notes follow the Verdict card."""
+    page = html(offline, f"/wallet/{THIN}")
+    card = honesty_card(page)
+    assert page.index('class="verdict-card"') < page.index('class="card honesty-card"')
+    assert '<p class="figure">29 of 29</p>' in card and "Computed on all 29 bets · Seed 44" in card
+
+
+def test_fr11_stop_loss_trader_warning_is_read_as_a_warning(offline: FlaskClient) -> None:
+    """FR-11 check, UX-DR15: the stop-loss Synthetic Wallet's warning sits beside the stats, inside the Verdict card,
+    its icon hidden and "Warning:" read first; the over-10% sentence uses the same box."""
+    page = html(offline, f"/wallet/{STOP_LOSS}")
+    row = stats_row(page)
+    assert re.search(
+        r'<div class="warning" role="note">\s*<svg class="warning-icon"[^>]*aria-hidden="true"[^>]*>.*?</svg>\s*'
+        r'<p><span class="visually-hidden">Warning: </span><strong>Positions this Wallet sold before resolution lost '
+        r"money in total\.</strong><br>This Verdict covers only bets held to resolution\.</p>",
+        row, re.S,
+    )
+    assert row.index('class="stats"') < row.index('class="warning"')
+    assert "<h1" not in row  # never in the Verdict hero (DESIGN.md)
+    card = honesty_card(page)
+    assert '<p>Shares sold before resolution: <strong class="amount">−$1,675</strong> (Exit PnL).</p>' in card
+    assert re.search(
+        r'<div class="warning" role="note">.*?<span class="visually-hidden">Warning: </span>Only part of this '
+        r"Wallet&#39;s activity was judged: 67% of its bets were left out\.</p>",
+        card, re.S,
+    )
+
+
+@pytest.mark.parametrize("address", [SHARP, THIN, COIN_FLIPPER])
+def test_fr11_no_warning_without_an_exit_loss(offline: FlaskClient, address: str) -> None:
+    """FR-11 check: Wallets that sold nothing before resolution show no warning anywhere."""
+    page = html(offline, f"/wallet/{address}")
+    assert 'class="warning"' not in page and "Warning:" not in page
+
+
+def test_ux_dr15_ux_dr29_honesty_styles() -> None:
+    """UX-DR15, UX-DR29, UX-DR12: the warning tokens, the three columns stacking below 900 px, and a warning box that
+    keeps its border in forced colours."""
+    css = (WEB / "static" / "css" / "app.css").read_text(encoding="utf-8")
+    assert "background: var(--warning-bg); color: var(--warning-ink);" in css
+    assert "border-left: 6px solid var(--warning-border);" in css
+    assert ".limits-grid { display: grid; grid-template-columns: 1fr 1fr 1.6fr;" in css
+    narrow = re.search(r"@media \(max-width: 899px\) \{(.*?)\n\}", css, re.S).group(1)
+    assert ".limits-grid { grid-template-columns: minmax(0, 1fr); }" in narrow and ".stats-row" in narrow
+    forced = re.search(r"@media \(forced-colors: active\) \{\n  \.dot\.is-filled(.*?)\n\}", css, re.S).group(1)
+    assert ".warning { border: 1px solid CanvasText;" in forced
+
+
+def test_fr11_a_losing_wallet_shows_its_largest_bet_as_an_amount(offline: FlaskClient) -> None:
+    """FR-11, EXPERIENCE.md Voice and Tone: coin-flipper-0000 lost money, so the first column reads
+    "Largest single bet:" over the amount, with no share sentence."""
+    card = honesty_card(html(offline, f"/wallet/{COIN_FLIPPER}"))
+    assert re.search(r'<div>\s*<p class="figure-label">Largest single bet:</p>\s*<p class="figure">\$90</p>\s*</div>', card)
+    assert "of the Real PnL came from" not in card
+
+
+def test_fr11_capped_real_wallet_page_shows_the_window_line(tmp_path: Path) -> None:
+    """FR-11, AD-22 (Story 3.3 review): 0x94884d's window was capped at 2,000, so its page shows the window line and
+    names the latest 2,000 bets."""
+    address = "0x94884db79666a1a34c46d03fb4f8e9cbcaf6b5a6"
+    client = OfflineClient([REPO / REAL_DIR / f"{address}.json"])
+    store = Store(tmp_path / OFFLINE_DB)
+    try:
+        fetch_wallet(client, store, address)
+        page = html(create_app(Settings(offline=True), Lookup(client, store, seed=SEED)).test_client(), f"/wallet/{address}")
+    finally:
+        store.close()
+    card = honesty_card(page)
+    assert "<p>Based on the latest 2,000 bets; older results are not included.</p>" in card
+    assert '<p class="computed-on">Computed on the latest 2,000 bets · Seed 44</p>' in card
+
+
+class NotesLookup:
+    """A lookup whose one page carries the given honesty notes (the linked-bets note needs a planted share)."""
+
+    def __init__(self, page: WalletPage) -> None:
+        self.page = page
+
+    def wallet_page(self, address: str, *, job: int | None = None, stored: bool = False) -> WalletPage:
+        return self.page
+
+
+def test_fr11_linked_bets_note_reaches_the_page(loaded_lookup: Lookup) -> None:
+    """FR-11, AD-20 (Story 3.3 review): when more than 20% of the tested bets have an event-mate, the note is on the card."""
+    page = loaded_lookup.wallet_page(SHARP)
+    assert page.notes is not None and page.notes.linked == ""
+    planted = dataclasses.replace(page, notes=dataclasses.replace(page.notes, linked="34% of the tested bets share an event."))
+    app: Flask = create_app(Settings(offline=True), NotesLookup(planted))  # type: ignore[arg-type]
+    card = honesty_card(html(app.test_client(), f"/wallet/{SHARP}"))
+    assert "<p>34% of the tested bets share an event.</p>" in card
