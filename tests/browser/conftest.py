@@ -3,8 +3,10 @@
 Two apps run in threads of the test process, on 127.0.0.1 only: `app_url`, in Offline Mode over the
 committed Synthetic Wallets, and `live_app`, a live run with the real job queue and worker whose
 Polymarket is a stand-in that serves the same Synthetic Wallets from files and never touches the
-network. Playwright for Python drives the Chrome or Edge already installed (`browsers.py`, which also
-decides skip or fail when none starts). Sockets are allowed here to 127.0.0.1 only, never to the network.
+network. Two more Offline Mode apps serve the accessibility checklist (Story 3.5 part B):
+`not_loaded_url`, before `load-sample`, and `real_wallets_url`, over the committed real Wallets' files.
+Playwright for Python drives the Chrome or Edge already installed (`browsers.py`, which also decides
+skip or fail when none starts). Sockets are allowed here to 127.0.0.1 only, never to the network.
 """
 
 from __future__ import annotations
@@ -24,7 +26,7 @@ from werkzeug.serving import make_server
 
 from liquidoracle.data import synthetic
 from liquidoracle.data.errors import PolymarketUnavailable
-from liquidoracle.data.offline import OfflineClient, sample_files
+from liquidoracle.data.offline import REAL_DIR, OfflineClient, sample_files
 from liquidoracle.data.store import OFFLINE_DB, Store
 from liquidoracle.records import ActivityRow, ListedPosition, Market, Read
 from liquidoracle.services.fetch import fetch_wallet
@@ -83,6 +85,29 @@ def app_url(sample_root: Path) -> Iterator[str]:
     for address in client.addresses():
         fetch_wallet(client, store, address)
     with serving(create_app(Settings(offline=True), Lookup(client, store, seed=44))) as url:
+        yield url
+    store.close()
+
+
+@pytest.fixture(scope="session")
+def not_loaded_url(tmp_path_factory: pytest.TempPathFactory) -> Iterator[str]:
+    """Offline Mode before `load-sample`: the Synthetic Wallets' files but an empty database (Story 3.5)."""
+    root = tmp_path_factory.mktemp("not-loaded-repo")
+    synthetic.write_small(root)
+    store = Store(root / OFFLINE_DB)
+    with serving(create_app(Settings(offline=True), Lookup(OfflineClient(sample_files(root)), store, seed=44))) as url:
+        yield url
+    store.close()
+
+
+@pytest.fixture(scope="session")
+def real_wallets_url(tmp_path_factory: pytest.TempPathFactory) -> Iterator[str]:
+    """Offline Mode over the committed real Wallets' files, read in place (never written), for the Lookup
+    page's Real Wallets group (Story 3.5). The database is empty: only the list is looked at."""
+    real = sorted((HERE.parents[1] / REAL_DIR).glob("0x*.json"))
+    assert real, f"no real Wallets in {REAL_DIR}"
+    store = Store(tmp_path_factory.mktemp("real-wallets") / OFFLINE_DB)
+    with serving(create_app(Settings(offline=True), Lookup(OfflineClient(real), store, seed=44))) as url:
         yield url
     store.close()
 

@@ -151,9 +151,10 @@ def luck_chart(result: SkillTestResult) -> LuckChart:
     share = min(max((result.real_pnl - low) / (high - low), 0.0), 1.0)
     marker_x = AXIS_START + CHART_BARS * share
     marker_left = _percent(marker_x)
+    below_all = result.at_or_below == 0  # no replay at or below the Real PnL; "above all" is checked first below
     if result.at_or_above == 0:
         beyond = phrases.beyond_all(above=True)
-    elif result.at_or_below == 0:
+    elif below_all:
         beyond = phrases.beyond_all(above=False)
     else:
         beyond = None
@@ -182,7 +183,7 @@ def luck_chart(result: SkillTestResult) -> LuckChart:
         title_note=phrases.CHART_TITLE_NOTE,
         about=phrases.about_chart(result.tested_count, result.own_fees),
         hint=HINT,
-        text=phrases.chart_text(result.real_pnl, result.tested_count, result.p_value),
+        text=phrases.chart_text(result.real_pnl, result.tested_count, result.p_value, below_all=below_all),
         y_title=Y_TITLE,
         view_width=VIEW_WIDTH,
         bars=bars,

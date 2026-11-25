@@ -50,6 +50,7 @@ def test_fr9_normal_sharp_trader() -> None:
     assert (result.real_pnl, result.at_or_above) == (2000.0, 1)
     drawn = luck_chart(result)
     assert drawn.marker_label == "This Wallet: $2,000" and drawn.beyond is None
+    assert "below all" not in drawn.text  # inside the curve: no extra sentence (UX-DR24, Story 3.5)
     assert drawn.marker_x == pytest.approx(chart.AXIS_START + skilltest.CHART_BARS)
     assert drawn.anchor is Anchor.END
 
@@ -60,6 +61,7 @@ def test_fr9_above_all_stop_loss_trader() -> None:
     assert result.at_or_above == 0
     drawn = luck_chart(result)
     assert (drawn.marker_label, drawn.beyond) == ("This Wallet: $1,650", "above all 10,000 Simulations")
+    assert "below all" not in drawn.text and drawn.text.endswith("fewer than 1 time in 10,000.")  # UX-DR24, Story 3.5
 
 
 def test_fr9_planted_above_every_simulation_stretches_the_axis() -> None:
@@ -82,6 +84,7 @@ def test_fr9_planted_below_every_simulation() -> None:
     drawn = luck_chart(result)
     assert drawn.beyond == "below all 10,000 Simulations"
     assert drawn.marker_left < 50.0  # on the low side; the round axis is wider than the Real PnL itself
+    assert drawn.text.endswith(" more than half the time. That is below all 10,000 replays.")  # UX-DR24, Story 3.5
 
 
 def test_fr9_tie_with_the_lowest_replay_is_not_below_all() -> None:
@@ -89,6 +92,7 @@ def test_fr9_tie_with_the_lowest_replay_is_not_below_all() -> None:
     result = planted(0.05, won=False)
     assert result.at_or_above == skilltest.SIMULATIONS and result.at_or_below > 0
     assert luck_chart(result).beyond is None
+    assert "below all" not in luck_chart(result).text  # a tie is not below all (UX-DR24, Story 3.5)
 
 
 def test_fr9_zero_real_pnl_sits_in_the_middle() -> None:
