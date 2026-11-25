@@ -136,12 +136,19 @@ def beyond_all(*, above: bool) -> str:
     return f"{'above' if above else 'below'} all {SIMULATIONS:,} Simulations"
 
 
-def chart_text(real_pnl: float, tested_count: int, p_value: float) -> str:
-    """The chart's always-visible text alternative (PRD §8, UX-DR24)."""
-    return (
+def chart_text(real_pnl: float, tested_count: int, p_value: float, *, below_all: bool = False) -> str:
+    """The chart's always-visible text alternative (PRD §8, UX-DR24).
+
+    `below_all`: the Real PnL is below every Simulation. The marker's "below all 10,000 Simulations"
+    sits in the drawing, hidden from screen readers, and the odds phrase then only says "more than
+    half the time", so the text adds "That is below all 10,000 replays." (Edvard, 2026-11-25, Story 3.5).
+    "Above all" needs no sentence: its odds phrase, "fewer than 1 time in 10,000", already says it.
+    """
+    text = (
         f"This Wallet made {money(real_pnl)} on {count(tested_count)} {resolved_bets_word(tested_count)}. "
         f"In {SIMULATIONS:,} replays with no edge, a result this good came up {odds(p_value)}."
     )
+    return f"{text} That is below all {SIMULATIONS:,} replays." if below_all else text
 
 
 def about_chart(tested_count: int, own_fees: float) -> tuple[str, str, str]:

@@ -150,7 +150,7 @@ Stage marks as in EXPERIENCE.md. A page or element of a later stage is absent un
 - UX-DR21: Address card with copy button (`copy-address.js`): "Copied" for 2 s and an announced status line; on failure the error "Copy failed. Select the address and press Ctrl+C." (⌘C on a Mac), announced, address text selected.
 - UX-DR22: Fetching state: heading "Checking 0x7c3a…d3f5", pulsing dots (static with reduced motion), "Fetching trades from Polymarket…"; the page polls job progress (`progress.js`) and replaces the block with the Verdict, moving focus to the Verdict heading.
 - UX-DR23: Verdict page states: no history (heading, sentence, link back); Polymarket not answering (heading; "Show stored data from …" only for a snapshot of the same view, else "Try again in a few minutes."); *Not enough data* ("12 resolved bets; at least 30 are needed for a Verdict (18 more)", no odds, no chart, honesty notes still shown); p above 0.5.
-- UX-DR24: Chart card: title "Simulated results (10,000 replays with no edge)"; "About this chart" disclosure (in place, closed by default, three sentences); a hint line; the always-visible text alternative box with Real PnL and the odds phrase.
+- UX-DR24: Chart card: title "Simulated results (10,000 replays with no edge)"; "About this chart" disclosure (in place, closed by default, three sentences); a hint line; the always-visible text alternative box with Real PnL and the odds phrase (plus "That is below all 10,000 replays." when the Real PnL is below every Simulation).
 - UX-DR25: Luck chart as server-rendered SVG: centred on $0; axis always includes the Real PnL; end bins labelled "−$195,000 or less" / "$195,000 or more"; 3 px accent marker with dot and "This Wallet: $40,180" label; "above/below all 10,000 Simulations" when beyond; about 240 px tall (200 px below 640); short axis labels below 640 px, end labels hidden below 400 px; bars and axes hidden from screen readers.
 - UX-DR26: Chart explore (`chart.js`): bar tooltip with range and count, stays on hover and 300 ms after, Esc hides (WCAG 1.4.13), never covers the marker; bars as one keyboard slider "Replays by result" (Left/Right, Page Up/Down by ten, Home/End) with a spoken value per bar.
 - UX-DR27: Wallet marker button: highlights the tail bars and shows the tail label with the exact count ("2,500 of 10,000 replays did this well or better"; "No replay …"; "All 10,000 replays …"); click or Enter pins and announces "Highlight on", second click, Esc or slider unpins ("Highlight off").
@@ -708,7 +708,7 @@ So that I can see with my own eyes how unusual it is.
 
 **Given** a Verdict with a p-value
 **When** the Verdict page renders
-**Then** the chart card shows the title "Simulated results (10,000 replays with no edge)", the luck chart as server-rendered SVG, a one-line hint and the always-visible text alternative "This Wallet made $X on N resolved bets. In 10,000 replays with no edge, a result this good came up {odds phrase}." (FR-9, UX-DR24, PRD §8)
+**Then** the chart card shows the title "Simulated results (10,000 replays with no edge)", the luck chart as server-rendered SVG, a one-line hint and the always-visible text alternative "This Wallet made $X on N resolved bets. In 10,000 replays with no edge, a result this good came up {odds phrase}.", followed by "That is below all 10,000 replays." when the Real PnL is below every Simulation (Edvard, 2026-11-25, at Story 3.5) (FR-9, UX-DR24, PRD §8)
 **And** the chart is centred on $0, its dollar axis always includes the Real PnL, the end bars hold everything beyond the axis and are labelled "−$195,000 or less" / "$195,000 or more" style, and the marker is a 3 px accent line with a dot and the label "This Wallet: $X" (UX-DR25)
 **And** the bins and the marker count come from the stored result (AD-25), not recomputed in the template.
 
@@ -817,7 +817,7 @@ So that I can trust both the claims and the build.
 (Edvard, 2026-11-24, at Story 3.5: replaces his own NVDA and keyboard walk-through, his call of 2026-10-24, with browser tests. Kept from that call: the checklist, and that what was found, failures included, is committed.)
 
 Checklist:
-1. First Tab stop is "Skip to content"; Enter jumps to the main content.
+1. First Tab stop is "Skip to content"; Enter jumps to the main content. On the Lookup page the focus starts in the address field (UX-DR16), so there the skip link is the first stop before the field, reached by Shift+Tab (Edvard, 2026-11-25).
 2. Lookup: the field is read as "Wallet address"; an empty submit is read as "Error: Enter a wallet address." and focus stays in the field.
 3. Verdict page: jumping by heading (H) reaches the main heading, read as "Verdict: …"; the dots are silent.
 4. The odds phrase, stats and the chart's text alternative are read as plain text.

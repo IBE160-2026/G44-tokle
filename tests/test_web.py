@@ -17,12 +17,15 @@ import pytest
 from flask import Flask
 from flask.testing import FlaskClient
 
+from liquidoracle.core import skilltest
 from liquidoracle.data import sample_json, synthetic
 from liquidoracle.data.offline import REAL_DIR, OfflineClient, sample_files
-from liquidoracle.data.store import OFFLINE_DB, Store
+from liquidoracle.data.store import NO_HISTORY, OFFLINE_DB, JobStatus, Store
+from liquidoracle.records import Position, PositionSet
+from liquidoracle.services.chart import LuckChart, luck_chart
 from liquidoracle.services.fetch import fetch_wallet
 from liquidoracle.services.jobs import Jobs
-from liquidoracle.services.lookup import Lookup, Outcome, VerdictCard, WalletPage
+from liquidoracle.services.lookup import FRESH_FOR, Lookup, Outcome, VerdictCard, WalletPage
 from liquidoracle.settings import Settings
 from liquidoracle.web import create_app
 
@@ -110,6 +113,137 @@ def test_every_page_has_the_frame(offline: FlaskClient, url: str) -> None:
     toggle = re.search(r'<button class="theme-toggle"[^>]*>', page).group(0)
     assert 'aria-label="Dark theme"' in toggle and 'aria-pressed="true"' in toggle and " hidden" in toggle
     assert not re.search(r"https?://", page)  # nothing is loaded from the internet (UX-DR3)
+
+
+# --- every page the app renders: headings, labels, errors (UX-DR11, EXPERIENCE.md › Accessibility Floor; Story 3.5)
+
+
+class Clock:
+    """A store clock the test moves, so a snapshot can be made a day old in no time."""
+
+    def __init__(self) -> None:
+        self.now = 1_790_000_000.0
+
+    def __call__(self) -> float:
+        return self.now
+
+
+def finished(web: FlaskClient, store: Store, address: str, status: JobStatus, result: str | None = None) -> str:
+    """A live run's Verdict page after its lookup job ended with `status`, as the worker would end it."""
+    reply = web.get(f"/wallet/{address}")
+    assert reply.status_code == 302, reply.status_code
+    job_id = int(reply.headers["Location"].rsplit("=", 1)[1])
+    assert store.claim_job(job_id)
+    store.finish_job(job_id, status, message="test", result=result)
+    return reply.headers["Location"]
+
+
+@pytest.fixture(scope="module")
+def every_page(loaded_lookup: Lookup, offline: FlaskClient, tmp_path_factory: pytest.TempPathFactory) -> Iterator[dict[str, tuple[int, str]]]:
+    """Every page the app renders, by name: (status, HTML). The live pages come from a real job queue whose jobs
+    the test ends by hand (the worker and Polymarket are tested in test_live_lookup.py)."""
+    pages: dict[str, tuple[int, str]] = {}
+
+    def keep(name: str, reply) -> None:
+        pages[name] = (reply.status_code, reply.get_data(as_text=True))
+
+    keep("Lookup", offline.get("/"))
+    keep("Lookup error", offline.get("/?address=abc"))
+    keep("Verdict", offline.get(f"/wallet/{SHARP}"))
+    keep("Not enough data", offline.get(f"/wallet/{THIN}"))
+    keep("Not available offline", offline.get(f"/wallet/{UNKNOWN}"))
+    keep("404", offline.get("/no-such-page"))
+    keep("405", offline.post("/"))
+
+    root = tmp_path_factory.mktemp("not-loaded")
+    synthetic.write_small(root)
+    empty = Store(root / OFFLINE_DB)
+    app = create_app(Settings(offline=True), Lookup(OfflineClient(sample_files(root)), empty, seed=SEED)).test_client()
+    keep("Not loaded", app.get(f"/wallet/{SHARP}"))
+    broken = create_app(Settings(offline=True), Lookup(OfflineClient([]), BrokenStore(), seed=SEED))  # type: ignore[arg-type]
+    keep("500", broken.test_client().get("/"))
+
+    clock = Clock()
+    store = Store(tmp_path_factory.mktemp("live") / "live.db", clock=clock)
+    web = create_app(Settings(offline=False), Lookup(None, store, seed=SEED, jobs=Jobs(store))).test_client()
+    fetch_wallet(OfflineClient(sample_files(root)), store, SHARP)  # a stored snapshot, made old below
+    clock.now += 2 * FRESH_FOR
+    keep("Fetching", web.get(web.get(f"/wallet/{THIN}").headers["Location"]))
+    keep("No history", web.get(finished(web, store, "0x" + "1" * 40, JobStatus.DONE, NO_HISTORY)))
+    keep("Unavailable", web.get(finished(web, store, "0x" + "2" * 40, JobStatus.STOPPED)))
+    keep("Unavailable with stored data", web.get(finished(web, store, SHARP, JobStatus.STOPPED)))
+    keep("Job failed", web.get(finished(web, store, "0x" + "3" * 40, JobStatus.FAILED)))
+    assert "Show stored data from" in pages["Unavailable with stored data"][1]
+    assert "Show stored data from" not in pages["Unavailable"][1]
+    yield pages
+    store.close()
+    empty.close()
+
+
+EVERY_PAGE = {
+    "Lookup": (200, "Check a wallet"), "Lookup error": (200, "Check a wallet"),
+    "Verdict": (200, "Verdict: Skilled (high confidence)"), "Not enough data": (200, "Verdict: Not enough data"),
+    "Fetching": (200, f"Checking {THIN[:6]}…{THIN[-4:]}"), "Not available offline": (200, "Not available offline"),
+    "Not loaded": (200, "Sample Dataset not loaded"), "No history": (200, "No Polymarket history found"),
+    "Unavailable": (200, "Polymarket did not answer"), "Unavailable with stored data": (200, "Polymarket did not answer"),
+    "500": (500, "Something went wrong"), "Job failed": (500, "Something went wrong"),
+    "404": (404, "Page not found"), "405": (404, "Page not found"),
+}
+
+
+def headings(page: str) -> list[tuple[int, str]]:
+    """Every heading in page order: (level, words)."""
+    return [(int(level), text(inner)) for level, inner in re.findall(r"<h([1-6])(?:\s[^>]*)?>(.*?)</h\1>", page, re.S)]
+
+
+@pytest.mark.parametrize("name", list(EVERY_PAGE))
+def test_ux_dr11_every_page_has_one_h1_first_and_no_skipped_level(every_page: dict[str, tuple[int, str]], name: str) -> None:
+    """UX-DR11, Story 3.5 AC1 (checklist 3, 9): on every page the app renders, the first heading is the one h1, and no
+    heading skips a level on the way down (h1 -> h2 -> h3; going back up is fine)."""
+    status, page = every_page[name]
+    expected_status, h1_start = EVERY_PAGE[name]
+    assert status == expected_status
+    found = headings(page)
+    assert found and found[0][0] == 1 and found[0][1].startswith(h1_start), found
+    assert [level for level, _ in found].count(1) == 1, found
+    for (before, _), (after, words) in zip(found, found[1:]):
+        assert after <= before + 1, f"{name}: h{before} is followed by h{after} ({words!r})"
+
+
+def labelled(page: str, field: str) -> bool:
+    """Whether a field tag has a name: a <label for> its id, or aria-label / aria-labelledby."""
+    if re.search(r'\saria-label(ledby)?="[^"]+"', field):
+        return True
+    found = re.search(r'\sid="([^"]+)"', field)
+    return found is not None and re.search(rf'<label\b[^>]*\sfor="{re.escape(found.group(1))}"', page) is not None
+
+
+def error_ids(page: str) -> list[str]:
+    """The ids of every element with the class `error-message`, in any attribute order; an error with no id fails."""
+    ids = []
+    for tag in re.findall(r"<[a-z][a-z0-9]*\b[^>]*>", page):
+        classes = re.search(r'\sclass="([^"]*)"', tag)
+        if classes and "error-message" in classes.group(1).split():
+            found = re.search(r'\sid="([^"]+)"', tag)
+            assert found, f"an error with no id cannot be tied to its field: {tag}"
+            ids.append(found.group(1))
+    return ids
+
+
+@pytest.mark.parametrize("name", list(EVERY_PAGE))
+def test_ux_dr13_every_field_is_labelled_and_every_error_tied_to_its_field(every_page: dict[str, tuple[int, str]], name: str) -> None:
+    """UX-DR13, EXPERIENCE.md › Accessibility Floor, Story 3.5 AC1 (checklist 2): every field on every page has a
+    label, and every field error is in its field's aria-describedby, with the field marked invalid."""
+    page = every_page[name][1]
+    fields = [tag for tag in re.findall(r"<(?:input|select|textarea)\b[^>]*>", page, re.S)
+              if not re.search(r'\stype="(hidden|submit|button)"', tag)]
+    for field in fields:
+        assert labelled(page, field), f"{name}: a field has no label: {field}"
+    for error_id in error_ids(page):
+        tied = [f for f in fields if re.search(rf'aria-describedby="(?:[^"]* )?{re.escape(error_id)}[ "]', f)]
+        assert len(tied) == 1 and 'aria-invalid="true"' in tied[0], f"{name}: error {error_id} is not tied to its field"
+    if name == "Lookup error":
+        assert len(fields) == 1 and error_ids(page) == ["address-error"]
 
 
 def test_offline_pill_only_in_offline_mode(live: FlaskClient) -> None:
@@ -340,6 +474,28 @@ def test_fr9_above_all_label_on_the_page(offline: FlaskClient) -> None:
     card = chart_card(html(offline, f"/wallet/{STOP_LOSS}"))
     assert "This Wallet: $1,650<br>above all 10,000 Simulations" in card
     assert 'class="chart-frame has-beyond"' in card
+    assert "below all" not in text(card)  # above all: the odds phrase says it (UX-DR24, Story 3.5)
+
+
+def test_ux_dr24_planted_below_all_is_in_the_text_alternative() -> None:
+    """UX-DR24 (Edvard, 2026-11-25, Story 3.5): a planted Real PnL below every replay (30 favourites at 0.99, all
+    lost) puts "That is below all 10,000 replays." in the visible text alternative, which screen readers read; the
+    drawing's "below all 10,000 Simulations" stays hidden from them."""
+    tested = tuple(
+        Position(condition_id=f"m{i:05d}", token_id=f"m{i:05d}-0", outcome=0.0, entry_price=0.99, shares_bought=100.0,
+                 shares_sold=0.0, shares_held=100.0, own_fees=0.0, exit_pnl=0.0)
+        for i in range(30)
+    )
+    result = skilltest.skill_test(PositionSet(tested=tested, slivers=(), left_out=()), seed=SEED, unit_id="planted")
+    assert result.at_or_below == 0
+    card = VerdictCard("No evidence of skill", 0, "x.", "30", "resolved bets", "−$2,970", "Data stored x")
+    lookup = FakeLookup(card, chart=luck_chart(result))
+    page = html(create_app(Settings(), lookup).test_client(), f"/wallet/{UNKNOWN}")  # type: ignore[arg-type]
+    alt = re.search(r'<p class="chart-alt">(.*?)</p>', chart_card(page), re.S).group(1)
+    assert alt == ("This Wallet made −$2,970 on 30 resolved bets. In 10,000 replays with no edge, a result this good "
+                   "came up more than half the time. That is below all 10,000 replays.")
+    label = re.search(r'<span class="chart-marker-label[^"]*"[^>]*aria-hidden="true">(.*?)</span>', page, re.S).group(1)
+    assert label.endswith("<br>below all 10,000 Simulations")
 
 
 def test_fr10_not_enough_data_shows_no_chart_card(offline: FlaskClient) -> None:
@@ -470,11 +626,12 @@ def test_ux_dr27_ux_dr28_explore_styles() -> None:
 class FakeLookup:
     """Hands the page a fixed card, to show the variant no Sample Wallet has (Likely skilled)."""
 
-    def __init__(self, card: VerdictCard) -> None:
+    def __init__(self, card: VerdictCard, chart: LuckChart | None = None) -> None:
         self.card = card
+        self.chart = chart
 
     def wallet_page(self, address: str, *, job: int | None = None, stored: bool = False) -> WalletPage:
-        return WalletPage(Outcome.VERDICT, address, "0xabcd…ef01", card=self.card)
+        return WalletPage(Outcome.VERDICT, address, "0xabcd…ef01", card=self.card, chart=self.chart)
 
 
 @pytest.mark.parametrize(

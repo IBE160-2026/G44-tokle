@@ -330,6 +330,19 @@ def test_prd8_chart_text_alternative():
     assert phrases.chart_text(-226.0, 100, 0.7).startswith("This Wallet made −$226 on 100 resolved bets.")
 
 
+def test_ux_dr24_chart_text_says_below_all_only_when_asked():
+    """UX-DR24 (Edvard, 2026-11-25, Story 3.5): below every Simulation the text adds "That is below all 10,000
+    replays."; above all and inside the curve it adds nothing (the odds phrase carries "above all")."""
+    below = phrases.chart_text(-2_970.0, 30, 1.0, below_all=True)
+    assert below == (
+        "This Wallet made −$2,970 on 30 resolved bets. "
+        "In 10,000 replays with no edge, a result this good came up more than half the time. "
+        "That is below all 10,000 replays."
+    )
+    assert "below all" not in phrases.chart_text(2_970.0, 30, 1 / 10_001)  # above all
+    assert "below all" not in phrases.chart_text(40_180.0, 212, 0.25)  # inside the curve
+
+
 def test_ux_dr24_about_this_chart():
     """UX-DR24 (Edvard, 2026-11-23): three paragraphs; the average is $0, or minus the fees when they round to a dollar."""
     first, second, third = phrases.about_chart(212, 0.0)
