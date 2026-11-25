@@ -322,10 +322,16 @@ class Window:
     """One Wallet's window as `data/window.positions_near` returns it (AD-7, AD-8).
 
     `positions` are the positions-list rows in the window, `markets` their Gamma records and
-    `activity` every activity row of those Markets. `activity_read_until` is None when the
+    `activity` every activity row of those Markets (for the after part, those rows from the
+    cut-off on). `activity_read_until` is None when the
     activity read was complete; otherwise it is the time of the last row read, and the
     Positions whose Market resolved in that second or later are "not fully read" (AD-7, AD-11).
-    `capped` is True when the limit left older Positions out, for FR-11's window line (Story 3.3).
+
+    `capped` is True when more Positions were eligible than the window holds, for FR-11's window
+    line (Story 3.3): older ones for a lookup and the before part, later ones for the after part.
+
+    `cutoff` (00:00 UTC epoch) and `side` ("before" or "after") name the part of a Cut-off Date
+    this window is; both are None for a lookup's window (AD-7, Story 4.1).
     """
 
     wallet: str
@@ -335,6 +341,8 @@ class Window:
     activity: tuple[ActivityRow, ...]
     activity_read_until: int | None
     capped: bool = False
+    cutoff: int | None = None
+    side: str | None = None
 
     def not_fully_read(self) -> tuple[ListedPosition, ...]:
         """The window's Positions whose Market resolved in or after the second of the last activity row read."""

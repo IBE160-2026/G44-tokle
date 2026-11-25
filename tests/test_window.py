@@ -12,8 +12,10 @@ import logging
 import threading
 from collections import Counter
 from collections.abc import Iterator
+from datetime import UTC, date, datetime
 from functools import partial
 from pathlib import Path
+from typing import Any
 
 import pytest
 from fake_polymarket import FakeClock, FakePolymarket, FakeTransport
@@ -22,11 +24,12 @@ from liquidoracle.core.positions import build_positions, mostly_left_out
 from liquidoracle.core.skilltest import uncoupled_share
 from liquidoracle.data import offline as offline_module
 from liquidoracle.data import sample_json
-from liquidoracle.data.errors import PolymarketUnavailable
+from liquidoracle.data.errors import NoPolymarketHistory, PolymarketUnavailable
 from liquidoracle.data.offline import OfflineClient
-from liquidoracle.data.polymarket import PolymarketClient
+from liquidoracle.data.polymarket import GAMMA_BATCH, PolymarketClient, parse_time
+from liquidoracle.data.real_sample import CUTOFF as SAMPLE_CUTOFF
 from liquidoracle.data.store import Store
-from liquidoracle.data.window import ACTIVITY_ROW_CAP, positions_near
+from liquidoracle.data.window import ACTIVITY_ROW_CAP, cutoff_at, positions_near
 from liquidoracle.records import ExclusionReason, ListedPosition, Market, PositionSet, Read, SampleWallet, Window
 from liquidoracle.services import fetch as fetch_module
 from liquidoracle.services.fetch import fetch_wallet, stored_result
@@ -448,13 +451,6 @@ def test_offline_and_live_give_the_same_window(
     assert offline_window.positions
 
 
-def test_a_cut_off_date_is_not_built_yet() -> None:
-    """AD-8: the before and after parts come with Story 4.1."""
-    client, _, server = live("small-clean")
-    with pytest.raises(NotImplementedError, match="4.1"):
-        positions_near(client, server.wallet, cutoff=1_751_328_000, side="before")
-
-
 def test_the_stored_result_leaves_out_unread_positions(store: Store) -> None:
     """AD-11, FR-11: the Skill Test on a capped snapshot counts the unread Positions as left out."""
     client, _, server = live("small-clean")
@@ -595,3 +591,408 @@ def test_a_stored_lookup_applies_the_list_checks(store: Store) -> None:
     stored = stored_result(store, server.wallet, seed=44)
     built, _ = built_from("fees-and-open")
     assert stored is not None and stored.result.tested_count == built.tested_count == 14  # 17 before Story 2.4
+
+
+# --- Story 4.1: before and after the Cut-off Date -------------------------------------------
+
+SAMPLE_DAY = date.fromisoformat(SAMPLE_CUTOFF)  # the Sample Dataset's Cut-off Date, 1 July 2025
+# small-clean on 1 March 2025: 4 Positions in Markets resolved before it, 4 bought before and resolved after it
+# (straddlers), 15 bought after it, and 1 in a Market still open.
+SPLIT_DAY = date(2025, 3, 1)
+
+
+def gamma_time(epoch: int) -> str:
+    """An epoch second as Gamma writes `closedTime`."""
+    return datetime.fromtimestamp(epoch, UTC).strftime("%Y-%m-%d %H:%M:%S+00")
+
+
+def one_by_prefix(rows: list[dict[str, Any]], key: str, prefix: str) -> dict[str, Any]:
+    (row,) = [r for r in rows if r[key].startswith(prefix)]
+    return row
+
+
+def built_window(window: Window) -> PositionSet:
+    """A part through the one builder (AD-11); every listed Position comes out, none vanish."""
+    built = build_positions(window.activity, {m.condition_id: m for m in window.markets}, listed=window.positions,
+                            not_fully_read=window.not_fully_read())
+    assert built.window_size == len(window.positions)
+    return built
+
+
+def reasons(built: PositionSet) -> dict[str, int]:
+    return {reason.name: n for reason, n in built.excluded_counts.items() if n}
+
+
+def closed_at(server: FakePolymarket) -> dict[str, int]:
+    """Gamma's resolution time of every closed Market of the fixture that has one."""
+    return {m["conditionId"]: parse_time(m["closedTime"]) for m in server.gamma if m["closed"] and m.get("closedTime")}
+
+
+def after_part_by_hand(server: FakePolymarket, cut: int) -> tuple[list[str], list[str], dict[str, list[dict[str, Any]]]]:
+    """AD-7 by hand on the raw rows. The rows that count are OPEN and CLOSED with a last event on or after the cut-off,
+    one per token (OPEN first). Returns the Markets whose counted rows were all first entered on or after the cut-off,
+    ranked by their earliest entry then id; those of them resolved on or after it (the eligible ones), in rank order;
+    and each Market's counted rows."""
+    counted: dict[str, dict[str, Any]] = {}
+    for r in server.lists["OPEN"] + [r for r in server.lists["CLOSED"] if r["last_event_at"] >= cut]:
+        counted.setdefault(r["token_id"], r)
+    rows_of: dict[str, list[dict[str, Any]]] = {}
+    for r in counted.values():
+        rows_of.setdefault(r["condition_id"], []).append(r)
+    entered = {c: min(r["first_entry_at"] for r in rows) for c, rows in rows_of.items()
+               if all(r["first_entry_at"] >= cut for r in rows)}
+    fresh = sorted(entered, key=lambda c: (entered[c], c))
+    resolved = closed_at(server)
+    return fresh, [c for c in fresh if c in resolved and resolved[c] >= cut], rows_of
+
+
+def test_the_cut_off_date_is_00_00_utc_converted_in_one_place() -> None:
+    """AD-7 (Story 4.1): `cutoff_at` turns a date into 00:00 UTC epoch seconds; a datetime, or a number handed to
+    `positions_near`, is refused before any request."""
+    assert cutoff_at(SAMPLE_DAY) == 1_751_328_000
+    with pytest.raises(TypeError):
+        cutoff_at(datetime(2025, 7, 1, tzinfo=UTC))
+    client, transport, server = live("small-clean")
+    with pytest.raises(TypeError):
+        positions_near(client, server.wallet, 1_751_328_000, "before")  # type: ignore[arg-type]
+    assert transport.calls == []
+
+
+@pytest.mark.parametrize(("cutoff", "side"), [(SAMPLE_DAY, None), (None, "before"), (SAMPLE_DAY, "during")])
+def test_a_cut_off_date_and_its_side_come_together(cutoff: date | None, side: str | None) -> None:
+    """AD-7 (Story 4.1): a date without a side, a side without a date, or an unknown side is refused before any request."""
+    client, transport, server = live("small-clean")
+    with pytest.raises(ValueError, match="side"):
+        positions_near(client, server.wallet, cutoff, side)
+    assert transport.calls == []
+
+
+def test_before_and_after_parts_partition_a_wallet() -> None:
+    """AD-7, AD-11 (Story 4.1): on small-clean at 1 March 2025 no Position is in both parts, the 4 bought before and
+    resolved after are in neither, and every other Position of the window is in one. Both parts go through the one
+    builder; counts as they came out: before 4 tested, after 13 tested and 2 sold before resolution."""
+    cut = cutoff_at(SPLIT_DAY)
+    reference, _, server = live("small-clean")
+    rows, markets = every_record(reference, server.wallet)
+    in_window = {r for r in rows if markets[r.condition_id].closed and markets[r.condition_id].closed_time is not None}
+    straddlers = {r for r in in_window if r.first_entry_at < cut <= (markets[r.condition_id].closed_time or 0)}
+    before = positions_near(live("small-clean")[0], server.wallet, SPLIT_DAY, "before")
+    after = positions_near(live("small-clean")[0], server.wallet, SPLIT_DAY, "after")
+
+    assert (len(before.positions), len(straddlers), len(after.positions), len(in_window)) == (4, 4, 15, 23)
+    assert not set(before.positions) & set(after.positions)
+    assert not straddlers & (set(before.positions) | set(after.positions))
+    assert set(before.positions) | set(after.positions) | straddlers == in_window
+    assert all((markets[p.condition_id].closed_time or cut) < cut for p in before.positions)
+    assert all(p.first_entry_at >= cut for p in after.positions)
+    assert all(r.timestamp < cut for r in before.activity) and all(r.timestamp >= cut for r in after.activity)
+    assert (before.cutoff, before.side, after.cutoff, after.side) == (cut, "before", cut, "after")
+    assert not before.capped and not after.capped
+    assert before.activity_read_until is None and after.activity_read_until is None
+
+    built_before, built_after = built_window(before), built_window(after)
+    assert (built_before.tested_count, reasons(built_before)) == (4, {})
+    assert (built_after.tested_count, reasons(built_after)) == (13, {"SOLD_BEFORE_RESOLUTION": 2})
+
+
+@pytest.mark.parametrize(("offset", "inside"), [(-1, True), (0, False)])
+def test_the_before_part_ends_just_before_the_cut_off(offset: int, inside: bool) -> None:
+    """AD-7 (Story 4.1): a Market resolved one second before the cut-off is in the before part; one resolved at it is not."""
+    cut = cutoff_at(SPLIT_DAY)
+    client, _, server = live("small-clean")
+    market = one_by_prefix(server.gamma, "conditionId", "0xc3d41551")
+    market["closedTime"] = gamma_time(cut + offset)
+    window = positions_near(client, server.wallet, SPLIT_DAY, "before")
+    assert (market["conditionId"] in {m.condition_id for m in window.markets}) is inside
+    assert len(window.positions) == (4 if inside else 3)
+
+
+@pytest.mark.parametrize(("offset", "inside"), [(0, True), (-1, False)])
+def test_the_after_part_starts_at_the_cut_off(offset: int, inside: bool) -> None:
+    """AD-7 (Story 4.1): a Position first entered exactly at the cut-off is in the after part; one second earlier it
+    is not (it is a straddler)."""
+    cut = cutoff_at(SPLIT_DAY)
+    client, _, server = live("small-clean")
+    row = one_by_prefix(server.lists["CLOSED"], "condition_id", "0x9d2399f7")
+    row["first_entry_at"] = cut + offset
+    window = positions_near(client, server.wallet, SPLIT_DAY, "after")
+    assert (row["condition_id"] in {m.condition_id for m in window.markets}) is inside
+    assert len(window.positions) == (15 if inside else 14)
+
+
+def test_markets_that_only_look_new_are_not_in_the_after_part() -> None:
+    """AD-7 (Story 4.1 acceptance): 0x729806 bought 41 tokens on or after 1 July 2025, but 20 of them were first
+    entered before it (`first_entry_at`), which an activity read from the cut-off cannot see. None of their Markets is
+    in the after part; every other eligible Market is, whole, also the 3 entered without a buy (by CONVERSION), which
+    the builder leaves out with their reason. The CLOSED list comes in pages of 4 and stops at the cut-off. Counts as
+    they came out: 24 Markets, 36 Positions, all split or merged (a split-and-merge Wallet)."""
+    cut = cutoff_at(SAMPLE_DAY)
+    client, transport, server = live("after-part")
+    server.page_size = 4
+    window = positions_near(client, server.wallet, SAMPLE_DAY, "after")
+
+    _, eligible, rows_of = after_part_by_hand(server, cut)
+    listed = server.lists["CLOSED"] + server.lists["OPEN"]
+    buys = [r for r in server.activity if r["type"] == "TRADE" and r["side"] == "BUY" and r["timestamp"] >= cut]
+    bought = {r["token_id"] for r in buys}
+    looks_new_tokens = {r["token_id"] for r in listed if r["token_id"] in bought and r["first_entry_at"] < cut}
+    looks_new = {r["condition_id"] for r in listed if r["token_id"] in looks_new_tokens}
+    no_buy = set(eligible) - {r["condition_id"] for r in buys}
+    assert (len(bought), len(looks_new_tokens), len(no_buy)) == (41, 20, 3)
+
+    chosen = {m.condition_id for m in window.markets}
+    assert not chosen & looks_new
+    assert chosen == set(eligible) and no_buy <= chosen
+    assert {p.token_id for p in window.positions} == {r["token_id"] for c in eligible for r in rows_of[c]}
+    assert (len(chosen), len(window.positions)) == (24, 36)
+    assert not window.capped and window.activity_read_until is None
+    closed_calls = [c for c in calls_to(transport, "/v2/positions") if c["status"] == "CLOSED"]
+    newest_first = sorted(server.lists["CLOSED"], key=lambda r: -r["last_event_at"])
+    stop_page = next(i // 4 + 1 for i in range(0, len(newest_first), 4)
+                     if min(r["last_event_at"] for r in newest_first[i : i + 4]) < cut)
+    assert len(closed_calls) == stop_page < -(-len(newest_first) // 4)  # stopped at the cut-off, not a full read
+
+    built = built_window(window)
+    entered_by_conversion = [p for p in built.left_out if p.condition_id in no_buy]
+    assert entered_by_conversion and all(p.reason is ExclusionReason.SPLIT_OR_MERGED for p in entered_by_conversion)
+    assert (built.tested_count, reasons(built)) == (0, {"SPLIT_OR_MERGED": 36})
+
+
+def test_a_market_resolved_before_but_entered_after_is_in_neither_part() -> None:
+    """AD-7 (Edvard, 2026-11-25, Story 4.1): a Market Gamma closed before the cut-off whose Positions were first entered
+    on or after it is in neither part, so no bet made after the date reaches the before part."""
+    cut = cutoff_at(SAMPLE_DAY)
+    _, _, server = live("after-part")
+    early = {c for c, t in closed_at(server).items() if t < cut}
+    listed = server.lists["CLOSED"] + server.lists["OPEN"]
+    assert len(early) == 1 and all(r["first_entry_at"] >= cut for r in listed if r["condition_id"] in early)
+    before = positions_near(live("after-part")[0], server.wallet, SAMPLE_DAY, "before")
+    after = positions_near(live("after-part")[0], server.wallet, SAMPLE_DAY, "after")
+    assert not early & {m.condition_id for m in (*before.markets, *after.markets)}
+
+
+@pytest.mark.parametrize("entered", [0, 60])
+@pytest.mark.parametrize("status", ["CLOSED", "OPEN"])
+def test_one_later_position_takes_its_market_out_of_the_before_part(status: str, entered: int) -> None:
+    """AD-7 (Edvard, 2026-11-25, Story 4.1): on small-clean, one Position of the other token first entered at or after
+    the cut-off, on either list, takes its before-part Market out of the before part whole; it is in neither part."""
+    split = cutoff_at(SPLIT_DAY)
+    client, _, small = live("small-clean")
+    market = one_by_prefix(small.gamma, "conditionId", "0xc3d41551")
+    (held,) = [r for r in small.lists["CLOSED"] if r["condition_id"] == market["conditionId"]]
+    other = next(t for t in json.loads(market["clobTokenIds"]) if t != held["token_id"])
+    small.lists[status].append({"condition_id": market["conditionId"], "token_id": other, "total_size": 10.0,
+                                "first_entry_at": split + entered, "last_event_at": split + 120})
+    window = positions_near(client, small.wallet, SPLIT_DAY, "before")
+    assert market["conditionId"] not in {m.condition_id for m in window.markets} and len(window.positions) == 3
+    assert all(p.first_entry_at < split for p in window.positions)
+    after_small = positions_near(live("small-clean")[0], small.wallet, SPLIT_DAY, "after")
+    assert market["conditionId"] not in {m.condition_id for m in after_small.markets}
+
+
+@pytest.mark.parametrize("page_size", [1, 1_000])
+def test_the_before_walk_counts_a_later_position_before_it_stops(page_size: int) -> None:
+    """AD-7 (Story 4.1): the CLOSED stop rule of the before part leaves out a Market entered after the cut-off from the
+    page it is read on. On small-clean with a limit of 1, the latest-resolved before Market (0xde8ca3cc) gets a later
+    Position, and a row of a Market Gamma does not know sits just above 0xc3d41551's row; walking one row a page, the
+    walk must not stop before 0xc3d41551 is read. The part is its one Position, at either page size."""
+    split = cutoff_at(SPLIT_DAY)
+    client, _, small = live("small-clean")
+    small.page_size = page_size
+    latest = one_by_prefix(small.gamma, "conditionId", "0xde8ca3cc")
+    kept = one_by_prefix(small.gamma, "conditionId", "0xc3d41551")
+    (latest_row,) = [r for r in small.lists["CLOSED"] if r["condition_id"] == latest["conditionId"]]
+    (kept_row,) = [r for r in small.lists["CLOSED"] if r["condition_id"] == kept["conditionId"]]
+    other = next(t for t in json.loads(latest["clobTokenIds"]) if t != latest_row["token_id"])
+    small.lists["CLOSED"].append({"condition_id": latest["conditionId"], "token_id": other, "total_size": 10.0,
+                                  "first_entry_at": split + 60, "last_event_at": split + 120})
+    small.lists["CLOSED"].append({"condition_id": "0x" + "ee" * 32, "token_id": "123", "total_size": 1.0,
+                                  "first_entry_at": kept_row["last_event_at"] - 10,
+                                  "last_event_at": kept_row["last_event_at"] + 1})
+    window = positions_near(client, small.wallet, SPLIT_DAY, "before", limit=1)
+    assert [p.token_id for p in window.positions] == [kept_row["token_id"]]
+
+
+@pytest.mark.parametrize("limit", [1, 2, 3, 4, 5, 8, 13, 21, 35, 36, 37])
+def test_the_after_part_takes_the_earliest_whole_markets(limit: int) -> None:
+    """AD-7, AD-8 (Story 4.1 review): eligible Markets rank by their earliest `first_entry_at`, then id, and are taken
+    whole while they fit under the limit. `capped` is exact: True when an eligible Position was left out (35), False
+    with exactly the limit and nothing more eligible (36). A first Market bigger than the limit empties the part (1)."""
+    cut = cutoff_at(SAMPLE_DAY)
+    client, transport, server = live("after-part")
+    window = positions_near(client, server.wallet, SAMPLE_DAY, "after", limit=limit)
+
+    _, eligible, rows_of = after_part_by_hand(server, cut)
+    taken: list[str] = []
+    for c in eligible:
+        if sum(len(rows_of[t]) for t in taken) + len(rows_of[c]) > limit:
+            break
+        taken.append(c)
+    total = sum(len(rows_of[c]) for c in eligible)
+    held = sum(len(rows_of[c]) for c in taken)
+    assert total == 36
+    assert {m.condition_id for m in window.markets} == set(taken)
+    assert len(window.positions) == held <= limit
+    assert window.capped is (held < total)
+    activity = calls_to(transport, "/v2/activity")
+    if taken:
+        assert {(int(c["start"]), int(c["end"])) for c in activity} == {(cut, max(m.closed_time or 0 for m in window.markets))}
+    else:
+        assert activity == [] and window.activity == ()
+
+
+def test_the_after_part_asks_gamma_in_rank_order_only_until_it_is_full() -> None:
+    """AD-7, AD-10 (Story 4.1 review): Gamma is asked for the Markets entered on or after the cut-off, in rank order and
+    in batches, until the part is full and one more eligible Market is known; never for the Markets entered before."""
+    cut = cutoff_at(SAMPLE_DAY)
+
+    def asked(transport: FakeTransport) -> list[str]:
+        ids = [v for c in transport.calls if c.url.endswith("/markets") for k, v in c.params if k == "condition_ids"]
+        return list(dict.fromkeys(ids))
+
+    client, transport, server = live("after-part")
+    fresh, _, _ = after_part_by_hand(server, cut)
+    assert len(fresh) > GAMMA_BATCH
+    positions_near(client, server.wallet, SAMPLE_DAY, "after", limit=3)
+    assert asked(transport) == fresh[:GAMMA_BATCH]
+    client, transport, server = live("after-part")
+    positions_near(client, server.wallet, SAMPLE_DAY, "after")
+    assert asked(transport) == fresh
+
+
+@pytest.mark.parametrize("held_at_cut", [False, True])
+def test_a_position_closed_before_the_cut_off_does_not_make_its_market_mixed(held_at_cut: bool) -> None:
+    """AD-7 (Edvard, 2026-11-25, Story 4.1 review): a CLOSED Position of the other token, first entered before the
+    cut-off and fully closed before it, leaves its Market in the after part, the same at every page size. Still held at
+    the cut-off, it makes the Market mixed: in neither part."""
+    cut = cutoff_at(SAMPLE_DAY)
+    windows: list[Window] = []
+    for size in (1, 4, 1_000):
+        client, _, server = live("after-part")
+        server.page_size = size
+        market = one_by_prefix(server.gamma, "conditionId", "0x1c79659a")
+        (held,) = [r for r in server.lists["CLOSED"] + server.lists["OPEN"] if r["condition_id"] == market["conditionId"]]
+        other = next(t for t in json.loads(market["clobTokenIds"]) if t != held["token_id"])
+        server.lists["CLOSED"].append({"condition_id": market["conditionId"], "token_id": other, "total_size": 10.0,
+                                       "first_entry_at": cut - 1_000, "last_event_at": cut + 10 if held_at_cut else cut - 10})
+        windows.append(positions_near(client, server.wallet, SAMPLE_DAY, "after"))
+    assert windows[0] == windows[1] == windows[2]
+    assert (market["conditionId"] in {m.condition_id for m in windows[0].markets}) is not held_at_cut
+    assert other not in {p.token_id for p in windows[0].positions}
+
+
+def test_an_activity_cap_in_the_after_part_marks_positions_not_fully_read() -> None:
+    """AD-7, AD-11 (Story 4.1): an activity cap never changes which Markets are in the after part; it sets
+    `activity_read_until`, and the usual "not fully read" rule leaves out the Positions resolved from then on."""
+    full = positions_near(live("after-part")[0], FakePolymarket("after-part").wallet, SAMPLE_DAY, "after")
+    client, _, server = live("after-part")
+    window = positions_near(client, server.wallet, SAMPLE_DAY, "after", activity_row_cap=3_000)
+
+    assert (window.positions, window.markets, window.capped) == (full.positions, full.markets, full.capped)
+    until = window.activity_read_until
+    assert until is not None and all(r.timestamp <= until for r in window.activity)
+    assert [r for r in full.activity if r.timestamp < until] == [r for r in window.activity if r.timestamp < until]
+    unread = window.not_fully_read()
+    closed_time = {m.condition_id: m.closed_time or 0 for m in window.markets}
+    assert set(unread) == {p for p in window.positions if closed_time[p.condition_id] >= until}
+    assert 0 < len(unread) < len(window.positions)
+    assert built_window(window).excluded_counts[ExclusionReason.NOT_FULLY_READ] == len(unread)
+
+
+@pytest.mark.parametrize("side", ["before", "after"])
+@pytest.mark.parametrize(("status", "page_size"), [("CLOSED", 10), ("OPEN", 3)])
+def test_a_part_rests_only_on_whole_lists(side: str, status: str, page_size: int) -> None:
+    """AD-3, AD-7 (Story 4.1): a positions list still timing out after the restart raises PolymarketUnavailable on
+    either side, before any activity is read."""
+    client, transport, server = live("after-part")
+    server.page_size = page_size
+    server.timeout_from_page[status] = 1
+    with pytest.raises(PolymarketUnavailable, match=status):
+        positions_near(client, server.wallet, SAMPLE_DAY, side)
+    assert calls_to(transport, "/v2/activity") == []
+
+
+@pytest.mark.parametrize("side", ["before", "after"])
+def test_two_empty_lists_are_no_history_on_either_side(side: str) -> None:
+    """FR-1 (Story 4.1): both lists empty raises NoPolymarketHistory, before Gamma or activity is asked."""
+    client, transport, server = live("small-clean")
+    server.lists = {"CLOSED": [], "OPEN": []}
+    with pytest.raises(NoPolymarketHistory):
+        positions_near(client, server.wallet, SAMPLE_DAY, side)
+    assert [call.url.rsplit("/", 1)[-1] for call in transport.calls] == ["positions", "positions"]
+
+
+def test_an_after_part_with_nothing_eligible_is_empty() -> None:
+    """AD-7 (Story 4.1): with no Position entered on or after the cut-off the after part is empty and not capped, and
+    neither Gamma nor activity is asked."""
+    day = date(2030, 1, 1)
+    client, transport, server = live("small-clean")
+    window = positions_near(client, server.wallet, day, "after")
+    assert window == Window(server.wallet, 2_000, (), (), (), None, False, cutoff_at(day), "after")
+    assert calls_to(transport, "/markets") == [] and calls_to(transport, "/v2/activity") == []
+
+
+@pytest.mark.parametrize("change", ["changed", "removed"])
+@pytest.mark.parametrize(("name", "day"), [("small-clean", SPLIT_DAY), ("after-part", SAMPLE_DAY)])
+def test_nothing_after_the_cut_off_changes_the_before_part(name: str, day: date, change: str) -> None:
+    """AD-7, no leak (Story 4.1): with the outcomes of later Markets, every fill and every Position first entered after
+    the cut-off (also those in a Market resolved before it, on after-part) changed or removed, the before part is
+    exactly the same. Removed, a Position entered before the cut-off stays listed, as it existed then, but its later
+    Market's Gamma record is gone; that also keeps after-part's lists from becoming empty."""
+    cut = cutoff_at(day)
+    expected = positions_near(live(name)[0], FakePolymarket(name).wallet, day, "before")
+    client, _, server = live(name)
+    resolved = closed_at(server)
+    later = {m["conditionId"] for m in server.gamma if m["conditionId"] not in resolved or resolved[m["conditionId"]] >= cut}
+    entered_after = [r for rows in server.lists.values() for r in rows if r["first_entry_at"] >= cut]
+    assert later and entered_after
+    if name == "after-part":  # the Market resolved before the cut-off but entered after it
+        assert any(resolved.get(r["condition_id"], cut) < cut for r in entered_after)
+    else:
+        assert expected.positions
+    if change == "changed":
+        for m in server.gamma:
+            if m["conditionId"] in later:
+                m["outcomePrices"] = json.dumps(list(reversed(json.loads(m["outcomePrices"]))))
+        for r in server.activity:
+            if r["timestamp"] >= cut:
+                r["size"], r["usdc_size"] = r["size"] * 3, r["usdc_size"] * 2
+        for rows in server.lists.values():
+            for r in rows:
+                if r["condition_id"] in later or r["first_entry_at"] >= cut:
+                    r["total_size"] *= 5
+                if r["first_entry_at"] >= cut:
+                    r["first_entry_at"] += 86_400
+                    r["last_event_at"] += 86_400
+    else:
+        server.gamma = [m for m in server.gamma if m["conditionId"] not in later]
+        server.activity = [r for r in server.activity if r["timestamp"] < cut]
+        server.lists = {
+            s: [r for r in rows if r["first_entry_at"] < cut]
+            for s, rows in server.lists.items()
+        }
+    assert positions_near(client, server.wallet, day, "before") == expected
+
+
+@pytest.mark.parametrize(("name", "day", "side", "page", "limit"), [
+    ("small-clean", SPLIT_DAY, "before", 4, 3),
+    ("small-clean", SPLIT_DAY, "after", 4, 3),
+    ("after-part", SAMPLE_DAY, "after", 4, 5),
+])
+def test_offline_and_live_give_the_same_parts(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, name: str, day: date, side: str, page: int, limit: int
+) -> None:
+    """AD-13 (Story 4.1): the same records served by OfflineClient give the same before and after parts as the live
+    client, also when the lists come in small pages and the part is capped."""
+    reference, _, server = live(name)
+    rows, markets = every_record(reference, server.wallet)
+    activity = reference.activity_rows(server.wallet, start=0).rows
+    sample = SampleWallet(server.wallet, "fixture", activity, tuple(rows), tuple(markets.values()))
+    sample_json.write_wallet(tmp_path / "fixture.json", sample)
+
+    monkeypatch.setattr(offline_module, "PAGE_LIMIT", page)
+    client, _, live_server = live(name)
+    live_server.page_size = page
+    offline_window = positions_near(OfflineClient([tmp_path / "fixture.json"]), server.wallet, day, side, limit=limit)
+    assert offline_window == positions_near(client, server.wallet, day, side, limit=limit)
+    assert offline_window.positions and offline_window.capped
