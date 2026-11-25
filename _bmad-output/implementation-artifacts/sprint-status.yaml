@@ -29,7 +29,7 @@
 # - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
 # - Retrospective appends its action items to action_items; the status view surfaces open ones
 generated: 11-05-2026 02:06
-last_updated: 11-25-2026 07:25
+last_updated: 11-25-2026 10:13
 project: LiquidOracle
 project_key: NOKEY
 tracking_system: file-system
@@ -56,12 +56,12 @@ development_status:
   2-8-the-fee-check-accepts-an-earlier-rate: done
   epic-2-retrospective: optional
 
-  epic-3: in-progress
+  epic-3: done
   3-1-the-luck-chart: done
   3-2-exploring-the-chart: done
   3-3-the-honesty-notes: done
   3-4-theme-copy-and-finish: done
-  3-5-accessibility-check-and-stage-1-done: review
+  3-5-accessibility-check-and-stage-1-done: done
   epic-3-retrospective: optional
 
   epic-4: backlog
