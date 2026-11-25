@@ -41,3 +41,31 @@ def test_an_unused_address_has_empty_lists_not_an_error(request: pytest.FixtureR
     for status in ("OPEN", "CLOSED"):
         read = client.positions_list(address, status)
         assert read.complete and read.rows == ()
+
+
+# The smallest Market of the spike's 1 July 2025 set by holders: 18 rows when the spike read it (2026-10-21).
+SMALL_FUNNEL_MARKET = "0xf86d87db5976adacb2ddf74ded65011369606d8bff3b2360350566bd88df2da8"
+
+
+def test_funnel_markets_and_holders_for_the_sample_cut_off(request: pytest.FixtureRequest) -> None:
+    """AD-9, AD-21, Story 4.2: the Market set for 1 July 2025 is 100 resolved Markets closed in the 90 days before it,
+    highest volume first, and a small Market's two holder lists read complete. About 2 to 50 Gamma requests (1 to 2
+    pages in practice) and 2 Data API requests."""
+    from datetime import date
+
+    from liquidoracle.data.window import cutoff_at
+
+    assert request.node.get_closest_marker("online") is not None
+    client = PolymarketClient(2.0)
+    cut = cutoff_at(date(2025, 7, 1))
+    start = cut - 90 * 86_400
+    found = client.funnel_markets(start, cut, 100)
+    assert len(found) == 100
+    assert all(m.market.resolved and start <= (m.market.closed_time or 0) < cut for m in found)
+    volumes = [m.volume for m in found]
+    assert volumes == sorted(volumes, reverse=True)
+    assert len({m.market.condition_id for m in found}) == 100
+    for status in ("CLOSED", "OPEN"):
+        read = client.market_holders(SMALL_FUNNEL_MARKET, status)
+        assert read.complete, f"the {status} list of a small Market did not read complete"
+        assert all(row.status == status for row in read.rows)

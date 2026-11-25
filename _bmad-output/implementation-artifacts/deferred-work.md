@@ -104,3 +104,6 @@ Findings and goals set aside by `bmad-build`, each with where it came from.
 - source_spec: `_bmad-output/implementation-artifacts/spec-3-5-a-browser-tests-for-the-scripts.md`
   summary: `make_page(clock=True)` calls `page.clock.pause_at(START + 5 s)` after `goto`; if a page takes more than 5 real seconds to load (a slow CI runner), `pause_at` targets a past time and the test errors.
   evidence: Story 3.5 part A review (edge case hunter); the code moved unchanged from Story 3.4. No run has hit it (pages load in well under a second); settle it if a clock test ever fails on CI with a pause_at error, by pausing before `goto`.
+- source_spec: `_bmad-output/implementation-artifacts/spec-4-2-the-scan-funnel.md`
+  summary: An OPEN holder row whose token is not one of its Market's Gamma outcomes ends the Scan funnel with ValueError instead of marking the Market "not used: partial".
+  evidence: maybe-false (would be medium); settle it by checking the token ids of a few real Market-anchored reads against Gamma's clobTokenIds (the spike kept no token ids). Story 4.3 can turn the error into a partial Market if it is real.

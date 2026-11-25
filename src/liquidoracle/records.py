@@ -349,6 +349,95 @@ class Window:
         return unread_positions(self.positions, self.markets, self.activity_read_until)
 
 
+@dataclass(frozen=True, slots=True)
+class MarketHolder:
+    """One row of a Market's positions list, `/v2/positions?condition=…` (AD-9, AD-21).
+
+    `status` is the list asked for, CLOSED or OPEN. The three numbers feed only the Scan's
+    pre-filter (AD-21): `realized_pnl` on a CLOSED row, `current_size` x (outcome price -
+    `avg_price`) on an OPEN row. They never reach a Position or the Skill Test (AD-10).
+    """
+
+    wallet: str
+    token_id: str
+    status: str
+    realized_pnl: float
+    current_size: float
+    avg_price: float
+
+
+@dataclass(frozen=True, slots=True)
+class FunnelMarket:
+    """A Market of a Scan's Market set and its Gamma volume in USD, the one number that orders the set (AD-21)."""
+
+    market: Market
+    volume: float
+
+
+@dataclass(frozen=True, slots=True)
+class Candidate:
+    """A shortlisted Wallet and its pre-filter estimate in USD (AD-21)."""
+
+    wallet: str
+    estimate: float
+
+
+@dataclass(frozen=True, slots=True)
+class RankedWallet:
+    """One shortlisted Wallet ranked on the Real PnL of its before part (AD-9, AD-10, AD-21).
+
+    `not_fully_read` is set when Polymarket refused the Wallet (`refused`) or when any Position of
+    its before part is "not fully read" (AD-9). A refusal at any request discards the whole read
+    (the window is all-or-nothing), so a refused Wallet ranks on $0.
+    `top` marks the Wallets kept, the top N.
+    """
+
+    wallet: str
+    real_pnl: float
+    not_fully_read: bool = False
+    refused: bool = False
+    top: bool = False
+
+
+@dataclass(frozen=True, slots=True)
+class ScanFunnel:
+    """One run of the Scan funnel, in memory (FR-16, AD-9, AD-21; stored by Story 4.3).
+
+    `cutoff` is the Cut-off Date as 00:00 UTC epoch seconds (AD-7) and `size` is N.
+    `markets` is the Market set by volume; `partial` the condition ids of those "not used:
+    partial" (AD-9). `candidate_count` counts the Wallets in the used Markets. `shortlist` is the
+    3 x N by estimate; `contracts` the shortlisted addresses dropped as protocol contracts
+    (AD-9). `ranked` is every other shortlisted Wallet by Real PnL, the top N marked `top`.
+    """
+
+    cutoff: int
+    size: int
+    markets: tuple[FunnelMarket, ...]
+    partial: tuple[str, ...]
+    candidate_count: int
+    shortlist: tuple[Candidate, ...]
+    contracts: tuple[str, ...]
+    ranked: tuple[RankedWallet, ...]
+
+    @property
+    def used_count(self) -> int:
+        """AD-21's "N of 100 Markets used"."""
+        return len(self.markets) - len(self.partial)
+
+    @property
+    def top(self) -> tuple[RankedWallet, ...]:
+        return tuple(w for w in self.ranked if w.top)
+
+    @property
+    def not_fully_read_count(self) -> int:
+        """Ranked Wallets flagged "not fully read", refused ones included (AD-9)."""
+        return sum(1 for w in self.ranked if w.not_fully_read)
+
+    @property
+    def refused_count(self) -> int:
+        return sum(1 for w in self.ranked if w.refused)
+
+
 def unread_positions(
     positions: tuple[ListedPosition, ...], markets: tuple[Market, ...], read_until: int | None
 ) -> tuple[ListedPosition, ...]:
