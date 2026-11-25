@@ -30,4 +30,4 @@ Result: all of them pass in the full run of 25 November 2026 (see *The run* belo
 ## The run
 
 - **Locally (Windows 11, Python 3.14, Chrome), 25 November 2026:** `CI=true uv run pytest -rs`: 1,207 tests passed, none skipped.
-- **CI (Windows, macOS and Linux × Python 3.12 and 3.14, plus the README job):** runs on the push of the Story 3.5 part B branch; the run is linked from its pull request. Stage 1 counts as closed when all seven jobs are green.
+- **CI (Windows, macOS and Linux × Python 3.12 and 3.14, plus the README job), 25 November 2026:** all seven jobs green on `main` after pull request #37 was merged ([run 45564538544](https://github.com/IBE160-2026/G44-tokle/actions/runs/45564538544), commit 227d484). The same seven were green on the branch before the merge ([run 45561325207](https://github.com/IBE160-2026/G44-tokle/actions/runs/45561325207)). On CI a browser that cannot start fails the run, so the browser tests ran on all three systems. Stage 1 is closed.
