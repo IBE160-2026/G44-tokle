@@ -28,7 +28,7 @@ from urllib.parse import urlsplit
 import requests
 
 from liquidoracle.data.errors import PolymarketBadRequest, PolymarketUnavailable, ProtocolContractAddress
-from liquidoracle.records import ActivityRow, ListedPosition, Market, Read
+from liquidoracle.records import ActivityRow, FunnelMarket, ListedPosition, Market, MarketHolder, Read
 from liquidoracle.settings import MAX_REQUESTS_PER_SECOND
 
 log = logging.getLogger(__name__)
@@ -53,6 +53,20 @@ GAMMA_BATCH = 20  # Markets per Gamma request; repeat `condition_ids`, a comma l
 ACTIVITY_TYPES = "TRADE,REDEEM,SPLIT,MERGE,CONVERSION"  # AD-10
 LIST_STATUSES = frozenset({"CLOSED", "OPEN"})  # AD-10: OPEN also holds settled losers nobody redeemed
 _WALLET = re.compile(r"0x[0-9a-f]{40}")  # FR-1: a proxy-wallet address, lower case
+_CONDITION = re.compile(r"0x[0-9a-f]{64}")  # a Market's condition id, lower case
+
+# AD-9 (Edvard, 2026-11-25, Story 4.2): a Market-anchored list that reaches this many rows is partial
+# [ASSUMPTION]. The Sample Dataset pick's limit: 77 of 100 Markets used on 1 July 2025.
+MARKET_ROW_CAP = 15_000
+# AD-9: Market-anchored lists are always read oldest first; never by profit, the route's default.
+MARKET_SORT = (("sort_by", "TIMESTAMP"), ("sort_direction", "ASC"))
+
+# AD-21: the Market set's Gamma list, as the spike proved it (spike/sample_pick.py, 2026-10-21).
+# Gamma filters on the scheduled end date, not `closedTime`, so the date range is widened on both sides.
+GAMMA_LIST_PAGE = 100  # Markets per page of the volume-ordered list
+GAMMA_LIST_PAGES = 50  # at most this many pages
+END_DATE_BEFORE = 120 * 86_400  # seconds the end-date range starts before the window
+END_DATE_AFTER = 400 * 86_400  # seconds it ends after it
 
 
 # --- Transport: the only part that touches the network -------------------------------------
@@ -267,6 +281,84 @@ class PolymarketClient:
                     if market.condition_id in ask:
                         found[market.condition_id] = raw
         return tuple(found[c] for c in wanted if c in found)
+
+    # The Scan funnel's two reads (Story 4.2) ----------------------------------------------------
+
+    def market_holders(
+        self,
+        condition_id: str,
+        status: str,
+        *,
+        row_cap: int = MARKET_ROW_CAP,
+        limit: int = PAGE_LIMIT,
+    ) -> Read[MarketHolder]:
+        """One of a Market's positions lists, CLOSED or OPEN: the Wallets that hold or held it (AD-9, AD-21).
+
+        It takes no sort argument: every page sends `sort_by=TIMESTAMP&sort_direction=ASC` (AD-9),
+        because the route's default order is by profit, and a capped read would then keep the winners.
+
+        A read that reaches `row_cap` rows is partial, even when nothing was left to read. A read
+        whose every try timed out comes back partial and empty instead of raising, so the Scan goes
+        on without that Market (AD-9); any other `PolymarketUnavailable` is raised.
+        """
+        if not isinstance(condition_id, str) or not _CONDITION.fullmatch(condition_id):
+            raise ValueError(f"not a lower-case condition id: {condition_id!r}")
+        if status not in LIST_STATUSES:
+            raise ValueError(f"status must be CLOSED or OPEN, not {status!r}")
+        params = [("condition", condition_id), ("status", status), *MARKET_SORT]
+        try:
+            read = self._walk(
+                f"{DATA_API}/v2/positions", params, limit, lambda raw: _market_holder(raw, condition_id, status),
+                row_cap=row_cap,
+            )
+        except _PageTimedOut:
+            log.warning("Polymarket kept timing out on the %s list of Market %s; the read is partial", status, condition_id)
+            return Read((), False)
+        if read.complete and len(read.rows) >= row_cap:
+            log.info("the %s list of Market %s reached the cap of %d rows; the read is partial", status, condition_id, row_cap)
+            return Read(read.rows, False)
+        return read
+
+    def funnel_markets(self, closed_from: int, closed_until: int, count: int) -> tuple[FunnelMarket, ...]:
+        """The Market set: up to `count` resolved Markets whose `closed_time` is in [closed_from, closed_until),
+        the highest volume first (AD-7, AD-21).
+
+        Gamma's closed Markets are asked for in volume order, `GAMMA_LIST_PAGE` at a time by offset.
+        Gamma filters on the scheduled end date, not on `closedTime`, so that range is widened by
+        120 days before and 400 days after; a Market whose end date lies outside it is missed. A
+        Market that is not resolved (AD-7) or resolved outside the window is passed over and the next
+        by volume taken: volume decides the order, outcomes are never looked at. The walk stops at
+        `count`, at an empty page or after `GAMMA_LIST_PAGES` pages, so fewer may come back.
+        """
+        if count < 1:
+            raise ValueError(f"count must be 1 or more, not {count}")
+        if closed_from >= closed_until:
+            raise ValueError("the window must end after it starts")
+        fixed = [
+            ("closed", "true"),
+            ("order", "volumeNum"),
+            ("ascending", "false"),
+            ("limit", str(GAMMA_LIST_PAGE)),
+            ("end_date_min", _gamma_time(closed_from - END_DATE_BEFORE)),
+            ("end_date_max", _gamma_time(closed_until + END_DATE_AFTER)),
+        ]
+        found: dict[str, FunnelMarket] = {}
+        for page_index in range(GAMMA_LIST_PAGES):
+            document = self._get_json(f"{GAMMA_API}/markets", [*fixed, ("offset", str(page_index * GAMMA_LIST_PAGE))])
+            if not isinstance(document, list):
+                raise _unreadable("Gamma /markets", "expected a list")
+            if not document:
+                break
+            for raw in document:
+                entry: FunnelMarket = _parse(_funnel_market, raw, "Gamma /markets")
+                market = entry.market
+                in_window = market.closed_time is not None and closed_from <= market.closed_time < closed_until
+                if market.resolved and in_window:
+                    found.setdefault(market.condition_id, entry)  # offset pages can repeat a Market
+            if len(found) >= count:
+                break
+        ordered = sorted(found.values(), key=lambda entry: (-entry.volume, entry.market.condition_id))
+        return tuple(ordered[:count])
 
     # Paging -----------------------------------------------------------------------------------
 
@@ -501,6 +593,33 @@ def _listed_position(raw: Mapping[str, Any], status: str) -> ListedPosition:
         first_entry_at=_whole(raw, "first_entry_at"),
         last_event_at=_whole(raw, "last_event_at"),
     )
+
+
+def _market_holder(raw: Mapping[str, Any], condition_id: str, status: str) -> MarketHolder:
+    """A `/v2/positions?condition=…` row (AD-9). A row of another Market means the filter was dropped: unreadable."""
+    if _text(raw, "condition_id") != condition_id:
+        raise ValueError("a row of another Market")
+    wallet = _text(raw, "proxy_wallet").lower()
+    if not _WALLET.fullmatch(wallet):
+        raise ValueError("proxy_wallet is not an address")
+    return MarketHolder(
+        wallet=wallet,
+        token_id=_text(raw, "token_id"),
+        status=status,
+        realized_pnl=_number(raw, "realized_pnl"),
+        current_size=_number(raw, "current_size"),
+        avg_price=_number(raw, "avg_price"),
+    )
+
+
+def _funnel_market(raw: Mapping[str, Any]) -> FunnelMarket:
+    """A Market of Gamma's volume-ordered list and its `volumeNum` (AD-21)."""
+    return FunnelMarket(market=_market(raw), volume=_number(raw, "volumeNum"))
+
+
+def _gamma_time(epoch: int) -> str:
+    """Epoch seconds as the ISO text Gamma's date filters take."""
+    return datetime.fromtimestamp(epoch, UTC).strftime("%Y-%m-%dT%H:%M:%SZ")
 
 
 def parse_listed_position(raw: Mapping[str, Any], status: str) -> ListedPosition:

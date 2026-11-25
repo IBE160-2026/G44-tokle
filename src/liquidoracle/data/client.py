@@ -1,4 +1,4 @@
-"""The client interface every Wallet data source implements (AD-2, AD-13).
+"""The client interfaces every Wallet data source implements (AD-2, AD-13).
 
 `PolymarketClient` (`data/polymarket.py`) and `OfflineClient` (`data/offline.py`) both offer these
 three raw reads, and `data/window.positions_near` builds the Wallet window on them (AD-8), so
@@ -10,7 +10,7 @@ from __future__ import annotations
 from collections.abc import Callable, Iterable
 from typing import Protocol
 
-from liquidoracle.records import ActivityRow, ListedPosition, Market, Read
+from liquidoracle.records import ActivityRow, FunnelMarket, ListedPosition, Market, MarketHolder, Read
 
 
 class WalletClient(Protocol):
@@ -39,4 +39,17 @@ class WalletClient(Protocol):
 
     def markets(self, condition_ids: Iterable[str]) -> tuple[Market, ...]:
         """Gamma Market records for these ids, one each, in the order asked (AD-7, AD-10)."""
+        ...
+
+
+class FunnelClient(WalletClient, Protocol):
+    """A client that can also run the Scan funnel (AD-9, AD-21). Only `PolymarketClient` is one for now;
+    `OfflineClient` becomes one with the anchor Markets (Story 4.6)."""
+
+    def market_holders(self, condition_id: str, status: str) -> Read[MarketHolder]:
+        """One of a Market's positions lists, CLOSED or OPEN, always oldest first; no sort argument (AD-9)."""
+        ...
+
+    def funnel_markets(self, closed_from: int, closed_until: int, count: int) -> tuple[FunnelMarket, ...]:
+        """Up to `count` resolved Markets closed in [closed_from, closed_until), highest volume first (AD-21)."""
         ...

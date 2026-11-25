@@ -1,6 +1,7 @@
 """The Skill Test: Real PnL, 10,000 Simulations, the p-value and the Verdict (FR-4 to FR-7).
 
 Only `skill_test` is for the rest of the app. It always applies the 30-bet minimum (FR-6).
+`real_pnl` is the one source of Real PnL, shared by `skill_test` and the Scan's ranking (AD-10).
 `_engine` skips the minimum and is for the tests alone (the hand-check has 10 bets, FR-13); a
 rule test fails if any module outside this file references it (Edvard, 2026-10-24).
 """
@@ -55,14 +56,14 @@ def skill_test(position_set: PositionSet, *, seed: int, unit_id: str, scope: str
     if tested < MIN_RESOLVED:
         return SkillTestResult(
             scope=scope, seed=seed, verdict=Verdict.NOT_ENOUGH_DATA, tested_count=tested,
-            sliver_count=slivers, real_pnl=_real_pnl(bets), own_fees=_own_fees(bets),
+            sliver_count=slivers, real_pnl=real_pnl(position_set), own_fees=_own_fees(bets),
             simulations=0, at_or_above=None, at_or_below=None, p_value=None, bins=(),
             uncoupled_share=uncoupled_share(position_set.tested),
         )
     run = _engine(bets, seed=seed, unit_id=unit_id)
     return SkillTestResult(
         scope=scope, seed=seed, verdict=verdict_for(run.p_value), tested_count=tested,
-        sliver_count=slivers, real_pnl=run.real_pnl, own_fees=run.own_fees,
+        sliver_count=slivers, real_pnl=real_pnl(position_set), own_fees=run.own_fees,
         simulations=SIMULATIONS, at_or_above=run.at_or_above, at_or_below=run.at_or_below,
         p_value=run.p_value, bins=run.bins,
         uncoupled_share=uncoupled_share(position_set.tested),
@@ -237,6 +238,14 @@ def _tokens_per_market(bets: Sequence[Position]) -> dict[str, set[str]]:
         if len(ids) > 2:
             raise ValueError(f"Market {condition_id} has {len(ids)} outcomes in one test; only two are supported")
     return tokens
+
+
+def real_pnl(position_set: PositionSet) -> float:
+    """FR-4, AD-10: the Real PnL of a Position set, over its tested Positions and Slivers.
+
+    The one source of Real PnL: `skill_test` stores it, and the Scan ranks on it (AD-21).
+    """
+    return _real_pnl((*position_set.tested, *position_set.slivers))
 
 
 def _real_pnl(bets: Sequence[Position]) -> float:

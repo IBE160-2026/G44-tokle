@@ -103,6 +103,18 @@ def test_real_pnl_matches_the_hand_values(name: str) -> None:
     assert (result.tested_count, result.sliver_count) == (expected["tested"], expected["slivers"])
 
 
+@pytest.mark.parametrize("name", sorted(EXPECTED["wallets"]))
+def test_the_public_real_pnl_is_the_one_skill_test_stores(name: str) -> None:
+    """FR-4, AD-10 (Story 4.2): `real_pnl`, which the Scan ranks on, gives exactly the Real PnL `skill_test` stores,
+    with or without enough bets, and the hand value to the cent; so ranking and Verdict share one source."""
+    built = positions(SMALL[name])
+    result = skilltest.skill_test(built, seed=SEED, unit_id=SMALL[name].address)
+    assert skilltest.real_pnl(built) == result.real_pnl
+    assert skilltest.real_pnl(built) == pytest.approx(EXPECTED["wallets"][name]["real_pnl"], abs=CENT)
+    if result.simulations:  # the engine's own sum, in its own order, agrees to the last bit
+        assert skilltest._engine((*built.tested, *built.slivers), seed=SEED, unit_id="x").real_pnl == result.real_pnl
+
+
 def test_slivers_count_in_the_money_and_the_simulations_but_not_toward_30() -> None:
     """FR-4, FR-6 (PRD Glossary, Sliver): 29 tested + 2 Slivers is Not enough data, yet the Slivers' money counts and they are simulated."""
     slivers = (bet(900, 0.5, True, shares=0.9), bet(901, 0.5, True, shares=0.9))  # each wins $0.45

@@ -7,14 +7,17 @@ the real capture of 2026-10-21 (spike/raw/sample/capture/, not committed).
 from __future__ import annotations
 
 import ast
+import inspect
 import logging
 import threading
+from datetime import UTC, datetime
 from pathlib import Path
 
 import pytest
-from fake_polymarket import NO_CONNECTION, TIMEOUT, FakeClock, FakeTransport, ok, page, status
+from fake_polymarket import NO_CONNECTION, TIMEOUT, FakeClock, FakeScan, FakeTransport, ok, page, status
 
 from liquidoracle.data import polymarket
+from liquidoracle.data.client import FunnelClient
 from liquidoracle.data.errors import PolymarketBadRequest, PolymarketUnavailable, ProtocolContractAddress
 from liquidoracle.data.polymarket import (
     DATA_API,
@@ -25,7 +28,7 @@ from liquidoracle.data.polymarket import (
     check_url,
     parse_time,
 )
-from liquidoracle.records import ActivityRow, ListedPosition, Market
+from liquidoracle.records import ActivityRow, ListedPosition, Market, MarketHolder
 
 WALLET = "0x29306ddc4724e24a23bf1c8679aa034376ea9dcb"
 SOURCE = Path(polymarket.__file__)
@@ -1037,3 +1040,244 @@ def test_gamma_market_without_events_has_none() -> None:
     for extra in ({}, {"events": []}, {"events": [{"title": "no id"}]}):
         (market,) = client(FakeTransport([ok([gamma_market("0xabc", **extra)])])).markets(["0xabc"])
         assert market.event_id is None
+
+
+# --- Story 4.2: the Scan funnel's two reads (AD-9, AD-21) --------------------------------------
+
+MARKET = f"0x{7:064x}"
+DAY = 86_400
+CUT = 1_751_328_000  # 1 July 2025, 00:00 UTC
+WINDOW_START = CUT - 90 * DAY
+
+
+def holder_row(n: int, condition_id: str = MARKET, **extra: object) -> dict[str, object]:
+    """A `/v2/positions?condition=` row, with the fields the spike read (spike/sample_pick.py)."""
+    row: dict[str, object] = {
+        "proxy_wallet": f"0x{n:040x}",
+        "condition_id": condition_id,
+        "token_id": "4125767081787631735",
+        "realized_pnl": 12.5,
+        "current_size": 0,
+        "avg_price": 0.4,
+        "last_event_at": 1745000000 + n,
+    }
+    row.update(extra)
+    return row
+
+
+def gamma_time(epoch: int) -> str:
+    return datetime.fromtimestamp(epoch, UTC).strftime("%Y-%m-%d %H:%M:%S+00")
+
+
+def listed_market(n: int, closed_at: int, volume: object, **extra: object) -> dict[str, object]:
+    """A Market as Gamma's volume-ordered list returns it."""
+    return gamma_market(f"0x{n:064x}", closedTime=gamma_time(closed_at), volumeNum=volume, **extra)
+
+
+def scan_server(markets: list[dict[str, object]]) -> FakeTransport:
+    server = FakeScan()
+    server.funnel = markets
+    return FakeTransport(answer=server)
+
+
+def test_market_holders_send_the_ad9_sort_on_every_page() -> None:
+    """AD-9, AD-2: every page of a Market-anchored list sends `sort_by=TIMESTAMP&sort_direction=ASC` and page 1's
+    parameters; a request built otherwise fails this test."""
+    transport = FakeTransport([page([holder_row(1)], "c1"), page([holder_row(2)], "c2"), page([holder_row(3)])])
+    read = client(transport).market_holders(MARKET, "OPEN")
+    assert read.complete and len(read.rows) == 3
+    first = transport.calls[0].params
+    assert dict(first) == {
+        "condition": MARKET, "status": "OPEN", "sort_by": "TIMESTAMP", "sort_direction": "ASC", "limit": "1000",
+    }
+    assert [c.without_cursor() for c in transport.calls] == [first, first, first]
+    assert all(c.url == f"{DATA_API}/v2/positions" for c in transport.calls)
+
+
+def test_market_holders_take_no_sort_argument() -> None:
+    """AD-9: the Market-anchored function has no sort parameter, in the client and in the `FunnelClient` interface."""
+    for function in (PolymarketClient.market_holders, FunnelClient.market_holders):
+        assert not [name for name in inspect.signature(function).parameters if "sort" in name]
+    with pytest.raises(TypeError):
+        client(FakeTransport()).market_holders(MARKET, "CLOSED", sort_by="REALIZED_PNL")  # type: ignore[call-arg]
+
+
+def test_market_holder_rows_are_read() -> None:
+    """AD-9, AD-21: a holder row keeps the Wallet (lower case), the token, the list asked for and the pre-filter numbers."""
+    row = holder_row(1, proxy_wallet="0x" + "AB" * 20, current_size=7, avg_price=0.25, realized_pnl=-3)
+    (holder,) = client(FakeTransport([page([row])])).market_holders(MARKET, "OPEN").rows
+    assert holder == MarketHolder("0x" + "ab" * 20, "4125767081787631735", "OPEN", -3.0, 7.0, 0.25)
+
+
+@pytest.mark.parametrize(
+    "bad",
+    [
+        holder_row(1, condition_id=f"0x{8:064x}"),  # another Market: the filter was dropped
+        holder_row(1, proxy_wallet="0x123"),
+        holder_row(1, realized_pnl=None),
+        {k: v for k, v in holder_row(1).items() if k != "avg_price"},
+    ],
+    ids=["another-market", "bad-wallet", "null-pnl", "no-avg-price"],
+)
+def test_a_holder_row_not_as_expected_is_unreadable(bad: dict[str, object]) -> None:
+    """AD-2, AD-9: a holder row of another Market, or with a missing or wrong field, is an unreadable answer."""
+    with pytest.raises(PolymarketUnavailable, match="unreadable"):
+        client(FakeTransport([page([bad])])).market_holders(MARKET, "CLOSED")
+
+
+@pytest.mark.parametrize(("rows", "more", "complete"), [(3, False, False), (3, True, False), (2, False, True)])
+def test_a_market_list_that_reaches_the_cap_is_partial(rows: int, more: bool, complete: bool) -> None:
+    """AD-9 (Edvard, 2026-11-25): a list that reaches the row cap is partial, even when nothing was left; under it is whole."""
+    transport = FakeTransport([page([holder_row(n) for n in range(rows)], "c1" if more else None)])
+    read = client(transport).market_holders(MARKET, "CLOSED", row_cap=3)
+    assert (read.complete, len(read.rows)) == (complete, rows)
+
+
+def test_the_market_row_cap_is_15000() -> None:
+    """AD-9 (Edvard, 2026-11-25, Story 4.2): `MARKET_ROW_CAP` is 15,000 rows per list, the default of the read."""
+    assert polymarket.MARKET_ROW_CAP == 15_000
+    assert inspect.signature(PolymarketClient.market_holders).parameters["row_cap"].default == 15_000
+
+
+def test_a_market_list_whose_every_try_timed_out_is_partial_and_empty(caplog: pytest.LogCaptureFixture) -> None:
+    """AD-9, AD-3: when every try of the first page times out, the read is partial instead of an outage."""
+    transport = FakeTransport([TIMEOUT, TIMEOUT, TIMEOUT])
+    with caplog.at_level(logging.WARNING, logger="liquidoracle.data.polymarket"):
+        read = client(transport).market_holders(MARKET, "OPEN")
+    assert (read.rows, read.complete) == ((), False)
+    assert len(transport.calls) == 3 and "partial" in caplog.text
+
+
+def test_a_market_list_timing_out_mid_walk_is_partial() -> None:
+    """AD-3, AD-9: a page timing out mid-walk restarts at half the limit; failing again, the rows read come back partial."""
+    transport = FakeTransport([
+        page([holder_row(1)], "c1"), TIMEOUT, TIMEOUT, TIMEOUT,
+        page([holder_row(1)], "c1"), TIMEOUT, TIMEOUT, TIMEOUT,
+    ])
+    read = client(transport).market_holders(MARKET, "CLOSED")
+    assert (read.complete, len(read.rows)) == (False, 1)
+    assert [c.query["limit"] for c in transport.calls] == ["1000"] * 4 + ["500"] * 4
+    assert all(c.query["sort_by"] == "TIMESTAMP" and c.query["sort_direction"] == "ASC" for c in transport.calls)
+
+
+@pytest.mark.parametrize(
+    "failures",
+    [[status(503)] * 3, [TIMEOUT, TIMEOUT, status(503)], [NO_CONNECTION] * 3],
+    ids=["503", "timeouts-then-503", "no-connection"],
+)
+def test_any_other_outage_on_a_market_list_is_raised(failures: list) -> None:
+    """AD-3, AD-9: only a read whose every try timed out is partial; any other `PolymarketUnavailable` stops the Scan."""
+    with pytest.raises(PolymarketUnavailable):
+        client(FakeTransport(failures)).market_holders(MARKET, "CLOSED")
+
+
+@pytest.mark.parametrize(("condition_id", "list_status"), [("0xabc", "OPEN"), (MARKET.upper(), "OPEN"), (MARKET, "REDEEMABLE")])
+def test_market_holders_refuse_a_bad_market_or_list(condition_id: str, list_status: str) -> None:
+    """AD-9: only a lower-case condition id and the CLOSED or OPEN list are asked for; nothing is sent otherwise."""
+    transport = FakeTransport()
+    with pytest.raises(ValueError):
+        client(transport).market_holders(condition_id, list_status)
+    assert transport.calls == []
+
+
+def test_funnel_markets_send_the_spikes_query() -> None:
+    """AD-21: Gamma's closed Markets by volume, pages of 100 by offset, the end-date range widened by 120 and 400 days."""
+    transport = FakeTransport([ok([])])
+    client(transport).funnel_markets(WINDOW_START, CUT, 100)
+    assert len(transport.calls) == 1  # an empty page ends the walk
+    assert transport.calls[0].url == f"{GAMMA_API}/markets"
+    assert transport.calls[0].query == {
+        "closed": "true", "order": "volumeNum", "ascending": "false", "limit": "100", "offset": "0",
+        "end_date_min": "2024-12-03T00:00:00Z",  # 1 July 2025 - 210 days
+        "end_date_max": "2026-08-05T00:00:00Z",  # 1 July 2025 + 400 days
+    }
+
+
+@pytest.mark.parametrize(
+    ("closed_at", "inside"), [(WINDOW_START, True), (WINDOW_START - 1, False), (CUT - 1, True), (CUT, False)]
+)
+def test_the_market_window_edges(closed_at: int, inside: bool) -> None:
+    """AD-21, AD-7: a Market closed at cut-off - 90 days or one second before the cut-off is in; one closed at the
+    cut-off, or a second before the window, is out."""
+    found = client(scan_server([listed_market(1, closed_at, 5e6)])).funnel_markets(WINDOW_START, CUT, 100)
+    assert [m.market.condition_id for m in found] == ([f"0x{1:064x}"] if inside else [])
+
+
+def test_an_unclear_market_is_passed_over_and_the_next_by_volume_taken() -> None:
+    """AD-7, AD-21: a closed Market whose prices are not {0, 1} is not in the set; the next by volume is."""
+    markets = [
+        listed_market(1, CUT - DAY, 9e6, outcomePrices='["0.5", "0.5"]'),
+        listed_market(2, CUT - DAY, 8e6),
+        listed_market(3, CUT - DAY, 7e6),
+        listed_market(4, CUT - DAY, 6e6),
+    ]
+    found = client(scan_server(markets)).funnel_markets(WINDOW_START, CUT, 2)
+    assert [(m.market.condition_id, m.volume) for m in found] == [(f"0x{2:064x}", 8e6), (f"0x{3:064x}", 7e6)]
+    assert all(m.market.resolved for m in found)
+
+
+def test_fewer_markets_when_gammas_pages_run_out() -> None:
+    """AD-21: when the pages run out below the count, the set holds what was found."""
+    markets = [listed_market(n, CUT - n * DAY, 1e6 * n) for n in range(1, 151)]
+    transport = scan_server(markets)
+    found = client(transport).funnel_markets(WINDOW_START, CUT, 100)
+    assert len(found) == 90  # closed 1 to 90 days before the cut-off; 91 and older are outside
+    assert [c.query["offset"] for c in transport.calls] == ["0", "100", "200"]
+
+
+def test_the_market_set_stops_at_the_count_and_is_ordered_by_volume() -> None:
+    """AD-21: the walk stops once `count` Markets are found; the set is the highest volume first, each Market once."""
+    markets = [listed_market(n, CUT - DAY, 1e8 - n) for n in range(250)]
+    transport = scan_server(markets)
+    found = client(transport).funnel_markets(WINDOW_START, CUT, 120)
+    assert len(found) == 120 and len(transport.calls) == 2
+    assert [m.market.condition_id for m in found] == [f"0x{n:064x}" for n in range(120)]
+    volumes = [m.volume for m in found]
+    assert volumes == sorted(volumes, reverse=True)
+
+
+def test_the_market_set_reads_at_most_50_pages() -> None:
+    """AD-21: after 50 pages of Markets outside the window the walk stops, so a sparse window cannot read for ever."""
+    outside = [listed_market(n, CUT + DAY, 1e8 - n) for n in range(100)]
+    transport = FakeTransport(answer=lambda url, params: ok(outside))
+    assert client(transport).funnel_markets(WINDOW_START, CUT, 100) == ()
+    assert len(transport.calls) == 50
+    assert transport.calls[-1].query["offset"] == "4900"
+
+
+def test_the_count_is_taken_by_volume_not_by_arrival_order() -> None:
+    """AD-21: when the last page holds more than `count`, the set keeps the highest volumes (ties by condition id),
+    not the first Markets Gamma sent."""
+    page_one = [
+        listed_market(5, CUT - DAY, 5e6),
+        listed_market(4, CUT - DAY, 4e6),
+        listed_market(9, CUT - DAY, 6e6),  # higher volume, sent after the count was reached
+        listed_market(2, CUT - DAY, 4e6),  # ties with Market 4 at the boundary; the smaller id wins
+    ]
+    found = client(FakeTransport([ok(page_one)])).funnel_markets(WINDOW_START, CUT, 3)
+    assert [m.market.condition_id for m in found] == [f"0x{9:064x}", f"0x{5:064x}", f"0x{2:064x}"]
+
+
+def test_a_market_repeated_across_pages_is_kept_once() -> None:
+    """AD-21: offset pages can shift; a Market met twice is in the set once."""
+    same = listed_market(1, CUT - DAY, 5e6)
+    transport = FakeTransport([ok([same]), ok([same, listed_market(2, CUT - DAY, 4e6)]), ok([])])
+    found = client(transport).funnel_markets(WINDOW_START, CUT, 100)
+    assert [m.market.condition_id for m in found] == [f"0x{1:064x}", f"0x{2:064x}"]
+
+
+@pytest.mark.parametrize("extra", [{"volumeNum": None}, {"volumeNum": "5"}, {"closedTime": 5}], ids=["no-volume", "text-volume", "bad-time"])
+def test_a_listed_market_not_as_expected_is_unreadable(extra: dict[str, object]) -> None:
+    """AD-2, AD-21: a Market of the list without a numeric volume or with a bad time is an unreadable answer."""
+    raw = {**listed_market(1, CUT - DAY, 5e6), **extra}
+    with pytest.raises(PolymarketUnavailable, match="unreadable"):
+        client(FakeTransport([ok([raw])])).funnel_markets(WINDOW_START, CUT, 100)
+
+
+@pytest.mark.parametrize(("closed_from", "closed_until", "count"), [(CUT, CUT, 100), (WINDOW_START, CUT, 0)])
+def test_funnel_markets_refuse_an_empty_window_or_count(closed_from: int, closed_until: int, count: int) -> None:
+    """AD-21: an empty window or a count below 1 is refused before anything is sent."""
+    transport = FakeTransport()
+    with pytest.raises(ValueError):
+        client(transport).funnel_markets(closed_from, closed_until, count)
+    assert transport.calls == []

@@ -169,3 +169,68 @@ class FakePolymarket:
         chunk = rows[offset : offset + size]
         more = offset + size < len(rows)
         return page(chunk, str(offset + size) if more else None)
+
+
+class FakeScan:
+    """A routed stand-in for everything the Scan funnel reads (AD-9, AD-17, AD-21).
+
+    Use it as `FakeTransport(answer=FakeScan([...fixture names]))`. Its routes:
+
+    - Gamma's volume-ordered list (`/markets` with `order`): `funnel`, raw Gamma Markets with a
+      `volumeNum`, filtered on `closed`, highest volume first, paged by `offset` and `limit`.
+    - Gamma by id (`/markets` with `condition_ids`): every served Wallet's Gamma records and `funnel`.
+    - A Market's lists (`/v2/positions?condition=`): `holders[(condition_id, status)]`, paged by
+      cursor. It asserts the AD-9 sort, so a Market-anchored request built otherwise fails here.
+      `holder_answers[(condition_id, status)]` answers every such request instead (TIMEOUT or a Response).
+    - A Wallet's lists and activity (`user=`): that Wallet's `FakePolymarket`; `refuse[address]`
+      answers instead (a 400, say); any other address has no history (empty lists).
+    """
+
+    def __init__(self, wallets: Sequence[str] = ()) -> None:
+        self.wallets: dict[str, FakePolymarket] = {}
+        for name in wallets:
+            server = FakePolymarket(name)
+            assert server.wallet not in self.wallets, f"two fixtures share Wallet {server.wallet}"
+            self.wallets[server.wallet] = server
+        self.funnel: list[dict[str, Any]] = []
+        self.holders: dict[tuple[str, str], list[dict[str, Any]]] = {}
+        self.holder_answers: dict[tuple[str, str], Response | str] = {}
+        self.refuse: dict[str, Response] = {}
+
+    def __call__(self, url: str, params: list[tuple[str, str]]) -> Response:
+        query = dict(params)
+        if url.endswith("/markets"):
+            if "order" in query:
+                return self._funnel_page(query)
+            wanted = [value for key, value in params if key == "condition_ids"]
+            closed = query["closed"] == "true"
+            known = [m for server in self.wallets.values() for m in server.gamma] + self.funnel
+            return ok([m for m in known if m["conditionId"] in wanted and m["closed"] == closed])
+        if url.endswith("/v2/positions") and "condition" in query:
+            assert "user" not in query
+            assert (query.get("sort_by"), query.get("sort_direction")) == ("TIMESTAMP", "ASC"), "AD-9 sort missing"
+            key = (query["condition"], query["status"])
+            answer = self.holder_answers.get(key)
+            if answer == TIMEOUT:
+                raise TransportTimeout("fake timeout")
+            if isinstance(answer, Response):
+                return answer
+            rows = self.holders.get(key, [])
+            size, offset = int(query["limit"]), int(query.get("cursor", "0"))
+            more = offset + size < len(rows)
+            return page(rows[offset : offset + size], str(offset + size) if more else None)
+        if url.endswith(("/v2/positions", "/v2/activity")):
+            user = query["user"]
+            if user in self.refuse:
+                return self.refuse[user]
+            if user in self.wallets:
+                return self.wallets[user](url, params)
+            assert url.endswith("/v2/positions"), "a Wallet with no positions has no activity to read"
+            return page([])
+        raise AssertionError(f"unexpected request {url}")
+
+    def _funnel_page(self, query: dict[str, str]) -> Response:
+        closed = query["closed"] == "true"
+        rows = sorted((m for m in self.funnel if m["closed"] == closed), key=lambda m: -m["volumeNum"])
+        offset, limit = int(query["offset"]), int(query["limit"])
+        return ok(rows[offset : offset + limit])
