@@ -6,7 +6,19 @@ The app only reads public data. It never places orders, holds keys or touches a 
 
 Course project in **IBE160 Programmering med KI** at Høgskolen i Molde, autumn 2026. Group G44: Edvard Tokle.
 
-> **Status (Story 3.4):** stage 1's core works in Offline Mode and live, in the dark or light theme and on screens from 320 px wide. Offline, you can check 10 real Polymarket Wallets and the Synthetic Wallets (made-up Wallets whose right answers are known). Live, you can paste any Polymarket address and get its Verdict card. Each Verdict page also shows the luck chart and the honesty notes, "What this test can't see": how much of the result came from one bet, how many bets were held to resolution and what early sales made or lost (with a warning when they lost money), which bets were left out and why, and the Seed. Stage 1 finishes with Story 3.5 (plan: [`_bmad-output/planning-artifacts/epics.md`](_bmad-output/planning-artifacts/epics.md)).
+> **Status: stage 1 done (25 November 2026).** Every stage 1 feature works, offline and live, and all tests pass. Next is stage 2 (plan: [`_bmad-output/planning-artifacts/epics.md`](_bmad-output/planning-artifacts/epics.md)).
+
+What stage 1 does (FR-1 to FR-14 in the PRD):
+
+- Look up a Wallet by address, with plain errors for a bad address or one with no Polymarket history (FR-1).
+- Fetch its public data from Polymarket, store it and reuse it for 24 hours, and offer the stored data when Polymarket does not answer (FR-2).
+- Turn its trades into bets, leaving out the ones the test cannot judge and saying why (FR-3), and work out its Real PnL (FR-4).
+- Replay its resolved bets 10,000 times with no edge to get the odds (FR-5), and give a Verdict, or *Not enough data* below 30 resolved bets (FR-6, FR-10), the same every time for the same data and Seed (FR-7).
+- Show it on a Verdict card (FR-8) with the luck chart and its text alternative (FR-9) and the honesty notes, "What this test can't see" (FR-11).
+- Run with no network in Offline Mode (FR-14) on the committed Sample Dataset: 10 real Polymarket Wallets (FR-12) and the Synthetic Wallets, made-up Wallets whose right answers are known (FR-13).
+- Work in the dark or light theme, by keyboard, without JavaScript, and on screens from 320 px wide.
+
+How the success metrics were checked: [`docs/stage-1-check.md`](docs/stage-1-check.md). The accessibility check: [`docs/accessibility-check.md`](docs/accessibility-check.md).
 
 ## Prerequisites
 
@@ -106,14 +118,14 @@ The browser tests in `tests/browser/` open the real pages in the Chrome or Edge 
 uv run pytest tests/browser
 ```
 
-- **What they cover:** the copy button; that no page scrolls sideways at 320, 360, 600 and 900 px; that buttons do not move when your system is set to reduce motion; the Windows High Contrast (forced colours) rules; `chart.js` (`test_chart_script.py`: the chart's keys, the tooltip, the marker's highlight, the build-up, and the chart without the script); and `progress.js` (`test_progress_script.py`: a live lookup polling, swapping in the Verdict or the matching message page, and giving up after 30 failed polls in a row).
+- **What they cover:** the copy button; that no page scrolls sideways at 320, 360, 600 and 900 px; that buttons do not move when your system is set to reduce motion; the Windows High Contrast (forced colours) rules; `chart.js` (`test_chart_script.py`: the chart's keys, the tooltip, the marker's highlight, the build-up, and the chart without the script); `progress.js` (`test_progress_script.py`: a live lookup polling, swapping in the Verdict or the matching message page, and giving up after 30 failed polls in a row); and the accessibility checklist (`test_checklist.py`: the 12 items walked with the keyboard only, reading the role, name, state and reading order a screen reader is given, plus every page with JavaScript off). What the checklist found, failures included, and what it cannot prove are in [`docs/accessibility-check.md`](docs/accessibility-check.md).
 - **What they need:** Google Chrome or Microsoft Edge. Playwright for Python drives it; it is a test-only package that `uv sync` installs (about 40 MB, with its own small Node.js helper inside), and no browser is downloaded. Without Chrome or Edge the tests are skipped and the test summary says why; on GitHub Actions (where `CI` is set) a browser that cannot start fails the run instead, so a green check means they ran.
 - **No network:** they start the app on 127.0.0.1 only, and any request a page makes to anywhere else is blocked and fails the test. The live-lookup tests run the app with its real job queue and worker in front of a stand-in Polymarket that serves the Synthetic Wallets from files.
 - **Time:** each live-lookup test takes a few seconds; the slowest ones move the page's clock through 30 or more failed polls.
 
 Checks marked `slow` repeat a whole test 100 times by default. `uv run pytest --repetitions 1000` runs them in full, as CI does on Linux with Python 3.14.
 
-GitHub Actions runs the tests on every push on Windows, macOS and Linux with Python 3.12 and 3.14 ([`.github/workflows/tests.yml`](.github/workflows/tests.yml)). One more job runs the three commands above on a fresh checkout and checks that the sharp trader's page says *Skilled (high confidence)*.
+GitHub Actions runs the tests on every push on Windows, macOS and Linux with Python 3.12 and 3.14 ([`.github/workflows/tests.yml`](.github/workflows/tests.yml)). One more job runs the three commands above on a fresh checkout and checks that the sharp trader's page says *Skilled (high confidence)*. Which tests check the PRD's success metrics SM-1 and SM-2 is in [`docs/stage-1-check.md`](docs/stage-1-check.md).
 
 ## Project layout
 
@@ -125,5 +137,6 @@ tests/              automated tests; tests/browser/ drives Chrome or Edge, tests
 sample_data/        Sample Dataset: real/ (10 real Wallets), synthetic/, and the hand labels
 spike/              data spike and architecture probes (historical, not used by the app)
 _bmad-output/       the plan: brief, PRD, UX, architecture, epics, story specs
+docs/               the accessibility check, the stage 1 check, the real Wallets explained
 docs/ai-logs/       logs of the AI sessions
 ```
