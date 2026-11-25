@@ -22,3 +22,21 @@ Switch to main after PR #36 (3.5 part A) was merged, pull, and build Story 3.5 p
 ### Åpne punkter
 - Check that all six test jobs and the README job are green on the pushed branch, and link the run in `docs/stage-1-check.md`.
 - Set Story 3.5 (and Epic 3) to `done` in `sprint-status.yaml` when the PR is merged.
+
+## 2026-11-25 kl. 10:13 — Edvard Tokle
+
+### Oppgave
+PR #37 is merged and every check is green. Link the CI run, set Story 3.5 and Epic 3 to done, and update the handoff.
+
+### Plan
+- Pulled main (227d484) and made branch `stage-1-done`.
+- Read the run results from GitHub's public API (no `gh`).
+
+### Resultat
+- `docs/stage-1-check.md` › The run: both runs linked, all seven jobs green on each. Main after the merge was run 45564538544; the branch was run 45561325207.
+- `sprint-status.yaml`: `3-5-accessibility-check-and-stage-1-done: done` and `epic-3: done`. Stage 1 is closed.
+- AI log `docs/ai-logs/2026-11-25-story-3-5-b.md` gained section 7, "After the merge".
+- Closed in issues.md: the CI check and "set 3.5 and Epic 3 done".
+
+### Åpne punkter
+- Ingen nye. Edvard skipped the Epic 3 retrospective (AI recommended a short one). Next is stage 2 (Epic 4) in a new chat.
