@@ -856,11 +856,11 @@ So that the before part judges skill and the after part checks it, with no bet o
 
 **Given** `positions_near(wallet, cutoff, side="before", limit=2000)`
 **When** it runs
-**Then** the before part is the latest 2,000 Positions whose Market resolved before the cut-off, by Gamma resolution time, fetched by the AD-7 rule (OPEN in full, CLOSED newest-first with the stop rule) (AD-8).
+**Then** the before part is the latest 2,000 Positions whose Market resolved before the cut-off and whose Positions were all first entered before it (Edvard, 2026-11-25: no bet made after the date), by Gamma resolution time, fetched by the AD-7 rule (OPEN in full, CLOSED newest-first with the stop rule) (AD-8).
 
 **Given** `positions_near(wallet, cutoff, side="after", limit=2000)`
 **When** it runs
-**Then** the after part is the first 2,000 Positions in resolved Markets whose first buy in the activity rows is on or after the cut-off **and** whose `first_entry_at` in the positions list is not before it, read oldest-first from the cut-off (AD-7, AD-8)
+**Then** the after part is the first 2,000 Positions, by the positions list's `first_entry_at`, in Markets resolved on or after the cut-off whose Positions were all first entered on or after it; their activity is read oldest-first from the cut-off (AD-7, AD-8; Edvard, 2026-11-25, Story 4.1 review: first entry, not first buy, so Markets entered by a split or conversion are counted)
 **And** a Position bought before the date and resolved after it is in neither part (Glossary, Cut-off Date).
 
 **Given** fixtures cut from the real capture
