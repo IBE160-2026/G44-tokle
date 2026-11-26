@@ -1,0 +1,84 @@
+{% extends "base.html" %}
+{% block title %}{{ view.title }}{% endblock %}
+{% block nav_scans_current %} aria-current="true"{% endblock %}
+{% block content %}
+    {% set h = view.header %}
+    {# The Scan header (UX-DR33, AD-21): title and ledes on the left, the Scan summary card on the right.
+       Every word comes finished from services/watchlist.py. #}
+    <div class="scan-head">
+      <div>
+        <p class="eyebrow">{{ words.EYEBROW }}</p>
+        <h1>{{ h.title }}</h1>
+        <p class="lede">{{ h.lede }}</p>
+        <p class="scan-line">{{ h.population }}</p>
+        <p class="scan-line">{{ h.shortlist }}</p>
+        {% if h.partial %}
+        <details class="about partial-markets">
+          <summary>{{ h.partial_title }}</summary>
+          <ul>
+            {% for market in h.partial %}<li><code>{{ market.short_id }}</code> · {{ market.details }}</li>{% endfor %}
+          </ul>
+        </details>
+        {% endif %}
+      </div>
+      <dl class="scan-summary">
+        {% for label, figure in h.summary %}<div><dt>{{ label }}</dt><dd>{{ figure }}</dd></div>{% endfor %}
+      </dl>
+    </div>
+
+    {# The Scan tabs: plain links, not an ARIA tab list. Epics 5 and 6 add Hold-up Test and Copy Test. #}
+    <nav class="scan-tabs" aria-label="Scan">
+      <a href="{{ url_for('watchlist', scan_id=h.scan_id) }}" aria-current="page">{{ words.TAB_WATCHLIST }}</a>
+    </nav>
+
+    {% if view.luck %}<div class="info-box"><p>{{ view.luck }}</p></div>{% endif %}
+
+    <section class="card" aria-labelledby="watchlist-title">
+      <h2 id="watchlist-title">{{ words.TABLE_TITLE }}</h2>
+      {% if view.rows %}
+      {# The caption sits outside the scroll box, so it wraps at the card's width on a phone. #}
+      <p class="sub" id="watchlist-caption">{{ words.CAPTION }}</p>
+      <div class="table-scroll" role="region" aria-labelledby="watchlist-title" tabindex="0">
+        <table class="scan-table watch-table" aria-describedby="watchlist-caption">
+          <thead>
+            <tr>
+              <th scope="col">Wallet</th>
+              <th scope="col">Verdict</th>
+              <th scope="col">{{ words.ODDS_HEADER }}</th>
+              <th scope="col" class="num">Resolved bets</th>
+              <th scope="col" class="num">Real PnL</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for row in view.rows %}
+            <tr>
+              <td class="wallet-cell">
+                {# The address is the row's one link; its ::after covers the row, so the whole row clicks (UX-DR34). #}
+                <a class="row-link" href="{{ url_for('scan_wallet', scan_id=h.scan_id, raw=row.address) }}" aria-label="{{ row.link_label }}">{{ row.short_address }}</a>
+                {% if row.not_fully_read %}
+                <span class="tag-tip">
+                  <button class="info-tag" type="button" aria-describedby="tip-{{ loop.index }}">{{ words.NOT_FULLY_READ }}</button>
+                  <span class="tooltip" role="tooltip" id="tip-{{ loop.index }}">{{ words.NOT_FULLY_READ_TIP }}</span>
+                </span>
+                {% endif %}
+              </td>
+              <td>
+                <span class="verdict-pill">
+                  <span class="pill-dots" aria-hidden="true">{% for i in range(3) %}<span class="pill-dot{% if i < row.filled_dots %} is-filled{% endif %}"></span>{% endfor %}</span>
+                  {{ row.verdict }}
+                </span>
+              </td>
+              <td>{{ row.odds }}</td>
+              <td class="num mono">{{ row.bets }}</td>
+              <td class="num mono">{{ row.real_pnl }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% else %}
+      <p class="empty-note">{{ words.EMPTY[0] }}<em>{{ words.EMPTY[1] }}</em>{{ words.EMPTY[2] }}</p>
+      {% endif %}
+    </section>
+    {% if view.rows | selectattr("not_fully_read") | list %}<script src="{{ url_for('static', filename='js/tag-tip.js') }}" defer></script>{% endif %}
+{% endblock %}

@@ -24,6 +24,7 @@ from liquidoracle.data.window import cutoff_day
 from liquidoracle.records import Verdict
 from liquidoracle.services.jobs import FINISHED, Jobs
 from liquidoracle.services.scan import DEFAULT_SIZE, MARKET_COUNT, SHORTLIST_FACTOR
+from liquidoracle.services.watchlist import watchlist_label
 
 # The form's limits and messages, word for word from EXPERIENCE.md (UX-DR30).
 MIN_SIZE, MAX_SIZE = 10, 500  # [ASSUMPTION] EXPERIENCE.md: revisit after real Scans
@@ -100,6 +101,7 @@ class ScanRow:
     cutoff: str  # "1 July 2025"
     wallets: str  # "200"
     watchlist: str | None  # "3"; None until the Scan is finished
+    watchlist_label: str | None  # the link name to its Watchlist (Story 4.5); None until finished
     status: str
     resume_label: str | None  # "Resume Scan (Cut-off Date 1 July 2025)" when it can resume now
 
@@ -211,6 +213,7 @@ class ScansPage:
             cutoff,
             phrases.count(scan.size),
             phrases.count(watchlist) if finished else None,
+            watchlist_label(watchlist, cutoff) if finished else None,
             status_text(scan),
             f"Resume Scan (Cut-off Date {cutoff})" if can_resume else None,
         )

@@ -91,7 +91,7 @@
                 <td>{{ row.run_date }}</td>
                 <td>{{ row.cutoff }}</td>
                 <td class="num">{{ row.wallets }}</td>
-                <td class="num">{% if row.watchlist is not none %}{{ row.watchlist }}{% else %}<span aria-hidden="true">—</span><span class="visually-hidden">Not finished</span>{% endif %}</td>
+                <td class="num">{% if row.watchlist is not none %}<a href="{{ url_for('watchlist', scan_id=row.scan_id) }}" aria-label="{{ row.watchlist_label }}">{{ row.watchlist }}</a>{% else %}<span aria-hidden="true">—</span><span class="visually-hidden">Not finished</span>{% endif %}</td>
                 <td class="scan-status">{{ row.status }}</td>
                 <td>
                   {% if row.resume_label %}

@@ -11,6 +11,7 @@ from dataclasses import dataclass
 from liquidoracle.core import phrases
 from liquidoracle.core.positions import mostly_left_out
 from liquidoracle.core.skilltest import mostly_uncoupled
+from liquidoracle.data.store import AFTER, BEFORE, SCAN_WHOLE
 from liquidoracle.services.fetch import StoredResult
 
 
@@ -33,12 +34,12 @@ class HonestyNotes:
     fees: str
     mostly_left_out: str  # FR-11's over-10% sentence, in the warning style
     linked: str  # FR-11's over-20% linked-bets note
-    window: str  # FR-11's window line, only when the window was capped
+    window: str  # FR-11's window line: a lookup's only when capped; a Scan result's names the parts read (Story 4.5)
     computed_on: str
 
 
 def honesty_notes(stored: StoredResult) -> HonestyNotes:
-    """The honesty notes for one stored lookup, also for *Not enough data* (FR-10, FR-11)."""
+    """The honesty notes for one stored lookup or Scan result, also for *Not enough data* (FR-10, FR-11)."""
     result, positions = stored.result, stored.positions
     label, figure, text = phrases.largest_bet(result.real_pnl, positions.largest_bet)
     held_figure, held_text = phrases.held(positions.held_count, positions.read_count)
@@ -65,6 +66,19 @@ def honesty_notes(stored: StoredResult) -> HonestyNotes:
         fees=phrases.fees_not_counted(positions.failed_fee_count, positions.failed_fee_total) if measured else "",
         mostly_left_out=phrases.mostly_left_out_sentence(positions.left_out_share) if mostly_left_out(positions) else "",
         linked=phrases.linked_bets_note(result.uncoupled_share) if mostly_uncoupled(result) else "",
-        window=phrases.window_line(in_set) if stored.capped else "",
-        computed_on=phrases.computed_on(result.scope, in_set, capped=stored.capped, seed=result.seed),
+        window=_window(stored, in_set),
+        computed_on=phrases.computed_on(
+            result.scope, in_set, capped=stored.capped, seed=result.seed, cutoff=stored.cutoff
+        ),
     )
+
+
+def _window(stored: StoredResult, in_set: int) -> str:
+    """FR-11's window line: a lookup's only when its window was capped. A Scan's `scan_whole` result names the
+    windows it rests on (Edvard, 2026-11-26, Story 4.5 and its review): both parts, the before part alone when
+    Polymarket refused the after part, and no line when nothing was read."""
+    if stored.result.scope == SCAN_WHOLE:
+        if AFTER in stored.sides:
+            return phrases.SCAN_WINDOW_LINE
+        return phrases.SCAN_BEFORE_ONLY_LINE if BEFORE in stored.sides else ""
+    return phrases.window_line(in_set) if stored.capped else ""

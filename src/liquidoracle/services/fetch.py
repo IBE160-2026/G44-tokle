@@ -56,6 +56,8 @@ class StoredResult:
     positions: PositionSet
     capped: bool
     listed: int  # the window's positions-list rows: what the 2,000 cap counts (AD-8; Story 3.3 review)
+    cutoff: date | None = None  # a Scan's Cut-off Date for its `scan_whole` result (Story 4.5); None for a lookup
+    sides: tuple[str, ...] = ()  # a Scan result's parts that were read: ("before", "after"), ("before",) or ()
 
 
 def skill_result(store: Store, wallet: str, *, seed: int) -> SkillTestResult | None:

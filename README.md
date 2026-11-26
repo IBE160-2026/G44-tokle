@@ -18,6 +18,8 @@ What stage 1 does (FR-1 to FR-14 in the PRD):
 - Run with no network in Offline Mode (FR-14) on the committed Sample Dataset: 10 real Polymarket Wallets (FR-12) and the Synthetic Wallets, made-up Wallets whose right answers are known (FR-13).
 - Work in the dark or light theme, by keyboard, without JavaScript, and on screens from 320 px wide.
 
+Stage 2 so far (FR-16, in progress): *Scan wallets* in the top bar starts a Scan of the top Wallets by profit made before a Cut-off Date you choose, shows its progress, and can resume one that was stopped. When a Scan has finished, its number in the Watchlist column of *Your Scans* opens its Watchlist: the Wallets rated *Skilled (high confidence)*, sorted by p-value, and how many would pass by luck alone. Click a Wallet there to see its Verdict for that Scan. A Scan needs live Polymarket data for now; Offline Mode gets Scans with Story 4.6.
+
 How the success metrics were checked: [`docs/stage-1-check.md`](docs/stage-1-check.md). The accessibility check: [`docs/accessibility-check.md`](docs/accessibility-check.md).
 
 ## Prerequisites
@@ -50,13 +52,14 @@ uv run liquidoracle run --offline
 
 Then open **http://127.0.0.1:8044** in your browser. Under *Sample Wallets*, the *Real Wallets* group lists 10 real Polymarket Wallets by short address; click one to see its Verdict card (what each one shows, and why, is in [`docs/real-wallets.md`](docs/real-wallets.md)). Under *Synthetic Wallets*, pick **Sharp trader**: its Verdict card says *Skilled (high confidence)*. The thin wallet shows *Not enough data*, and a coin-flipper shows *No evidence of skill*. The list shows one of the 1,000 coin-flippers; to check another, open any file in `instance/synthetic/coin-flippers/`, copy the value after `"address":` (0x and 40 characters) and paste it into the address field. Stop the app with `Ctrl+C`.
 
-The app starts in the dark theme. The round button at the top right switches to the light theme and back, and the browser remembers your pick. Every page also works without JavaScript. The app has five small JavaScript files, in `src/liquidoracle/web/static/js/`:
+The app starts in the dark theme. The round button at the top right switches to the light theme and back, and the browser remembers your pick. Every page also works without JavaScript. The app has six small JavaScript files, in `src/liquidoracle/web/static/js/`:
 
 - `theme.js`: the light and dark theme button.
 - `copy-address.js`: the copy button next to the address on a Verdict page. It shows "Copied" for 2 seconds; if the browser refuses, it says so and selects the address, so you can press Ctrl+C (⌘C on a Mac). Without it, the button is not shown and you select the address yourself.
 - `chart.js`: lets you explore the luck chart on a Verdict page. Point at a bar, or step through the bars with the arrow keys, to see its range and how many replays ended there; point at the blue *This Wallet* line, or Tab to it, to light up the replays that did as well or better. Click it or press Enter to keep that highlight on; click again or press Esc to clear it. The first time the chart comes into view, the bars grow in (not when your system is set to reduce motion). Without it, the chart and the sentence under it show the same result, just without the pointing.
 - `progress.js`: while a live lookup fetches, it asks the app once a second whether the fetch is done, then shows the result in place and moves the keyboard focus to its heading. Without it, the page has a "Reload this page" link instead.
 - `scans.js`: on the Scans page, it updates the rough time estimate as you change the Number of Wallets, shows the "very few bets" warning as soon as you pick a recent Cut-off Date, and, while a Scan runs, moves the progress bar and counts in the tab title ("84/200 · Scan · LiquidOracle") once a second, telling a screen reader at most every 10%. Without it, the warning shows after you press "Start Scan" (press it again to start), and you reload the page to see how far a Scan got.
+- `tag-tip.js`: on a Watchlist, Esc hides the "Not fully read" tag's explanation while you point at or focus the tag. Without it, the explanation still shows on hover and focus, and a screen reader reads it with the tag.
 
 The app runs only on your own computer (it listens on 127.0.0.1, not on the network).
 
