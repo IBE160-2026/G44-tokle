@@ -89,6 +89,11 @@ def count(number: int) -> str:
     return f"{_whole(number, 'count'):,}"
 
 
+def of_total(done: int, total: int) -> str:
+    """How far a count got, for the Scan progress text (EXPERIENCE.md): "84 of 200", "1,200 of 18,000"."""
+    return f"{count(done)} of {count(total)}"
+
+
 def resolved_bets_word(number: int) -> str:
     """The words after a count of Resolved Positions (UX-DR15): "resolved bet" for 1, else "resolved bets"."""
     return "resolved bet" if _whole(number, "count") == 1 else "resolved bets"

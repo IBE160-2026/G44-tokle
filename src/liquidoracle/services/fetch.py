@@ -6,6 +6,7 @@ Offline and live runs take this same path; only the client and the database file
 from __future__ import annotations
 
 from dataclasses import dataclass
+from datetime import date
 
 from liquidoracle.core.positions import build_positions
 from liquidoracle.core.skilltest import skill_test
@@ -15,17 +16,29 @@ from liquidoracle.data.window import WINDOW_LIMIT, positions_near
 from liquidoracle.records import PositionSet, SkillTestResult
 
 
-def fetch_wallet(client: WalletClient, store: Store, wallet: str, *, limit: int = WINDOW_LIMIT) -> int:
+FRESH_FOR = 24 * 60 * 60  # [ASSUMPTION] AD-4: a stored snapshot under 24 hours old is used without a fetch
+
+
+def fetch_wallet(
+    client: WalletClient,
+    store: Store,
+    wallet: str,
+    *,
+    limit: int = WINDOW_LIMIT,
+    cutoff: date | None = None,
+    side: str | None = None,
+) -> int:
     """Fetch one Wallet's window and save it as one complete snapshot; returns its `fetch_id` (AD-8, AD-19).
 
+    With `cutoff` and `side` it is that part of the Cut-off Date (AD-7), stored under that key (AD-4).
     The Wallet's lock is held throughout, so a web thread and the worker never fetch the same
     Wallet at once. Everything is read before anything is written, so a Wallet the client does
     not have (`NotAvailableOffline`, FR-14) or a read Polymarket cuts short leaves no snapshot.
     """
     wallet = wallet.strip().lower()  # FR-1: addresses are lower case
     with store.wallet_lock(wallet):
-        window = positions_near(client, wallet, limit=limit, stored_markets=store.resolved_markets)
-        fetch_id = store.begin_snapshot(wallet, window_limit=window.limit)
+        window = positions_near(client, wallet, cutoff, side, limit, stored_markets=store.resolved_markets)
+        fetch_id = store.begin_snapshot(wallet, window_limit=window.limit, cutoff=window.cutoff, side=window.side)
         store.add_positions(fetch_id, window.positions)
         store.add_activity(fetch_id, window.activity)
         store.save_markets(window.markets)

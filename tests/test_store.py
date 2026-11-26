@@ -52,9 +52,13 @@ def test_connection_uses_wal_busy_timeout_and_foreign_keys(store: Store) -> None
 
 
 def test_new_file_gets_the_schema_and_its_version(store: Store) -> None:
-    """AD-6: schema.sql creates the four fetched-data tables and the job table, and user_version records the schema."""
+    """AD-6: schema.sql creates the four fetched-data tables, the job table and Story 4.3's five scan tables, and
+    user_version records the schema."""
     tables = {name for (name,) in raw(store, "SELECT name FROM sqlite_master WHERE type='table'")}
-    assert tables - {"sqlite_sequence"} == {"snapshot", "listed_position", "activity_row", "market", "job"}
+    assert tables - {"sqlite_sequence"} == {
+        "snapshot", "listed_position", "activity_row", "market", "job",
+        "scan", "scan_market", "scan_candidate", "scan_wallet", "scan_result",
+    }
     assert raw(store, "PRAGMA user_version") == [(SCHEMA_VERSION,)]
 
 
@@ -424,10 +428,64 @@ def test_an_older_database_is_rebuilt_and_takes_a_window_snapshot(tmp_path: Path
     old.close()
     db = Store(path)
     try:
-        assert raw(db, "PRAGMA user_version") == [(SCHEMA_VERSION,)] and SCHEMA_VERSION == 5
+        assert raw(db, "PRAGMA user_version") == [(SCHEMA_VERSION,)] and SCHEMA_VERSION == 6
         assert db.latest_snapshot("w") is None and db.resolved_markets(["0xold"]) == {}
         write(db)
         snapshot = db.latest_snapshot(WALLET)
         assert snapshot is not None and snapshot.positions == (LISTED,) and snapshot.markets == (MARKET,)
     finally:
         db.close()
+
+
+# --- the snapshot key (AD-4, AD-19; Story 4.3) -------------------------------------------------------
+
+CUTOFF = 1_751_328_000  # 1 July 2025, 00:00 UTC
+
+
+def write_part(db: Store, side: str | None, cutoff: int | None = CUTOFF, wallet: str = WALLET) -> int:
+    fetch_id = db.begin_snapshot(wallet, window_limit=LIMIT, cutoff=None if side is None else cutoff, side=side)
+    db.add_positions(fetch_id, (LISTED,))
+    db.save_markets((MARKET,))
+    db.finish_snapshot(fetch_id)
+    return fetch_id
+
+
+def test_ad4_a_lookup_never_reads_a_scans_part(store: Store) -> None:
+    """AD-4 (Story 4.3): a Wallet with only a Cut-off Date's parts has no lookup window for any lookup reader."""
+    before = write_part(store, "before")
+    write_part(store, "after")
+    assert store.latest_snapshot(WALLET) is None and not store.has_snapshot(WALLET)
+    assert store.serving_snapshot(WALLET, window_limit=LIMIT) is None
+    assert store.snapshot_time(WALLET, window_limit=LIMIT) is None and store.wallet_count() == 0
+    part = store.serving_snapshot(WALLET, cutoff=CUTOFF, side="before")
+    assert part is not None and part.fetch_id == before and (part.cutoff, part.side) == (CUTOFF, "before")
+    assert store.serving_snapshot(WALLET, cutoff=CUTOFF - 86_400, side="before") is None  # another date
+
+
+def test_ad19_finishing_deletes_only_older_snapshots_of_the_same_part(store: Store) -> None:
+    """AD-19 (Story 4.3): a new lookup window replaces the old lookup window only; a part replaces only the same
+    Wallet's same date and side."""
+    lookup = write_part(store, None)
+    before = write_part(store, "before")
+    other_day = write_part(store, "before", cutoff=CUTOFF - 86_400)
+    after = write_part(store, "after")
+    assert {store.snapshot(i) is not None for i in (lookup, before, other_day, after)} == {True}
+    newer = write_part(store, "before")
+    assert store.snapshot(before) is None
+    assert all(store.snapshot(i) is not None for i in (lookup, other_day, after, newer))
+
+
+def test_ad19_an_abandoned_snapshot_of_any_part_goes_when_the_wallet_is_fetched_again(store: Store) -> None:
+    """AD-19: a half-written snapshot never lingers: the next finished fetch of the Wallet removes it."""
+    abandoned = store.begin_snapshot(WALLET, window_limit=LIMIT, cutoff=CUTOFF, side="after")
+    write_part(store, None)
+    assert raw(store, f"SELECT COUNT(*) FROM snapshot WHERE fetch_id = {abandoned}") == [(0,)]
+
+
+@pytest.mark.parametrize(("cutoff", "side"), [(CUTOFF, None), (None, "before"), (CUTOFF, "middle")])
+def test_a_part_needs_both_a_date_and_a_known_side(store: Store, cutoff: int | None, side: str | None) -> None:
+    """AD-7: a Cut-off Date and its side come together, and the side is before or after."""
+    with pytest.raises(ValueError):
+        store.begin_snapshot(WALLET, window_limit=LIMIT, cutoff=cutoff, side=side)
+    with pytest.raises(ValueError):
+        store.serving_snapshot(WALLET, cutoff=cutoff, side=side)

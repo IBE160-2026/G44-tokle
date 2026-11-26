@@ -26,13 +26,12 @@ from liquidoracle.data.store import NO_HISTORY, JobStatus, Store
 from liquidoracle.data.window import WINDOW_LIMIT
 from liquidoracle.records import Verdict
 from liquidoracle.services.chart import LuckChart, luck_chart
-from liquidoracle.services.fetch import StoredResult, result_of, stored_result
+from liquidoracle.services.fetch import FRESH_FOR, StoredResult, result_of, stored_result
 from liquidoracle.services.honesty import HonestyNotes, honesty_notes
 from liquidoracle.services.jobs import FETCHING, NO_HISTORY_MESSAGE, Jobs
 
 ADDRESS = re.compile(r"0x[0-9a-fA-F]{40}")  # FR-1: 0x and 40 hex characters, any case
 
-FRESH_FOR = 24 * 60 * 60  # [ASSUMPTION] AD-4: a stored snapshot under 24 hours old is used without a fetch
 # [ASSUMPTION] Story 2.5 review: an outage or error page is shown again on reload for this many seconds after its
 # job ended; after that, reloading it tries again ("Try again in a few minutes.").
 RETRY_AFTER = 60
