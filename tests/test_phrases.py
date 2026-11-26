@@ -359,6 +359,12 @@ def test_ux_dr24_about_this_chart():
 # --- Story 3.2: exploring the chart (UX-DR26, UX-DR27) ------------------------------------------
 
 
+def test_ux_dr14_scan_progress_counts_keep_comma_groups():
+    """UX-DR14, EXPERIENCE.md (Story 4.3 review): the Scan progress text groups thousands: "1,200 of 18,000"."""
+    assert phrases.of_total(84, 200) == "84 of 200"
+    assert phrases.of_total(1200, 18000) == "1,200 of 18,000"
+
+
 def test_ux_dr26_bar_range_and_replay_count():
     """UX-DR26: the slider's spoken example "$30,000 to $35,000: 289 replays"; end bars read as their labels."""
     assert f"{phrases.bar_range(30_000.0, 35_000.0)}: {phrases.replays(289)}" == "$30,000 to $35,000: 289 replays"

@@ -2,6 +2,10 @@
 
 Why the PRD says what it says. The PRD itself keeps only the requirements (`prd.md`); this file keeps the reasons, dates and earlier wording that used to sit inside it. The full audit trail of the BMAD workflow, one line per decision, is `.memlog.md` in this folder; git history has every earlier version of `prd.md`.
 
+## 2026-11-26: what a new Scan reuses, settled while planning Story 4.3
+
+FR-16 said "Stored Wallet data is reused (FR-2), so only Wallets not seen before are fetched." A Scan reads each Wallet's before part (and, for the top N, its after part) at its own Cut-off Date, and a part at one date holds different Positions from a part at another date, so a stored part cannot serve a Scan with another date. **Decision (Edvard, 2026-11-26, the AI's recommendation):** Market records are never fetched twice; a Wallet's part is reused for the same Wallet, Cut-off Date and side when it is less than 24 hours old (AD-4) or already frozen to that Scan (Resume); a new date fetches the Wallet's parts again. Rejected: building a new date's part from a stored part that covers it (fewer requests, but new logic with five days to the code freeze). Earlier wording: "Stored Wallet data is reused (FR-2), so only Wallets not seen before are fetched."
+
 ## 2026-11-24: honesty notes, settled while planning Story 3.3
 
 FR-11 left three things open that only show once the honesty notes are built.

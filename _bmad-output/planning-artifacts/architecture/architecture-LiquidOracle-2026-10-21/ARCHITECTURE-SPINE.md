@@ -81,7 +81,7 @@ Arrows are the only allowed imports. `core` imports only `records`, the standard
 - **Binds:** FR-2, FR-18, FR-19
 - **Prevents:** a lookup reusing a Scan's window, or the reverse, and showing a wrong Verdict with 0 network calls; re-fetching data that cannot change.
 - **Rule:**
-  - Freshness belongs to a snapshot (AD-19). A read is a cache hit only when **one** complete snapshot's own range covers the requested window and was fetched less than 24 hours ago `[ASSUMPTION]`. Rows are never merged across snapshots, and a missing part is never fetched as a gap: the whole window is fetched again. One function in `data/store.py` answers "which snapshot serves this window".
+  - Freshness belongs to a snapshot (AD-19). A read is a cache hit only when **one** complete snapshot's own range covers the requested window and was fetched less than 24 hours ago `[ASSUMPTION]`. A snapshot's range is its window limit plus its Cut-off Date and side (none for a lookup), so a lookup never reads a Scan's part and a Scan never reads a lookup's window or a part at another date; a Scan's part is reused only for the same Wallet, Cut-off Date and side (Edvard, 2026-11-26, Story 4.3). Rows are never merged across snapshots, and a missing part is never fetched as a gap: the whole window is fetched again. One function in `data/store.py` answers "which snapshot serves this window".
   - When Polymarket does not answer (FR-2), the page offers stored data only from a snapshot whose range matches the view, labelled with its fetch date. Otherwise it says there is no stored data for this view.
   - Offline Mode never goes stale: it queues no jobs and serves its stored snapshots whatever their age, since the Sample Dataset is the only source (Story 2.5).
   - Gamma Market records, fee schedules and price-history windows never expire once the Market is resolved. Records of open Markets expire with the Wallet lists.
@@ -93,7 +93,7 @@ Arrows are the only allowed imports. `core` imports only `records`, the standard
 - **Prevents:** a 70-minute Scan inside a web request; a lookup waiting behind a Scan; two workers on one job; a crash that resumes for ever.
 - **Rule:**
   - **Jobs.** A lookup that needs a fetch, and a Scan, are `job` rows. Starting one inserts the row (`queued`) and returns, and the page polls `GET /jobs/<id>/progress`.
-  - **One thing at a time, lookups first.** One worker thread does the work. Between any two units of a Scan's work (one Market-list page, one Wallet fetch, one price request) it runs any waiting lookup first, then continues the Scan.
+  - **One thing at a time, lookups first.** One worker thread does the work. Between any two units of a Scan's work (one Market with both its lists, one Wallet fetch, one price request) it runs any waiting lookup first, then continues the Scan. A unit is a whole Market, not one list page: a Market unit is up to 30 pages, about 6 seconds at 5 per second (Edvard, 2026-11-26, Story 4.3). A Wallet unit reads that Wallet's whole part, so behind a big Wallet a lookup can wait longer (Story 4.3 review).
   - **Claiming.** The worker claims a job with one atomic `UPDATE … SET status='running' WHERE id=? AND status='queued'` and checks that `rowcount == 1`.
   - **Phases.** A Scan job runs ranking, Skill Tests, Hold-up Test and Copy Test as phases. The progress JSON carries `phase`, and a Scan counts as finished only when every phase is done.
   - **States.** `queued`, `running`, `done`, `interrupted` (app closed), `stopped` (Polymarket did not answer; Resume offered), `failed` (unexpected error, logged; no Resume). At startup, a job left `running` becomes `interrupted`.
@@ -107,7 +107,7 @@ Arrows are the only allowed imports. `core` imports only `records`, the standard
 - **Rule:**
   - Plain `sqlite3`, no ORM. WAL mode, a busy timeout, one connection per thread.
   - Every write transaction starts with `BEGIN IMMEDIATE` and stays short.
-  - The schema lives in one `schema.sql`, and its version is `PRAGMA user_version`. On a version mismatch the cache tables are rebuilt; Scans, Watchlists, results, and every snapshot a Scan or result refers to, are migrated and kept. Such snapshots are never pruned. A Scan whose snapshots are gone anyway shows "data rebuilt, cannot resume".
+  - The schema lives in one `schema.sql`, and its version is `PRAGMA user_version`. On a version mismatch the cache tables are rebuilt; Scans, Watchlists, results, scan jobs, every snapshot a Scan or result refers to (with its rows), and the Market records those snapshots and the Scan's Market set name, are migrated and kept, copied by the columns the old and new tables share (Story 4.3). Such snapshots are never pruned. A Scan whose snapshots are gone anyway shows "data rebuilt, cannot resume".
   - Only `data/store.py` runs SQL.
 
 ### AD-7 — "Resolved", and before or after the Cut-off Date, come from Gamma and the Wallet's own buys [ADOPTED]
@@ -273,7 +273,7 @@ Arrows are the only allowed imports. `core` imports only `records`, the standard
 - **Rule:**
   - Each Wallet fetch writes a snapshot with a `fetch_id` that becomes visible in one final step, and readers see only complete snapshots.
   - A per-Wallet lock, shared by web threads and the worker, allows one fetch of a Wallet at a time.
-  - A Scan stores the `fetch_id` it used for each Wallet and an as-of time. Resume, Hold-up Test and Copy Test read only those snapshots and ignore anything resolved after the as-of time.
+  - A Scan stores the `fetch_id` it used for each Wallet and an as-of time (when the Scan was created). A snapshot is keyed by Wallet, window limit, Cut-off Date and side; finishing one deletes only older snapshots with the same key that no Scan refers to (Story 4.3). Resume, Hold-up Test and Copy Test read only those snapshots and ignore anything resolved after the as-of time.
 
 ### AD-20 — Correlated bets share their random draw; what cannot be detected is measured and shown
 
