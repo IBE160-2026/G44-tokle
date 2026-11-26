@@ -253,7 +253,7 @@ def serve(settings: Settings) -> int:
             log.info("%d lookup(s) were cut off when the app last closed; they are marked interrupted", interrupted)
         Worker(sources.client, sources.jobs).start()  # AD-5, AD-23: the one worker, started only here
         lookup = Lookup(None, sources.store, seed=settings.seed, jobs=sources.jobs)
-    app = create_app(settings, lookup)
+    app = create_app(settings, lookup)  # it builds the Scans page's service over the same store and job queue
     log.info("LiquidOracle is running at http://%s:%d (press Ctrl+C to stop)", HOST, settings.port)
     # If binding still fails (no permission, or another program took the port after the
     # check above), Werkzeug prints a plain message itself and exits with code 1.

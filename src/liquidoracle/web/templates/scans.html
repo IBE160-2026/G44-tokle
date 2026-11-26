@@ -1,0 +1,114 @@
+{% extends "base.html" %}
+{% block title %}{{ view.title }}{% endblock %}
+{% block nav_scans_current %} aria-current="page"{% endblock %}
+{% block content %}
+    {% set form = view.form %}
+    <div class="narrow" id="scans-page"
+         data-page="{{ url_for('scan_list') }}" data-estimate="{{ url_for('scan_estimate') }}"
+         data-page-title="{{ page_title }}" data-running-title="{{ running_title }}"
+         {% if view.running %}data-progress="{{ url_for('job_progress', job_id=view.running.job_id) }}" data-scan="{{ view.running.scan_id }}"{% endif %}>
+      <p class="eyebrow">Wallet scan</p>
+      <h1>Scans</h1>
+      <p class="visually-hidden" id="scan-announce" role="status"></p>
+
+      <div id="scan-status">
+      {% if view.running %}
+        <div class="info-box scan-running" id="running-info">
+          <p>{{ view.running.info[0] }}<span id="running-step">{{ view.running.step }}</span>{{ view.running.info[1] }}</p>
+          <progress class="scan-progress" id="scan-progress" aria-label="Scan progress" aria-valuetext="{{ view.running.step }}"
+                    {% if view.running.total > 0 %}max="{{ view.running.total }}" value="{{ view.running.done }}"{% endif %}></progress>
+          <p class="reload-note"><a href="{{ url_for('scan_list') }}">Reload this page</a> to see how far it got.</p>
+        </div>
+      {% endif %}
+      </div>
+
+      {% if form.read_only %}
+      <div class="info-box" role="note"><p>{{ offline_info }}</p></div>
+      {% endif %}
+
+      <form class="card" id="new-scan" action="{{ url_for('start_scan') }}" method="post" novalidate
+            aria-labelledby="new-scan-title" data-today="{{ form.today }}" data-warn-days="{{ warn_days }}">
+        <h2 id="new-scan-title">New Scan</h2>
+
+        {% set described = (['cutoff-error'] if form.cutoff_error else []) + (['cutoff-warning'] if form.warning else []) %}
+        <label class="field-label" for="cutoff">Cut-off Date</label>
+        <input class="text-input date-input" id="cutoff" name="cutoff" type="date" value="{{ form.cutoff }}"
+               max="{{ form.latest }}"{% if form.read_only %} readonly{% endif %}
+               {% if described %}aria-describedby="{{ described | join(' ') }}"{% endif %}{% if form.cutoff_error %} aria-invalid="true" autofocus{% endif %}>
+        {% if form.cutoff_error %}
+        <p class="error-message" id="cutoff-error">
+          <span class="error-icon" aria-hidden="true">✕</span>
+          <span><span class="visually-hidden">Error: </span>{{ form.cutoff_error }}</span>
+        </p>
+        {% endif %}
+        <div class="warning field-warning" id="cutoff-warning" role="note"{% if not form.warning %} hidden{% endif %}>
+          {% include "warning.svg.html" %}
+          <p><span class="visually-hidden">Warning: </span>{{ few_after }}</p>
+        </div>
+
+        <label class="field-label field-gap" for="wallets">Number of Wallets</label>
+        {% if form.read_only %}
+        <input class="text-input" id="wallets" name="wallets" type="text" value="{{ form.size }}" readonly>
+        {% else %}
+        <input class="text-input number-input" id="wallets" name="wallets" type="number" value="{{ form.size }}"
+               min="{{ min_size }}" max="{{ max_size }}" step="1" inputmode="numeric"
+               aria-describedby="{% if form.size_error %}wallets-error {% endif %}wallets-estimate"{% if form.size_error %} aria-invalid="true"{% if not form.cutoff_error %} autofocus{% endif %}{% endif %}>
+        {% endif %}
+        <p class="hint" id="wallets-estimate"{% if not form.estimate %} hidden{% endif %}>{{ form.estimate or "" }}</p>
+        {% if form.size_error %}
+        <p class="error-message" id="wallets-error">
+          <span class="error-icon" aria-hidden="true">✕</span>
+          <span><span class="visually-hidden">Error: </span>{{ form.size_error }}</span>
+        </p>
+        {% endif %}
+
+        <input type="hidden" name="confirmed" id="confirmed" value="{{ '1' if form.confirmed else '' }}">
+        <div class="form-actions">
+          <button class="btn-primary" id="start-scan" type="submit"
+                  {% if form.blocked %}aria-disabled="true" aria-describedby="{{ 'start-reason' if form.blocked_reason else 'running-info' }}"{% endif %}>Start Scan</button>
+          {% if form.blocked_reason %}<p class="hint" id="start-reason">{{ form.blocked_reason }}</p>{% endif %}
+        </div>
+      </form>
+
+      <section class="card" id="scan-list" aria-labelledby="scan-list-title">
+        <h2 id="scan-list-title">Your Scans</h2>
+        {% if view.rows %}
+        <div class="table-scroll" role="region" aria-labelledby="scan-list-title" tabindex="0">
+          <table class="scan-table">
+            <thead>
+              <tr>
+                <th scope="col">Run date</th>
+                <th scope="col">Cut-off Date</th>
+                <th scope="col" class="num">Wallets</th>
+                <th scope="col" class="num">Watchlist</th>
+                <th scope="col">Status</th>
+                <th scope="col"><span class="visually-hidden">Resume</span></th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for row in view.rows %}
+              <tr data-scan="{{ row.scan_id }}">
+                <td>{{ row.run_date }}</td>
+                <td>{{ row.cutoff }}</td>
+                <td class="num">{{ row.wallets }}</td>
+                <td class="num">{% if row.watchlist is not none %}{{ row.watchlist }}{% else %}<span aria-hidden="true">—</span><span class="visually-hidden">Not finished</span>{% endif %}</td>
+                <td class="scan-status">{{ row.status }}</td>
+                <td>
+                  {% if row.resume_label %}
+                  <form action="{{ url_for('resume_scan', scan_id=row.scan_id) }}" method="post">
+                    <button class="btn-secondary" type="submit" aria-label="{{ row.resume_label }}">Resume</button>
+                  </form>
+                  {% endif %}
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        {% else %}
+        <p class="empty-note">{{ view.empty }}</p>
+        {% endif %}
+      </section>
+    </div>
+    <script src="{{ url_for('static', filename='js/scans.js') }}" defer></script>
+{% endblock %}

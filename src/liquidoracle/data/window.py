@@ -18,7 +18,7 @@ from __future__ import annotations
 
 import logging
 from collections.abc import Callable, Iterable, Mapping, Sequence
-from datetime import UTC, date, datetime
+from datetime import UTC, date, datetime, timedelta
 
 from liquidoracle.data.client import WalletClient
 from liquidoracle.data.errors import NoPolymarketHistory, PolymarketUnavailable
@@ -31,6 +31,7 @@ WINDOW_LIMIT = 2_000  # [ASSUMPTION] AD-8
 # [ASSUMPTION] AD-7: the Sample Dataset capture's cap, about 30 s at 5 requests per second
 # (Edvard, 2026-11-20, Story 2.2).
 ACTIVITY_ROW_CAP = 150_000
+_EPOCH = datetime(1970, 1, 1, tzinfo=UTC)
 SIDES = ("before", "after")  # AD-7: the two parts of a Cut-off Date
 
 StoredMarkets = Callable[[Sequence[str]], Mapping[str, Market]]
@@ -45,6 +46,15 @@ def cutoff_at(day: date) -> int:
     if isinstance(day, datetime) or not isinstance(day, date):
         raise TypeError(f"a Cut-off Date is a date, not {type(day).__name__}")
     return int(datetime(day.year, day.month, day.day, tzinfo=UTC).timestamp())
+
+
+def cutoff_day(cutoff: int) -> date:
+    """A stored Cut-off Date back as a date: `cutoff_at`'s inverse (AD-7; Story 4.4 review).
+
+    Counted from 1970 by hand: on Windows `datetime.fromtimestamp` refuses a time long before 1970,
+    so a Scan of 1 January 1960 would otherwise break every page that lists it.
+    """
+    return (_EPOCH + timedelta(seconds=cutoff)).date()
 
 
 def positions_near(

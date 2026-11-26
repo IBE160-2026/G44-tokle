@@ -569,11 +569,16 @@ def test_ad23_serve_interrupts_old_jobs_and_starts_the_worker(
     store.claim_job(job_id)
     store.close()
     started: list[Worker] = []
+    apps: list = []
     monkeypatch.setattr(Worker, "start", lambda self: started.append(self))
     monkeypatch.setattr(cli, "port_in_use", lambda host, port: False)
-    monkeypatch.setattr("flask.Flask.run", lambda self, **kwargs: None)
+    monkeypatch.setattr("flask.Flask.run", lambda self, **kwargs: apps.append(self))
     assert cli.serve(Settings(offline=False)) == 0
     assert len(started) == 1
+    # UX-DR30 (Story 4.4 review): the served app's Scans page can start a Scan, at the configured pace.
+    scans = apps[0].test_client().get("/scans").get_data(as_text=True)
+    assert "readonly" not in scans and "Offline Scans are not ready yet." not in scans
+    assert f"at {Settings().polymarket_requests_per_second:g} requests per second" in scans
     check = Store(tmp_path / LIVE_DB)
     assert check.job(job_id).status is JobStatus.INTERRUPTED  # type: ignore[union-attr]
     check.close()

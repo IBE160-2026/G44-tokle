@@ -557,6 +557,41 @@ class Store:
         ).fetchone()
         return Scan(*row[:5], ScanStep(row[5]), row[6], bool(row[7]), None if job is None else _job(job))
 
+    def scans(self) -> tuple[Scan, ...]:
+        """Every Scan with its latest job, newest first: the Scan list (FR-16, UX-DR31; Story 4.4)."""
+        db = self._connection()
+        jobs = (_job(row) for row in db.execute(
+            f"SELECT {_JOB_COLUMNS} FROM job WHERE id IN (SELECT MAX(id) FROM job WHERE scan_id IS NOT NULL GROUP BY scan_id)"
+        ))
+        latest = {job.scan_id: job for job in jobs}
+        return tuple(
+            Scan(*row[:5], ScanStep(row[5]), row[6], bool(row[7]), latest.get(int(row[0])))
+            for row in db.execute(
+                "SELECT scan_id, cutoff, size, seed, as_of, step, candidate_count, data_rebuilt FROM scan"
+                " ORDER BY scan_id DESC"
+            )
+        )
+
+    def scan_seconds(self, scan_id: int) -> int | None:
+        """How long the Scan's jobs took, from queued to finished, added up over Resumes (Story 4.4's estimate).
+
+        None when a run was interrupted: its end is stamped when the app next starts, not when it closed,
+        so the Scan's time is not known (Story 4.4 review).
+        """
+        total, interrupted = self._connection().execute(
+            "SELECT COALESCE(SUM(finished_at - created_at), 0), COALESCE(SUM(status = ?), 0) FROM job"
+            " WHERE scan_id = ? AND finished_at IS NOT NULL",
+            (JobStatus.INTERRUPTED.value, scan_id),
+        ).fetchone()
+        return None if interrupted else int(total)
+
+    def watchlist_sizes(self, verdict: str) -> dict[int, int]:
+        """How many `scan_whole` results of each Scan have this Verdict (the Watchlist size, UX-DR31)."""
+        return {int(scan_id): int(n) for scan_id, n in self._connection().execute(
+            "SELECT scan_id, COUNT(*) FROM scan_result WHERE scope = ? AND verdict = ? GROUP BY scan_id",
+            (SCAN_WHOLE, verdict),
+        )}
+
     def set_scan_markets(self, scan_id: int, markets: Sequence[FunnelMarket]) -> None:
         """Store the Scan's Market set in volume order and their Gamma records, and move it to `markets` (AD-21)."""
         self.save_markets(m.market for m in markets)
