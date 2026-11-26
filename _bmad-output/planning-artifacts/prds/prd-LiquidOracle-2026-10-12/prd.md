@@ -2,7 +2,7 @@
 title: "PRD: LiquidOracle"
 status: final
 created: 2026-10-12
-updated: 2026-11-24
+updated: 2026-11-26
 ---
 
 # PRD: LiquidOracle
@@ -248,7 +248,7 @@ The user chooses a Cut-off Date, starts a Scan of the top Wallets by Real PnL (a
 - The funnel: the Markets resolved in the 90 days before the Cut-off Date, top 100 by volume, chosen without looking at outcomes; from their candidates, a shortlist of 3 × the Scan size by a quick profit estimate that also counts unredeemed losses; then each shortlisted Wallet's full data, ranked by Real PnL. `[ASSUMPTION: 90 days, 100 Markets, 3 ×]` The Scan page states the population tested ("Markets resolved in the 90 days before the Cut-off Date, top 100 by volume"), how many of the 100 Markets were used, and that the shortlist estimate is approximate.
 - A Market whose list could not be read in full gives no candidates and is shown as "not used: partial", because a partly read list leans towards winners or losers. A Wallet whose history could not be read in full is kept, marked "not fully read" everywhere it is counted (ranking, Watchlist, Passers, Hold-up groups, Copy Pool), and its unread Positions are left out (FR-3). Only Polymarket not answering stops a Scan; it can then be resumed.
 - A Wallet with more than 2,000 Resolved Positions before the Cut-off Date is not left out: it is ranked, and Skill Tested, on its latest 2,000 of them (those resolved last before the date), and its Verdict card says so (FR-11). Its after part is likewise capped at the first 2,000 after the date (FR-17). This is a stated limitation: older results do not count, so such a Wallet can look better or worse than its whole history would show. `[ASSUMPTION: 2,000 Positions]`
-- A different Cut-off Date means a new Scan, because the list of Wallets changes with it. Stored Wallet data is reused (FR-2), so only Wallets not seen before are fetched.
+- A different Cut-off Date means a new Scan, because the list of Wallets changes with it. Stored data is reused (FR-2) where it is the same data: Market records are never fetched twice, and a Wallet's before or after part is reused for the same Cut-off Date when it is less than a day old. A Wallet's part at another date holds different Positions, so it is fetched again.
 - Every result names the set of Positions it was computed on, so a Watchlist row and the Verdict page it opens show the same result.
 - The page shows progress during a Scan; an interrupted Scan resumes without re-fetching finished Wallets.
 - The Watchlist is stored in the database with the Scan date and its Cut-off Date, and is never sent anywhere.

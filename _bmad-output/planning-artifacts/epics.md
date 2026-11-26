@@ -907,7 +907,7 @@ So that I never lose an hour of work.
 **Given** a started Scan
 **When** it runs
 **Then** it is a `job` with the phases ranking, Skill Tests, Hold-up Test and Copy Test (the last two arrive in Epics 5 and 6); the progress JSON carries `phase`, and a Scan is finished only when every phase is done (AD-5)
-**And** between any two units of work (one Market-list page, one Wallet fetch, one price request) the worker runs any waiting lookup first (AD-5).
+**And** between any two units of work (one Market with both its lists, one Wallet fetch, one price request) the worker runs any waiting lookup first (AD-5; a whole Market, not one list page: Edvard, 2026-11-26).
 
 **Given** a Scan
 **When** its Wallets are fetched
@@ -919,7 +919,7 @@ So that I never lose an hour of work.
 **Then** it is `interrupted` or `stopped`, and Resume continues without fetching finished Wallets again (FR-16, AD-5, AD-3)
 **And** an unexpected error makes it `failed` (logged, no Resume), and a Scan whose snapshots were rebuilt shows "Data rebuilt, cannot resume" (AD-6)
 **And** the Scan's tables are added to `schema.sql` with a raised `user_version`; on a version mismatch the cache tables are rebuilt while Scans, Watchlists, results and every snapshot they refer to are migrated and kept (AD-6)
-**And** a Scan with a different Cut-off Date is a new Scan, and Wallet data already stored is reused, so only Wallets not seen before are fetched (FR-16).
+**And** a Scan with a different Cut-off Date is a new Scan; Market records are never fetched twice, and a Wallet's before or after part is reused for the same Cut-off Date and side when under 24 hours old, and fetched again at another date (FR-16, AD-4; Edvard, 2026-11-26).
 
 ### Story 4.4: The Scans page
 
