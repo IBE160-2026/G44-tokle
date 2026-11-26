@@ -490,3 +490,38 @@ def test_fr11_window_and_computed_on_lines():
     assert phrases.computed_on("lookup", 0, capped=False, seed=44) == "Computed on no bets · Seed 44"
     with pytest.raises(ValueError):
         phrases.computed_on("scan_whole", 10, capped=False, seed=44)
+
+
+# --- Story 4.4: the Scans page's dates and the rough time estimate (UX-DR30, UX-DR31) -------------
+
+
+def test_ux_dr31_scan_dates():
+    """UX-DR31: the Cut-off Date in full ("1 July 2025", as on the Resume button) and the run date ("26 Nov 2026")."""
+    from datetime import date, timedelta, timezone
+
+    assert phrases.long_date(date(2025, 7, 1)) == "1 July 2025"
+    assert phrases.long_date(date(2026, 12, 31)) == "31 December 2026"
+    moment = 1_795_701_600  # 2026-11-26 11:20 UTC
+    assert phrases.run_date(moment, timezone.utc) == "26 Nov 2026"
+    assert phrases.run_date(moment, timezone(timedelta(hours=13))) == "27 Nov 2026"
+    with pytest.raises(ValueError):
+        phrases.run_date(-1)
+
+
+@pytest.mark.parametrize(
+    ("seconds", "text"),
+    [
+        (0, "under 5 minutes"), (149, "under 5 minutes"), (150, "about 5 minutes"), (730, "about 10 minutes"),
+        (3_449, "about 55 minutes"), (3_450, "about 1 hour"), (4_499, "about 1 hour"), (4_500, "about 1.5 hours"),
+        (6_710, "about 2 hours"), (16_410, "about 4.5 hours"), (-5, "under 5 minutes"),
+    ],
+)
+def test_ux_dr30_rough_time(seconds, text):
+    """UX-DR30: the estimate rounds minutes to 5 under an hour and hours to the half hour, halves up."""
+    assert phrases.rough_time(seconds) == text
+
+
+def test_ux_dr30_rough_time_refuses_a_non_number():
+    """UX-DR30, AD-25: a duration that is not a finite number is refused, never written out."""
+    with pytest.raises(ValueError):
+        phrases.rough_time(float("nan"))

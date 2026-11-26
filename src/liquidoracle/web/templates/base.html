@@ -16,6 +16,7 @@
     <a class="brand" href="{{ url_for('check_a_wallet') }}">{% include "logo.svg.html" %}LiquidOracle</a>
     <nav class="mainnav" aria-label="Main">
       <a href="{{ url_for('check_a_wallet') }}"{% block nav_current %}{% endblock %}>Check a wallet</a>
+      <a href="{{ url_for('scan_list') }}"{% block nav_scans_current %}{% endblock %}>Scan wallets</a>
     </nav>
     <div class="bar-tools">
       <button class="theme-toggle" type="button" id="theme-toggle" aria-label="Dark theme" aria-pressed="true" hidden>

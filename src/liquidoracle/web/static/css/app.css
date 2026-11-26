@@ -474,6 +474,41 @@ h1.checking { font-size: 28px; line-height: 1.25; }
 .hint-line { margin: var(--space-3) 0 0; color: var(--ink-muted); }
 .btn-link { display: inline-flex; align-items: center; text-decoration: none; }
 
+/* Scans page (UX-DR30 to UX-DR32; Story 4.4) */
+.field-gap { margin-top: 20px; }
+.date-input, .number-input { flex: none; width: 14rem; max-width: 100%; display: block; }
+.field-warning { margin-top: var(--space-2); }
+.field-warning[hidden] { display: none; }
+.form-actions { margin-top: var(--space-5); }
+.btn-primary[aria-disabled="true"] { cursor: not-allowed; opacity: .55; }
+.btn-primary[aria-disabled="true"]:focus-visible { transform: none; box-shadow: none; background: var(--accent); }
+@media (hover: hover) { .btn-primary[aria-disabled="true"]:hover { transform: none; box-shadow: none; background: var(--accent); } }
+.btn-secondary {
+  height: 36px; padding: 0 14px; border-radius: var(--rounded-sm); cursor: pointer;
+  border: 1px solid var(--accent); background: transparent; color: var(--accent); font: 600 14px var(--sans);
+  transition: color var(--quick), background-color var(--quick), border-color var(--quick);
+}
+@media (hover: hover) { .btn-secondary:hover { background: var(--accent-tint); } }
+.btn-secondary:focus-visible { background: var(--accent-tint); }
+.scan-running p { margin: 0 0 var(--space-2); }
+.scan-running .reload-note { margin: var(--space-2) 0 0; }
+.scan-progress { display: block; width: 100%; height: 12px; accent-color: var(--accent); }
+.empty-note { margin: 0; color: var(--ink-muted); }
+.table-scroll { position: relative; overflow-x: auto; /* relative: hidden labels inside stay in the scroll box */ margin: var(--space-3) -4px 0; padding: 0 4px; }
+.scan-table { width: 100%; border-collapse: collapse; font-size: 15px; font-variant-numeric: tabular-nums; }
+.scan-table th { text-align: left; font-size: 13px; font-weight: 600; color: var(--ink-muted); padding: 0 var(--space-3) var(--space-2) 0; white-space: nowrap; }
+.scan-table td { padding: var(--space-3) var(--space-3) var(--space-3) 0; border-top: 1px solid var(--border); vertical-align: middle; }
+.scan-table td:not(.scan-status) { white-space: nowrap; }
+.scan-table .scan-status { min-width: 13rem; }  /* on a phone the table scrolls in its box instead of squeezing this */
+.scan-table .num { text-align: right; }
+.scan-table form { margin: 0; }
+@media (forced-colors: active) {
+  .btn-primary[aria-disabled="true"] { opacity: 1; border-color: GrayText; color: GrayText; }
+  .btn-secondary:focus-visible { border-color: Highlight; }
+}
+@media (forced-colors: active) and (hover: hover) { .btn-secondary:hover { border-color: Highlight; } }
+@media (prefers-reduced-motion: reduce) { .btn-secondary { transition: none; } }
+
 /* Phone sizes and the smallest screens (UX-DR10, DESIGN.md Smaller screens; Story 3.4). The chart's own
    639 and 399 px rules sit with the chart above. */
 @media (max-width: 639px) {
@@ -488,6 +523,7 @@ h1.checking { font-size: 28px; line-height: 1.25; }
   .field-row { flex-direction: column; }
   .field-row .text-input { flex: none; }  /* stacked, its 18rem basis would become its height */
   .btn-primary { width: 100%; }
+  .date-input, .number-input { width: 100%; }
   .btn-link { justify-content: center; }
   .bar-tools { margin-left: 0; width: 100%; justify-content: flex-end; }
   .offline-pill { padding: 6px var(--space-3); }

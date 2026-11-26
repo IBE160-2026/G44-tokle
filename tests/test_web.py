@@ -11,6 +11,7 @@ import dataclasses
 import re
 import sqlite3
 from collections.abc import Iterator
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
 import pytest
@@ -154,6 +155,7 @@ def every_page(loaded_lookup: Lookup, offline: FlaskClient, tmp_path_factory: py
     keep("Not available offline", offline.get(f"/wallet/{UNKNOWN}"))
     keep("404", offline.get("/no-such-page"))
     keep("405", offline.post("/"))
+    keep("Scans offline", offline.get("/scans"))
 
     root = tmp_path_factory.mktemp("not-loaded")
     synthetic.write_small(root)
@@ -173,6 +175,12 @@ def every_page(loaded_lookup: Lookup, offline: FlaskClient, tmp_path_factory: py
     keep("Unavailable", web.get(finished(web, store, "0x" + "2" * 40, JobStatus.STOPPED)))
     keep("Unavailable with stored data", web.get(finished(web, store, SHARP, JobStatus.STOPPED)))
     keep("Job failed", web.get(finished(web, store, "0x" + "3" * 40, JobStatus.FAILED)))
+    keep("Scans", web.get("/scans"))
+    keep("Scans errors", web.post("/scans", data={"cutoff": "", "wallets": "3"}))
+    recent = (datetime.fromtimestamp(clock.now, UTC).date() - timedelta(days=10)).isoformat()
+    keep("Scans warning", web.post("/scans", data={"cutoff": recent, "wallets": "200"}))
+    web.post("/scans", data={"cutoff": "2025-07-01", "wallets": "200"})
+    keep("Scans running", web.get("/scans"))
     assert "Show stored data from" in pages["Unavailable with stored data"][1]
     assert "Show stored data from" not in pages["Unavailable"][1]
     yield pages
@@ -188,6 +196,8 @@ EVERY_PAGE = {
     "Unavailable": (200, "Polymarket did not answer"), "Unavailable with stored data": (200, "Polymarket did not answer"),
     "500": (500, "Something went wrong"), "Job failed": (500, "Something went wrong"),
     "404": (404, "Page not found"), "405": (404, "Page not found"),
+    "Scans offline": (200, "Scans"), "Scans": (200, "Scans"), "Scans errors": (400, "Scans"),
+    "Scans warning": (200, "Scans"), "Scans running": (200, "Scans"),
 }
 
 

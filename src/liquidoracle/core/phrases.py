@@ -15,7 +15,7 @@ from __future__ import annotations
 
 import math
 from collections.abc import Mapping
-from datetime import datetime, timezone, tzinfo
+from datetime import date, datetime, timezone, tzinfo
 from decimal import ROUND_HALF_UP, Decimal
 from numbers import Integral, Real
 
@@ -405,6 +405,43 @@ def stored_on(epoch_seconds: int, tz: tzinfo | None = None) -> str:
     if tz is None:
         moment = moment.astimezone()  # the laptop's local time
     return f"{moment.day} {_MONTHS[moment.month - 1]} {moment.year}, {moment:%H:%M}"
+
+
+_LONG_MONTHS = (
+    "January", "February", "March", "April", "May", "June",
+    "July", "August", "September", "October", "November", "December",
+)
+
+
+def long_date(day: date) -> str:
+    """A Cut-off Date as the Scan pages write it (EXPERIENCE.md, Story 4.4): "1 July 2025"."""
+    return f"{day.day} {_LONG_MONTHS[day.month - 1]} {day.year}"
+
+
+def run_date(epoch_seconds: int, tz: tzinfo | None = None) -> str:
+    """The day a Scan was run (UX-DR31, Story 4.4): "26 Nov 2026", in the computer's own time zone unless `tz`."""
+    moment = datetime.fromtimestamp(_whole(epoch_seconds, "time"), tz=tz or timezone.utc)
+    if tz is None:
+        moment = moment.astimezone()
+    return f"{moment.day} {_MONTHS[moment.month - 1]} {moment.year}"
+
+
+def rough_time(seconds: float) -> str:
+    """A rough duration for the Scan time estimate (UX-DR30, Story 4.4): "about 25 minutes", "about 2.5 hours".
+
+    Minutes are rounded to the nearest 5 below an hour, hours to the half hour from there; a time
+    that rounds to 0 minutes (under 2.5) is "under 5 minutes". Halves round up (decimal rounding).
+    """
+    minutes = Decimal(repr(max(_real(seconds, "duration"), 0.0))) / 60
+    fives = int((minutes / 5).quantize(_ONE, rounding=ROUND_HALF_UP)) * 5
+    if fives < 5:
+        return "under 5 minutes"
+    if fives < 60:
+        return f"about {fives} minutes"
+    halves = int((minutes / 30).quantize(_ONE, rounding=ROUND_HALF_UP))
+    if halves == 2:
+        return "about 1 hour"
+    return f"about {halves // 2:,} hours" if halves % 2 == 0 else f"about {halves // 2:,}.5 hours"
 
 
 def _whole(value: object, name: str) -> int:

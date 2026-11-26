@@ -108,3 +108,6 @@ Findings and goals set aside by `bmad-build`, each with where it came from.
   summary: An OPEN holder row whose token is not one of its Market's Gamma outcomes ends the Scan funnel with ValueError instead of marking the Market "not used: partial".
   evidence: maybe-false (would be medium); settle it by checking the token ids of a few real Market-anchored reads against Gamma's clobTokenIds (the spike kept no token ids). Story 4.3 can turn the error into a partial Market if it is real.
   resolved: Story 4.3 (2026-11-26): `read_candidates` makes such a Market "not used: partial" instead of ending the Scan; tested by `test_ad9_an_open_row_on_an_unknown_token_makes_the_market_partial`.
+- source_spec: `_bmad-output/implementation-artifacts/spec-4-4-the-scans-page.md`
+  summary: The favicon progress ring while a Scan runs (UX-DR32, EXPERIENCE.md "Scan progress in the tab"), filling clockwise from the top.
+  evidence: Edvard, 2026-11-26, Story 4.4 (AI rec): Epic 4 ran past its 26 Nov target and the plan let the ring slip first; the tab-title counter was built instead. Pick it up only if time is left before the 1 Dec code freeze.

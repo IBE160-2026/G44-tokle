@@ -189,6 +189,16 @@ class Lookup:
         self._jobs = jobs
         self._synthetic = synthetic.all_addresses()  # the coin-flippers' files exist only after load-sample
 
+    @property
+    def store(self) -> Store:
+        """The run's store, which the Scans page shares (Story 4.4)."""
+        return self._store
+
+    @property
+    def jobs(self) -> Jobs | None:
+        """A live run's job queue; None in Offline Mode."""
+        return self._jobs
+
     def check(self, raw: str | None) -> tuple[str | None, str | None]:
         """The Lookup form (FR-1, FR-14): (address to open, None) or (None, the error under the field).
 

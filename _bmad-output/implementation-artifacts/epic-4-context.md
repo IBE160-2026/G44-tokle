@@ -4,7 +4,7 @@
 
 ## Goal
 
-The user chooses a Cut-off Date, starts a Scan of the top Wallets by Real PnL made before that date, and sees the Watchlist sorted by p-value, with the Minimum Luck Passes and the population tested. The Scan runs in the background and can be left, interrupted and resumed. This is the first half of the stage 2 minimum: Epics 4 and 5 must pass their checks offline on the Sample Dataset. The target was 24 to 26 November 2026, and 1 December is a hard stop for code. If the epic runs late, the favicon progress ring and the tab-title counter slip first. The funnel's leak rules (4.2) and Resume (4.3) never slip.
+The user chooses a Cut-off Date, starts a Scan of the top Wallets by Real PnL made before that date, and sees the Watchlist sorted by p-value, with the Minimum Luck Passes and the population tested. The Scan runs in the background and can be left, interrupted and resumed. This is the first half of the stage 2 minimum: Epics 4 and 5 must pass their checks offline on the Sample Dataset. The target was 24 to 26 November 2026, and 1 December is a hard stop for code. If the epic runs late, the favicon progress ring and the tab-title counter slip first; the ring did slip (Edvard, 2026-11-26, Story 4.4), the tab-title counter is built. The funnel's leak rules (4.2) and Resume (4.3) never slip.
 
 ## Stories
 
@@ -55,15 +55,15 @@ The user chooses a Cut-off Date, starts a Scan of the top Wallets by Real PnL ma
   - **New Scan form:** Cut-off Date and Number of Wallets (10 to 500, default 200), with the primary button "Start Scan".
   - **Errors:** "Choose a Cut-off Date.", "The Cut-off Date must be in the past.", "Enter a whole number from 10 to 500.". Each error is tied to its field, and focus goes to the first field in error.
   - **Warning:** when the date is less than 90 days ago: "Very few bets were resolved after this date, so the Hold-up Test and Copy Test may have too little to test." The user can still start.
-  - **Time estimate:** a rough estimate sits under the number, computed from the planned request count at the set pace.
-  - **Offline Mode:** the fields are read-only (1 July 2025, the whole Sample Dataset), with an info box.
+  - **Time estimate:** a rough estimate sits under the number, computed from the planned request count at the set pace. It counts only what a Scan does today (Gamma list, 100 Markets, 3 × N before parts, N after parts) and is recalibrated from the last finished live Scan; Epic 6 adds Copy Sample prices (Edvard, 2026-11-26, Story 4.4).
+  - **Offline Mode:** the fields are read-only (1 July 2025, the whole Sample Dataset), with an info box. Until 4.6, "Start Scan" is unavailable there ("Offline Scans are not ready yet.").
   - **While a Scan runs:** an info box and an unavailable but focusable button.
   - **Empty state:** "No Scans yet. A Scan checks the top Wallets by profit made before a date you choose."
 - **Scan list:**
   - **Columns:** run date, Cut-off Date, Wallets, Watchlist size and status text (Finished / Running with step / Interrupted / Stopped … / Failed / "Data rebuilt, cannot resume").
   - **Resume:** buttons named uniquely, "Resume Scan (Cut-off Date …)".
   - **Unfinished Scans:** no results shown.
-- **Progress:** a real progress bar read as "84 of 200 Wallets checked" that names the step. Announcements come at most every 10% and at the end. The tab title "84/200 · Scan · LiquidOracle" and the favicon ring come from `progress.js`.
+- **Progress:** a real progress bar read as "84 of 200 Wallets checked" that names the step. Announcements come at most every 10% and at the end. The tab title "84/200 · Scan · LiquidOracle" comes from `scans.js`; the favicon ring slipped to deferred work.
 - **Watchlist:** URL `/scans/<id>/watchlist`.
   - **Header:** eyebrow "WALLET SCAN", "Scan of N Wallets", Cut-off Date and run date, the population line with "N of 100 Markets used · Seed 44", a summary card, and a disclosure listing Markets "not used: partial".
   - **Scan tabs:** links in a navigation region named "Scan", with the current page marked. This is not an ARIA tab list.

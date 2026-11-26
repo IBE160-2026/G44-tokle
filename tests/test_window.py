@@ -996,3 +996,14 @@ def test_offline_and_live_give_the_same_parts(
     offline_window = positions_near(OfflineClient([tmp_path / "fixture.json"]), server.wallet, day, side, limit=limit)
     assert offline_window == positions_near(client, server.wallet, day, side, limit=limit)
     assert offline_window.positions and offline_window.capped
+
+
+def test_ad7_cutoff_day_is_cutoff_at_backwards():
+    """AD-7 (Story 4.4 review): a stored Cut-off Date turns back into the same date, also long before 1970,
+    where Windows' `fromtimestamp` refuses."""
+    from datetime import date
+
+    from liquidoracle.data.window import cutoff_at, cutoff_day
+
+    for day in (date(1, 1, 1), date(1960, 1, 1), date(1970, 1, 1), date(2025, 7, 1), date(9999, 12, 31)):
+        assert cutoff_day(cutoff_at(day)) == day

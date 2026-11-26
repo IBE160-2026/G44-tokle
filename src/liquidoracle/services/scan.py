@@ -17,7 +17,7 @@ import dataclasses
 import logging
 from collections.abc import Callable, Sequence
 from dataclasses import dataclass
-from datetime import UTC, date, datetime
+from datetime import date
 from typing import Protocol
 
 from liquidoracle.core import funnel, phrases
@@ -37,7 +37,7 @@ from liquidoracle.data.store import (
     Store,
     WalletOutcome,
 )
-from liquidoracle.data.window import WINDOW_LIMIT, cutoff_at, positions_near
+from liquidoracle.data.window import WINDOW_LIMIT, cutoff_at, cutoff_day, positions_near
 from liquidoracle.records import (
     ActivityRow,
     Candidate,
@@ -218,7 +218,7 @@ def run_scan(
         raise ValueError(f"no Scan {scan_id}")
     if scan.data_rebuilt:
         raise ValueError(f"Scan {scan_id}'s data was rebuilt; it cannot resume (AD-6)")
-    day = datetime.fromtimestamp(scan.cutoff, UTC).date()
+    day = cutoff_day(scan.cutoff)
 
     def progress(phase: str, done: int, total: int, message: str) -> None:
         store.update_progress(job_id, phase=phase, done=done, total=total, message=message)
