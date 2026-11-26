@@ -29,7 +29,7 @@
 # - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
 # - Retrospective appends its action items to action_items; the status view surfaces open ones
 generated: 11-05-2026 02:06
-last_updated: 11-26-2026 10:30
+last_updated: 11-26-2026 13:30
 project: LiquidOracle
 project_key: NOKEY
 tracking_system: file-system
@@ -67,7 +67,7 @@ development_status:
   epic-4: in-progress
   4-1-before-and-after-the-cut-off-date: done
   4-2-the-scan-funnel: done
-  4-3-the-scan-as-a-resumable-job: in-progress
+  4-3-the-scan-as-a-resumable-job: review
   4-4-the-scans-page: backlog
   4-5-the-watchlist: backlog
   4-6-offline-scan-with-synthetic-wallets: backlog
