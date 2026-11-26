@@ -24,7 +24,7 @@ The user chooses a Cut-off Date, starts a Scan of the top Wallets by Real PnL ma
 - **Funnel:** the Market set is the Markets resolved in the 90 days before the cut-off, top 100 by volume, chosen without looking at outcomes and stored with the Scan. Candidates come from complete Market reads only. The shortlist is 3 × N by a cheap pre-filter. The shortlist is then fetched in full and ranked by Real PnL, and the top N are kept (default 200). `[ASSUMPTION: 90, 100, 3×, 200]`
 - **Partial reads:** a partial Market read gives no candidates and is shown as "not used: partial". A Wallet that is refused or capped is kept and flagged "not fully read" everywhere it is counted; in the ranking it is ranked on what was read ($0 when nothing was) (Edvard, 2026-11-25, Story 4.2). A protocol contract address is dropped and counted, not flagged. Only Polymarket not answering stops a Scan, and the Scan can be resumed.
 - **Scans:** a new Cut-off Date means a new Scan. Market records are never fetched twice; a Wallet's before or after part is reused for the same Cut-off Date and side when under 24 hours old or frozen to the Scan, and fetched again at another date (Edvard, 2026-11-26, Story 4.3). The Watchlist is stored with its Scan date and Cut-off Date and is never sent anywhere. An empty Watchlist is a valid result (SM-C2).
-- **Minimum Luck Passes** = Wallets tested × 0.01, shown as a floor ("probably more"), with one decimal under 2.
+- **Minimum Luck Passes** = Wallets tested × 0.01, shown as a floor ("probably more"), a whole number; below 100 Wallets the rate instead: "About 1 in 100 Wallets would pass by luck alone, probably more, because these Wallets were picked for high profit. With only 37 Wallets with a Verdict, even one passing could be luck." (Edvard asked for small numbers to read the way a person says them; the AI chose the wording, 2026-11-26). Only Wallets that got a Verdict count as tested, and the sentence says so: "At least about 2 of the 200 Wallets with a Verdict would pass by luck alone, probably more, …" (Edvard, 2026-11-26, Story 4.5, changing the AI's recommendation to count every Wallet).
 - **Offline check:** an offline Scan with the default date puts at least sharp trader, steady sharp, forecaster and speed trader on the Watchlist.
 - **Read-only:** GET only, at most 5 requests per second, network-blocked tests. Each test names its FR or AD.
 
@@ -59,25 +59,25 @@ The user chooses a Cut-off Date, starts a Scan of the top Wallets by Real PnL ma
   - **Offline Mode:** the fields are read-only (1 July 2025, the whole Sample Dataset), with an info box. Until 4.6, "Start Scan" is unavailable there ("Offline Scans are not ready yet.").
   - **While a Scan runs:** an info box and an unavailable but focusable button.
   - **Empty state:** "No Scans yet. A Scan checks the top Wallets by profit made before a date you choose."
-- **Scan list:**
-  - **Columns:** run date, Cut-off Date, Wallets, Watchlist size and status text (Finished / Running with step / Interrupted / Stopped … / Failed / "Data rebuilt, cannot resume").
+- **Scan list:** under the heading "Your Scans", newest first.
+  - **Columns:** run date, Cut-off Date, Wallets, Watchlist size and status text (Finished / Waiting to start (job queued, not yet running) / Running with step / Interrupted / Stopped … / Failed / "Data rebuilt, cannot resume").
   - **Resume:** buttons named uniquely, "Resume Scan (Cut-off Date …)".
   - **Unfinished Scans:** no results shown.
 - **Progress:** a real progress bar read as "84 of 200 Wallets checked" that names the step. Announcements come at most every 10% and at the end. The tab title "84/200 · Scan · LiquidOracle" comes from `scans.js`; the favicon ring slipped to deferred work.
 - **Watchlist:** URL `/scans/<id>/watchlist`.
-  - **Header:** eyebrow "WALLET SCAN", "Scan of N Wallets", Cut-off Date and run date, the population line with "N of 100 Markets used · Seed 44", a summary card, and a disclosure listing Markets "not used: partial".
+  - **Header:** eyebrow "WALLET SCAN", "Scan of N Wallets", Cut-off Date and run date, the population line with "N of 100 Markets used · Seed 44", the line "Shortlist of about 600 by a quick profit estimate · 4 Wallets not fully read" (AD-21), a summary card, and a disclosure listing Markets "not used: partial" by short condition ID, volume and resolution date (Edvard, 2026-11-26, Story 4.5).
   - **Scan tabs:** links in a navigation region named "Scan", with the current page marked. This is not an ARIA tab list.
   - **Table:** "Wallets rated Skilled (high confidence)" with the columns Wallet (link "Open Verdict for Wallet …"), Verdict pill, Odds, Resolved bets and Real PnL. There is no rank column. A caption explains the p-value sort. The "Not fully read" tag carries its tooltip.
   - **Info box:** the Minimum Luck Passes sentence, above the table.
   - **Empty Watchlist:** "No Wallet in this Scan was rated *Skilled (high confidence)*."
-- **Verdict from a Scan:** shows that Scan's `scan_whole` result, with "← Back to Watchlist (Cut-off Date …)".
+- **Verdict from a Scan:** shows that Scan's `scan_whole` result, recomputed from its frozen snapshots, with "← Back to Watchlist (Cut-off Date …)". Its honesty notes always show "Based on two windows around the Cut-off Date: up to the latest 2,000 bets resolved before it and up to the first 2,000 bought after it. Bets bought before the date and resolved after it are in neither." and "Computed on 1,234 bets around the Cut-off Date 1 July 2025 · Seed 44" (Edvard, 2026-11-26, Story 4.5). After part refused: "Based on the latest 2,000 bets resolved before the Cut-off Date; the bets bought after it could not be read."; nothing read: no window line; a flagged row's Verdict shows the "Not fully read" tag beside the stats; no Wallet with a Verdict: no luck box (Edvard, 2026-11-26, Story 4.5 review).
 - **Server-rendered:** every page is complete without JavaScript. Use the existing tokens, interaction states and the 900/640/400 px breakpoints. Wide tables scroll in a focusable, named area.
 
 ## Cross-Story Dependencies
 
 - **4.1 first:** 4.2, 4.3, 4.6 and Epic 5's Hold-up Test all call `positions_near` with a side, and the exclusion counts on both sides come from the one builder.
 - **4.2 → 4.3:** 4.2's funnel runs as 4.3's job phases. 4.3 owns the schema change, snapshot freezing and Resume, and the cut-off windows' snapshot key (see Technical Decisions) has to be settled by then.
-- **4.4 and 4.5 read 4.3's records.** The honesty notes' "first 2,000" line and the Watchlist's two-window line were deferred from Story 3.3 to the first story that stores a `scan_whole` / `scan_before` result.
+- **4.4 and 4.5 read 4.3's records.** The Watchlist's two-window line, deferred from Story 3.3, is built in 4.5; the after part's "first 2,000" line waits for the first page that shows an after-part result (Epic 5's Hold-up Test).
 - **4.6 needs 4.1 to 4.5:** it extends the generator, the anchor Markets, `build-sample` and the round-trip test.
   - **Open item for 4.6:** for 0xd218e4 and 0x63d43b the capture holds trades only from May 2025, so their before part may come out entirely "not fully read". Count this before planning Epic 5's real-data checks.
 - **Epic 5 builds on this epic:** it adds the Hold-up Test phase and tab and reads the Scan's frozen snapshots and `scan_before` result.
