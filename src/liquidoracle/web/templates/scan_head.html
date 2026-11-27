@@ -1,0 +1,30 @@
+    {# The Scan header and tabs (UX-DR33, AD-21), shared by every page of a finished Scan: the including page
+       sets `h`, its ScanHeader. Title and ledes on the left, the Scan summary card on the right. Every word
+       comes finished from services/watchlist.py. #}
+    <div class="scan-head">
+      <div>
+        <p class="eyebrow">{{ h.eyebrow }}</p>
+        <h1>{{ h.title }}</h1>
+        <p class="lede">{{ h.lede }}</p>
+        <p class="scan-line">{{ h.population }}</p>
+        <p class="scan-line">{{ h.shortlist }}</p>
+        {% if h.partial %}
+        <details class="about partial-markets">
+          <summary>{{ h.partial_title }}</summary>
+          <ul>
+            {% for market in h.partial %}<li><code>{{ market.short_id }}</code> · {{ market.details }}</li>{% endfor %}
+          </ul>
+        </details>
+        {% endif %}
+      </div>
+      <dl class="scan-summary">
+        {% for label, figure in h.summary %}<div><dt>{{ label }}</dt><dd>{{ figure }}</dd></div>{% endfor %}
+      </dl>
+    </div>
+
+    {# The Scan tabs: plain links, not an ARIA tab list. A tab's page name is its route's name, so the page
+       being shown marks itself. Epic 6 adds Copy Test. #}
+    <nav class="scan-tabs" aria-label="Scan">
+      {% for tab in h.tabs %}<a href="{{ url_for(tab.page, scan_id=h.scan_id) }}"{% if tab.page == request.endpoint %} aria-current="page"{% endif %}>{{ tab.label }}</a>
+      {% endfor %}
+    </nav>

@@ -195,6 +195,17 @@ def every_page(loaded_lookup: Lookup, offline: FlaskClient, tmp_path_factory: py
     keep("Watchlist", web.get(f"/scans/{full}/watchlist"))
     keep("Watchlist empty", web.get(f"/scans/{hand_scan(live_db, [Row(thin, verdict='No evidence of skill')])}/watchlist"))
     keep("Verdict from a Scan", web.get(f"/scans/{full}/wallet/{thin}"))
+    from test_holdup_page import NOT_ENOUGH, comparison, held_up_scan, passers  # noqa: PLC0415  (Story 5.2)
+
+    held = held_up_scan(live_db)  # the offline Scan's stored rows: both cards and the warning
+    keep("Hold-up Test", web.get(f"/scans/{held}/hold-up"))
+    keep("Watchlist with the Hold-up tab", web.get(f"/scans/{held}/watchlist"))
+    nobody = held_up_scan(live_db, passers(NOT_ENOUGH, None, 0, 0.0, wallets=0, dropped=0),
+                          comparison(NOT_ENOUGH, None, 0, 0.0, wallets=0, dropped=0, unread=0))
+    keep("Hold-up Test with empty groups", web.get(f"/scans/{nobody}/hold-up"))
+    keep("Hold-up Test of an older Scan", web.get(f"/scans/{full}/hold-up"))
+    assert 'class="warning group-warning"' in pages["Hold-up Test"][1] and "group-figures" in pages["Hold-up Test"][1]
+    assert "group-figures" not in pages["Hold-up Test with empty groups"][1]
     assert "Show stored data from" in pages["Unavailable with stored data"][1]
     assert "Show stored data from" not in pages["Unavailable"][1]
     yield pages
@@ -214,6 +225,8 @@ EVERY_PAGE = {
     "Scans warning": (200, "Scans"), "Scans running": (200, "Scans"),
     "Watchlist": (200, "Scan of 2 Wallets"), "Watchlist empty": (200, "Scan of 1 Wallet"),
     "Verdict from a Scan": (200, "Verdict: Not enough data"),
+    "Hold-up Test": (200, "Scan of 2 Wallets"), "Watchlist with the Hold-up tab": (200, "Scan of 2 Wallets"),
+    "Hold-up Test with empty groups": (200, "Scan of 2 Wallets"), "Hold-up Test of an older Scan": (404, "Page not found"),
 }
 
 

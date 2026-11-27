@@ -9,7 +9,7 @@ frozen snapshots. The lucky-streak Wallets (FR-13) are built by the generator. N
 from __future__ import annotations
 
 import sqlite3
-from collections.abc import Sequence
+from collections.abc import Iterator, Sequence
 from dataclasses import replace
 from datetime import date
 from pathlib import Path
@@ -25,6 +25,7 @@ from liquidoracle.data.offline import OfflineClient, sample_files, sample_funnel
 from liquidoracle.data.store import HOLDUP_AFTER, SCAN_BEFORE, SCAN_WHOLE, JobStatus, ScanStep, Store
 from liquidoracle.data.window import cutoff_at
 from liquidoracle.records import GroupResult, Position, PositionSet, SampleWallet, Verdict
+from liquidoracle.services import holdup as holdup_page
 from liquidoracle.services import scan as scan_module
 from liquidoracle.services.jobs import Jobs, Worker
 
@@ -48,6 +49,24 @@ GOLDEN = {"steady-sharp": 0, "lucky-streaks": 6243, "shared-markets": 5751}
 # change to the Sample Dataset or the builder that moves them must fail here. (bets, at or above, Real PnL)
 REAL_COMPARISON = (409, 5573, -19216.76)
 SMALL = {sample.name: sample for sample in synthetic.small_wallets()}
+
+# The coin-flippers rated Skilled (high confidence) before the Cut-off Date by luck: found by running the Skill Test
+# over all 1,000 (2026-11-27; the same six a full offline Scan stores as Passers), not picked. A `slow` check below
+# proves the list against the generator.
+LUCKY_COIN_FLIPPERS = (87, 236, 319, 730, 828, 880)
+# The full offline Scan's group sizes, (Wallets, dropped), built from that list (Story 5.2 writes them into the
+# README). Passers: the four made-up Wallets on the Watchlist and the lucky coin-flippers; sharp trader and the lucky
+# ones are dropped. Comparison Group: the other coin-flippers and 5 real Wallets; those coin-flippers and 2 of the
+# real Wallets are dropped.
+BUILT_TO_HOLD_UP = ("steady-sharp", "forecaster", "speed-trader")  # the made-up Wallets that keep winning after the date
+OFFLINE_PASSER_SIZES = (
+    len(synthetic.WATCHLIST_NAMES) + len(LUCKY_COIN_FLIPPERS),
+    len(synthetic.WATCHLIST_NAMES) - len(BUILT_TO_HOLD_UP) + len(LUCKY_COIN_FLIPPERS),
+)
+OFFLINE_COMPARISON_SIZES = (
+    synthetic.COIN_FLIPPERS - len(LUCKY_COIN_FLIPPERS) + 5, synthetic.COIN_FLIPPERS - len(LUCKY_COIN_FLIPPERS) + 2,
+)
+BIGGEST_REAL = "0xd3a6e523c440f94f9259398fbcf7b5cc5ccffd55"  # 307 of the Comparison Group's 409 bets are its
 
 
 # --- planted Wallets ------------------------------------------------------------------------------
@@ -780,45 +799,134 @@ def test_ad22_the_group_rows_and_the_done_step_are_one_transaction(tmp_path: Pat
 
 # --- the offline Scan of the Sample Dataset (FR-17; Edvard, 2026-11-27) ------------------------------
 
-SCAN_COIN_FLIPPERS = 40  # the full 1,000 was run by hand (spec Implementation Notes)
+# The full 1,000 was run by hand (spec Implementation Notes); 90 hold the first lucky one (index 87), so the Scan
+# and the `slow` check over the generator must agree on it.
+SCAN_COIN_FLIPPERS = 90
 
 
-def test_fr17_the_offline_scan_drops_the_coin_flippers_and_sets_the_flag(tmp_path: Path) -> None:
-    """FR-17, FR-13 (matrix "Offline Scan"; Edvard, 2026-11-27): in an offline Scan of the committed Sample Wallets
-    and 40 coin-flippers, no coin-flipper has a bet after the Cut-off Date, so every one is dropped; sharp trader is
-    dropped too, while steady sharp, forecaster and speed trader are tested on 300 later bets and hold up. Nearly
-    all of the Comparison Group is dropped, so the dropped-share flag is set: the warning is right and stays."""
+@pytest.fixture(scope="module")
+def offline_scan(tmp_path_factory: pytest.TempPathFactory) -> Iterator[tuple[Store, int, dict[str, holdup.Member]]]:
+    """A finished offline Scan of the committed Sample Wallets (real and made-up) and 90 coin-flippers, with its
+    Hold-up members by address (shared: the Scan takes a few seconds)."""
+    root = tmp_path_factory.mktemp("offline-scan")
     real = sorted((REPO / offline_module.REAL_DIR).glob("0x*.json"))
     small = sorted(p for p in (REPO / synthetic.SMALL_DIR).glob("*.json") if p.name not in offline_module.NOT_WALLET_FILES)
-    flippers = sorted(synthetic.write_coin_flippers(tmp_path, SCAN_COIN_FLIPPERS).glob("*.json"))
+    flippers = sorted(synthetic.write_coin_flippers(root, SCAN_COIN_FLIPPERS).glob("*.json"))
     client = OfflineClient([*real, *small, *flippers], funnels=sample_funnels(REPO))
-    db = Store(tmp_path / "scan.db")
+    db = Store(root / "scan.db")
     try:
         jobs = Jobs(db)
         scan_id, _ = jobs.start_scan(DAY, len(client.addresses()), seed=SEED)
         assert Worker(client, jobs).run_once() and db.scan(scan_id).step is ScanStep.DONE
-        members = {m.wallet: m for m in scan_module.hold_up_members(db, scan_id)}
-        coin = {address(synthetic.coin_flipper_name(i)) for i in range(SCAN_COIN_FLIPPERS)}
-        assert coin <= set(members) and all(members[w].after.tested_count == 0 for w in coin)
-        passers, comparison = db.group_results(scan_id)
-        four = {address(name) for name in synthetic.WATCHLIST_NAMES}
-        lucky = {w for w in coin if members[w].verdict_before is SKILLED}
-        assert {w for w, m in members.items() if m.verdict_before is SKILLED} == four | lucky
-        assert (passers.wallets, passers.dropped) == (4 + len(lucky), 1 + len(lucky))
-        assert (passers.verdict, passers.tested_count, passers.real_pnl) == (SKILLED, 300, pytest.approx(6000.0))
-        real_members = set(members) - coin - four
-        assert len(real_members) == 5 and not any(members[w].not_fully_read for w in real_members)
-        assert sorted(members[w].after.tested_count for w in real_members) == [4, 9, 13, 89, 307]
-        assert comparison.wallets == len(coin - lucky) + 5 and comparison.dropped == len(coin - lucky) + 2
-        # The dropped Wallets add nothing to a pool, so these are the full offline Scan's numbers (with all 1,000
-        # coin-flippers: 999 Wallets, 996 dropped), the ones Story 5.2 reports.
-        bets_counted, golden, real_pnl = REAL_COMPARISON
-        assert (comparison.verdict, comparison.tested_count, at_or_above(comparison)) == (NO_EVIDENCE, bets_counted, golden)
-        assert comparison.real_pnl == pytest.approx(real_pnl, abs=0.005)
-        assert at_or_above(passers) == 0 and (passers.not_fully_read, comparison.not_fully_read) == (0, 0)
-        assert holdup.dropped_shares_differ(passers, comparison)
+        yield db, scan_id, {m.wallet: m for m in scan_module.hold_up_members(db, scan_id)}
     finally:
         db.close()
+
+
+def test_fr17_the_offline_scan_drops_the_coin_flippers_and_sets_the_flag(
+    offline_scan: tuple[Store, int, dict[str, holdup.Member]],
+) -> None:
+    """FR-17, FR-13 (matrix "Offline Scan"; Edvard, 2026-11-27): in an offline Scan of the committed Sample Wallets
+    and 90 coin-flippers, no coin-flipper has a bet after the Cut-off Date, so every one is dropped; sharp trader is
+    dropped too, while steady sharp, forecaster and speed trader are tested on 300 later bets and hold up. Nearly
+    all of the Comparison Group is dropped, so the dropped-share flag is set: the warning is right and stays."""
+    db, scan_id, members = offline_scan
+    coin = {address(synthetic.coin_flipper_name(i)) for i in range(SCAN_COIN_FLIPPERS)}
+    assert coin <= set(members) and all(members[w].after.tested_count == 0 for w in coin)
+    passers, comparison = db.group_results(scan_id)
+    four = {address(name) for name in synthetic.WATCHLIST_NAMES}
+    lucky = {w for w in coin if members[w].verdict_before is SKILLED}
+    # the Scan's own stored Verdicts agree with the listed lucky coin-flippers (review, Story 5.2)
+    assert lucky == {address(synthetic.coin_flipper_name(i)) for i in LUCKY_COIN_FLIPPERS if i < SCAN_COIN_FLIPPERS}
+    assert len(lucky) == 1
+    assert {w for w, m in members.items() if m.verdict_before is SKILLED} == four | lucky
+    assert (passers.wallets, passers.dropped) == (4 + len(lucky), 1 + len(lucky))
+    assert (passers.verdict, passers.tested_count, passers.real_pnl) == (SKILLED, 300, pytest.approx(6000.0))
+    real_members = set(members) - coin - four
+    assert len(real_members) == 5 and not any(members[w].not_fully_read for w in real_members)
+    assert sorted(members[w].after.tested_count for w in real_members) == [4, 9, 13, 89, 307]
+    assert members[BIGGEST_REAL].after.tested_count == 307  # the README names this Wallet
+    assert members[address("sharp-trader")].after.tested_count == 0
+    assert comparison.wallets == len(coin - lucky) + 5 and comparison.dropped == len(coin - lucky) + 2
+    # The dropped Wallets add nothing to a pool, so these are the full offline Scan's numbers (with all 1,000
+    # coin-flippers: 999 Wallets, 996 dropped), the ones Story 5.2 reports.
+    bets_counted, golden, real_pnl = REAL_COMPARISON
+    assert (comparison.verdict, comparison.tested_count, at_or_above(comparison)) == (NO_EVIDENCE, bets_counted, golden)
+    assert comparison.real_pnl == pytest.approx(real_pnl, abs=0.005)
+    assert at_or_above(passers) == 0 and (passers.not_fully_read, comparison.not_fully_read) == (0, 0)
+    assert holdup.dropped_shares_differ(passers, comparison)
+
+
+def test_fr17_no_real_wallet_is_a_passer_in_the_offline_scan(
+    offline_scan: tuple[Store, int, dict[str, holdup.Member]],
+) -> None:
+    """FR-17, NFR-13 (Edvard, 2026-11-27, Story 5.2): the offline Hold-up page and the README say "the Passers tested
+    here are made-up Wallets built to have skill, not real traders: no real Wallet passed before the Cut-off Date."
+    This fails the day that stops being true: a real Sample Wallet rated *Skilled (high confidence)* on its bets
+    before the date, or a tested Passer that is not one of the three Wallets built to keep winning (a real Wallet,
+    or a coin-flipper that passed by luck and kept betting)."""
+    db, scan_id, members = offline_scan
+    real = {path.stem for path in (REPO / offline_module.REAL_DIR).glob("0x*.json")}
+    before = {r.wallet: r.verdict for r in db.scan_results(scan_id) if r.scope == SCAN_BEFORE}
+    assert len(real) == 10 and len(real & set(before)) == 8  # the 8 real Wallets in the offline Scan (Story 4.7)
+    # "Passed" by the app's own rule (`group_of`), so a changed rule that lets a real Wallet in fails here too.
+    assert [w for w in sorted(real & set(before)) if holdup.group_of(Verdict(before[w])) == holdup.PASSERS] == []
+    passed = {w for w, member in members.items() if holdup.group_of(member.verdict_before) == holdup.PASSERS}
+    assert passed and not passed & real
+    tested = {w for w in passed if holdup.counts(members[w])}
+    assert tested == {address(name) for name in BUILT_TO_HOLD_UP}
+    assert not tested & real
+    # The sentence this test stands behind: reworded, it must be read against the checks above again.
+    assert holdup_page.OFFLINE_PASSERS == (
+        "On the Sample Dataset, the Passers tested here are made-up Wallets built to have skill, not real traders: "
+        "no real Wallet passed before the Cut-off Date."
+    )
+
+
+OTHER_SEEDS = (1, 7, 2026, 31337)
+
+
+def test_fr17_no_real_wallet_passes_before_the_date_under_other_seeds(
+    offline_scan: tuple[Store, int, dict[str, holdup.Member]],
+) -> None:
+    """FR-17, AD-15 (review, Story 5.2): the Seed is a setting, and the offline page's sentence "no real Wallet passed
+    before the Cut-off Date" does not name one. Each real Wallet's bets before the date, from the Scan's frozen
+    snapshots, are tested again under four other Seeds: none passes, and the three made-up Wallets built to have skill
+    pass under every one. With the Scan's own Seed the same recomputation gives the stored result, so it is the
+    Scan's test that is repeated."""
+    db, scan_id, _ = offline_scan
+    scan = db.scan(scan_id)
+    real = {path.stem for path in (REPO / offline_module.REAL_DIR).glob("0x*.json")}
+    built = {address(name) for name in BUILT_TO_HOLD_UP}
+    checked = set()
+    for stored in db.scan_results(scan_id):
+        if stored.scope != SCAN_BEFORE or stored.wallet not in real | built or stored.fetch_id is None:
+            continue
+        before = scan_module.parts_position_set([scan_module.as_of_part(db.snapshot(stored.fetch_id), scan.as_of)])
+        same = skilltest.skill_test(before, seed=SEED, unit_id=stored.wallet, scope=SCAN_BEFORE)
+        assert (same.verdict.value, same.p_value, same.tested_count) == (stored.verdict, stored.p_value, stored.tested_count)
+        for seed in OTHER_SEEDS:
+            again = skilltest.skill_test(before, seed=seed, unit_id=stored.wallet, scope=SCAN_BEFORE)
+            passes = holdup.group_of(again.verdict) == holdup.PASSERS
+            assert passes == (stored.wallet in built), (stored.wallet, seed, again.verdict, again.p_value)
+        checked.add(stored.wallet)
+    assert built <= checked and len(checked & real) == 8  # every real Wallet in the offline Scan was tested again
+
+
+@pytest.mark.slow
+def test_fr17_the_listed_lucky_coin_flippers_are_every_one_that_passed(repetitions: int) -> None:
+    """FR-17, FR-13, NFR-13 (review, Story 5.2): among the first `repetitions` coin-flippers (all 1,000 on CI Linux
+    3.14, else 100), the ones rated *Skilled (high confidence)* before the Cut-off Date are exactly the listed ones,
+    and none has a bet after the date. The README's group sizes (10 Passers with 7 dropped, 999 with 996 dropped)
+    are built from this list, so a change to the generator or the Skill Test that moves them fails here."""
+    passed = []
+    for index, sample in enumerate(synthetic.coin_flippers(min(repetitions, synthetic.COIN_FLIPPERS))):
+        seen = as_member(sample)
+        assert seen.after.tested_count == 0 and not seen.after.slivers
+        if holdup.group_of(seen.verdict_before) == holdup.PASSERS:
+            passed.append(index)
+    assert passed == [i for i in LUCKY_COIN_FLIPPERS if i < repetitions]
+    assert OFFLINE_PASSER_SIZES == (10, 7) and OFFLINE_COMPARISON_SIZES == (999, 996)  # what the README states
 
 
 def test_fr13_the_lucky_streaks_are_for_the_checks_only() -> None:

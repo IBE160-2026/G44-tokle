@@ -206,7 +206,7 @@ Arrows are the only allowed imports. `core` imports only `records`, the standard
   - Offline Mode (`--offline` or `OFFLINE=true`) gives services an `OfflineClient` serving the Sample Dataset, and `TemplateModel` plus stored labels whatever the key, with its own database file `instance/offline.db`. Live runs use `instance/live.db`.
   - Mock LLM Mode (no `ANTHROPIC_API_KEY`, or `--mock-llm`) gives `TemplateModel`.
   - Nothing else branches on a mode, and `core` receives no settings.
-  - The page shows each mode: the Offline pill, the "Template text" tag on Explanations, and a tag on the Domain table naming the label source actually shown.
+  - The page shows each mode: the Offline pill, the "Template text" tag on Explanations, and a tag on the Domain table naming the label source actually shown. The Hold-up Test page's offline info box (Story 5.2) is shown the same way, by the template from the value that shows the pill: it explains a result only the Sample Dataset gives, and no service reads the mode for it.
 
 ### AD-14 — The Sample Dataset is serialized client records, loaded through the normal pipeline [ADOPTED]
 
