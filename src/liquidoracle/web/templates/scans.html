@@ -65,8 +65,7 @@
         <input type="hidden" name="confirmed" id="confirmed" value="{{ '1' if form.confirmed else '' }}">
         <div class="form-actions">
           <button class="btn-primary" id="start-scan" type="submit"
-                  {% if form.blocked %}aria-disabled="true" aria-describedby="{{ 'start-reason' if form.blocked_reason else 'running-info' }}"{% endif %}>Start Scan</button>
-          {% if form.blocked_reason %}<p class="hint" id="start-reason">{{ form.blocked_reason }}</p>{% endif %}
+                  {% if form.blocked %}aria-disabled="true" aria-describedby="running-info"{% endif %}>Start Scan</button>
         </div>
       </form>
 

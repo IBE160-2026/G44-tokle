@@ -167,12 +167,12 @@ def test_shared_markets_do_not_make_the_client_reread_files(tmp_path: Path, monk
     sharp = sample_json.read_wallet(tmp_path / synthetic.SMALL_DIR / "sharp-trader.json")
     first, second = tmp_path / "a.json", tmp_path / "b.json"
     sample_json.write_wallet(first, dataclasses.replace(sharp, address=W1))
-    sample_json.write_wallet(second, dataclasses.replace(sharp, address=W2))  # the same 100 Markets
+    sample_json.write_wallet(second, dataclasses.replace(sharp, address=W2))  # the same 103 Markets (3 anchors)
     reads: list[str] = []
     real_read = sample_json.read_wallet
     monkeypatch.setattr(sample_json, "read_wallet", lambda path: reads.append(Path(path).name) or real_read(path))
     window = positions_near(OfflineClient([first, second]), W2)
-    assert len(window.markets) == 100
+    assert len(window.markets) == 103
     assert reads == ["b.json"]
 
 

@@ -29,6 +29,9 @@ CUT_OFF = 1_751_328_000  # 2025-07-01 00:00 UTC, the default Cut-off Date (PRD �
 CENT = 0.005
 
 SMALL = {wallet.name: wallet for wallet in synthetic.small_wallets()}
+STAGE_1 = ("hand-check", "favourite-buyer", "sharp-trader", "thin-wallet", "stop-loss-trader")
+STAGE_2 = ("steady-sharp", "forecaster", "speed-trader")
+ANCHOR_IDS = frozenset(synthetic.funnel_volumes())
 
 
 def positions(wallet: SampleWallet) -> PositionSet:
@@ -50,7 +53,7 @@ def test_two_runs_give_identical_bytes(tmp_path: Path) -> None:
         synthetic.write_coin_flippers(tmp_path / run, count=20)
     files_a = sorted(p.relative_to(tmp_path / "a") for p in (tmp_path / "a").rglob("*.json"))
     files_b = sorted(p.relative_to(tmp_path / "b") for p in (tmp_path / "b").rglob("*.json"))
-    assert files_a == files_b and len(files_a) == 25
+    assert files_a == files_b and len(files_a) == len(SMALL) + 1 + 20  # the Wallets, the volume list, 20 coin-flippers
     for rel in files_a:
         assert (tmp_path / "a" / rel).read_bytes() == (tmp_path / "b" / rel).read_bytes(), rel
 
@@ -61,6 +64,14 @@ def test_committed_files_equal_fresh_output() -> None:
         committed = (SYNTHETIC_DIR / f"{name}.json").read_bytes()
         assert b"\r" not in committed, f"{name}.json has CRLF line endings"
         assert committed == sample_json.dumps(wallet).encode("utf-8"), name
+
+
+def test_committed_volume_list_equals_fresh_output(tmp_path: Path) -> None:
+    """AD-14, AD-21 (Story 4.6): the committed anchor volume list is exactly what the generator writes now."""
+    synthetic.write_small(tmp_path)
+    fresh = (tmp_path / synthetic.SMALL_DIR / synthetic.FUNNEL_FILE).read_bytes()
+    assert (SYNTHETIC_DIR / synthetic.FUNNEL_FILE).read_bytes() == fresh
+    assert sample_json.read_funnel(SYNTHETIC_DIR / synthetic.FUNNEL_FILE) == synthetic.funnel_volumes()
 
 
 BANNED_IMPORTS = ("random", "numpy", "os", "secrets", "time", "liquidoracle.settings")
@@ -169,7 +180,7 @@ def test_read_wallet_names_the_broken_file(tmp_path: Path, content: bytes) -> No
 def test_expected_fixture_covers_every_small_wallet() -> None:
     """FR-13: expected.json has an answer for each committed Wallet, and nothing else."""
     assert set(EXPECTED["wallets"]) == set(SMALL)
-    committed = {p.stem for p in SYNTHETIC_DIR.glob("*.json")} - {"expected"}
+    committed = {p.stem for p in SYNTHETIC_DIR.glob("*.json")} - {"expected", Path(synthetic.FUNNEL_FILE).stem}
     assert committed == set(SMALL)
 
 
@@ -245,12 +256,13 @@ def all_test_wallets() -> list[SampleWallet]:
 
 
 def test_every_tested_position_has_its_own_market() -> None:
-    """AD-14, AD-20: no two synthetic Positions share a Market, within or across Wallets."""
+    """AD-14, AD-20: no two tested synthetic Positions share a Market, within or across Wallets; only the
+    anchor Markets are shared, and their Positions are never tested (Story 4.6)."""
     seen: set[str] = set()
     for wallet in all_test_wallets():
-        traded = {(row.condition_id, row.token_id) for row in wallet.activity}
-        markets = {m.condition_id for m in wallet.markets}
-        assert len(traded) == len(markets) == len(wallet.markets)
+        traded = {(row.condition_id, row.token_id) for row in wallet.activity if row.condition_id not in ANCHOR_IDS}
+        markets = {m.condition_id for m in wallet.markets} - ANCHOR_IDS
+        assert len(traded) == len(markets) == len(wallet.markets) - len({m.condition_id for m in wallet.markets} & ANCHOR_IDS)
         assert not seen & markets
         seen |= markets
         assert all(len(m.token_ids) == 2 for m in wallet.markets)
@@ -271,9 +283,9 @@ def test_positions_lists_are_derived_from_the_fills() -> None:
             assert row.status == ("OPEN" if held_loser else "CLOSED")
 
 
-def test_all_activity_is_before_the_default_cut_off() -> None:
-    """FR-13, PRD §9 Q6: every fill and resolution is before 2025-07-01, so later stories can add an after part."""
-    for wallet in all_test_wallets():
+def test_all_stage_1_activity_is_before_the_default_cut_off() -> None:
+    """FR-13, PRD §9 Q6: every stage 1 fill and resolution is before 2025-07-01 (stage 2 Wallets bet on both sides)."""
+    for wallet in [*(SMALL[name] for name in STAGE_1), *(synthetic.coin_flipper(i) for i in range(5))]:
         assert max(row.timestamp for row in wallet.activity) < CUT_OFF
         assert max(m.closed_time for m in wallet.markets) < CUT_OFF
         assert all(not m.fees_enabled for m in wallet.markets)
@@ -296,7 +308,9 @@ def test_coin_flippers_bet_at_whole_cent_prices(repetitions: int) -> None:
     prices = []
     for wallet in synthetic.coin_flippers(repetitions):
         built = positions(wallet)
-        assert built.tested_count == expected["bets_each"] and not built.left_out and not built.slivers
+        assert built.tested_count == expected["bets_each"] and not built.slivers
+        assert len(built.left_out) == expected["left_out_each"]  # the 3 anchor bets (Story 4.6)
+        assert {p.condition_id for p in built.left_out} == ANCHOR_IDS
         prices += [p.entry_price for p in built.tested]
     assert all(round(p * 100) == pytest.approx(p * 100, abs=1e-9) for p in prices)
     assert expected["price_min"] <= min(prices) and max(prices) <= expected["price_max"]
@@ -304,7 +318,10 @@ def test_coin_flippers_bet_at_whole_cent_prices(repetitions: int) -> None:
 
 def test_coin_flipper_prices_are_uniform_over_the_cents() -> None:
     """FR-13: over the first 100 coin-flippers every cent from 0.10 to 0.90 occurs, each within 5 SD of 1/81 of the bets."""
-    counts = Counter(round(row.price * 100) for wallet in synthetic.coin_flippers(100) for row in wallet.activity)
+    counts = Counter(
+        round(row.price * 100)
+        for wallet in synthetic.coin_flippers(100) for row in wallet.activity if row.condition_id not in ANCHOR_IDS
+    )
     assert sorted(counts) == list(range(10, 91))
     n = sum(counts.values())
     mean, sd = n / 81, math.sqrt(n * (1 / 81) * (80 / 81))
@@ -392,3 +409,103 @@ def test_last_event_times_follow_the_fills_and_markets_open_before_the_first_buy
                 assert row.last_event_at == market.closed_time
             else:
                 assert row.last_event_at == max(a.timestamp for a in fills)
+
+
+# --- stage 2: steady sharp, forecaster, speed trader and the anchor Markets (Story 4.6) --------------
+
+
+@pytest.mark.parametrize("name", STAGE_2)
+def test_fr13_stage_2_wallets_win_70_of_100_on_each_side_of_the_cut_off(name: str) -> None:
+    """FR-13: 100 bets at 0.50 before the cut-off with exactly 70 won, 100 bought from it on with exactly 70 won."""
+    wallet = SMALL[name]
+    built = positions(wallet)
+    resolved = {m.condition_id: m.closed_time for m in wallet.markets}
+    first_buy = {row.condition_id: row.first_entry_at for row in wallet.positions}
+    before = [p for p in built.tested if resolved[p.condition_id] < CUT_OFF]
+    after = [p for p in built.tested if first_buy[p.condition_id] >= CUT_OFF]
+    assert len(before) == len(after) == 100 and len(before) + len(after) == built.tested_count
+    assert sum(p.outcome == 1.0 for p in before) == sum(p.outcome == 1.0 for p in after) == 70
+    assert {p.entry_price for p in built.tested} == {0.5}
+
+
+def test_fr13_forecaster_price_drifts_to_the_outcome_over_hours() -> None:
+    """FR-13: around each later buy, one point a minute from -2 to +32 minutes; the price is 0.50 up to the buy
+    and then moves a 240th of the way to the outcome each minute, so at 30 minutes it is 0.5625 or 0.4375."""
+    wallet = SMALL["forecaster"]
+    outcome = outcomes(wallet)
+    paths = price_paths(wallet)
+    assert len(paths) == 100
+    for (token, bought_at), points in paths.items():
+        assert [t - bought_at for t, _ in points] == [60 * m for m in range(-2, 33)]
+        at = dict((t - bought_at, p) for t, p in points)
+        assert at[-120] == at[0] == 0.5
+        assert at[30 * 60] == pytest.approx(0.5625 if outcome[token] == 1.0 else 0.4375)
+        moves = [b - a for (_, a), (_, b) in zip(points, points[1:])]
+        assert all(m == pytest.approx(0.0) for m in moves[:2])
+        assert all(m == pytest.approx((outcome[token] - 0.5) / 240, abs=1e-6) for m in moves[2:])
+
+
+def test_fr13_speed_trader_price_jumps_to_the_outcome_within_the_first_minute() -> None:
+    """FR-13: the speed trader buys at 0.50 seconds before the jump: 0.50 up to the buy, the outcome from 1 minute on."""
+    wallet = SMALL["speed-trader"]
+    outcome = outcomes(wallet)
+    paths = price_paths(wallet)
+    assert len(paths) == 100
+    for (token, bought_at), points in paths.items():
+        assert [p for t, p in points if t <= bought_at] == [0.5, 0.5, 0.5]
+        assert {p for t, p in points if t > bought_at} == {outcome[token]}
+
+
+def test_fr13_price_paths_only_around_later_buys() -> None:
+    """FR-13, AD-14: only the forecaster's and speed trader's bets after the cut-off have a price path (the
+    Copy Test samples after-part Positions only); steady sharp and the anchor bets have none."""
+    assert SMALL["steady-sharp"].prices == ()
+    for name in ("forecaster", "speed-trader"):
+        assert min(point.t for point in SMALL[name].prices) >= CUT_OFF - 120
+
+
+def test_ad14_anchor_holders_are_the_watchlist_wallets_and_the_coin_flippers() -> None:
+    """AD-14 (Edvard, 2026-11-27): the four FR-16 Wallets and every coin-flipper hold one Position in each anchor
+    Market; no other committed Wallet does."""
+    holders = {name for name, wallet in SMALL.items() if ANCHOR_IDS <= {m.condition_id for m in wallet.markets}}
+    assert holders == set(synthetic.WATCHLIST_NAMES)
+    others = [wallet for name, wallet in SMALL.items() if name not in holders]
+    assert all(not ANCHOR_IDS & {m.condition_id for m in wallet.markets} for wallet in others)
+    assert all(ANCHOR_IDS <= {m.condition_id for m in w.markets} for w in synthetic.coin_flippers(5))
+
+
+@pytest.mark.parametrize("name", synthetic.WATCHLIST_NAMES)
+def test_ad11_anchor_bets_are_sold_before_resolution_with_no_exit_pnl(name: str) -> None:
+    """AD-11, AD-14: each anchor bet is bought and fully sold at 0.50 before its Market resolves, so it is left out
+    as "sold before resolution" and adds nothing to Real PnL or Exit PnL (sharp trader stays at $2,000)."""
+    built = positions(SMALL[name])
+    anchors = [p for p in built.left_out if p.condition_id in ANCHOR_IDS]
+    assert len(anchors) == len(ANCHOR_IDS) == len(built.left_out)
+    assert {p.reason for p in anchors} == {ExclusionReason.SOLD_BEFORE_RESOLUTION}
+    assert all(p.shares_held == 0 and p.shares_sold == synthetic.ANCHOR_SHARES for p in anchors)
+    assert built.exit_pnl == pytest.approx(0.0)
+    assert not ANCHOR_IDS & {p.condition_id for p in built.tested}
+
+
+def test_ad21_anchor_markets_are_resolved_inside_the_default_funnel_window() -> None:
+    """AD-21: every anchor Market resolved in the 90 days before 2025-07-01, so a Scan with the default date
+    lists them; their volumes order them."""
+    markets = {m.condition_id: m for m in SMALL["sharp-trader"].markets if m.condition_id in ANCHOR_IDS}
+    assert set(markets) == ANCHOR_IDS
+    for market in markets.values():
+        assert market.resolved and CUT_OFF - 90 * 86_400 <= market.closed_time < CUT_OFF
+    assert sorted(synthetic.funnel_volumes().values(), reverse=True) == [3_000_000.0, 2_000_000.0, 1_000_000.0]
+
+
+def outcomes(wallet: SampleWallet) -> dict[str, float]:
+    """Each bought token's outcome (1.0 won, 0.0 lost)."""
+    return {m.token_ids[0]: m.outcome_prices[0] for m in wallet.markets}
+
+
+def price_paths(wallet: SampleWallet) -> dict[tuple[str, int], list[tuple[int, float]]]:
+    """Each later buy's price points, keyed by (token, buy time), in time order."""
+    buys = {row.token_id: row.timestamp for row in wallet.activity if row.side == "BUY"}
+    paths: dict[tuple[str, int], list[tuple[int, float]]] = {}
+    for point in wallet.prices:
+        paths.setdefault((point.token_id, buys[point.token_id]), []).append((point.t, point.price))
+    return {key: sorted(points) for key, points in paths.items()}

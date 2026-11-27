@@ -221,12 +221,13 @@ def test_lookup_needs_exactly_one_of_client_and_jobs(tmp_path: Path) -> None:
 
 
 def test_ux_dr17_sample_list(offline: Lookup, sample_root: Path) -> None:
-    """UX-DR17: the five stage 1 Synthetic Wallets and one coin-flipper, each a Wallet the client has,
-    then the note for the other 999 coin-flippers."""
+    """UX-DR17: the committed Synthetic Wallets (five of stage 1, three of stage 2 since Story 4.6) and one
+    coin-flipper, each a Wallet the client has, then the note for the other 999 coin-flippers."""
     samples = offline.sample_list()
     assert samples is not None
     assert [item.label for item in samples.items] == [
-        "Sharp trader", "Coin-flipper", "Favourite buyer", "Stop-loss trader", "Thin wallet", "Hand-check wallet",
+        "Sharp trader", "Steady sharp", "Forecaster", "Speed trader", "Coin-flipper", "Favourite buyer",
+        "Stop-loss trader", "Thin wallet", "Hand-check wallet",
     ]
     assert set(OfflineClient(sample_files(sample_root)).addresses()) >= {item.address for item in samples.items}
     assert {w.name for w in synthetic.small_wallets()} <= {name for name, _ in lookup_module.SAMPLE_LIST}

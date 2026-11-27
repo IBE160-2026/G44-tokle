@@ -112,3 +112,6 @@ Findings and goals set aside by `bmad-build`, each with where it came from.
 - source_spec: `_bmad-output/implementation-artifacts/spec-4-4-the-scans-page.md`
   summary: The favicon progress ring while a Scan runs (UX-DR32, EXPERIENCE.md "Scan progress in the tab"), filling clockwise from the top.
   evidence: Edvard, 2026-11-26, Story 4.4 (AI rec): Epic 4 ran past its 26 Nov target and the plan let the ring slip first; the tab-title counter was built instead. Pick it up only if time is left before the 1 Dec code freeze.
+- source_spec: `_bmad-output/implementation-artifacts/spec-4-6-offline-scan-with-synthetic-wallets.md`
+  summary: EXPERIENCE.md open question 2 (the Sample Dataset's default Cut-off Date) still reads as unsettled; it was settled on 2026-10-23 (1 July 2025).
+  evidence: Found by the Story 4.6 review (BH10); pre-existing, not caused by 4.6; a one-line doc correction with a UX memlog entry.

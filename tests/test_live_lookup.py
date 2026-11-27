@@ -599,10 +599,11 @@ def test_ad23_serve_stops_plainly_when_the_database_cannot_be_written(
     assert "cannot be written" in capsys.readouterr().err
 
 
-def test_ad13_offline_run_starts_no_worker_and_never_goes_stale(
+def test_ad13_offline_run_starts_the_scan_worker_and_never_goes_stale(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    """AD-13, AD-4 (Story 2.5): `run --offline` starts no worker; an old offline snapshot is still served."""
+    """AD-13, AD-4 (Story 2.5): an old offline snapshot is still served. Since Story 4.6 `run --offline` starts
+    the one worker over the `OfflineClient`, for Scans; lookups still read the client directly, with no job."""
     from liquidoracle.data.offline import OfflineClient, sample_files
     from liquidoracle.data.store import OFFLINE_DB
 
@@ -622,7 +623,43 @@ def test_ad13_offline_run_starts_no_worker_and_never_goes_stale(
     monkeypatch.setattr(cli, "port_in_use", lambda host, port: False)
     monkeypatch.setattr("flask.Flask.run", lambda self, **kwargs: None)
     assert cli.serve(Settings(offline=True)) == 0
-    assert started == []
+    assert len(started) == 1 and isinstance(started[0]._client, OfflineClient)
+
+
+def test_ad5_offline_serve_serves_the_offline_scans_page_and_interrupts_old_jobs(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """AD-5, AD-13, UX-DR30 (Story 4.6 review): `run --offline` marks a Scan job left running as interrupted (so it
+    can resume and blocks nothing), and its Scans page is the fixed read-only form whose POST queues a Scan of
+    every Sample Wallet."""
+    from liquidoracle.data.offline import OfflineClient, sample_files
+    from liquidoracle.data.store import OFFLINE_DB
+    from liquidoracle.services.scans_page import OFFLINE_INFO
+
+    synthetic.write_small(tmp_path)
+    (tmp_path / "pyproject.toml").write_text("", encoding="utf-8")
+    store = Store(tmp_path / OFFLINE_DB)
+    scan_id, job_id = store.create_scan(1_751_328_000, 8, SEED, phase="ranking", message="x")  # type: ignore[misc]
+    store.claim_job(job_id)
+    store.close()
+    monkeypatch.chdir(tmp_path)
+    apps: list = []
+    monkeypatch.setattr(Worker, "start", lambda self: None)
+    monkeypatch.setattr(cli, "port_in_use", lambda host, port: False)
+    monkeypatch.setattr("flask.Flask.run", lambda self, **kwargs: apps.append(self))
+    assert cli.serve(Settings(offline=True)) == 0
+    check = Store(tmp_path / OFFLINE_DB)
+    try:
+        assert check.job(job_id).status is JobStatus.INTERRUPTED  # type: ignore[union-attr]
+        web = apps[0].test_client()
+        page = web.get("/scans").get_data(as_text=True)
+        assert OFFLINE_INFO in page and 'value="2025-07-01"' in page and "readonly" in page
+        assert "Rough estimate" not in page
+        assert web.post("/scans", data={"cutoff": "", "wallets": ""}).status_code == 303
+        newest = check.scans()[0]
+        assert newest.scan_id != scan_id and newest.size == len(OfflineClient(sample_files(tmp_path)).addresses())
+    finally:
+        check.close()
 
 
 # --- NFR-10: a 1,000-Position Wallet from stored data (Edvard, 2026-11-21) -------------------------

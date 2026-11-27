@@ -179,6 +179,9 @@ def test_ad25_story_1_3_wallets_read_as_expected():
         "sharp-trader": "about 1 time in 5,000 | $2,000",
         "thin-wallet": "29 resolved bets; at least 30 are needed for a Verdict (1 more) | $550",
         "stop-loss-trader": f"{FEWER} | $1,650",
+        "steady-sharp": f"{FEWER} | $4,000",  # Story 4.6: 140 of 200 at 0.50
+        "forecaster": f"{FEWER} | $4,000",
+        "speed-trader": f"{FEWER} | $4,000",
     }
 
 

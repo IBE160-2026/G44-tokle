@@ -54,13 +54,13 @@ def test_load_sample_fills_offline_db_whatever_the_flags(
     (in_empty_dir / ".env").write_text("OFFLINE=false\n", encoding="utf-8")
     for _ in range(2):
         assert cli.main(["load-sample"]) == 0
-        assert "Done: 7 Sample Wallets" in capsys.readouterr().out
+        assert "Done: 10 Sample Wallets" in capsys.readouterr().out  # 8 committed (Story 4.6) + 2 coin-flippers
     assert len(list((in_empty_dir / synthetic.COIN_FLIPPER_DIR).glob("*.json"))) == 2
     assert not (in_empty_dir / LIVE_DB).exists()
     db = Store(in_empty_dir / OFFLINE_DB)
     try:
-        assert db.wallet_count() == 7
-        assert db._connection().execute("SELECT COUNT(*) FROM snapshot").fetchone() == (7,)
+        assert db.wallet_count() == 10
+        assert db._connection().execute("SELECT COUNT(*) FROM snapshot").fetchone() == (10,)
     finally:
         db.close()
 

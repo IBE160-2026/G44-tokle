@@ -43,8 +43,8 @@ class WalletClient(Protocol):
 
 
 class FunnelClient(WalletClient, Protocol):
-    """A client that can also run the Scan funnel (AD-9, AD-21). Only `PolymarketClient` is one for now;
-    `OfflineClient` becomes one with the anchor Markets (Story 4.6)."""
+    """A client that can also run the Scan funnel (AD-9, AD-21): `PolymarketClient`, and `OfflineClient` with the
+    Sample Dataset's anchor Markets (Story 4.6)."""
 
     def market_holders(self, condition_id: str, status: str) -> Read[MarketHolder]:
         """One of a Market's positions lists, CLOSED or OPEN, always oldest first; no sort argument (AD-9)."""

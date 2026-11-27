@@ -117,8 +117,9 @@ def test_fr11_stop_loss_trader_shows_the_warning() -> None:
 
 
 def test_fr11_no_sales_shows_no_warning() -> None:
-    """FR-11 check, matrix "No sales": sharp-trader sold nothing, so no warning and no Exit PnL amount."""
-    notes = honesty_notes(stored_of(SMALL["sharp-trader"]))
+    """FR-11 check, matrix "No sales": favourite-buyer sold nothing, so no warning and no Exit PnL amount
+    (sharp-trader sells its anchor bets since Story 4.6)."""
+    notes = honesty_notes(stored_of(SMALL["favourite-buyer"]))
     assert notes.exit_warning is None and notes.held_figure == "100 of 100"
     assert notes.exit_text == "No shares were sold before resolution."
     assert notes.left_out == "Left out of the test: none." and notes.mostly_left_out == ""

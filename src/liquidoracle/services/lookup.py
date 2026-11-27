@@ -51,10 +51,14 @@ PROFILE_HINT = (
     "Use the address shown on the Polymarket profile page. An address from a wallet app may show no history."
 )
 
-# The Sample Wallets list (UX-DR17): the stage 1 Synthetic Wallets, and one coin-flipper for all 1,000
-# (Edvard, 2026-11-20). The Real Wallets group (Story 2.6) lists every real Wallet's short address.
+# The Sample Wallets list (UX-DR17): the committed Synthetic Wallets (stage 2's three from Story 4.6), and
+# one coin-flipper for all 1,000 (Edvard, 2026-11-20). The Real Wallets group (Story 2.6) lists every real
+# Wallet's short address.
 SAMPLE_LIST = (
     ("sharp-trader", "Sharp trader"),
+    ("steady-sharp", "Steady sharp"),
+    ("forecaster", "Forecaster"),
+    ("speed-trader", "Speed trader"),
     (synthetic.coin_flipper_name(0), "Coin-flipper"),
     ("favourite-buyer", "Favourite buyer"),
     ("stop-loss-trader", "Stop-loss trader"),

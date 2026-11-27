@@ -65,6 +65,27 @@ def write_wallet(path: Path, wallet: SampleWallet, *, compact: bool = False) -> 
     path.write_bytes(dumps(wallet, compact=compact).encode("utf-8"))
 
 
+def write_funnel(path: Path, volumes: dict[str, float]) -> None:
+    """Write the Sample Dataset's volume list (Story 4.6): each funnel Market's condition id and its volume in
+    USD, what Gamma's volume-ordered list gives a live Scan (AD-21). Sorted keys and LF, so reruns give the same bytes."""
+    text = json.dumps({"volumes": volumes}, indent=1, sort_keys=True, allow_nan=False) + "\n"
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_bytes(text.encode("utf-8"))
+
+
+def read_funnel(path: Path) -> dict[str, float]:
+    """The volume list written by `write_funnel`, read strictly: anything else is a `ValueError` naming the file."""
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"), parse_constant=_refuse_constant)
+        _check_keys(data, {"volumes"}, "funnel file")
+        volumes = data["volumes"]
+        if not isinstance(volumes, dict):
+            raise TypeError("volumes must be an object")
+        return {_str(condition_id): _float(volume) for condition_id, volume in volumes.items()}
+    except (ValueError, TypeError) as error:  # json.JSONDecodeError is a ValueError
+        raise ValueError(f"{path}: {error}") from None
+
+
 def read_ids(path: Path) -> tuple[str, tuple[str, ...]]:
     """The Wallet address and Market ids in one file, without building its records.
 
