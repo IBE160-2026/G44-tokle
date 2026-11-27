@@ -2,6 +2,12 @@
 
 Why the PRD says what it says. The PRD itself keeps only the requirements (`prd.md`); this file keeps the reasons, dates and earlier wording that used to sit inside it. The full audit trail of the BMAD workflow, one line per decision, is `.memlog.md` in this folder; git history has every earlier version of `prd.md`.
 
+## 2026-11-27: the offline Scan, settled while planning Story 4.6
+
+Story 4.6 held two separate jobs: the offline Scan with the Synthetic Wallets, and rebuilding the 10 real Wallets' data around the Cut-off Date. The AI recommended splitting them and putting the second in the deferred-work list. **Decision (Edvard, 2026-11-27, changing where the second part goes):** split, but the real Wallets' part becomes its own Story 4.7, right after 4.6 and before Epic 5, so it is not forgotten; Story 5.2 needs it.
+
+The plan gave the anchor Market bets (how the offline funnel finds Wallets) only to the four Wallets that must pass, so the offline Scan would test 4 Wallets and all would pass. **Decision (Edvard, 2026-11-27, the AI's recommendation):** the 1,000 coin-flippers hold the same anchor bets, so the offline Scan tests about 1,004 Wallets and shows some passing by luck alone, which is what the Minimum Luck Passes sentence is about; Epic 5's lucky streak needs them in the Scan too (rejected: only the four).
+
 ## 2026-11-26: the Watchlist's luck sentence and Scan window line, settled while planning Story 4.5
 
 The Glossary said Minimum Luck Passes = "number of Wallets tested × 0.01" without saying whether a Wallet with *Not enough data* counts as tested. The AI recommended counting every Wallet in the Scan, to match the FR-16 check "a Scan of 200 Wallets shows about 2 of 200". **Decision (Edvard, 2026-11-26, changing the AI's recommendation):** only Wallets that got a Verdict count, because a Wallet with *Not enough data* cannot pass. So the number can differ from "Scan of 200 Wallets", and the sentence names it: "at least about 2 of the 200 Wallets with a Verdict would pass by luck alone, probably more, …" (AI recommendation, accepted; rejected: the old sentence word for word). Earlier check wording: "A Scan of 200 Wallets shows \"at least about 2 of 200 would pass by luck alone, probably more, because these Wallets were picked for high profit\"".

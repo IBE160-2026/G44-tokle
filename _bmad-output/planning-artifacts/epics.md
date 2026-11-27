@@ -187,7 +187,7 @@ Stage marks as in EXPERIENCE.md. A page or element of a later stage is absent un
 | FR-9 | 3 | Luck chart |
 | FR-10 | 1 | Not enough data view |
 | FR-11 | 3 | Honesty notes |
-| FR-12 | 1, 2 | Synthetic part and size test (1); real Wallets, trim script, default Cut-off Date (2) |
+| FR-12 | 1, 2 | Synthetic part and size test (1); real Wallets, trim script, default Cut-off Date (2); real Wallets' before and after windows (4, Story 4.7) |
 | FR-13 | 1, 4, 5, 6, 7, 8 | S1 types (1); steady sharp, forecaster, speed trader, anchor Markets (4); lucky streak (5); forecaster and speed-trader price paths used (6); split-domain (7); market maker (8) |
 | FR-14 | 1 | Offline Mode |
 | FR-15 | 7 | Mock LLM Mode |
@@ -636,7 +636,7 @@ So that I can check real results offline and see how the committed data was made
 
 **Given** the capture
 **When** the windows are built
-**Then** the lookup window (latest 2,000) is built by the app's own rules (AD-7, AD-8, AD-11), and the default Cut-off Date, 1 July 2025, is stored with the Sample Dataset (FR-12); Story 4.6 extends this same script with the before and after windows around it, once Story 4.1 exists
+**Then** the lookup window (latest 2,000) is built by the app's own rules (AD-7, AD-8, AD-11), and the default Cut-off Date, 1 July 2025, is stored with the Sample Dataset (FR-12); Story 4.7 extends this same script with the before and after windows around it, once Story 4.1 exists
 **And** whatever the capture lacks is left out by the normal rules, as "not fully read" for the two largest Wallets, never patched by hand (FR-12 one-way limitation); in the lookup window this leaves every Position of 0xd218e4, 0x63d43b and 0x729806 "not fully read" (Story 2.6, 2026-11-23)
 **And** price windows are not included yet; Epic 6 extends this same script to add the Copy Sample's windows.
 
@@ -941,7 +941,7 @@ So that I can run Scans without guessing what is going on.
 
 **Given** Offline Mode or a running Scan
 **When** the form shows
-**Then** in Offline Mode the date is fixed to 1 July 2025 and the number to the whole Sample Dataset, read-only, with an info box saying so (until Story 4.6 adds offline Scans, "Start Scan" is unavailable there with "Offline Scans are not ready yet."); while a Scan runs, an info box says "A Scan is running (84 of 200). You can start a new one when it finishes." and "Start Scan" is unavailable but focusable (UX-DR30).
+**Then** in Offline Mode the date is fixed to 1 July 2025 and the number to the whole Sample Dataset, read-only, with an info box saying so (from Story 4.6, "Start Scan" there starts a Scan of the whole Sample Dataset with that date; before it, "Start Scan" was unavailable with "Offline Scans are not ready yet."); while a Scan runs, an info box says "A Scan is running (84 of 200). You can start a new one when it finishes." and "Start Scan" is unavailable but focusable (UX-DR30).
 
 **Given** the Scan list
 **When** Scans exist
@@ -985,13 +985,29 @@ So that I can check the Scan without the network.
 **Given** the generator
 **When** it runs
 **Then** it also makes the stage 2 types steady sharp (100 at 0.50 winning 70 before the cut-off, the same after), forecaster (buys at 0.50, wins 70%, price drifts slowly towards the outcome over hours) and speed trader (buys at 0.50 seconds before the price jumps to the outcome), with their price paths (FR-13)
-**And** the Wallets FR-16 expects on the offline Watchlist hold one small, fully sold Position in each of a fixed set of synthetic anchor Markets with high volume inside the default funnel window, so the normal funnel finds them while the exclusion rules keep those Positions out of every Skill Test; there is no offline branch (AD-14).
+**And** the Wallets FR-16 expects on the offline Watchlist hold one small, fully sold Position in each of a fixed set of synthetic anchor Markets with high volume inside the default funnel window, so the normal funnel finds them while the exclusion rules keep those Positions out of every Skill Test; there is no offline branch (AD-14)
+**And** the 1,000 coin-flippers hold the same anchor Positions, so the offline Scan also tests Wallets with no skill and shows some passing by luck (Edvard, 2026-11-27, Story 4.6).
 
 **Given** Offline Mode and the default Cut-off Date 1 July 2025
 **When** a Scan of the Sample Dataset runs
 **Then** at least the sharp trader, steady sharp, forecaster and speed trader are on the Watchlist (FR-16)
-**And** the build-sample script from Story 2.6 is extended to write the real Wallets' before and after windows around 1 July 2025 with Story 4.1's rules, and re-run on the capture zip (AD-14)
 **And** the round-trip test is extended to the offline Scan (AD-14).
+
+### Story 4.7: The real Wallets around the Cut-off Date
+
+Split out of Story 4.6 while planning it (Edvard, 2026-11-27): rebuilding the real Wallets' data is a separate job from the offline Scan, and Story 5.2 needs it, so it comes right after 4.6 and before Epic 5.
+
+As the examiner,
+I want the 10 real Sample Wallets' bets before and after the default Cut-off Date in the Sample Dataset,
+So that the offline Scan and Hold-up Test can use real Wallets without the network.
+
+**Acceptance Criteria:**
+
+**Given** the capture zip
+**When** the build-sample script runs
+**Then** the build-sample script from Story 2.6 is extended to write the real Wallets' before and after windows around 1 July 2025 with Story 4.1's rules, and re-run on the capture zip (AD-14).
+
+Open items, decided when this story is planned: whether and how the offline Scan finds the real Wallets (the Sample Dataset stores no Gamma volumes; Story 5.2 reports their Hold-up result from an offline Scan); keeping the committed Sample Dataset under 50 MB with both windows added; 0xd218e4 and 0x63d43b, whose capture holds trades only from May 2025, so their before part may come out entirely "not fully read".
 
 ## Epic 5: Does the skill last? Hold-up Test
 

@@ -14,6 +14,7 @@ The user chooses a Cut-off Date, starts a Scan of the top Wallets by Real PnL ma
 - Story 4.4: The Scans page
 - Story 4.5: The Watchlist
 - Story 4.6: Offline Scan with Synthetic Wallets
+- Story 4.7: The real Wallets around the Cut-off Date (split out of 4.6, Edvard, 2026-11-27)
 
 ## Requirements & Constraints
 
@@ -46,7 +47,7 @@ The user chooses a Cut-off Date, starts a Scan of the top Wallets by Real PnL ma
 - **Market-anchored client function:** takes no sort argument and always sends `sort_by=TIMESTAMP&sort_direction=ASC` (enforced by a test). It reads `/v2/positions?condition=…` with CLOSED and OPEN, under `MARKET_ROW_CAP` = 15,000 rows per list `[ASSUMPTION]` (Edvard, 2026-11-25, Story 4.2).
 - **Pre-filter:** Σ CLOSED `realized_pnl` + Σ OPEN (resolved value − cost), so unredeemed losers count.
 - **Phrases:** the Minimum Luck Passes sentence and every other number phrase come from `core/phrases.py`.
-- **Offline data:** the generator adds steady sharp, forecaster and speed trader with price paths. Watchlist Wallets also hold one small, fully sold Position in each of a fixed set of high-volume synthetic anchor Markets inside the default funnel window. `build-sample` is extended to write the real Wallets' before and after windows with 4.1's rules, rebuilt from the capture zip and never trimmed by hand.
+- **Offline data:** the generator adds steady sharp, forecaster and speed trader with price paths. Watchlist Wallets and the 1,000 coin-flippers (Edvard, 2026-11-27, Story 4.6) also hold one small, fully sold Position in each of a fixed set of high-volume synthetic anchor Markets inside the default funnel window. `build-sample` is extended to write the real Wallets' before and after windows with 4.1's rules, rebuilt from the capture zip and never trimmed by hand.
 
 ## UX & Interaction Patterns
 
@@ -56,7 +57,7 @@ The user chooses a Cut-off Date, starts a Scan of the top Wallets by Real PnL ma
   - **Errors:** "Choose a Cut-off Date.", "The Cut-off Date must be in the past.", "Enter a whole number from 10 to 500.". Each error is tied to its field, and focus goes to the first field in error.
   - **Warning:** when the date is less than 90 days ago: "Very few bets were resolved after this date, so the Hold-up Test and Copy Test may have too little to test." The user can still start.
   - **Time estimate:** a rough estimate sits under the number, computed from the planned request count at the set pace. It counts only what a Scan does today (Gamma list, 100 Markets, 3 × N before parts, N after parts) and is recalibrated from the last finished live Scan; Epic 6 adds Copy Sample prices (Edvard, 2026-11-26, Story 4.4).
-  - **Offline Mode:** the fields are read-only (1 July 2025, the whole Sample Dataset), with an info box. Until 4.6, "Start Scan" is unavailable there ("Offline Scans are not ready yet.").
+  - **Offline Mode:** the fields are read-only (1 July 2025, the whole Sample Dataset), with an info box. From 4.6, "Start Scan" starts that Scan through the same job queue and worker as a live run.
   - **While a Scan runs:** an info box and an unavailable but focusable button.
   - **Empty state:** "No Scans yet. A Scan checks the top Wallets by profit made before a date you choose."
 - **Scan list:** under the heading "Your Scans", newest first.
@@ -75,9 +76,10 @@ The user chooses a Cut-off Date, starts a Scan of the top Wallets by Real PnL ma
 
 ## Cross-Story Dependencies
 
-- **4.1 first:** 4.2, 4.3, 4.6 and Epic 5's Hold-up Test all call `positions_near` with a side, and the exclusion counts on both sides come from the one builder.
+- **4.1 first:** 4.2, 4.3, 4.7 and Epic 5's Hold-up Test all call `positions_near` with a side, and the exclusion counts on both sides come from the one builder.
 - **4.2 → 4.3:** 4.2's funnel runs as 4.3's job phases. 4.3 owns the schema change, snapshot freezing and Resume, and the cut-off windows' snapshot key (see Technical Decisions) has to be settled by then.
 - **4.4 and 4.5 read 4.3's records.** The Watchlist's two-window line, deferred from Story 3.3, is built in 4.5; the after part's "first 2,000" line waits for the first page that shows an after-part result (Epic 5's Hold-up Test).
-- **4.6 needs 4.1 to 4.5:** it extends the generator, the anchor Markets, `build-sample` and the round-trip test.
-  - **Open item for 4.6:** for 0xd218e4 and 0x63d43b the capture holds trades only from May 2025, so their before part may come out entirely "not fully read". Count this before planning Epic 5's real-data checks.
+- **4.6 needs 4.1 to 4.5:** it extends the generator, the anchor Markets and the round-trip test.
+- **4.7 after 4.6, before Epic 5:** it extends `build-sample` with the real Wallets' before and after windows (split out of 4.6, Edvard, 2026-11-27).
+  - **Open items for 4.7:** how the offline Scan finds the real Wallets (no Gamma volumes stored); the 50 MB limit; the offline holder lists count TRADE rows only (Story 4.6 review). For 0xd218e4 and 0x63d43b the capture holds trades only from May 2025, so their before part may come out entirely "not fully read". Count this before planning Epic 5's real-data checks.
 - **Epic 5 builds on this epic:** it adds the Hold-up Test phase and tab and reads the Scan's frozen snapshots and `scan_before` result.
