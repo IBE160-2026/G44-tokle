@@ -5,9 +5,10 @@ the live client returns. Anything outside the Sample Dataset raises `NotAvailabl
 never opens a network connection.
 
 It is also a `FunnelClient` (Story 4.6), so the Scan runs offline on the live path: the Market set
-comes from the Sample Dataset's volume list (`funnel-markets.json`, the synthetic anchor Markets),
-and a Market's holder lists are derived from the Sample Wallets' own rows, as Polymarket derives
-them from the same trades (AD-9, AD-10, AD-14, AD-21).
+comes from the Sample Dataset's two volume lists (`funnel-markets.json`): the synthetic anchor
+Markets, whose holder rows are derived from the Synthetic Wallets' own trades as Polymarket derives
+them, and the real funnel Markets the real Wallets were picked from, whose holder rows are stored as
+Polymarket listed them (Story 4.7; AD-9, AD-10, AD-14, AD-21).
 """
 
 from __future__ import annotations
@@ -45,9 +46,10 @@ def sample_files(root: Path) -> list[Path]:
     return files
 
 
-def sample_funnel(root: Path) -> Path:
-    """The Sample Dataset's volume list under the repository folder `root` (Story 4.6)."""
-    return root / synthetic.SMALL_DIR / synthetic.FUNNEL_FILE
+def sample_funnels(root: Path) -> tuple[Path, Path]:
+    """The Sample Dataset's volume lists under the repository folder `root`: the synthetic anchor Markets
+    (Story 4.6) and the real funnel Markets with their stored holder rows (Story 4.7)."""
+    return root / synthetic.SMALL_DIR / synthetic.FUNNEL_FILE, root / REAL_DIR / synthetic.FUNNEL_FILE
 
 
 @dataclass(frozen=True, slots=True)
@@ -69,11 +71,11 @@ class OfflineClient:
         files: Sequence[Path],
         *,
         list_files: Callable[[], Sequence[Path]] | None = None,
-        funnel: Path | None = None,
+        funnels: Sequence[Path] = (),
     ) -> None:
         self._files = tuple(files)
         self._list_files = list_files
-        self._funnel = funnel  # the volume list; None or a missing file: no Market set (Story 4.6)
+        self._funnels = tuple(funnels)  # the volume lists; a missing file adds no Market (Stories 4.6, 4.7)
         self._index: _Index | None = None
         self._cached: tuple[Path, SampleWallet, dict[str, Market]] | None = None
         self._lock = threading.Lock()
@@ -99,11 +101,7 @@ class OfflineClient:
         (review, Story 2.6). `build-sample` names each file after its Wallet's address.
         """
         files = self._list_files() if self._list_files is not None else self._files
-        return tuple(
-            path.stem for path in files
-            if path.parent.name == REAL_DIR.name and path.parent.parent.name == REAL_DIR.parent.name
-            and ADDRESS.fullmatch(path.stem)
-        )
+        return tuple(path.stem for path in files if _is_real(path) and ADDRESS.fullmatch(path.stem))
 
     def addresses(self) -> tuple[str, ...]:
         """Every Sample Wallet's address, in file order. Offline only: `load-sample`, the Sample list and an
@@ -208,7 +206,7 @@ class OfflineClient:
             raise ValueError(f"count must be 1 or more, not {count}")
         if closed_from >= closed_until:
             raise ValueError("the window must end after it starts")
-        volumes = self._volumes()
+        volumes = self._funnel().volumes
         found = [
             FunnelMarket(market, volumes[market.condition_id])
             for market in (self.markets(volumes) if volumes else ())
@@ -218,10 +216,12 @@ class OfflineClient:
         return tuple(found[:count])
 
     def market_holders(self, condition_id: str, status: str) -> Read[MarketHolder]:
-        """One of a Market's positions lists, CLOSED or OPEN, oldest first by last event (AD-9).
+        """One of a Market's positions lists, CLOSED or OPEN (AD-9).
 
-        One row per Sample Wallet's positions-list row on that Market, its numbers derived from that
-        Wallet's own trades (`holder_rows`). A list over `MARKET_ROW_CAP` rows is partial, as live.
+        The rows stored with a real funnel Market, as Polymarket listed them and in its order (Story 4.7;
+        the capture stores no last-event time for them), then, oldest first by last event, one row per
+        Synthetic Wallet's positions-list row on that Market, its numbers derived from that Wallet's own
+        trades (`holder_rows`). A list over `MARKET_ROW_CAP` rows is partial, as live.
         """
         if status not in LIST_STATUSES:
             raise ValueError(f"status must be CLOSED or OPEN, not {status!r}")
@@ -230,16 +230,28 @@ class OfflineClient:
             return Read(rows[:MARKET_ROW_CAP], False)
         return Read(rows, True)
 
-    def _volumes(self) -> dict[str, float]:
-        if self._funnel is None or not self._funnel.is_file():
-            return {}
-        return sample_json.read_funnel(self._funnel)
+    def _funnel(self) -> sample_json.FunnelFile:
+        """The volume lists merged; a Market on two lists is an error, so no list silently wins."""
+        volumes: dict[str, float] = {}
+        holders: dict[str, tuple[MarketHolder, ...]] = {}
+        for path in self._funnels:
+            if not path.is_file():
+                continue
+            found = sample_json.read_funnel(path)
+            twice = sorted(set(found.volumes) & set(volumes))
+            if twice:
+                raise ValueError(f"{path}: Market {twice[0]} is also on another volume list")
+            volumes.update(found.volumes)
+            holders.update(found.holders)
+        return sample_json.FunnelFile(volumes, holders)
 
     def _holders(self, condition_id: str) -> tuple[MarketHolder, ...]:
         """Every Sample Wallet's holder rows on one Market, worked out once and kept (both lists use them).
 
-        Files written since the start are looked for first (a `load-sample` run clears what was kept). Each
-        holder's file is read and dropped in turn, so about 1,000 coin-flippers are never in memory at once.
+        Stored rows (a real funnel Market, Story 4.7) come first, in list order; derived rows follow. Files
+        written since the start are looked for first (a `load-sample` run clears what was kept). Each holder's
+        file is read and dropped in turn, so about 1,000 coin-flippers are never in memory at once. A real
+        Wallet's file is never derived from: its rows are the stored ones.
         """
         self._refresh()
         with self._lock:
@@ -252,9 +264,10 @@ class OfflineClient:
             for item in holder_rows(wallet, condition_id)
         ]
         for path in self._get_index().holders.get(condition_id, ()):
-            keyed.extend(holder_rows(sample_json.read_wallet(path), condition_id))
+            if not _is_real(path):
+                keyed.extend(holder_rows(sample_json.read_wallet(path), condition_id))
         keyed.sort(key=lambda item: (item[1], item[0].wallet, item[0].token_id))
-        rows = tuple(row for row, _ in keyed)
+        rows = self._funnel().holders.get(condition_id, ()) + tuple(row for row, _ in keyed)
         with self._lock:
             self._holder_rows[condition_id] = rows
         return rows
@@ -307,7 +320,8 @@ def holder_rows(wallet: SampleWallet, condition_id: str) -> list[tuple[MarketHol
     these numbers, never a Position (AD-10).
 
     Only TRADE rows count, enough for the Synthetic Wallets; a Wallet that got tokens by a split, merge or
-    conversion gets wrong numbers here. Story 4.7 must check this before real Wallets are holders.
+    conversion would get wrong numbers here. So it is used for synthetic files only: the real Wallets' rows
+    are stored as Polymarket listed them (Story 4.7).
     """
     market = next((m for m in wallet.markets if m.condition_id == condition_id), None)
     rows = []
@@ -332,6 +346,11 @@ def holder_rows(wallet: SampleWallet, condition_id: str) -> list[tuple[MarketHol
             listed.last_event_at,
         ))
     return rows
+
+
+def _is_real(path: Path) -> bool:
+    """A file in `sample_data/real/` (as `real_addresses` tells them apart)."""
+    return path.parent.name == REAL_DIR.name and path.parent.parent.name == REAL_DIR.parent.name
 
 
 def _build_index(files: Sequence[Path]) -> _Index:

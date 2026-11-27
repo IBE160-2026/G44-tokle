@@ -205,12 +205,12 @@ def open_sources(settings: Settings, root: Path) -> Sources:
     a live run gets `PolymarketClient` and `instance/live.db`; each gets a job queue. Nothing else
     branches on the mode. `serve` hands the result to the pages and to the worker.
     """
-    from liquidoracle.data.offline import OfflineClient, sample_files, sample_funnel
+    from liquidoracle.data.offline import OfflineClient, sample_files, sample_funnels
     from liquidoracle.data.polymarket import PolymarketClient
 
     if settings.offline:
         # list_files: Sample files written after the start (a load-sample run) are still found.
-        client = OfflineClient(sample_files(root), list_files=lambda: sample_files(root), funnel=sample_funnel(root))
+        client = OfflineClient(sample_files(root), list_files=lambda: sample_files(root), funnels=sample_funnels(root))
         store = Store(root / OFFLINE_DB)
         return Sources(client, store, Jobs(store), sample_size=lambda: len(client.addresses()))
     store = Store(root / LIVE_DB)

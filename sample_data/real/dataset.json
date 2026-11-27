@@ -10,9 +10,53 @@
   "sha256": "2bbb60a64f2d6c6bdc1d26e791a107c55d485c488b86e6a66031eecbbe60e87f"
  },
  "cutoff": "2025-07-01",
+ "funnel": {
+  "file": "funnel-markets.json",
+  "holder_rows": 65,
+  "markets": 50,
+  "source": "sample/funnel_markets_20250701.json and sample/market_*.json in sample-capture-cutoff-2025-07-01.zip"
+ },
+ "lookup_only": {
+  "0x63d43bbb87f85af03b8f2f9e2fad7b54334fa2f1": "activity captured only from 9 May 2025",
+  "0xd218e474776403a330142299f7796e8ba32eb5c9": "activity captured only from 29 May 2025"
+ },
  "neg_risk_check": {
-  "neg_risk_markets": 7376,
+  "neg_risk_markets": 7542,
   "not_yes_no": []
+ },
+ "parts": {
+  "0x0915962b4c6bc4505e7434a0de815a596a6667c3": {
+   "after": 22,
+   "before": 40
+  },
+  "0x0f4b0a6b7f82108924ac9c8320ed91028f504183": {
+   "after": 118,
+   "before": 112
+  },
+  "0x29306ddc4724e24a23bf1c8679aa034376ea9dcb": {
+   "after": 12,
+   "before": 11
+  },
+  "0x7298060b1844a4c4ca0578146ab3f5e76aa1fcfc": {
+   "after": 408,
+   "before": 907
+  },
+  "0x73648309111de9f9d4e2a58a50f803fa7d30d44e": {
+   "after": 13,
+   "before": 1236
+  },
+  "0x94884db79666a1a34c46d03fb4f8e9cbcaf6b5a6": {
+   "after": 16,
+   "before": 2000
+  },
+  "0xcf0d7f69cf162918b33fc1ea7449583fa537132d": {
+   "after": 6,
+   "before": 177
+  },
+  "0xd3a6e523c440f94f9259398fbcf7b5cc5ccffd55": {
+   "after": 423,
+   "before": 654
+  }
  },
  "two_dates": [
   "0xd218e474776403a330142299f7796e8ba32eb5c9: CLOSED list fetched 2026-11-23, the rest captured 2026-10-23"

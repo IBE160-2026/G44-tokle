@@ -24,7 +24,7 @@ from liquidoracle.data.offline import REAL_DIR, OfflineClient, sample_files
 from liquidoracle.data.real_sample import ADDITIONS_NAME, CAPTURE_NAME, BuildError, build, fetch_additions
 from liquidoracle.data.store import Store
 from liquidoracle.data.window import positions_near
-from liquidoracle.records import ActivityRow, ListedPosition, Read, SampleWallet
+from liquidoracle.records import ActivityRow, ListedPosition, MarketHolder, Read, SampleWallet
 from liquidoracle.services.fetch import fetch_wallet, stored_result
 from liquidoracle.services.lookup import Lookup, Outcome
 
@@ -39,7 +39,8 @@ DAY = 86_400
 
 
 def cid(n: int) -> str:
-    return f"0x{n:064x}"
+    """Market n's condition id; n leads, so ids differ in the first 18 characters as the capture's list names need."""
+    return f"0x{n:016x}{'0' * 48}"
 
 
 def iso(t: int) -> str:
@@ -68,12 +69,24 @@ def raw_gamma(n: int, **extra: Any) -> dict[str, Any]:
     return row
 
 
-def capture_zip(folder: Path, wallets: dict[str, dict[str, Any]]) -> Path:
-    """A zip with the capture's layout; each value holds `open`, `closed`, `capped`, `before`, `after`."""
+def capture_zip(
+    folder: Path, wallets: dict[str, dict[str, Any]], funnel: dict[str, dict[str, Any]] | None = None
+) -> Path:
+    """A zip with the capture's layout; each value holds `open`, `closed`, `capped`, `before`, `after`.
+
+    `funnel` maps a condition id to its funnel entry's `closedTime`, `volumeNum` and its Market list
+    (`partial`, `rows`), as the capture's Scan funnel stored them (Story 4.7); none by default."""
     path = folder / CAPTURE_NAME
     with zipfile.ZipFile(path, "w") as archive:
         # As in the real zip, its own pick file is out of date: the build never reads it.
         archive.writestr("sample/picked.json", json.dumps({"sample": [SPARE], "spares": list(wallets)}))
+        entries = []
+        for condition_id, market in (funnel or {}).items():
+            entries.append({"conditionId": condition_id, "closedTime": market["closedTime"], "volumeNum": market["volumeNum"]})
+            if "rows" in market:
+                archive.writestr(real_sample.MARKET_LIST.format(condition_id[:18]),
+                                 json.dumps({"partial": market.get("partial", False), "rows": market["rows"]}))
+        archive.writestr(real_sample.FUNNEL_LIST, json.dumps(entries))
         for address, parts in wallets.items():
             base = f"sample/capture/{address}/"
             archive.writestr(base + "positions.json", json.dumps(
@@ -201,7 +214,7 @@ def test_build_writes_the_picked_wallets_and_the_cutoff(tmp_path: Path) -> None:
     """AD-14, FR-12: one file per picked Wallet (not the spares) and dataset.json with the Cut-off Date."""
     zip_path, root, _ = built(tmp_path)
     out = root / REAL_DIR
-    assert sorted(p.name for p in out.iterdir()) == sorted([f"{W1}.json", f"{W2}.json", "dataset.json"])
+    assert sorted(p.name for p in out.iterdir()) == sorted([f"{W1}.json", f"{W2}.json", "dataset.json", "funnel-markets.json"])
     dataset = json.loads((out / "dataset.json").read_text(encoding="utf-8"))
     assert dataset["cutoff"] == "2025-07-01"
     assert dataset["wallets"] == [W1, W2]
@@ -326,8 +339,10 @@ def test_cut_closed_list_comes_from_the_additions(tmp_path: Path, monkeypatch: p
     assert dataset["two_dates"] == [f"{W1}: CLOSED list fetched {dataset['additions']['fetched_on']}, the rest captured 2026-10-23"]
 
 
-def test_trim_drops_open_rows_older_than_the_window(tmp_path: Path) -> None:
-    """AD-14's trim: OPEN rows past the window's first left-out Market go; the window stays identical."""
+def test_trim_drops_open_rows_older_than_the_window(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """AD-14's trim of a lookup-only Wallet: OPEN rows past the window's first left-out Market go; the window
+    stays identical (a Wallet in the offline Scan keeps every row its before and after walks read, Story 4.7)."""
+    monkeypatch.setitem(real_sample.LOOKUP_ONLY, W1, "a test")
     n_open = 2_003  # 3 more than the window holds (AD-8)
     w = {"open": [raw_position(n) for n in range(1, n_open + 1)]}
     zip_path = capture_zip(tmp_path, {W1: w})
@@ -353,7 +368,7 @@ def test_a_file_that_replays_another_window_is_not_kept(tmp_path: Path, monkeypa
         return dataclasses.replace(wallet, positions=wallet.positions[1:]), window
 
     monkeypatch.setattr(real_sample, "_trimmed", drop_one)
-    with pytest.raises(BuildError, match=f"{W1}: the written file gives another window"):
+    with pytest.raises(BuildError, match=f"{W1}: the written file gives another lookup window"):
         build(zip_path, root, pick=PICKED, log=lambda _: None)
     assert not (root / REAL_DIR / f"{W1}.json").exists()
 
@@ -437,7 +452,7 @@ def test_build_sample_command_builds_from_the_zip_without_network(tmp_path: Path
     monkeypatch.chdir(repo(tmp_path / "repo"))
     assert cli.main(["build-sample", str(zip_path)]) == 0
     assert "Done: 2 real Wallets" in capsys.readouterr().out
-    assert sorted(p.name for p in (tmp_path / "repo" / REAL_DIR).iterdir()) == sorted([f"{W1}.json", f"{W2}.json", "dataset.json"])
+    assert sorted(p.name for p in (tmp_path / "repo" / REAL_DIR).iterdir()) == sorted([f"{W1}.json", f"{W2}.json", "dataset.json", "funnel-markets.json"])
 
 
 def test_build_sample_command_stops_plainly_on_a_broken_zip(tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
@@ -465,6 +480,257 @@ def test_build_sample_command_stops_plainly_without_the_zip(tmp_path: Path, monk
     monkeypatch.chdir(repo(tmp_path))
     assert cli.main(["build-sample", str(tmp_path / CAPTURE_NAME)]) == 2
     assert "build-sample stopped:" in capsys.readouterr().err
+
+
+# --- the before and after parts and the real volume list (Story 4.7; AD-14, AD-21) ----------------
+
+CUT = 1_751_328_000  # 1 July 2025, the default Cut-off Date
+BEFORE_N = (1, 2)  # Markets bought and resolved before the cut-off (T0 is Feb 2025)
+AFTER_N = (140, 141)  # Markets first bought after it (T0 + 140 days is mid-July 2025)
+
+
+def two_sided(
+    folder: Path,
+    *,
+    funnel: dict[str, dict[str, Any]] | None = None,
+    extra: Iterable[dict[str, Any]] = (),
+    gamma: dict[int, dict[str, Any]] | None = None,
+    after_capped: bool = False,
+) -> tuple[Path, FakeLive]:
+    """W1 with two Markets on each side of the Cut-off Date; `extra` adds activity rows (a planted late one),
+    `gamma` changes a Market's Gamma record, `after_capped` cuts the capture's after read short."""
+    rows = [raw_trade(n, T0 + n * DAY) for n in (*BEFORE_N, *AFTER_N)] + list(extra)
+    w1 = {
+        "closed": [raw_position(n) for n in (*BEFORE_N, *AFTER_N)],
+        "before": [row for row in rows if row["timestamp"] < CUT],
+        "after": sorted((row for row in rows if row["timestamp"] >= CUT), key=lambda row: row["timestamp"]),
+        "after_capped": after_capped,
+    }
+    known = {cid(n): raw_gamma(n, **(gamma or {}).get(n, {})) for n in (*BEFORE_N, *AFTER_N)}
+    return capture_zip(folder, {W1: w1}, funnel), FakeLive(known)
+
+
+def held(n: int, *rows: list[Any], partial: bool = False, closed: int | None = None) -> dict[str, Any]:
+    """A funnel entry for Market n, resolved as `raw_gamma` says unless `closed` is given, with these holder rows."""
+    return {"closedTime": iso(closed if closed is not None else T0 + n * DAY + DAY // 2), "volumeNum": 1_000_000.0 * n,
+            "partial": partial, "rows": list(rows)}
+
+
+def build_two_sided(folder: Path, **options: Any) -> Path:
+    zip_path, live = two_sided(folder, **options)
+    root = repo(folder / "repo")
+    fetch_additions(zip_path, live, pick=[W1], log=lambda _: None)  # type: ignore[arg-type]
+    build(zip_path, root, pick=[W1], log=lambda _: None)
+    return root
+
+
+def test_ad14_build_replays_the_before_and_after_parts(tmp_path: Path) -> None:
+    """AD-14, FR-12 (Story 4.7): a Wallet in the offline Scan gets both parts around 1 July 2025 from Story 4.1's
+    rules; its file replays each part as the whole capture gave it, and dataset.json counts them."""
+    root = build_two_sided(tmp_path)
+    path = root / REAL_DIR / f"{W1}.json"
+    cutoff = datetime.fromtimestamp(CUT, UTC).date()
+    before = positions_near(OfflineClient([path]), W1, cutoff, "before")
+    after = positions_near(OfflineClient([path]), W1, cutoff, "after")
+    assert sorted(p.condition_id for p in before.positions) == [cid(n) for n in BEFORE_N]
+    assert sorted(p.condition_id for p in after.positions) == [cid(n) for n in AFTER_N]
+    dataset = json.loads((root / REAL_DIR / "dataset.json").read_text(encoding="utf-8"))
+    assert dataset["parts"] == {W1: {"before": 2, "after": 2}} and dataset["lookup_only"] == {}
+    assert dataset["funnel"] == {"source": f"{real_sample.FUNNEL_LIST} and sample/market_*.json in {CAPTURE_NAME}",
+                                 "file": "funnel-markets.json", "markets": 0, "holder_rows": 0}
+
+
+@pytest.mark.parametrize("side", ["before", "after"])
+def test_ad14_a_file_that_replays_another_part_is_not_kept(side: str, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """AD-14 (Story 4.7, matrix "Replay differs"): if the written file gives another before or after part than the
+    whole capture, the build stops naming the Wallet and side, and keeps nothing."""
+    zip_path, live = two_sided(tmp_path)
+    root = repo(tmp_path / "repo")
+    fetch_additions(zip_path, live, pick=[W1], log=lambda _: None)  # type: ignore[arg-type]
+    trimmed = real_sample._trimmed  # noqa: SLF001
+
+    def other_part(*args: Any) -> Any:
+        wallet, windows = trimmed(*args)
+        return wallet, {**windows, side: dataclasses.replace(windows[side], positions=())}
+
+    monkeypatch.setattr(real_sample, "_trimmed", other_part)
+    with pytest.raises(BuildError, match=f"{W1}: the written file gives another {side} window"):
+        build(zip_path, root, pick=[W1], log=lambda _: None)
+    assert not (root / REAL_DIR).exists() or not any((root / REAL_DIR).iterdir())
+
+
+def test_ad14_a_lookup_only_wallet_keeps_its_lookup_window_and_no_funnel_rows(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """AD-14 (Edvard, 2026-11-27, matrix "Heavy two"): a lookup-only Wallet gets no before or after part and no
+    holder row, even on a Market it holds; dataset.json says why. The pick names exactly 0xd218e4 and 0x63d43b."""
+    assert set(real_sample.LOOKUP_ONLY) == {"0xd218e474776403a330142299f7796e8ba32eb5c9",
+                                            "0x63d43bbb87f85af03b8f2f9e2fad7b54334fa2f1"}
+    monkeypatch.setitem(real_sample.LOOKUP_ONLY, W1, "a test")
+    root = build_two_sided(tmp_path, funnel={cid(1): held(1, [W1, "CLOSED", 3.0, 0, 1, 0.4])})
+    dataset = json.loads((root / REAL_DIR / "dataset.json").read_text(encoding="utf-8"))
+    assert dataset["parts"] == {} and dataset["lookup_only"] == {W1: "a test"}
+    assert sample_json.read_funnel(root / REAL_DIR / real_sample.FUNNEL_FILE) == sample_json.FunnelFile({}, {})
+
+
+def test_ad21_real_volume_list_copies_the_captured_rows(tmp_path: Path) -> None:
+    """AD-21, AD-14 (Story 4.7): each completely read funnel Market the Wallet holds is listed with its volume and
+    the Wallet's rows as captured; the token is the one with the row's final price. A partial Market, one nobody
+    in the Scan holds and one with no captured list are left out."""
+    other = "0x" + "9" * 40
+    funnel = {
+        cid(1): held(1, [W1, "CLOSED", 3.0, 0, 1, 0.4], [other, "CLOSED", 9.0, 0, 1, 0.1]),
+        cid(2): held(2, [W1, "OPEN", 0, 10.0, 0, 0.4], partial=True),
+        cid(3): held(3, [other, "CLOSED", 1.0, 0, 1, 0.5]),
+        cid(4): {"closedTime": iso(T0 + 4 * DAY), "volumeNum": 5.0},  # no Market list in the capture
+    }
+    root = build_two_sided(tmp_path, funnel=funnel)
+    found = sample_json.read_funnel(root / REAL_DIR / real_sample.FUNNEL_FILE)
+    assert found.volumes == {cid(1): 1_000_000.0}
+    assert found.holders == {cid(1): (MarketHolder(W1, "11", "CLOSED", 3.0, 0.0, 0.4),)}
+
+
+def test_ad21_a_late_redemption_is_allowed(tmp_path: Path) -> None:
+    """AD-21 (Edvard's no-peeking check): a redemption after the Cut-off Date pays at an outcome known before it,
+    so it does not stop the build."""
+    late = {"type": "REDEEM", "condition_id": cid(1), "timestamp": CUT + DAY, "size": 10.0, "usdc_size": 10.0,
+            "price": 1.0, "token_id": None, "side": None, "is_combo": False}
+    root = build_two_sided(tmp_path, funnel={cid(1): held(1, [W1, "CLOSED", 6.0, 0, 1, 0.4])}, extra=[late])
+    assert cid(1) in sample_json.read_funnel(root / REAL_DIR / real_sample.FUNNEL_FILE).volumes
+
+
+@pytest.mark.parametrize(
+    ("planted", "match"),
+    [
+        ("trade after the cut-off", "TRADE row"),
+        ("trade after resolution", "TRADE row"),
+        ("final price 0.5", "final price"),
+        ("resolved after the cut-off", "did not resolve before the Cut-off Date"),
+        ("token not held", "on none of the Wallet's positions lists"),
+    ],
+)
+def test_ad21_no_peeking_check_stops_the_build(planted: str, match: str, tmp_path: Path) -> None:
+    """AD-21 (Edvard, 2026-11-27, matrix "Late row"): the build stops, keeping nothing, on any copied row that could
+    hold something from after the Cut-off Date: a trade from the cut-off or the Market's resolution on, a final price
+    that is not 0 or 1, a Market resolved on or after the cut-off; and on a row for a token the Wallet never held."""
+    row: list[Any] = [W1, "CLOSED", 3.0, 0, 1, 0.4]
+    extra: list[dict[str, Any]] = []
+    entry = held(1, row)
+    if planted == "trade after the cut-off":
+        extra = [raw_trade(1, CUT + DAY)]
+    elif planted == "trade after resolution":
+        extra = [raw_trade(1, T0 + DAY + DAY // 2)]  # the second Market 1 resolves in
+    elif planted == "final price 0.5":
+        row[4] = 0.5
+    elif planted == "resolved after the cut-off":
+        entry = held(1, row, closed=CUT)
+    else:
+        row[4] = 0  # the losing token "12", which W1 never held
+    zip_path, live = two_sided(tmp_path, funnel={cid(1): entry}, extra=extra)
+    root = repo(tmp_path / "repo")
+    fetch_additions(zip_path, live, pick=[W1], log=lambda _: None)  # type: ignore[arg-type]
+    with pytest.raises(BuildError, match=match):
+        build(zip_path, root, pick=[W1], log=lambda _: None)
+    assert not (root / REAL_DIR).exists() or not any((root / REAL_DIR).iterdir())
+
+
+def test_ad14_fetch_walks_the_parts_the_build_will_walk(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """AD-14 (Story 4.7, matrix "Market record missing"): `--fetch` walks each Wallet's before and after parts as
+    the build will, so a Market record only those parts need is fetched once; a lookup-only Wallet walks only its
+    lookup window."""
+    zip_path, live = small_capture(tmp_path)
+    monkeypatch.setitem(real_sample.LOOKUP_ONLY, W2, "a test")
+    walked: list[tuple[str, str | None]] = []
+    real_walk = real_sample.positions_near
+
+    def walk(client: Any, wallet: str, cutoff: Any = None, side: str | None = None) -> Any:
+        walked.append((wallet, side))
+        return real_walk(client, wallet, cutoff, side)
+
+    monkeypatch.setattr(real_sample, "positions_near", walk)
+    fetch_additions(zip_path, live, pick=PICKED, log=lambda _: None)  # type: ignore[arg-type]
+    assert walked == [(W1, None), (W1, "before"), (W1, "after"), (W2, None)]
+
+
+EVENT = "0x" + "e" * 64  # Market 1's negative-risk event, when the case makes it one
+
+
+def market_row(kind: str, condition_id: str, t: int, *, combo: bool = False) -> dict[str, Any]:
+    """A non-trade activity row (split, merge, conversion), or with `combo` a combo trade, as the Data API sends it."""
+    if combo:
+        return {**raw_trade(1, t), "is_combo": True}
+    return {"type": kind, "condition_id": condition_id, "timestamp": t, "size": 10.0, "usdc_size": 10.0, "price": 0.0,
+            "token_id": None, "side": None, "is_combo": False}
+
+
+@pytest.mark.parametrize(
+    ("planted", "match"),
+    [
+        ("split after the cut-off", "SPLIT row"),
+        ("merge after the cut-off", "MERGE row"),
+        ("conversion in the event after the cut-off", "CONVERSION row"),
+        ("combo trade after the cut-off", "combo row"),
+        ("capture cut short", "did not read every activity row"),
+        ("Gamma resolved at the cut-off", "did not resolve before the Cut-off Date"),
+        ("Gamma never resolved", "did not resolve before the Cut-off Date"),
+    ],
+)
+def test_ad21_no_peeking_check_sees_every_late_holding_row(planted: str, match: str, tmp_path: Path) -> None:
+    """AD-21 (Edvard's no-peeking check, review of Story 4.7): a late split, merge or combo trade in the Market, a
+    late conversion in its negative-risk event (whose row carries the event's id), a capture that stopped reading
+    activity, and a Gamma record resolved on or after the cut-off or not at all each stop the build."""
+    options: dict[str, Any] = {}
+    if planted.startswith("split"):
+        options["extra"] = [market_row("SPLIT", cid(1), CUT + DAY)]
+    elif planted.startswith("merge"):
+        options["extra"] = [market_row("MERGE", cid(1), CUT + DAY)]
+    elif planted.startswith("conversion"):
+        options["gamma"] = {1: {"negRisk": True, "negRiskMarketID": EVENT}}
+        options["extra"] = [market_row("CONVERSION", EVENT, CUT + DAY)]
+    elif planted.startswith("combo"):
+        options["extra"] = [market_row("TRADE", cid(1), CUT + DAY, combo=True)]
+    elif planted == "capture cut short":
+        options["after_capped"] = True
+    elif planted == "Gamma resolved at the cut-off":
+        options["gamma"] = {1: {"closedTime": iso(CUT)}}
+    else:
+        options["gamma"] = {1: {"outcomePrices": '["0.5", "0.5"]'}}
+    zip_path, live = two_sided(tmp_path, funnel={cid(1): held(1, [W1, "CLOSED", 3.0, 0, 1, 0.4])}, **options)
+    root = repo(tmp_path / "repo")
+    fetch_additions(zip_path, live, pick=[W1], log=lambda _: None)  # type: ignore[arg-type]
+    with pytest.raises(BuildError, match=match):
+        build(zip_path, root, pick=[W1], log=lambda _: None)
+    assert not (root / REAL_DIR).exists() or not any((root / REAL_DIR).iterdir())
+
+
+def test_ad14_two_funnel_markets_with_one_list_name_stop_the_build(tmp_path: Path) -> None:
+    """AD-14 (review of Story 4.7): the capture names a Market's list by the first 18 characters of its id, so two
+    funnel Markets sharing them would silently swap lists; the build stops instead."""
+    twin = cid(1)[:18] + "f" * 48
+    entry = {"closedTime": iso(T0), "volumeNum": 1.0}  # no list of its own: the name is already taken
+    zip_path, _ = two_sided(tmp_path, funnel={cid(1): held(1, [W1, "CLOSED", 3.0, 0, 1, 0.4]), twin: entry})
+    captured = real_sample.read_capture(zip_path, [W1])
+    with pytest.raises(BuildError, match="share the list name"):
+        real_sample.real_funnel(zip_path, captured, {}, [W1], tmp_path)
+
+
+def test_ad14_real_volume_list_needs_the_funnel_and_a_file_for_each_market(tmp_path: Path) -> None:
+    """AD-14 (Story 4.7): a capture without its funnel list stops the build; a listed Market no written file holds
+    stops it too, since the offline Scan could not read that Market."""
+    zip_path, _ = two_sided(tmp_path, funnel={cid(1): held(1, [W1, "CLOSED", 3.0, 0, 1, 0.4])})
+    captured = real_sample.read_capture(zip_path, [W1])
+    markets = {cid(1): real_sample.parse_market(raw_gamma(1))}
+    empty = tmp_path / "empty"
+    empty.mkdir()
+    with pytest.raises(BuildError, match="in no written file"):
+        real_sample.real_funnel(zip_path, captured, markets, [W1], empty)
+    bare = tmp_path / "bare.zip"
+    with zipfile.ZipFile(zip_path) as source, zipfile.ZipFile(bare, "w") as target:
+        for name in source.namelist():
+            if name != real_sample.FUNNEL_LIST:
+                target.writestr(name, source.read(name))
+    with pytest.raises(BuildError, match="funnel_markets_20250701.json"):
+        real_sample.real_funnel(bare, captured, markets, [W1], empty)
 
 
 # --- the committed real Wallets (FR-12, FR-14, NFR-10) --------------------------------------------

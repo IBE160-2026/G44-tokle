@@ -11,11 +11,12 @@ silent default or conversion.
 from __future__ import annotations
 
 import json
-from dataclasses import asdict, fields
+from collections.abc import Mapping, Sequence
+from dataclasses import asdict, dataclass, fields
 from pathlib import Path
 from typing import Any
 
-from liquidoracle.records import ActivityRow, ListedPosition, Market, PricePoint, SampleWallet
+from liquidoracle.records import ActivityRow, ListedPosition, Market, MarketHolder, PricePoint, SampleWallet
 
 WALLET_KEYS = {"address", "name", "activity", "positions", "markets", "prices", "activity_from", "activity_until"}
 
@@ -65,23 +66,50 @@ def write_wallet(path: Path, wallet: SampleWallet, *, compact: bool = False) -> 
     path.write_bytes(dumps(wallet, compact=compact).encode("utf-8"))
 
 
-def write_funnel(path: Path, volumes: dict[str, float]) -> None:
-    """Write the Sample Dataset's volume list (Story 4.6): each funnel Market's condition id and its volume in
-    USD, what Gamma's volume-ordered list gives a live Scan (AD-21). Sorted keys and LF, so reruns give the same bytes."""
-    text = json.dumps({"volumes": volumes}, indent=1, sort_keys=True, allow_nan=False) + "\n"
+@dataclass(frozen=True, slots=True)
+class FunnelFile:
+    """A volume list: each funnel Market's volume, and the holder rows stored for it (empty for the synthetic one)."""
+
+    volumes: dict[str, float]
+    holders: dict[str, tuple[MarketHolder, ...]]
+
+
+def write_funnel(
+    path: Path, volumes: Mapping[str, float], holders: Mapping[str, Sequence[MarketHolder]] | None = None
+) -> None:
+    """Write a volume list: each funnel Market's condition id and its volume in USD, what Gamma's volume-ordered
+    list gives a live Scan (AD-21; Story 4.6). `holders` are the real Wallets' rows on those Markets as Polymarket
+    listed them, in list order (Story 4.7); the synthetic list has none and no `holders` key. Sorted keys and LF,
+    so reruns give the same bytes."""
+    document: dict[str, Any] = {"volumes": dict(volumes)}
+    if holders is not None:
+        document["holders"] = {c: [asdict(row) for row in rows] for c, rows in holders.items()}
+    text = json.dumps(document, indent=1, sort_keys=True, allow_nan=False) + "\n"
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_bytes(text.encode("utf-8"))
 
 
-def read_funnel(path: Path) -> dict[str, float]:
-    """The volume list written by `write_funnel`, read strictly: anything else is a `ValueError` naming the file."""
+def read_funnel(path: Path) -> FunnelFile:
+    """A volume list written by `write_funnel`, read strictly: anything else is a `ValueError` naming the file.
+
+    A holder row's Market must be on the list (Story 4.7)."""
     try:
         data = json.loads(path.read_text(encoding="utf-8"), parse_constant=_refuse_constant)
-        _check_keys(data, {"volumes"}, "funnel file")
+        if not isinstance(data, dict):
+            raise TypeError("the file is not a JSON object")
+        _check_keys(data, {"volumes", "holders"} if "holders" in data else {"volumes"}, "funnel file")
         volumes = data["volumes"]
         if not isinstance(volumes, dict):
             raise TypeError("volumes must be an object")
-        return {_str(condition_id): _float(volume) for condition_id, volume in volumes.items()}
+        found = {_str(condition_id): _float(volume) for condition_id, volume in volumes.items()}
+        stored = data.get("holders", {})
+        if not isinstance(stored, dict):
+            raise TypeError("holders must be an object")
+        holders = {_str(c): tuple(_market_holder(row) for row in _list(rows)) for c, rows in stored.items()}
+        stray = sorted(set(holders) - set(found))
+        if stray:
+            raise ValueError(f"holder rows for a Market with no volume: {stray[0]}")
+        return FunnelFile(found, holders)
     except (ValueError, TypeError) as error:  # json.JSONDecodeError is a ValueError
         raise ValueError(f"{path}: {error}") from None
 
@@ -224,3 +252,15 @@ def _market(row: Any) -> Market:
 def _price_point(row: Any) -> PricePoint:
     _check_keys(row, _keys(PricePoint), "price point")
     return PricePoint(token_id=_str(row["token_id"]), t=_int(row["t"]), price=_float(row["price"]))
+
+
+def _market_holder(row: Any) -> MarketHolder:
+    _check_keys(row, _keys(MarketHolder), "holder row")
+    return MarketHolder(
+        wallet=_str(row["wallet"]),
+        token_id=_str(row["token_id"]),
+        status=_one_of(row["status"], ("CLOSED", "OPEN")),
+        realized_pnl=_float(row["realized_pnl"]),
+        current_size=_float(row["current_size"]),
+        avg_price=_float(row["avg_price"]),
+    )
