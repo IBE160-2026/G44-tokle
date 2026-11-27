@@ -27,11 +27,22 @@ from dataclasses import dataclass
 from enum import StrEnum
 from pathlib import Path
 
-from liquidoracle.records import ActivityRow, Candidate, FunnelMarket, ListedPosition, Market, unread_positions
+from liquidoracle.records import (
+    HOLDUP_AFTER,  # AD-22: the scope of a Scan's Hold-up group results (FR-17)
+    HOLDUP_GROUPS,
+    ActivityRow,
+    Candidate,
+    FunnelMarket,
+    GroupResult,
+    ListedPosition,
+    Market,
+    Verdict,
+    unread_positions,
+)
 
 # 2: the Wallet window (Story 2.2); 3: Market events (Story 2.4); 4: jobs (Story 2.5); 5: window_capped (Story 3.3);
-# 6: Scans and the snapshot key (Story 4.3)
-SCHEMA_VERSION = 6
+# 6: Scans and the snapshot key (Story 4.3); 7: Hold-up group results (Story 5.1)
+SCHEMA_VERSION = 7
 FIRST_KEEPING_VERSION = 6  # AD-6: from this version on, a schema change keeps the Scans (Story 4.3)
 BUSY_TIMEOUT_SECONDS = 5.0  # [ASSUMPTION] AD-6: long enough for the worker's short writes
 SCHEMA_FILE = Path(__file__).with_name("schema.sql")
@@ -113,9 +124,12 @@ class WalletOutcome(StrEnum):
 
 # AD-6: the tables a schema change copies into the new schema, in this order. The other rows of the job,
 # snapshot, row and market tables are dropped; every other table is rebuilt empty.
-_SCAN_TABLES = ("scan", "scan_market", "scan_candidate", "scan_wallet", "scan_result")
+_SCAN_TABLES = ("scan", "scan_market", "scan_candidate", "scan_wallet", "scan_result", "group_result")
 _SNAPSHOT_TABLES = ("snapshot", "listed_position", "activity_row", "market")
 KEPT_TABLES = (*_SCAN_TABLES, "job", *_SNAPSHOT_TABLES)
+# Kept tables an older file may lack: `group_result` came with version 7, so a version 6 file's Scans are
+# kept without Hold-up rows (Story 5.1).
+_ADDED_LATER = frozenset({"group_result"})
 _FROZEN_IDS = (
     "SELECT before_fetch_id FROM scan_wallet WHERE before_fetch_id IS NOT NULL"
     " UNION SELECT after_fetch_id FROM scan_wallet WHERE after_fetch_id IS NOT NULL"
@@ -717,10 +731,39 @@ class Store:
             "SELECT DISTINCT wallet FROM scan_result WHERE scan_id = ?", (scan_id,)
         )}
 
-    def finish_scan(self, scan_id: int) -> None:
-        """Every phase is done: the Scan moves to `done` (AD-5)."""
+    def finish_scan(self, scan_id: int, groups: Sequence[GroupResult]) -> None:
+        """Every phase is done: the Scan's two Hold-up group results are stored and it moves to `done`, in one
+        transaction, so a Scan finished from this version on always has both (AD-5, AD-22, FR-17). Only a Scan
+        kept from a file older than version 7 is `done` without them."""
+        if sorted(g.group for g in groups) != sorted(HOLDUP_GROUPS):
+            raise ValueError("a Scan finishes with the Passers' and the Comparison Group's results, once each")
         with self._write() as db:
-            self._advance(db, scan_id, ScanStep.RANKED, ScanStep.DONE)
+            scan = db.execute("SELECT cutoff, seed FROM scan WHERE scan_id = ?", (scan_id,)).fetchone()
+            if scan is None:
+                raise ValueError(f"no Scan {scan_id}")
+            self._advance(db, scan_id, ScanStep.RANKED, ScanStep.DONE)  # first: a Scan at another step is refused
+            db.executemany(
+                "INSERT INTO group_result (scan_id, scope, group_name, cutoff, seed, verdict, p_value, tested_count,"
+                " real_pnl, wallets, dropped, not_fully_read) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                (
+                    (scan_id, HOLDUP_AFTER, g.group, scan[0], scan[1], g.verdict.value, g.p_value, g.tested_count,
+                     g.real_pnl, g.wallets, g.dropped, g.not_fully_read)
+                    for g in groups
+                ),
+            )
+
+    def group_results(self, scan_id: int, scope: str = HOLDUP_AFTER) -> tuple[GroupResult, ...]:
+        """The Scan's stored group results of one scope (AD-22): the Passers' then the Comparison Group's, the
+        order `core/holdup` gives them in; none for a Scan finished before they existed (Story 5.1)."""
+        stored = {
+            group: GroupResult(group, Verdict(verdict), p_value, tested, real_pnl, wallets, dropped, unread)
+            for group, verdict, p_value, tested, real_pnl, wallets, dropped, unread in self._connection().execute(
+                "SELECT group_name, verdict, p_value, tested_count, real_pnl, wallets, dropped, not_fully_read"
+                " FROM group_result WHERE scan_id = ? AND scope = ?",
+                (scan_id, scope),
+            )
+        }
+        return tuple(stored[group] for group in HOLDUP_GROUPS if group in stored)
 
     @staticmethod
     def _advance(db: sqlite3.Connection, scan_id: int, current: ScanStep, following: ScanStep) -> None:
@@ -807,7 +850,7 @@ class Store:
             tables = [name for (name,) in db.execute(
                 "SELECT name FROM sqlite_master WHERE type = 'table' AND name NOT LIKE 'sqlite_%'"
             ).fetchall()]
-            keep = version >= FIRST_KEEPING_VERSION and set(KEPT_TABLES) <= set(tables)
+            keep = version >= FIRST_KEEPING_VERSION and set(KEPT_TABLES) - _ADDED_LATER <= set(tables)
             for name in tables:
                 if keep and name in KEPT_TABLES:
                     db.execute(f'ALTER TABLE "{name}" RENAME TO "old_{name}"')
@@ -819,7 +862,7 @@ class Store:
                 _copy_scans(db)
                 _carry_sequences(db)
                 for name in KEPT_TABLES:
-                    db.execute(f'DROP TABLE "old_{name}"')
+                    db.execute(f'DROP TABLE IF EXISTS "old_{name}"')
             db.execute(f"PRAGMA user_version = {SCHEMA_VERSION}")
 
     @staticmethod
@@ -930,9 +973,13 @@ def _carry_sequences(db: sqlite3.Connection) -> None:
 
 
 def _copy(db: sqlite3.Connection, name: str, where: str = "") -> None:
-    """Copy `old_<name>` into `<name>` by the columns both have; `where` filters the old rows (fixed text)."""
+    """Copy `old_<name>` into `<name>` by the columns both have; `where` filters the old rows (fixed text).
+
+    A table the old file did not have yet (`_ADDED_LATER`) has nothing to copy."""
     new = [row[1] for row in db.execute(f'PRAGMA table_info("{name}")')]
     old = {row[1] for row in db.execute(f'PRAGMA table_info("old_{name}")')}
+    if not old and name in _ADDED_LATER:
+        return
     columns = ", ".join(f'"{c}"' for c in new if c in old)
     db.execute(f'INSERT INTO "{name}" ({columns}) SELECT {columns} FROM "old_{name}" {where}')
 

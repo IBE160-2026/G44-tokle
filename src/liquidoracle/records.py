@@ -304,6 +304,33 @@ class SkillTestResult:
     uncoupled_share: float
 
 
+# The Hold-up Test's two groups, in the order results are given and shown, and the scope of its results
+# (FR-17, AD-22). Here, because both `core` (which forms the groups) and `data` (which stores them) name them.
+PASSERS, COMPARISON = "passers", "comparison"
+HOLDUP_GROUPS = (PASSERS, COMPARISON)
+HOLDUP_AFTER = "holdup_after"
+
+
+@dataclass(frozen=True, slots=True)
+class GroupResult:
+    """One group's Hold-up Test result on its pooled after part (FR-17, AD-22).
+
+    `group` is `passers` or `comparison`. `wallets` are the Wallets in the group, `dropped` those
+    with too few bets after the Cut-off Date, `not_fully_read` those whose before or after part
+    was not fully read. `tested_count` and `real_pnl` cover the pooled bets of the Wallets that
+    were not dropped; `p_value` is None for *Not enough data*.
+    """
+
+    group: str
+    verdict: Verdict
+    p_value: float | None
+    tested_count: int
+    real_pnl: float
+    wallets: int
+    dropped: int
+    not_fully_read: int
+
+
 @dataclass(frozen=True, slots=True)
 class Read[T]:
     """The rows of one list read from Polymarket, and whether every page was read (AD-3).

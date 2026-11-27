@@ -164,3 +164,24 @@ CREATE TABLE scan_result (
     not_fully_read INTEGER NOT NULL,
     PRIMARY KEY (scan_id, wallet, scope)
 );
+
+-- A Scan's Hold-up Test results (FR-17, AD-22): one row per group ('passers', 'comparison') with scope
+-- 'holdup_after', the Scan, its cut-off and Seed. wallets are the Wallets in the group, dropped those with too few
+-- bets after the cut-off, not_fully_read those whose before or after part was not fully read; tested_count and
+-- real_pnl cover the pooled after-part bets of the Wallets that were not dropped. p_value is NULL for Not enough
+-- data. The rows are written in the transaction that moves the Scan to 'done' (Story 5.1).
+CREATE TABLE group_result (
+    scan_id        INTEGER NOT NULL REFERENCES scan (scan_id) ON DELETE CASCADE,
+    scope          TEXT    NOT NULL,
+    group_name     TEXT    NOT NULL,
+    cutoff         INTEGER NOT NULL,
+    seed           INTEGER NOT NULL,
+    verdict        TEXT    NOT NULL,
+    p_value        REAL,
+    tested_count   INTEGER NOT NULL,
+    real_pnl       REAL    NOT NULL,
+    wallets        INTEGER NOT NULL,
+    dropped        INTEGER NOT NULL,
+    not_fully_read INTEGER NOT NULL,
+    PRIMARY KEY (scan_id, scope, group_name)
+);

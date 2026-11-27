@@ -9,6 +9,10 @@ before part). `run_funnel` runs them in memory and returns one `ScanFunnel` (Sto
 storing each Market and each Wallet as it finishes, so Resume carries on from what is stored and
 never reads a finished Market or Wallet again. Between two units of work (one Market, one Wallet)
 it calls `between`, where the worker runs any waiting lookup (AD-5).
+
+The last phase, `holdup` (Story 5.1), forms the Hold-up Test's two groups from the stored
+`scan_before` results and tests each group's pooled after part (`core/holdup`, FR-17). Its two
+results are stored in the transaction that finishes the Scan.
 """
 
 from __future__ import annotations
@@ -20,7 +24,7 @@ from dataclasses import dataclass
 from datetime import date
 from typing import Protocol
 
-from liquidoracle.core import funnel, phrases
+from liquidoracle.core import funnel, holdup, phrases
 from liquidoracle.core.positions import build_positions
 from liquidoracle.core.skilltest import real_pnl, skill_test
 from liquidoracle.data.client import FunnelClient, WalletClient
@@ -42,12 +46,14 @@ from liquidoracle.records import (
     ActivityRow,
     Candidate,
     FunnelMarket,
+    GroupResult,
     ListedPosition,
     Market,
     MarketHolder,
     PositionSet,
     RankedWallet,
     ScanFunnel,
+    Verdict,
 )
 from liquidoracle.services.fetch import FRESH_FOR, fetch_wallet
 
@@ -188,9 +194,11 @@ def run_funnel(client: FunnelClient, cutoff: date, size: int = DEFAULT_SIZE) -> 
 
 # --- the Scan as a resumable job (Story 4.3) ------------------------------------------------------
 
-RANKING, SKILL_TESTS = "ranking", "skill_tests"  # AD-5's first two phases; Epics 5 and 6 add Hold-up and Copy Test
+RANKING, SKILL_TESTS = "ranking", "skill_tests"  # AD-5's first two phases
+HOLDUP = "holdup"  # AD-5: the Hold-up Test phase (Story 5.1); Epic 6 adds the Copy Test
 STARTING = "Reading Markets"  # the progress message before the Market set is known (EXPERIENCE.md)
 RANKING_MESSAGE = "Ranking"
+HOLDUP_MESSAGE = "Hold-up Test"  # EXPERIENCE.md, Scan progress bar
 
 
 def reading_markets(done: int, total: int) -> str:
@@ -241,7 +249,10 @@ def run_scan(
         store.mark_top(scan_id, [w.wallet for w in funnel.top_n(ranked, scan.size) if w.top])
     if store.scan(scan_id).step is ScanStep.RANKED:
         _test_top(client, store, scan_id, day, scan.seed, scan.as_of, progress, between)
-        store.finish_scan(scan_id)
+        progress(HOLDUP, 0, 1, HOLDUP_MESSAGE)
+        groups = hold_up_scan(store, scan_id, between)
+        progress(HOLDUP, 1, 1, HOLDUP_MESSAGE)  # before the Scan is finished: nothing may fail after that
+        store.finish_scan(scan_id, groups)
 
 
 def _read_markets(
@@ -329,6 +340,47 @@ def _test_top(
         )
         between()
     progress(SKILL_TESTS, len(top), len(top), wallets_checked(len(top), len(top)))
+
+
+def hold_up_scan(
+    store: Store, scan_id: int, between: Callable[[], None] = lambda: None
+) -> tuple[GroupResult, GroupResult]:
+    """The Scan's Hold-up Test (FR-17): the Passers' and the Comparison Group's results on their after parts.
+
+    The result depends only on stored data and the Seed, so a resumed Scan gets the same one.
+    """
+    scan = store.scan(scan_id)
+    if scan is None:
+        raise ValueError(f"no Scan {scan_id}")
+    return holdup.hold_up(hold_up_members(store, scan_id, between), seed=scan.seed)
+
+
+def hold_up_members(
+    store: Store, scan_id: int, between: Callable[[], None] = lambda: None
+) -> list[holdup.Member]:
+    """The Scan's Wallets that are in a Hold-up group, each with its before-part Verdict and its after part (FR-17).
+
+    The groups come from the stored `scan_before` results alone, so nothing after the Cut-off Date
+    decides who is in one. Each Wallet's after part is its snapshot frozen to the Scan, cut to the
+    Scan's as-of time (AD-19) and built by the one builder (AD-11). A Wallet with *Not enough data*
+    before is in neither group, so its after part is not read. `between()` runs after each Wallet read.
+    """
+    scan = store.scan(scan_id)
+    if scan is None:
+        raise ValueError(f"no Scan {scan_id}")
+    results = store.scan_results(scan_id)
+    flagged = {r.wallet for r in results if r.not_fully_read}  # its before or after part was not fully read
+    after_ids = {w.wallet: w.after_fetch_id for w in store.scan_wallets(scan_id)}
+    members = []
+    for result in results:
+        verdict = Verdict(result.verdict)
+        if result.scope != SCAN_BEFORE or holdup.group_of(verdict) is None:
+            continue
+        fetch_id = after_ids.get(result.wallet)
+        parts = [] if fetch_id is None else [as_of_part(_snapshot(store, fetch_id), scan.as_of)]
+        members.append(holdup.Member(result.wallet, verdict, parts_position_set(parts), result.wallet in flagged))
+        between()
+    return members
 
 
 def fetch_part(client: WalletClient, store: Store, wallet: str, day: date, side: str) -> int:

@@ -8,6 +8,7 @@ two of them partial, eight candidates, real Wallets cut from the capture). Tests
 from __future__ import annotations
 
 import dataclasses
+import sqlite3
 from collections.abc import Iterator
 from pathlib import Path
 from typing import Any
@@ -137,8 +138,9 @@ def uninterrupted(tmp_path: Path, server: FakeScan | None = None) -> list[tuple[
 
 
 def test_fr16_a_scan_runs_both_phases_and_stores_its_results(rig: Rig) -> None:
-    """FR-16, AD-5, AD-22: one job runs ranking then Skill Tests; the Scan is done only then, its top N equals the
-    in-memory funnel's, and each top Wallet has a `scan_before` and a `scan_whole` result with the Scan's key."""
+    """FR-16, AD-5, AD-22: one job runs ranking, Skill Tests and the Hold-up Test; the Scan is done only then, its
+    top N equals the in-memory funnel's, and each top Wallet has a `scan_before` and a `scan_whole` result with the
+    Scan's key."""
     scan_id, job_id = start(rig)
     assert rig.worker.run_once()
     job = rig.store.job(job_id)
@@ -208,7 +210,7 @@ def test_ad22_a_top_wallet_with_nothing_read_is_tested_on_nothing_and_stays_flag
 
 def test_ad5_progress_names_each_step(rig: Rig, monkeypatch: pytest.MonkeyPatch) -> None:
     """AD-5, EXPERIENCE.md: the progress JSON carries the phase and names the step: Reading Markets, Fetching
-    Wallets, Ranking, then "N of M Wallets checked"."""
+    Wallets, Ranking, "N of M Wallets checked", then the Hold-up Test (Story 5.1)."""
     seen: list[tuple[str, int, int, str]] = []
     original = rig.store.update_progress
 
@@ -225,7 +227,9 @@ def test_ad5_progress_names_each_step(rig: Rig, monkeypatch: pytest.MonkeyPatch)
     assert ("ranking", 0, 8, "Fetching Wallets: 0 of 8") in seen and ("ranking", 7, 8, "Fetching Wallets: 7 of 8") in seen
     assert ("ranking", 1, 1, "Ranking") in seen
     assert ("skill_tests", 0, 3, "0 of 3 Wallets checked") in seen
-    assert seen[-1] == ("skill_tests", 3, 3, "3 of 3 Wallets checked")
+    assert seen[-3:] == [
+        ("skill_tests", 3, 3, "3 of 3 Wallets checked"), ("holdup", 0, 1, "Hold-up Test"), ("holdup", 1, 1, "Hold-up Test"),
+    ]
 
 
 # --- stopping, interruption, failure and Resume -------------------------------------------------------
@@ -445,11 +449,14 @@ def test_ad9_an_open_row_on_an_unknown_token_makes_the_market_partial() -> None:
 # --- the schema change keeps the Scans (AD-6) ---------------------------------------------------------
 
 
+NEXT_VERSION = store_module.SCHEMA_VERSION + 1  # a schema version a later story would bring
+
+
 def next_version_schema(tmp_path: Path, extra: str) -> Path:
     """schema.sql with one change, as a later story would make it."""
     text = store_module.SCHEMA_FILE.read_text(encoding="utf-8")
     text = text.replace("    side                TEXT\n);", f"    side                TEXT,\n    {extra}\n);")
-    path = tmp_path / "schema_v7.sql"
+    path = tmp_path / "schema_next.sql"
     path.write_text(text + "\nCREATE TABLE later_table (x INTEGER);\n", encoding="utf-8")
     return path
 
@@ -474,11 +481,11 @@ def test_ad6_a_schema_change_keeps_scans_results_and_their_snapshots(
     """AD-6: on a version mismatch the cache is rebuilt (the lookup's snapshot goes) while the Scan, its job, its
     results, its frozen snapshots with their rows and their Market records are kept."""
     path, scan_id, results, frozen = finished_scan_file(tmp_path)
-    monkeypatch.setattr(store_module, "SCHEMA_VERSION", 7)
+    monkeypatch.setattr(store_module, "SCHEMA_VERSION", NEXT_VERSION)
     monkeypatch.setattr(store_module, "SCHEMA_FILE", next_version_schema(tmp_path, "note TEXT"))
     db = Store(path)
     try:
-        assert db._connection().execute("PRAGMA user_version").fetchone() == (7,)
+        assert db._connection().execute("PRAGMA user_version").fetchone() == (NEXT_VERSION,)
         scan = db.scan(scan_id)
         assert scan is not None and scan.step is ScanStep.DONE and not scan.data_rebuilt
         assert scan.job is not None and scan.job.status is JobStatus.DONE
@@ -501,13 +508,55 @@ def test_ad6_a_schema_change_keeps_scans_results_and_their_snapshots(
         db.close()
 
 
+def test_ad6_a_schema_change_keeps_the_holdup_results(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """AD-6, AD-22 (Story 5.1): a finished Scan's Hold-up group results are kept through a later schema change."""
+    path = tmp_path / "groups.db"
+    rig = rig_for(path)
+    scan_id, _ = start(rig)
+    rig.worker.run_once()
+    groups = rig.store.group_results(scan_id)
+    rig.store.close()
+    assert [g.group for g in groups] == ["passers", "comparison"]
+    monkeypatch.setattr(store_module, "SCHEMA_VERSION", NEXT_VERSION)
+    monkeypatch.setattr(store_module, "SCHEMA_FILE", next_version_schema(tmp_path, "note TEXT"))
+    db = Store(path)
+    try:
+        assert db.group_results(scan_id) == groups and db.scan(scan_id).step is ScanStep.DONE
+    finally:
+        db.close()
+
+
+def test_ad6_a_scan_finished_before_the_holdup_test_is_kept_without_one(tmp_path: Path) -> None:
+    """AD-6, FR-17 (Story 5.1, matrix "Older Scan"): a version 6 file has no `group_result` table. Its finished Scan,
+    results and frozen snapshots are kept through the change to this version, with no Hold-up rows, and a new
+    Scan in the same file gets its own."""
+    path, scan_id, results, frozen = finished_scan_file(tmp_path)
+    old = sqlite3.connect(path)
+    with old:  # what Story 4.3's schema was: this one without the Hold-up table
+        old.execute("DROP TABLE group_result")
+        old.execute("PRAGMA user_version = 6")
+    old.close()
+    rig = rig_for(path)
+    try:
+        assert rig.store._connection().execute("PRAGMA user_version").fetchone() == (store_module.SCHEMA_VERSION,)
+        scan = rig.store.scan(scan_id)
+        assert scan is not None and scan.step is ScanStep.DONE and not scan.data_rebuilt
+        assert results_without_ids(rig.store, scan_id) == results and rig.store.snapshot(frozen[SMALL][0]) is not None
+        assert rig.store.group_results(scan_id) == ()
+        new_id, _ = start(rig)
+        assert rig.worker.run_once() and len(rig.store.group_results(new_id)) == 2
+        assert rig.store.group_results(scan_id) == ()
+    finally:
+        rig.store.close()
+
+
 def test_ad6_snapshots_that_cannot_be_copied_mark_the_scan_data_rebuilt(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     """AD-6: when a schema change cannot copy the snapshots (a new column with no default), the Scans and results
     are kept without them, marked `data_rebuilt`, and cannot resume."""
     path, scan_id, results, frozen = finished_scan_file(tmp_path)
-    monkeypatch.setattr(store_module, "SCHEMA_VERSION", 7)
+    monkeypatch.setattr(store_module, "SCHEMA_VERSION", NEXT_VERSION)
     monkeypatch.setattr(store_module, "SCHEMA_FILE", next_version_schema(tmp_path, "extra TEXT NOT NULL"))
     db = Store(path)
     try:
@@ -537,7 +586,7 @@ def test_ad6_an_interrupted_scan_still_resumes_after_a_schema_change(
     scan_id, _ = start(rig)
     rig.worker.run_once()
     rig.store.close()
-    monkeypatch.setattr(store_module, "SCHEMA_VERSION", 7)
+    monkeypatch.setattr(store_module, "SCHEMA_VERSION", NEXT_VERSION)
     monkeypatch.setattr(store_module, "SCHEMA_FILE", next_version_schema(tmp_path, "note TEXT"))
     rig.server.refuse[REFUSED] = status(400, b'{"error": "bad request"}')
     reopened = Store(path, clock=rig.clock)
