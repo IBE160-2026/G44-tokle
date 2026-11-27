@@ -1050,6 +1050,8 @@ So that I can see whether their skill lasted or was a lucky streak.
 **Then** p < 0.05 in at most 7% of them (FR-17, AD-20)
 **And** this check is marked `slow`: in full on Linux 3.14, 100 runs elsewhere, with the determinism checks unchanged on every job (AD-17).
 
+Open items, decided while planning (Edvard, 2026-11-27): the lucky-streak group is 1,000 Wallets for the checks only, built by the generator in the tests and not loaded into the Sample Dataset or the offline Scan (the AI's recommendation; in the Scan they would drown the real Wallets in the Comparison Group). They are not written to disk either: Edvard dropped the files after the review, because they came to about 200 MB that nothing reads. The coin-flippers already in the offline Scan have no bets after the Cut-off Date, so all 1,000 are dropped and the dropped-share flag is set offline; Edvard decided the warning is right and stays, and Story 5.2 explains it. A group's "not fully read" count covers every Wallet in the group whose before or after part was not fully read; the Hold-up result is stored when the Scan finishes, so a Scan finished earlier has none (the AI's choices, shown at the spec checkpoint).
+
 ### Story 5.2: The Hold-up Test page
 
 As a user,
@@ -1075,6 +1077,8 @@ So that I can judge the comparison myself.
 **Given** an offline Scan of the Sample Dataset with the default Cut-off Date
 **When** this story is done
 **Then** the Hold-up result that covers the 8 real Sample Wallets in the offline Scan is written into the README whichever way it comes out, with its limits: only 8 Wallets (0xd218e4 and 0x63d43b stay outside the Scan, Story 4.7), picked for the Sample Dataset, not a full Scan (PRD §6.1; Edvard, 2026-11-18)
+**And** its limits also say what Story 5.1 measured: no real Wallet is among the Passers (none passed before the date; the Passers that are tested are made-up Wallets), and the Comparison Group's result rests on 3 real Wallets, 307 of its 409 bets from one of them (NFR-13; Story 5.1 review, 2026-11-27)
+**And** it says why the dropped-share warning shows on the offline Scan, so it does not look like a bug: the 1,000 coin-flippers have no bets after the Cut-off Date, so nearly the whole Comparison Group is dropped (70% of the Passers against nearly all of the Comparison Group); the rule is not changed to hide it (Edvard, 2026-11-27, Story 5.1)
 **And** the stage 2 minimum is closed: all tests pass in CI on the three systems and the README covers the Scan and the Hold-up Test (PRD §6.1, NFR-12).
 
 ### Story 5.3: Hold-up Test on a live Scan
