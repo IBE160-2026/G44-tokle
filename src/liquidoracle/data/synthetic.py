@@ -6,6 +6,12 @@ Market, 100 shares and no fees. The stage 1 Wallets bet only before the default 
 (2025-07-01); the stage 2 Wallets (steady sharp, forecaster, speed trader; Story 4.6) bet on both
 sides of it, and the forecaster and speed trader have price paths around their later buys.
 
+The lucky-streak group (Story 5.1) is 1,000 more Wallets by the coin-flipper rules that also bet
+after the Cut-off Date, at fair odds. The ones that happen to pass before the date are the lucky
+streaks the Hold-up Test's check needs (FR-17). They are for the checks only: the tests build
+them from `lucky_streak`, nothing writes them to disk or loads them, and they hold no anchor
+Positions, so the offline app and its Scan never see them (Edvard, 2026-11-27).
+
 The offline Scan (Story 4.6) finds Wallets the normal way, through a fixed set of high-volume
 anchor Markets inside the default funnel window: the four Wallets FR-16 expects on the offline
 Watchlist and the coin-flippers each hold one small Position in every anchor Market, sold before
@@ -36,6 +42,7 @@ DAY = 86_400
 MINUTE = 60
 COIN_FLIPPERS = 1000
 COIN_FLIPPER_BETS = 100
+LUCKY_STREAKS = 1000  # the lucky-streak group (FR-13, Story 5.1): as many as the coin-flippers
 STOP_LOSS_PRICE = 0.25  # Edvard, 2026-11-13
 
 SMALL_DIR = Path("sample_data") / "synthetic"  # committed
@@ -107,16 +114,44 @@ def coin_flipper_name(index: int) -> str:
 def coin_flipper(index: int) -> SampleWallet:
     """Coin-flipper number `index`: prices uniform in whole cents 0.10-0.90, won when a draw < price."""
     name = coin_flipper_name(index)
-    bets = []
-    for i in range(COIN_FLIPPER_BETS):
-        cents = 10 + int(uniform(name, i, "price") * 81)  # 10..90, each equally likely
-        price = cents / 100
-        bets.append(_Bet(price, won=uniform(name, i, "outcome") < price))
-    return _wallet(name, bets, anchors=True)  # in the offline Scan too (Edvard, 2026-11-27, Story 4.6)
+    # In the offline Scan too (Edvard, 2026-11-27, Story 4.6).
+    return _wallet(name, [_fair_bet(name, i) for i in range(COIN_FLIPPER_BETS)], anchors=True)
+
+
+def _fair_bet(name: str, i: int) -> _Bet:
+    """Bet `i` by the coin-flipper rules: a price in whole cents 0.10-0.90, won when a draw < that price."""
+    cents = 10 + int(uniform(name, i, "price") * 81)  # 10..90, each equally likely
+    price = cents / 100
+    return _Bet(price, won=uniform(name, i, "outcome") < price)
 
 
 def coin_flippers(count: int = COIN_FLIPPERS) -> Iterator[SampleWallet]:
     return (coin_flipper(i) for i in range(count))
+
+
+def lucky_streak_name(index: int) -> str:
+    """The name of lucky-streak Wallet number `index`: "lucky-streak-0000"."""
+    return f"lucky-streak-{index:04d}"
+
+
+def lucky_streak(index: int) -> SampleWallet:
+    """Lucky-streak Wallet number `index` (FR-13, FR-17): 100 bets before the cut-off by the coin-flipper
+    rules, then 100 more bought from the cut-off on, one a day, by the same rules, so at fair odds.
+
+    Its draws are its own (its name is in them), so the coin-flippers do not change. No anchor
+    Positions and no file: the offline app never sees it (Edvard, 2026-11-27, Story 5.1).
+    """
+    name = lucky_streak_name(index)
+    before = [_fair_bet(name, i) for i in range(COIN_FLIPPER_BETS)]
+    after = [
+        replace(_fair_bet(name, COIN_FLIPPER_BETS + i), bought_at=CUTOFF + i * DAY)
+        for i in range(COIN_FLIPPER_BETS)
+    ]
+    return _wallet(name, [*before, *after])
+
+
+def lucky_streaks(count: int = LUCKY_STREAKS) -> Iterator[SampleWallet]:
+    return (lucky_streak(i) for i in range(count))
 
 
 def write_small(root: Path) -> list[Path]:

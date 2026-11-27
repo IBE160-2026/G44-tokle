@@ -360,7 +360,8 @@ def test_coin_flippers_are_never_committed() -> None:
 
 
 def test_make_synthetic_writes_both_groups(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    """FR-13, AD-14: `make-synthetic` writes the five small Wallets and the 1,000 coin-flippers into instance/."""
+    """FR-13, AD-14: `make-synthetic` writes the small Wallets and the 1,000 coin-flippers into instance/, and
+    nothing for the lucky-streak Wallets, which only the tests build (Edvard, 2026-11-27, Story 5.1)."""
     (tmp_path / "sample_data").mkdir()
     (tmp_path / "pyproject.toml").touch()
     monkeypatch.chdir(tmp_path)
@@ -370,6 +371,7 @@ def test_make_synthetic_writes_both_groups(tmp_path: Path, monkeypatch: pytest.M
     flippers = sorted((tmp_path / synthetic.COIN_FLIPPER_DIR).glob("*.json"))
     assert len(flippers) == 1000
     assert sample_json.read_wallet(flippers[-1]) == synthetic.coin_flipper(999)
+    assert not [p for p in tmp_path.rglob("*") if "lucky" in p.name]
 
 
 @pytest.mark.parametrize("present", [(), ("sample_data",), ("pyproject.toml",)])

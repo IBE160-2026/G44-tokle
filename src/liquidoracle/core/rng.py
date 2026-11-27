@@ -11,7 +11,7 @@ from hashlib import sha256
 import numpy as np
 
 # A purpose's code must never change: changing it changes every stored result (AD-15).
-PURPOSES = {"skilltest": 1}
+PURPOSES = {"skilltest": 1, "holdup": 2}  # holdup: a Hold-up group's pooled test (FR-17, Story 5.1)
 
 
 def spawn_key(purpose: str, unit_id: str) -> tuple[int, int]:

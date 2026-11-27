@@ -29,6 +29,7 @@ _NICE_STEPS = (1.0, 2.0, 2.5, 5.0, 10.0)
 _MIN_BAR_WIDTH = 0.01  # one cent
 
 _CHUNK = 1_000  # Simulations drawn per block; the same numbers as one big draw, less memory
+_BLOCK_CELLS = 2_000_000  # most Simulations x Positions held at once: a pooled test draws fewer rows per block
 
 
 @dataclass(frozen=True, slots=True)
@@ -42,15 +43,20 @@ class _Run:
     bins: tuple[ChartBin, ...]
 
 
-def skill_test(position_set: PositionSet, *, seed: int, unit_id: str, scope: str = "lookup") -> SkillTestResult:
+def skill_test(
+    position_set: PositionSet, *, seed: int, unit_id: str, scope: str = "lookup", purpose: str = "skilltest"
+) -> SkillTestResult:
     """Run the Skill Test on one Position set (FR-4 to FR-7).
 
     The tested Positions and the Slivers are simulated and counted in Real PnL; only the tested
     ones count toward the 30 minimum (PRD Glossary, Sliver). `unit_id` names the random unit
-    (the Wallet's address for a lookup, AD-15).
+    (the Wallet's address for a lookup, AD-15). A group test pools its Wallets' Positions into
+    one set and names its own `purpose` (`core/holdup`), so the unit is the test itself and
+    every Wallet in it shares the per-Market draws (AD-20).
     """
     bets = (*position_set.tested, *position_set.slivers)
     _check(bets)
+    rng.spawn_key(purpose, unit_id)  # an unknown purpose is refused whatever the number of bets
     tested = position_set.tested_count
     slivers = len(position_set.slivers)
     if tested < MIN_RESOLVED:
@@ -60,7 +66,7 @@ def skill_test(position_set: PositionSet, *, seed: int, unit_id: str, scope: str
             simulations=0, at_or_above=None, at_or_below=None, p_value=None, bins=(),
             uncoupled_share=uncoupled_share(position_set.tested),
         )
-    run = _engine(bets, seed=seed, unit_id=unit_id)
+    run = _engine(bets, seed=seed, unit_id=unit_id, purpose=purpose)
     return SkillTestResult(
         scope=scope, seed=seed, verdict=verdict_for(run.p_value), tested_count=tested,
         sliver_count=slivers, real_pnl=real_pnl(position_set), own_fees=run.own_fees,
@@ -98,7 +104,7 @@ def mostly_uncoupled(result: SkillTestResult) -> bool:
     return result.uncoupled_share > UNCOUPLED_NOTE_ABOVE
 
 
-def _engine(bets: Sequence[Position], *, seed: int, unit_id: str) -> _Run:
+def _engine(bets: Sequence[Position], *, seed: int, unit_id: str, purpose: str = "skilltest") -> _Run:
     """The Simulations and the p-value, with no minimum. Tests only (see the module docstring)."""
     _check(bets)
     if not bets:
@@ -113,10 +119,11 @@ def _engine(bets: Sequence[Position], *, seed: int, unit_id: str) -> _Run:
     base = sum(loss_cents)
     gain = np.array([w - lo for w, lo in zip(win_cents, loss_cents)], dtype=np.int64)
 
-    generator = _generator(seed, unit_id)
+    generator = _generator(seed, unit_id, purpose)
     totals = np.empty(SIMULATIONS, dtype=np.int64)
-    for start in range(0, SIMULATIONS, _CHUNK):
-        rows = min(_CHUNK, SIMULATIONS - start)
+    block = _block_rows(len(ordered))
+    for start in range(0, SIMULATIONS, block):
+        rows = min(block, SIMULATIONS - start)
         totals[start:start + rows] = base + draws.won(generator, rows).astype(np.int64) @ gain
 
     at_or_above = int(np.count_nonzero(totals >= real_cents))
@@ -181,8 +188,15 @@ def _ordered(bets: Sequence[Position]) -> list[Position]:
     return sorted(bets, key=lambda b: (b.condition_id, b.token_id))
 
 
-def _generator(seed: int, unit_id: str) -> np.random.Generator:
-    return rng.generator(seed, "skilltest", unit_id)
+def _generator(seed: int, unit_id: str, purpose: str = "skilltest") -> np.random.Generator:
+    return rng.generator(seed, purpose, unit_id)
+
+
+def _block_rows(positions: int) -> int:
+    """Simulations drawn per block: `_CHUNK`, or fewer when the test is large, so a block never holds
+    more than `_BLOCK_CELLS` draws (a pooled Hold-up group can be 100,000 Positions). The generator's
+    stream is the same whatever the block size, so the result is too."""
+    return max(1, min(_CHUNK, _BLOCK_CELLS // max(1, positions)))
 
 
 def _unit_key(bet: Position) -> tuple[str, str]:

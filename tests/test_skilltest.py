@@ -296,8 +296,14 @@ def test_29_resolved_positions_give_not_enough_data_and_30_a_verdict() -> None:
 
 
 def test_the_public_function_cannot_skip_the_minimum() -> None:
-    """FR-6 (Edvard, 2026-10-24): skill_test has no parameter that turns the 30-bet minimum off."""
-    assert list(inspect.signature(skilltest.skill_test).parameters) == ["position_set", "seed", "unit_id", "scope"]
+    """FR-6 (Edvard, 2026-10-24): skill_test has no parameter that turns the 30-bet minimum off. `purpose`
+    (Story 5.1) only names the random unit's kind (AD-15): under any purpose 29 bets still give Not enough data."""
+    assert list(inspect.signature(skilltest.skill_test).parameters) == [
+        "position_set", "seed", "unit_id", "scope", "purpose",
+    ]
+    few = position_set(*(bet(i, 0.5, True) for i in range(29)))
+    for purpose in rng.PURPOSES:
+        assert skilltest.skill_test(few, seed=SEED, unit_id="few", purpose=purpose).verdict is Verdict.NOT_ENOUGH_DATA
 
 
 ENGINE_NAME = re.compile(r"\b_engine\b")
@@ -354,14 +360,19 @@ def test_golden_count_is_reproduced(name: str) -> None:
 
 SUBPROCESS_SCRIPT = f"""
 import json
-from liquidoracle.core import skilltest
+from liquidoracle.core import holdup, skilltest
 from liquidoracle.core.positions import build_positions
 from liquidoracle.data import synthetic
+from liquidoracle.records import Verdict
 out = {{}}
+members = []
 for w in synthetic.small_wallets():
     built = build_positions(w.activity, {{m.condition_id: m for m in w.markets}}, listed=w.positions)
     r = skilltest.skill_test(built, seed={SEED}, unit_id=w.address)
     out[w.name] = [r.p_value, str(r.verdict), r.at_or_above]
+    if r.verdict is not Verdict.NOT_ENOUGH_DATA:  # the Hold-up Test's pooled path too (Story 5.1)
+        members.append(holdup.Member(w.address, r.verdict, built))
+out["hold-up"] = [[g.group, g.p_value, str(g.verdict), g.tested_count, g.wallets] for g in holdup.hold_up(members, seed={SEED})]
 print(json.dumps(out, sort_keys=True))
 """
 
@@ -376,6 +387,7 @@ def test_two_hash_seeds_give_identical_results() -> None:
         outputs.append(json.loads(done.stdout))
     assert outputs[0] == outputs[1]
     assert outputs[0]["sharp-trader"][1] == Verdict.SKILLED
+    assert [g[0] for g in outputs[0]["hold-up"]] == ["passers", "comparison"] and outputs[0]["hold-up"][0][4] >= 4
 
 
 def test_spawn_key_is_fixed_by_purpose_and_id() -> None:
