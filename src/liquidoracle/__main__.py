@@ -12,10 +12,11 @@ import logging
 import socket
 import sys
 import time
+from collections.abc import Callable
 from dataclasses import dataclass
 from pathlib import Path
 
-from liquidoracle.data.client import WalletClient
+from liquidoracle.data.client import FunnelClient
 from liquidoracle.data.store import LIVE_DB, OFFLINE_DB, Store, StoreError
 from liquidoracle.services.jobs import Jobs
 from liquidoracle.settings import Settings, SettingsError, load_settings
@@ -185,29 +186,33 @@ def in_repository(root: Path, command: str) -> bool:
 class Sources:
     """The client, database and job queue a run uses (AD-13).
 
-    `jobs` is None in Offline Mode: it fetches nothing in the background, and pages may ask its
-    `OfflineClient` directly. A live run has a job queue, and only the worker uses its client (AD-5).
+    Both modes have a job queue: the worker runs Scans with the client (AD-5; offline from Story 4.6).
+    `sample_size` is set in Offline Mode only: it counts the Sample Wallets (the N of an offline Scan),
+    and there lookups ask the `OfflineClient` directly, with no job, since it only reads local files.
+    A live run's lookups are jobs, and only the worker uses its client.
     """
 
-    client: WalletClient
+    client: FunnelClient
     store: Store
-    jobs: Jobs | None
+    jobs: Jobs
+    sample_size: Callable[[], int] | None = None
 
 
 def open_sources(settings: Settings, root: Path) -> Sources:
     """AD-13: the one place the mode picks the client, the database file and the job queue.
 
-    Offline Mode gets `OfflineClient` and `instance/offline.db`; a live run gets `PolymarketClient`,
-    `instance/live.db` and a job queue. Nothing else branches on the mode. `serve` hands the result
-    to the pages through `Lookup` and to the worker.
+    Offline Mode gets `OfflineClient` (with the Sample Dataset's volume list) and `instance/offline.db`;
+    a live run gets `PolymarketClient` and `instance/live.db`; each gets a job queue. Nothing else
+    branches on the mode. `serve` hands the result to the pages and to the worker.
     """
-    from liquidoracle.data.offline import OfflineClient, sample_files
+    from liquidoracle.data.offline import OfflineClient, sample_files, sample_funnel
     from liquidoracle.data.polymarket import PolymarketClient
 
     if settings.offline:
         # list_files: Sample files written after the start (a load-sample run) are still found.
-        client = OfflineClient(sample_files(root), list_files=lambda: sample_files(root))
-        return Sources(client, Store(root / OFFLINE_DB), None)
+        client = OfflineClient(sample_files(root), list_files=lambda: sample_files(root), funnel=sample_funnel(root))
+        store = Store(root / OFFLINE_DB)
+        return Sources(client, store, Jobs(store), sample_size=lambda: len(client.addresses()))
     store = Store(root / LIVE_DB)
     return Sources(PolymarketClient(settings.polymarket_requests_per_second), store, Jobs(store))
 
@@ -216,6 +221,7 @@ def serve(settings: Settings) -> int:
     """Start the web app with the AD-23 serving rules. Blocks until Ctrl+C."""
     from liquidoracle.services.jobs import Worker
     from liquidoracle.services.lookup import Lookup
+    from liquidoracle.services.scans_page import ScansPage
     from liquidoracle.web import create_app
 
     root = Path.cwd()
@@ -240,20 +246,22 @@ def serve(settings: Settings) -> int:
             file=sys.stderr,
         )
         return 2
-    if sources.jobs is None:
+    try:
+        interrupted = sources.store.interrupt_running_jobs()  # AD-5: left running when the app last closed
+    except StoreError as error:
+        print(f"LiquidOracle cannot start: the database {sources.store.path} cannot be written ({error}).",
+              file=sys.stderr)
+        return 2
+    if interrupted:
+        log.info("%d job(s) were cut off when the app last closed; they are marked interrupted", interrupted)
+    Worker(sources.client, sources.jobs).start()  # AD-5, AD-23: the one worker, started only here
+    if sources.sample_size is not None:  # Offline Mode: lookups read the local files directly
         lookup = Lookup(sources.client, sources.store, seed=settings.seed)
     else:
-        try:
-            interrupted = sources.store.interrupt_running_jobs()  # AD-5: left running when the app last closed
-        except StoreError as error:
-            print(f"LiquidOracle cannot start: the database {sources.store.path} cannot be written ({error}).",
-                  file=sys.stderr)
-            return 2
-        if interrupted:
-            log.info("%d lookup(s) were cut off when the app last closed; they are marked interrupted", interrupted)
-        Worker(sources.client, sources.jobs).start()  # AD-5, AD-23: the one worker, started only here
         lookup = Lookup(None, sources.store, seed=settings.seed, jobs=sources.jobs)
-    app = create_app(settings, lookup)  # it builds the Scans page's service over the same store and job queue
+    scans = ScansPage(sources.store, jobs=sources.jobs, seed=settings.seed,
+                      rate=settings.polymarket_requests_per_second, sample_size=sources.sample_size)
+    app = create_app(settings, lookup, scans)
     log.info("LiquidOracle is running at http://%s:%d (press Ctrl+C to stop)", HOST, settings.port)
     # If binding still fails (no permission, or another program took the port after the
     # check above), Werkzeug prints a plain message itself and exits with code 1.

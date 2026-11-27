@@ -999,6 +999,66 @@
    "token_id": "98060012716745202036239104841688350012575026711461933295767696034174491705048",
    "type": "TRADE",
    "usdc_size": 50.0
+  },
+  {
+   "condition_id": "0x9e13d63cfc5aa29e180f16e07cfda0cc818e20090e6021635403d0a7de5fe1ba",
+   "price": 0.5,
+   "side": "BUY",
+   "size": 10.0,
+   "timestamp": 1747094400,
+   "token_id": "108923852510462930550189553699043182918227797246443619998649597052353428469594",
+   "type": "TRADE",
+   "usdc_size": 5.0
+  },
+  {
+   "condition_id": "0x9e13d63cfc5aa29e180f16e07cfda0cc818e20090e6021635403d0a7de5fe1ba",
+   "price": 0.5,
+   "side": "SELL",
+   "size": 10.0,
+   "timestamp": 1747180800,
+   "token_id": "108923852510462930550189553699043182918227797246443619998649597052353428469594",
+   "type": "TRADE",
+   "usdc_size": 5.0
+  },
+  {
+   "condition_id": "0xd3f6bf4309da715d00b5a5f648f7d202d2313a328e07f97e6e00a601f4bfe9b0",
+   "price": 0.5,
+   "side": "BUY",
+   "size": 10.0,
+   "timestamp": 1748563200,
+   "token_id": "11088291767751146812738140167570923511444331834860054244827355211616272184089",
+   "type": "TRADE",
+   "usdc_size": 5.0
+  },
+  {
+   "condition_id": "0xd3f6bf4309da715d00b5a5f648f7d202d2313a328e07f97e6e00a601f4bfe9b0",
+   "price": 0.5,
+   "side": "SELL",
+   "size": 10.0,
+   "timestamp": 1748649600,
+   "token_id": "11088291767751146812738140167570923511444331834860054244827355211616272184089",
+   "type": "TRADE",
+   "usdc_size": 5.0
+  },
+  {
+   "condition_id": "0x618e18188b45268c725dafa9bb5b1df01f57c2f66b5c142ca0a0427c3e92ab7e",
+   "price": 0.5,
+   "side": "BUY",
+   "size": 10.0,
+   "timestamp": 1749772800,
+   "token_id": "57455016795790542514769975333193919943920517497631749457272407034294982172664",
+   "type": "TRADE",
+   "usdc_size": 5.0
+  },
+  {
+   "condition_id": "0x618e18188b45268c725dafa9bb5b1df01f57c2f66b5c142ca0a0427c3e92ab7e",
+   "price": 0.5,
+   "side": "SELL",
+   "size": 10.0,
+   "timestamp": 1749859200,
+   "token_id": "57455016795790542514769975333193919943920517497631749457272407034294982172664",
+   "type": "TRADE",
+   "usdc_size": 5.0
   }
  ],
  "activity_from": null,
@@ -3004,6 +3064,66 @@
     "98060012716745202036239104841688350012575026711461933295767696034174491705048",
     "63491054581403492164252823282014540344588883672420524837292018124476550017916"
    ]
+  },
+  {
+   "closed": true,
+   "closed_time": 1747267200,
+   "condition_id": "0x9e13d63cfc5aa29e180f16e07cfda0cc818e20090e6021635403d0a7de5fe1ba",
+   "event_id": null,
+   "fee_exponent": null,
+   "fee_rate": null,
+   "fees_enabled": false,
+   "neg_risk_id": null,
+   "outcome_prices": [
+    1.0,
+    0.0
+   ],
+   "start_time": 1746403200,
+   "tags": [],
+   "token_ids": [
+    "108923852510462930550189553699043182918227797246443619998649597052353428469594",
+    "107538425024430290558616321841226958434998180256885873887447802474666094306941"
+   ]
+  },
+  {
+   "closed": true,
+   "closed_time": 1748736000,
+   "condition_id": "0xd3f6bf4309da715d00b5a5f648f7d202d2313a328e07f97e6e00a601f4bfe9b0",
+   "event_id": null,
+   "fee_exponent": null,
+   "fee_rate": null,
+   "fees_enabled": false,
+   "neg_risk_id": null,
+   "outcome_prices": [
+    0.0,
+    1.0
+   ],
+   "start_time": 1747872000,
+   "tags": [],
+   "token_ids": [
+    "11088291767751146812738140167570923511444331834860054244827355211616272184089",
+    "108241339378167950547923819137203059600832843675534642207552299516349606151873"
+   ]
+  },
+  {
+   "closed": true,
+   "closed_time": 1749945600,
+   "condition_id": "0x618e18188b45268c725dafa9bb5b1df01f57c2f66b5c142ca0a0427c3e92ab7e",
+   "event_id": null,
+   "fee_exponent": null,
+   "fee_rate": null,
+   "fees_enabled": false,
+   "neg_risk_id": null,
+   "outcome_prices": [
+    1.0,
+    0.0
+   ],
+   "start_time": 1749081600,
+   "tags": [],
+   "token_ids": [
+    "57455016795790542514769975333193919943920517497631749457272407034294982172664",
+    "40400483047986135687947446462588236392098124513183313511805566804548963094713"
+   ]
   }
  ],
  "name": "sharp-trader",
@@ -3807,6 +3927,30 @@
    "shares_bought": 100.0,
    "status": "CLOSED",
    "token_id": "98060012716745202036239104841688350012575026711461933295767696034174491705048"
+  },
+  {
+   "condition_id": "0x9e13d63cfc5aa29e180f16e07cfda0cc818e20090e6021635403d0a7de5fe1ba",
+   "first_entry_at": 1747094400,
+   "last_event_at": 1747180800,
+   "shares_bought": 10.0,
+   "status": "CLOSED",
+   "token_id": "108923852510462930550189553699043182918227797246443619998649597052353428469594"
+  },
+  {
+   "condition_id": "0xd3f6bf4309da715d00b5a5f648f7d202d2313a328e07f97e6e00a601f4bfe9b0",
+   "first_entry_at": 1748563200,
+   "last_event_at": 1748649600,
+   "shares_bought": 10.0,
+   "status": "CLOSED",
+   "token_id": "11088291767751146812738140167570923511444331834860054244827355211616272184089"
+  },
+  {
+   "condition_id": "0x618e18188b45268c725dafa9bb5b1df01f57c2f66b5c142ca0a0427c3e92ab7e",
+   "first_entry_at": 1749772800,
+   "last_event_at": 1749859200,
+   "shares_bought": 10.0,
+   "status": "CLOSED",
+   "token_id": "57455016795790542514769975333193919943920517497631749457272407034294982172664"
   }
  ],
  "prices": []

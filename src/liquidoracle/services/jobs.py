@@ -13,9 +13,8 @@ from __future__ import annotations
 import logging
 import threading
 from datetime import date
-from typing import cast
 
-from liquidoracle.data.client import FunnelClient, WalletClient
+from liquidoracle.data.client import FunnelClient
 from liquidoracle.data.errors import NoPolymarketHistory, PolymarketUnavailable
 from liquidoracle.data.store import LOOKUP, NO_HISTORY, SCAN, Job, JobStatus, Store
 from liquidoracle.data.window import cutoff_at
@@ -81,7 +80,7 @@ class Jobs:
 class Worker:
     """The one worker thread (AD-5). Tests call `run_once` directly instead of starting the thread."""
 
-    def __init__(self, client: WalletClient, jobs: Jobs) -> None:
+    def __init__(self, client: FunnelClient, jobs: Jobs) -> None:
         self._client = client
         self._jobs = jobs
         self._store = jobs.store
@@ -133,9 +132,7 @@ class Worker:
     def _run_scan(self, job: Job, scan_id: int) -> None:
         """One run of a Scan (Story 4.3): `stopped` keeps its progress so the page can say how far it got."""
         try:
-            # Only `PolymarketClient` can run the funnel; another client fails the job below (Story 4.6 adds offline).
-            run_scan(cast(FunnelClient, self._client), self._store, scan_id, job_id=job.id,
-                     between=self.run_waiting_lookups)
+            run_scan(self._client, self._store, scan_id, job_id=job.id, between=self.run_waiting_lookups)
         except PolymarketUnavailable as error:
             log.warning("Scan %d stopped: %s", scan_id, error)
             self._store.finish_job(job.id, JobStatus.STOPPED, message=FINISHED[JobStatus.STOPPED], keep_progress=True)

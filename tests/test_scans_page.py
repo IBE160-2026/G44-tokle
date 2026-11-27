@@ -171,7 +171,7 @@ def test_ux_dr30_one_scan_at_a_time(rig: Rig) -> None:
     """UX-DR30, AD-5: while a Scan runs, the button is unavailable and a second start is refused."""
     rig.start()
     view = rig.page.view()
-    assert view.form.blocked and view.form.blocked_reason is None  # the running box says why
+    assert view.form.blocked  # the running box says why
     assert rig.page.submit(OLD, "200", confirmed=False) == (Submitted.REFUSED, None)
     assert len(rig.store.scans()) == 1
 
@@ -330,18 +330,68 @@ def test_ad7_a_scan_long_before_1970_still_lists(rig: Rig, web: FlaskClient) -> 
     assert web.get("/scans").status_code == 200
 
 
-# --- Offline Mode (UX-DR30; Edvard, 2026-11-26) --------------------------------------------------
+# --- Offline Mode (UX-DR30; Edvard, 2026-11-26; Story 4.6) --------------------------------------
+
+SAMPLE_WALLETS = 1_018  # what `sample_size` counts in these tests
 
 
-def test_ux_dr30_offline_the_form_is_fixed_and_cannot_start_yet(rig: Rig) -> None:
-    """UX-DR30, AD-13 (Edvard, 2026-11-26): Offline Mode's form is fixed and read-only, and nothing starts until Story 4.6."""
-    offline = ScansPage(rig.store, jobs=None, seed=SEED, rate=5.0)
+def offline_page(rig: Rig) -> ScansPage:
+    return ScansPage(rig.store, jobs=rig.jobs, seed=SEED, rate=5.0, sample_size=lambda: SAMPLE_WALLETS)
+
+
+def test_ux_dr30_offline_the_form_is_fixed_and_starts_a_scan_of_the_whole_sample(rig: Rig) -> None:
+    """UX-DR30, AD-13, FR-16 (Story 4.6): Offline Mode's form is fixed and read-only, with no estimate, and
+    "Start Scan" starts a Scan of the default Cut-off Date over every Sample Wallet."""
+    offline = offline_page(rig)
     form = offline.view().form
     assert (form.cutoff, form.size, form.read_only) == ("2025-07-01", "Whole Sample Dataset", True)
-    assert form.blocked and form.blocked_reason == "Offline Scans are not ready yet." and form.estimate is None
+    assert not form.blocked and form.estimate is None
     assert sp.OFFLINE_INFO == "Offline Mode scans the whole Sample Dataset with its Cut-off Date, 1 July 2025."
-    assert offline.submit(OLD, "200", confirmed=True) == (Submitted.REFUSED, None)
-    assert offline.resume(1) is False and rig.store.scans() == ()
+    assert not hasattr(sp, "OFFLINE_NOT_READY")
+    assert offline.submit(OLD, "Whole Sample Dataset", confirmed=False) == (Submitted.STARTED, None)
+    (scan,) = rig.store.scans()
+    assert (scan.cutoff, scan.size, scan.seed) == (cutoff_at(date(2025, 7, 1)), SAMPLE_WALLETS, SEED)
+    assert offline.estimate("200") is None
+
+
+@pytest.mark.parametrize(("cutoff", "size"), [(days_ago(10), "37"), ("", ""), ("not a date", "9999"), (OLD, "200")])
+def test_ux_dr30_offline_posted_values_are_ignored(rig: Rig, cutoff: str, size: str) -> None:
+    """UX-DR30 (Story 4.6, matrix "Posted values"): whatever an offline POST says, the fixed date and the whole
+    Sample Dataset are used; no error, no recent-date warning."""
+    assert offline_page(rig).submit(cutoff, size, confirmed=False) == (Submitted.STARTED, None)
+    (scan,) = rig.store.scans()
+    assert (scan.cutoff, scan.size) == (cutoff_at(date(2025, 7, 1)), SAMPLE_WALLETS)
+
+
+def test_ux_dr30_offline_a_running_scan_blocks_a_new_one(rig: Rig) -> None:
+    """UX-DR30 (Story 4.6, matrix "Scan running"): offline, a queued or running Scan blocks "Start Scan" with the
+    running info box, as live, and a second POST starts nothing."""
+    offline = offline_page(rig)
+    assert offline.submit(OLD, "", confirmed=False)[0] is Submitted.STARTED
+    view = offline.view()
+    assert view.form.blocked and view.form.read_only and view.running is not None
+    assert offline.submit(OLD, "", confirmed=False) == (Submitted.REFUSED, None)
+    assert len(rig.store.scans()) == 1
+
+
+def test_ad5_offline_an_interrupted_scan_resumes(rig: Rig) -> None:
+    """AD-5 (Story 4.6, matrix "App closed mid-Scan"): an offline Scan cut off by closing the app is interrupted
+    and can be resumed with a new job."""
+    offline = offline_page(rig)
+    offline.submit(OLD, "", confirmed=False)
+    scan_id = rig.store.scans()[0].scan_id
+    rig.end(scan_id, JobStatus.INTERRUPTED, done=3, total=10)
+    (row,) = offline.view().rows
+    assert row.resume_label == "Resume Scan (Cut-off Date 1 July 2025)"
+    assert offline.resume(scan_id) is True
+    assert rig.store.scan(scan_id).job.status is JobStatus.QUEUED
+
+
+def test_no_job_queue_starts_nothing(rig: Rig) -> None:
+    """AD-5: a Scans page built without a job queue (no worker) starts and resumes nothing."""
+    page = ScansPage(rig.store, jobs=None, seed=SEED, rate=5.0, sample_size=lambda: SAMPLE_WALLETS)
+    assert page.submit(OLD, "200", confirmed=True) == (Submitted.REFUSED, None)
+    assert page.resume(1) is False and rig.store.scans() == ()
 
 
 # --- the pages -----------------------------------------------------------------------------------
@@ -452,15 +502,18 @@ def test_ux_dr30_the_estimate_route(web: FlaskClient) -> None:
 
 
 def test_ux_dr30_offline_scans_page(tmp_path: Path) -> None:
-    """UX-DR30, AD-13: Offline Mode's Scans page shows the fixed read-only form and its info box, and a POST starts nothing."""
+    """UX-DR30, AD-13 (Story 4.6): Offline Mode's Scans page shows the fixed read-only form and its info box with
+    "Start Scan" available, and a POST starts a Scan of the whole Sample Dataset."""
     store = Store(tmp_path / "offline.db")
     try:
-        web = create_app(Settings(offline=True), Lookup(OfflineClient([]), store, seed=SEED)).test_client()
+        jobs = Jobs(store)
+        scans = ScansPage(store, jobs=jobs, seed=SEED, rate=5.0, sample_size=lambda: SAMPLE_WALLETS)
+        web = create_app(Settings(offline=True), Lookup(OfflineClient([]), store, seed=SEED), scans).test_client()
         html = page_text(web.get("/scans"))
-        assert sp.OFFLINE_INFO in html and "Offline Scans are not ready yet." in html
+        assert sp.OFFLINE_INFO in html and "not ready" not in html
         assert 'value="2025-07-01"' in html and "readonly" in html and "Rough estimate" not in html
-        assert 'aria-disabled="true" aria-describedby="start-reason"' in html
-        assert web.post("/scans", data={"cutoff": OLD, "wallets": "200"}).status_code == 303
-        assert store.scans() == ()
+        assert "aria-disabled" not in html
+        assert web.post("/scans", data={"cutoff": OLD, "wallets": "Whole Sample Dataset"}).status_code == 303
+        assert [s.size for s in store.scans()] == [SAMPLE_WALLETS]
     finally:
         store.close()

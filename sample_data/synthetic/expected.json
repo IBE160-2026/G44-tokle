@@ -27,16 +27,16 @@
    "verdict": "No evidence of skill"
   },
   "sharp-trader": {
-   "requirements": ["FR-5", "FR-13"],
+   "requirements": ["FR-5", "FR-13", "FR-16"],
    "tested": 100,
    "won": 70,
    "slivers": 0,
-   "left_out": 0,
+   "left_out": 3,
    "entry_price": 0.5,
    "real_pnl": 2000.0,
    "p_below": 0.01,
    "verdict": "Skilled (high confidence)",
-   "note": "exact binomial p is about 0.00004"
+   "note": "exact binomial p is about 0.00004; left_out are its 3 anchor Positions (Story 4.6)"
   },
   "thin-wallet": {
    "requirements": ["FR-6", "FR-10", "FR-13"],
@@ -67,16 +67,54 @@
    "verdict": "Skilled (high confidence)",
    "warning_shown": true,
    "note": "No edge (total about zero, -25 dollars), but the 33 held bets all won, so the Verdict reads skilled: the known limit FR-11 warns about (Edvard, 2026-11-13)"
+  },
+  "steady-sharp": {
+   "requirements": ["FR-13", "FR-16"],
+   "tested": 200,
+   "won": 140,
+   "slivers": 0,
+   "left_out": 3,
+   "entry_price": 0.5,
+   "real_pnl": 4000.0,
+   "p_below": 0.01,
+   "verdict": "Skilled (high confidence)",
+   "note": "100 bets at 0.50 before the cut-off winning 70, the same after it; the lookup window holds both sides; left_out are its 3 anchor Positions"
+  },
+  "forecaster": {
+   "requirements": ["FR-13", "FR-16"],
+   "tested": 200,
+   "won": 140,
+   "slivers": 0,
+   "left_out": 3,
+   "entry_price": 0.5,
+   "real_pnl": 4000.0,
+   "p_below": 0.01,
+   "verdict": "Skilled (high confidence)",
+   "note": "as steady sharp; its later buys have a price drifting to the outcome over 4 hours (Copy Test, Epic 6); the lookup window holds both sides; left_out are its 3 anchor Positions"
+  },
+  "speed-trader": {
+   "requirements": ["FR-13", "FR-16"],
+   "tested": 200,
+   "won": 140,
+   "slivers": 0,
+   "left_out": 3,
+   "entry_price": 0.5,
+   "real_pnl": 4000.0,
+   "p_below": 0.01,
+   "verdict": "Skilled (high confidence)",
+   "note": "as steady sharp; its later buys have a price at the outcome from 1 minute after the buy (Copy Test, Epic 6); the lookup window holds both sides; left_out are its 3 anchor Positions"
   }
  },
  "coin_flippers": {
-  "requirements": ["FR-5", "FR-13", "FR-17", "FR-18", "FR-22", "UJ-3"],
+  "requirements": ["FR-5", "FR-13", "FR-16", "FR-17", "FR-18", "FR-22", "UJ-3"],
   "count": 1000,
   "bets_each": 100,
   "price_min": 0.1,
   "price_max": 0.9,
   "max_share_p_below_0_05": 0.07,
   "max_share_p_below_0_01": 0.02,
-  "note": "5% expected by design; Likely skilled or better for at most 7% of wallets, Skilled (high confidence) for at most 2%"
- }
+  "note": "5% expected by design; Likely skilled or better for at most 7% of wallets, Skilled (high confidence) for at most 2%",
+  "left_out_each": 3
+ },
+ "about_stage_2": "Story 4.6 (2026-11-27), also by hand: the stage 2 Wallets, and the 3 anchor Positions (bought and sold at 0.50 before their Market resolves, so 'sold before resolution', no Exit PnL) held by the Wallets FR-16 expects on the offline Watchlist and by every coin-flipper; they count in left_out, never in tested or real_pnl."
 }

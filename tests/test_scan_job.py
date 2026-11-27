@@ -614,7 +614,8 @@ def test_ad22_scan_whole_tests_both_parts_together() -> None:
     only_after = scan_results(dataclasses.replace(row, before_fetch_id=after.fetch_id), after, None, seed=SEED)[0]
     assert (first.scope, whole.scope) == (SCAN_BEFORE, SCAN_WHOLE)
     assert first.tested_count > 0 and only_after.tested_count > 0
-    assert whole.tested_count == first.tested_count + only_after.tested_count == len(sharp.positions)
+    # Every bet but the 3 anchor bets, sold before resolution (Story 4.6).
+    assert whole.tested_count == first.tested_count + only_after.tested_count == len(sharp.positions) - len(synthetic.ANCHORS)
     assert whole.real_pnl == pytest.approx(first.real_pnl + only_after.real_pnl, abs=0.005)
     assert (whole.fetch_id, whole.after_fetch_id, first.after_fetch_id) == (1, 2, None)
     assert not whole.not_fully_read

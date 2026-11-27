@@ -2,6 +2,8 @@
 
 The round trip is generator -> files -> OfflineClient -> pipeline -> store -> Skill Test, with
 sockets blocked. Its answers are `sample_data/synthetic/expected.json`, written by hand in Story 1.3.
+Story 4.6 extends it to the offline Scan: the same files -> OfflineClient as a FunnelClient -> the
+job queue and worker -> the Watchlist (FR-16).
 """
 
 from __future__ import annotations
@@ -9,20 +11,26 @@ from __future__ import annotations
 import json
 from collections.abc import Iterator
 from dataclasses import replace
+from datetime import date
 from pathlib import Path
 
 import pytest
 
 import liquidoracle.__main__ as cli
+from liquidoracle.data import offline as offline_module
 from liquidoracle.core.positions import build_positions
 from liquidoracle.core.skilltest import skill_test
 from liquidoracle.data import sample_json, synthetic
 from liquidoracle.data.errors import NotAvailableOffline
-from liquidoracle.data.offline import OfflineClient, sample_files
+from liquidoracle.data.offline import OfflineClient, holder_rows, sample_files, sample_funnel
 from liquidoracle.data.polymarket import PolymarketClient
 from liquidoracle.data.store import LIVE_DB, OFFLINE_DB, Store
-from liquidoracle.records import ListedPosition, Read, Verdict
+from liquidoracle.data.window import cutoff_at
+from liquidoracle.records import ActivityRow, ListedPosition, Market, Read, SampleWallet, Verdict
 from liquidoracle.services.fetch import fetch_wallet, skill_result
+from liquidoracle.services.jobs import Jobs, Worker
+from liquidoracle.services.scans_page import ScansPage, Submitted
+from liquidoracle.services.watchlist import Watchlists
 from liquidoracle.settings import Settings
 
 REPO = Path(__file__).resolve().parents[1]
@@ -196,11 +204,16 @@ def test_no_snapshot_gives_no_result(tmp_path: Path) -> None:
 
 
 def test_offline_mode_gets_offline_client_and_offline_db(tmp_path: Path) -> None:
-    """AD-13, FR-14: Offline Mode gets OfflineClient and instance/offline.db."""
+    """AD-13, FR-14: Offline Mode gets OfflineClient and instance/offline.db; since Story 4.6 also a job queue
+    over the same store, and the count of Sample Wallets, an offline Scan's N."""
+    synthetic.write_small(tmp_path)
     sources = cli.open_sources(Settings(offline=True), tmp_path)
     try:
         assert isinstance(sources.client, OfflineClient)
         assert sources.store.path == tmp_path / OFFLINE_DB
+        assert sources.jobs.store is sources.store
+        assert sources.sample_size is not None and sources.sample_size() == len(synthetic.SMALL_NAMES)
+        assert [m.volume for m in sources.client.funnel_markets(0, 2**40, 100)] == [3e6, 2e6, 1e6]
     finally:
         sources.store.close()
 
@@ -212,6 +225,7 @@ def test_live_run_gets_live_db(tmp_path: Path) -> None:
         assert sources.store.path == tmp_path / LIVE_DB
         assert isinstance(sources.client, PolymarketClient)
         assert sources.jobs is not None and sources.jobs.store is sources.store
+        assert sources.sample_size is None
         assert not (tmp_path / OFFLINE_DB).exists()
     finally:
         sources.store.close()
@@ -308,3 +322,186 @@ def test_offline_activity_cap_keeps_the_oldest_rows_and_says_so(sample_root: Pat
     assert client.activity_rows(wallet.address, start=0, row_cap=len(every)).complete
     with pytest.raises(ValueError, match="row_cap"):
         client.activity_rows(wallet.address, start=0, row_cap=0)
+
+
+# --- OfflineClient as a FunnelClient (Story 4.6; AD-9, AD-14, AD-21) ---------------------------
+
+ANCHOR_IDS = list(synthetic.funnel_volumes())  # condition ids, in the volume list's order
+DEFAULT_CUT = cutoff_at(date(2025, 7, 1))
+DAY = 86_400
+
+
+def funnel_client(root: Path) -> OfflineClient:
+    return OfflineClient(sample_files(root), funnel=sample_funnel(root))
+
+
+def test_ad21_offline_market_set_is_the_anchors_by_volume(sample_root: Path) -> None:
+    """AD-21, AD-14: with the default Cut-off Date the offline Market set is the 3 anchor Markets, highest volume
+    first, each with the record a Wallet file holds; the live rule's window and count apply."""
+    client = funnel_client(sample_root)
+    chosen = client.funnel_markets(DEFAULT_CUT - 90 * DAY, DEFAULT_CUT, 100)
+    assert [entry.volume for entry in chosen] == [3_000_000.0, 2_000_000.0, 1_000_000.0]
+    assert {entry.market.condition_id for entry in chosen} == set(ANCHOR_IDS)
+    assert all(entry.market.resolved for entry in chosen)
+    assert len(client.funnel_markets(DEFAULT_CUT - 90 * DAY, DEFAULT_CUT, 2)) == 2
+    # 2025-06-01 00:00 is in [from, until) only when `until` is after it: the window's end is exclusive.
+    june_first = 1_748_736_000
+    assert [e.volume for e in client.funnel_markets(june_first, june_first + 1, 100)] == [2_000_000.0]
+    assert client.funnel_markets(june_first + 1, DEFAULT_CUT, 100)[0].volume == 1_000_000.0
+    assert client.funnel_markets(DEFAULT_CUT, DEFAULT_CUT + 90 * DAY, 100) == ()
+
+
+def test_ad21_offline_market_set_without_a_volume_list_is_empty(sample_root: Path) -> None:
+    """AD-21: a client with no volume list (or a missing file) has no Market set, so a Scan finds no candidates."""
+    assert OfflineClient(sample_files(sample_root)).funnel_markets(0, 2**40, 100) == ()
+    assert OfflineClient(sample_files(sample_root), funnel=sample_root / "missing.json").funnel_markets(0, 2**40, 100) == ()
+    with pytest.raises(ValueError, match="count"):
+        funnel_client(sample_root).funnel_markets(0, 1, 0)
+    with pytest.raises(ValueError, match="window"):
+        funnel_client(sample_root).funnel_markets(5, 5, 1)
+
+
+def test_ad9_offline_holder_lists_are_every_sample_wallet_in_the_market(sample_root: Path) -> None:
+    """AD-9, AD-14: an anchor Market's CLOSED list holds the four FR-16 Wallets and every coin-flipper, oldest first,
+    complete; its OPEN list is empty (every anchor Position was sold). The numbers come from each Wallet's trades."""
+    client = funnel_client(sample_root)
+    expected = {synthetic.address_of(n) for n in synthetic.WATCHLIST_NAMES}
+    expected |= {synthetic.address_of(synthetic.coin_flipper_name(i)) for i in range(COIN_FLIPPERS)}
+    for condition_id in ANCHOR_IDS:
+        closed = client.market_holders(condition_id, "CLOSED")
+        assert closed.complete and {row.wallet for row in closed.rows} == expected
+        assert all((row.realized_pnl, row.current_size, row.avg_price) == (0.0, 0.0, 0.5) for row in closed.rows)
+        assert [row.wallet for row in closed.rows] == sorted(row.wallet for row in closed.rows)  # same last event: by address
+        assert client.market_holders(condition_id, "OPEN") == Read((), True)
+    with pytest.raises(ValueError, match="CLOSED or OPEN"):
+        client.market_holders(ANCHOR_IDS[0], "REDEEMABLE")
+
+
+def test_ad9_offline_holder_list_over_the_cap_is_partial(sample_root: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """AD-9: as live, a holder list that reaches `MARKET_ROW_CAP` rows is partial, so the Market gives no candidates."""
+    monkeypatch.setattr(offline_module, "MARKET_ROW_CAP", 3)
+    read = funnel_client(sample_root).market_holders(ANCHOR_IDS[0], "CLOSED")
+    assert not read.complete and len(read.rows) == 3
+
+
+def test_ad21_holder_rows_derive_the_pre_filter_numbers_from_trades() -> None:
+    """AD-21, AD-10: a planted Wallet in one Market: a CLOSED winner partly sold then redeemed, and an OPEN loser
+    partly sold. avg = cash / shares bought; CLOSED realised = sells - avg x sold + (1 - avg) x held; OPEN keeps
+    the shares held as `current_size`."""
+    market = Market("0x" + "c" * 64, True, 2_000, ("1", "2"), (1.0, 0.0), False)
+    trades = (
+        ActivityRow("TRADE", market.condition_id, 100, 10.0, 4.0, 0.4, "1", "BUY"),
+        ActivityRow("TRADE", market.condition_id, 200, 10.0, 6.0, 0.6, "1", "BUY"),
+        ActivityRow("TRADE", market.condition_id, 300, 5.0, 4.0, 0.8, "1", "SELL"),
+        ActivityRow("TRADE", market.condition_id, 400, 8.0, 2.4, 0.3, "2", "BUY"),
+        ActivityRow("TRADE", market.condition_id, 500, 2.0, 0.2, 0.1, "2", "SELL"),
+    )
+    listed = (
+        ListedPosition(market.condition_id, "1", "CLOSED", 20.0, 100, 2_000),
+        ListedPosition(market.condition_id, "2", "OPEN", 8.0, 400, 500),
+    )
+    wallet = SampleWallet("0x" + "d" * 40, "planted", trades, listed, (market,))
+    (winner, w_last), (loser, l_last) = holder_rows(wallet, market.condition_id)
+    assert (winner.status, winner.avg_price, winner.current_size, w_last) == ("CLOSED", 0.5, 0.0, 2_000)
+    assert winner.realized_pnl == pytest.approx(4.0 - 0.5 * 5 + 15 * (1.0 - 0.5))  # 9.0
+    assert (loser.status, loser.avg_price, loser.current_size, l_last) == ("OPEN", 0.3, 6.0, 500)
+    assert loser.realized_pnl == pytest.approx(0.2 - 0.3 * 2)
+    assert holder_rows(wallet, "0x" + "e" * 64) == []
+
+
+# --- The offline Scan (FR-16, AD-14, AD-5; Story 4.6) --------------------------------------------
+
+SCAN_COIN_FLIPPERS = 40  # enough for some luck; the full 1,000 was run by hand (spec Implementation Notes)
+
+
+@pytest.fixture(scope="module")
+def offline_scan(tmp_path_factory: pytest.TempPathFactory) -> Iterator[tuple[Store, int, OfflineClient]]:
+    """An offline Scan started from the Scans page in Offline Mode and run by the worker to the end, sockets blocked."""
+    root = tmp_path_factory.mktemp("scan-repo")
+    synthetic.write_small(root)
+    synthetic.write_coin_flippers(root, SCAN_COIN_FLIPPERS)
+    client = funnel_client(root)
+    db = Store(root / OFFLINE_DB)
+    jobs = Jobs(db)
+    page = ScansPage(db, jobs=jobs, seed=SEED, rate=5.0, sample_size=lambda: len(client.addresses()))
+    assert page.submit("", "", confirmed=False) == (Submitted.STARTED, None)
+    assert Worker(client, jobs).run_once()
+    (scan,) = db.scans()
+    yield db, scan.scan_id, client
+    db.close()
+
+
+def test_fr16_offline_scan_puts_the_four_on_the_watchlist(offline_scan: tuple[Store, int, OfflineClient]) -> None:
+    """FR-16 check, AD-14: an offline Scan with the default Cut-off Date puts at least sharp trader, steady sharp,
+    forecaster and speed trader on the Watchlist, and states the luck passes for the Wallets it tested."""
+    db, scan_id, _ = offline_scan
+    view = Watchlists(db).view(scan_id)
+    assert view is not None
+    on_list = {row.address for row in view.rows}
+    assert {synthetic.address_of(name) for name in synthetic.WATCHLIST_NAMES} <= on_list
+    tested = len(synthetic.WATCHLIST_NAMES) + SCAN_COIN_FLIPPERS
+    assert view.header.title == f"Scan of {tested} Wallets"
+    assert view.luck == (
+        f"About 1 in 100 Wallets would pass by luck alone, probably more, because these Wallets were picked for high"
+        f" profit. With only {tested} Wallets with a Verdict, even one passing could be luck."
+    )
+    assert len(on_list) <= len(synthetic.WATCHLIST_NAMES) + 3  # a few coin-flippers at most pass by luck
+
+
+def test_ad14_offline_scan_runs_the_whole_live_path(offline_scan: tuple[Store, int, OfflineClient]) -> None:
+    """AD-14, AD-21 (Story 4.6, matrix "Offline Scan"): the job finishes; the Market set is the 3 anchors, all used;
+    the candidates are exactly the anchor holders; N is every Sample Wallet; nothing is flagged not fully read."""
+    db, scan_id, client = offline_scan
+    scan = db.scan(scan_id)
+    assert scan.step.value == "done" and scan.job.status.value == "done"
+    assert scan.size == len(client.addresses()) == len(synthetic.SMALL_NAMES) + SCAN_COIN_FLIPPERS
+    assert [(m.condition_id, m.state) for m in db.scan_markets(scan_id)] == [(c, "used") for c in ANCHOR_IDS]
+    holders = {synthetic.address_of(n) for n in synthetic.WATCHLIST_NAMES}
+    holders |= {synthetic.address_of(synthetic.coin_flipper_name(i)) for i in range(SCAN_COIN_FLIPPERS)}
+    assert set(db.scan_candidates(scan_id)) == holders
+    assert all(w.top and not w.not_fully_read for w in db.scan_wallets(scan_id))
+
+
+def test_ad11_offline_scan_results_leave_out_the_anchor_bets(offline_scan: tuple[Store, int, OfflineClient]) -> None:
+    """AD-11, AD-22 (Story 4.6, matrix "Anchor bets"): the Scan's results count exactly the hand-written tested bets:
+    the whole Scan both sides, the before part only the bets resolved before the cut-off; anchors never count."""
+    db, scan_id, _ = offline_scan
+    results = {(r.wallet, r.scope): r for r in db.scan_results(scan_id)}
+    for name in synthetic.WATCHLIST_NAMES:
+        answer = EXPECTED["wallets"][name]
+        whole = results[(synthetic.address_of(name), "scan_whole")]
+        before = results[(synthetic.address_of(name), "scan_before")]
+        assert (whole.verdict, whole.tested_count) == (answer["verdict"], answer["tested"])
+        assert whole.real_pnl == pytest.approx(answer["real_pnl"], abs=0.005)
+        assert before.tested_count == 100 and before.verdict == answer["verdict"]
+
+
+def test_ad5_offline_scan_with_a_missing_coin_flipper_folder(tmp_path: Path) -> None:
+    """AD-5 (Story 4.6, matrix "Coin-flippers missing"): before `load-sample` has written the coin-flippers, an
+    offline Scan runs on the committed files and still finds the four."""
+    synthetic.write_small(tmp_path)
+    client = funnel_client(tmp_path)
+    db = Store(tmp_path / OFFLINE_DB)
+    try:
+        jobs = Jobs(db)
+        jobs.start_scan(date(2025, 7, 1), len(client.addresses()), seed=SEED)
+        assert Worker(client, jobs).run_once()
+        (scan,) = db.scans()
+        view = Watchlists(db).view(scan.scan_id)
+        assert view is not None
+        assert {row.address for row in view.rows} == {synthetic.address_of(n) for n in synthetic.WATCHLIST_NAMES}
+    finally:
+        db.close()
+
+
+def test_ad14_offline_scan_finds_coin_flippers_written_after_the_start(tmp_path: Path) -> None:
+    """AD-14, FR-12 (Story 4.6 review): the app may start before `load-sample` writes the coin-flippers (the
+    "not loaded" page says to run it then). The Scan's N and the anchor holder lists then include them,
+    also after both were first read without them."""
+    synthetic.write_small(tmp_path)
+    client = OfflineClient(sample_files(tmp_path), list_files=lambda: sample_files(tmp_path), funnel=sample_funnel(tmp_path))
+    assert len(client.addresses()) == len(synthetic.SMALL_NAMES)
+    assert len(client.market_holders(ANCHOR_IDS[0], "CLOSED").rows) == len(synthetic.WATCHLIST_NAMES)
+    synthetic.write_coin_flippers(tmp_path, 5)
+    assert len(client.market_holders(ANCHOR_IDS[0], "CLOSED").rows) == len(synthetic.WATCHLIST_NAMES) + 5
+    assert len(client.addresses()) == len(synthetic.SMALL_NAMES) + 5

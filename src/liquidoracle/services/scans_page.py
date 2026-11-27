@@ -6,12 +6,14 @@ The page calls this module only. It checks the form, starts or resumes a Scan th
 from `core/phrases` (AD-25). How a Scan runs is not here: that is `services.scan`. Its name is
 `scans_page`, not `scans`, so it is not mixed up with that module.
 
-Offline Mode has no job queue yet (Story 4.6 adds it), so the form is shown read-only and nothing starts.
+In Offline Mode (Story 4.6) the form is read-only: "Start Scan" starts a Scan of the whole Sample Dataset
+with its Cut-off Date through the same job queue and worker as a live run, whatever the POST says.
 """
 
 from __future__ import annotations
 
 import re
+from collections.abc import Callable
 from dataclasses import dataclass, replace
 from datetime import UTC, date, datetime, timedelta
 from enum import StrEnum
@@ -38,7 +40,6 @@ OFFLINE_INFO = (
     "Offline Mode scans the whole Sample Dataset with its Cut-off Date, "
     f"{phrases.long_date(date.fromisoformat(SAMPLE_CUTOFF))}."
 )
-OFFLINE_NOT_READY = "Offline Scans are not ready yet."  # until Story 4.6 adds an offline worker (Edvard, 2026-11-26)
 WHOLE_SAMPLE = "Whole Sample Dataset"
 PAGE_TITLE = "Scans · LiquidOracle"  # UX-DR8
 RUNNING_INFO = ("A Scan is running (", "). You can start a new one when it finishes.")  # EXPERIENCE.md
@@ -58,7 +59,7 @@ class Submitted(StrEnum):
     STARTED = "started"  # a new Scan was queued: back to the list
     INVALID = "invalid"  # errors under the fields, nothing started
     WARNED = "warned"  # valid but recent: the warning shows and a second submit starts it
-    REFUSED = "refused"  # Offline Mode or a Scan already running: nothing started
+    REFUSED = "refused"  # a Scan already running, or no job queue: nothing started
 
 
 @dataclass(frozen=True, slots=True)
@@ -72,9 +73,8 @@ class NewScanForm:
     warning: str | None = None  # FEW_AFTER when the date is recent
     confirmed: bool = False  # the warning was shown, so the next submit starts
     estimate: str | None = None
-    read_only: bool = False  # Offline Mode
-    blocked: bool = False  # "Start Scan" cannot start now: shown unavailable but focusable (UX-DR9)
-    blocked_reason: str | None = None  # the line under the button saying why; a running Scan's info box says it instead
+    read_only: bool = False  # Offline Mode: the fixed date and the whole Sample Dataset
+    blocked: bool = False  # a Scan is running: "Start Scan" is unavailable but focusable, its info box says why (UX-DR9)
     today: str = ""  # "2026-11-26": today in UTC, for scans.js's warning
     latest: str = ""  # "2026-11-25": the latest day allowed, the date field's `max`
 
@@ -119,13 +119,20 @@ class ScansView:
 
 
 class ScansPage:
-    """One run's Scans page over its store (AD-13). `jobs` is a live run's job queue; None in Offline Mode."""
+    """One run's Scans page over its store and job queue (AD-13).
 
-    def __init__(self, store: Store, *, jobs: Jobs | None, seed: int, rate: float) -> None:
+    `sample_size` is set in Offline Mode only: it counts the Sample Wallets, the N of an offline Scan
+    (Story 4.6). With no job queue (`jobs` None, an app built without one) nothing can start.
+    """
+
+    def __init__(
+        self, store: Store, *, jobs: Jobs | None, seed: int, rate: float, sample_size: Callable[[], int] | None = None
+    ) -> None:
         self._store = store
         self._jobs = jobs
         self._seed = seed
         self._rate = rate
+        self._sample_size = sample_size
 
     def view(self, form: NewScanForm | None = None) -> ScansView:
         """The whole page: the form (blank, or as submitted), the Scan list and the running Scan."""
@@ -138,13 +145,16 @@ class ScansPage:
 
     def submit(self, cutoff: str, size: str, *, confirmed: bool) -> tuple[Submitted, ScansView | None]:
         """The form POST (UX-DR30): start a Scan, or the page again with what stopped it."""
+        if self._jobs is None:
+            return Submitted.REFUSED, None
+        if self._sample_size is not None:  # Offline Mode: the fixed date and the whole Sample Dataset (UX-DR30)
+            started = self._jobs.start_scan(date.fromisoformat(SAMPLE_CUTOFF), self._sample_size(), seed=self._seed)
+            return (Submitted.STARTED if started is not None else Submitted.REFUSED), None
         cutoff, size = cutoff.strip(), size.strip()
         day, cutoff_error = self._check_date(cutoff)
         number, size_error = _check_size(size)
         warning = FEW_AFTER if day is not None and cutoff_error is None and self._recent(day) else None
         form = NewScanForm(cutoff, size, cutoff_error, size_error, warning, confirmed=warning is not None)
-        if self._jobs is None:
-            return Submitted.REFUSED, None
         if cutoff_error or size_error:
             return Submitted.INVALID, self.view(form)
         if warning and not confirmed:
@@ -155,13 +165,13 @@ class ScansPage:
         return (Submitted.STARTED if started is not None else Submitted.REFUSED), None
 
     def resume(self, scan_id: int) -> bool:
-        """Resume a stopped or interrupted Scan (AD-5); False when it cannot (or in Offline Mode)."""
+        """Resume a stopped or interrupted Scan (AD-5), offline too; False when it cannot."""
         return self._jobs is not None and self._jobs.resume_scan(scan_id) is not None
 
     def estimate(self, size: str) -> str | None:
         """The rough time estimate for this many Wallets, or None when the number is not allowed or offline."""
         number, error = _check_size(size.strip())
-        if self._jobs is None or error is not None or number is None:
+        if self._jobs is None or self._sample_size is not None or error is not None or number is None:
             return None
         planned = planned_requests(number)
         for scan in self._store.scans():  # newest first: the last finished Scan whose time is known
@@ -193,10 +203,8 @@ class ScansPage:
     def _form(self, form: NewScanForm | None, *, running: bool) -> NewScanForm:
         today = self._today()
         days = {"today": today.isoformat(), "latest": (today - _DAY).isoformat()}
-        if self._jobs is None:  # Offline Mode: fixed values, read-only, no estimate (UX-DR30)
-            return NewScanForm(
-                SAMPLE_CUTOFF, WHOLE_SAMPLE, read_only=True, blocked=True, blocked_reason=OFFLINE_NOT_READY, **days
-            )
+        if self._sample_size is not None:  # Offline Mode: fixed values, read-only, no estimate (UX-DR30)
+            return NewScanForm(SAMPLE_CUTOFF, WHOLE_SAMPLE, read_only=True, blocked=running, **days)
         form = form or NewScanForm("", str(DEFAULT_SIZE))
         return replace(form, estimate=self.estimate(form.size), blocked=running, **days)
 

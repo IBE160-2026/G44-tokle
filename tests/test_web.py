@@ -27,6 +27,7 @@ from liquidoracle.services.chart import LuckChart, luck_chart
 from liquidoracle.services.fetch import fetch_wallet
 from liquidoracle.services.jobs import Jobs
 from liquidoracle.services.lookup import FRESH_FOR, Lookup, Outcome, VerdictCard, WalletPage
+from liquidoracle.services.scans_page import ScansPage
 from liquidoracle.settings import Settings
 from liquidoracle.web import create_app
 
@@ -56,7 +57,9 @@ def loaded_lookup(tmp_path_factory: pytest.TempPathFactory) -> Iterator[Lookup]:
 
 @pytest.fixture(scope="module")
 def offline(loaded_lookup: Lookup) -> FlaskClient:
-    return create_app(Settings(offline=True), loaded_lookup).test_client()
+    """The offline app as `run --offline` builds it: lookups read the client, Scans go through a job queue (Story 4.6)."""
+    scans = ScansPage(loaded_lookup.store, jobs=Jobs(loaded_lookup.store), seed=SEED, rate=5.0, sample_size=lambda: 1_018)
+    return create_app(Settings(offline=True), loaded_lookup, scans).test_client()
 
 
 @pytest.fixture
@@ -156,6 +159,7 @@ def every_page(loaded_lookup: Lookup, offline: FlaskClient, tmp_path_factory: py
     keep("404", offline.get("/no-such-page"))
     keep("405", offline.post("/"))
     keep("Scans offline", offline.get("/scans"))
+    assert "readonly" in pages["Scans offline"][1]  # the offline form itself, not the live one (Story 4.6 review)
 
     root = tmp_path_factory.mktemp("not-loaded")
     synthetic.write_small(root)
@@ -345,7 +349,7 @@ def test_ux_dr17_sample_wallets_list(offline: FlaskClient) -> None:
     links = re.findall(r'<a class="wallet-link" href="/wallet/(0x[0-9a-f]{40})"><span class="name">([^<]+)</span>'
                        r'<span class="info-tag">synthetic</span>', page)
     assert (SHARP, "Sharp trader") in links and (COIN_FLIPPER, "Coin-flipper") in links
-    assert len(links) == 6
+    assert len(links) == 9  # eight committed Synthetic Wallets (three of stage 2, Story 4.6) and one coin-flipper
     assert "and 999 more coin-flippers, checked by address" in page
 
 
@@ -853,10 +857,10 @@ def test_fr11_honesty_notes_follow_the_chart_card(offline: FlaskClient) -> None:
     assert "<details" not in card and not re.search(r"<[^>]*\shidden[\s>]", card)  # never collapsed or hidden
     order = [card.index(part) for part in (
         '<p class="figure">3%</p>', "of the Real PnL came from the single largest bet.",
-        '<p class="figure">100 of 100</p>', "positions held to resolution.", "No shares were sold before resolution.",
+        '<p class="figure">100 of 103</p>', "positions held to resolution.", "Shares sold before resolution:",
         "Long shots tend to be overpriced", '<p class="not-advice">This is not financial advice.</p>',
-        "<p>Left out of the test: none.</p>", "<p>Every fee matched the Market&#39;s fee schedule.</p>",
-        '<p class="computed-on">Computed on all 100 bets · Seed 44</p>',
+        "<p>Left out of the test: 3 sold before resolution.</p>", "<p>Every fee matched the Market&#39;s fee schedule.</p>",
+        '<p class="computed-on">Computed on all 103 bets · Seed 44</p>',  # 3 anchor bets sold (Story 4.6)
     )]
     assert order == sorted(order)
     assert re.findall(r"<h[12][\s>]", page) == ["<h1 ", "<h2 ", "<h2 "]  # headings in order (UX-DR11)

@@ -3,6 +3,11 @@
 It reads the Sample Dataset's JSON files with `sample_json` and returns the same `records` types
 the live client returns. Anything outside the Sample Dataset raises `NotAvailableOffline`. It
 never opens a network connection.
+
+It is also a `FunnelClient` (Story 4.6), so the Scan runs offline on the live path: the Market set
+comes from the Sample Dataset's volume list (`funnel-markets.json`, the synthetic anchor Markets),
+and a Market's holder lists are derived from the Sample Wallets' own rows, as Polymarket derives
+them from the same trades (AD-9, AD-10, AD-14, AD-21).
 """
 
 from __future__ import annotations
@@ -15,8 +20,8 @@ from pathlib import Path
 
 from liquidoracle.data import sample_json, synthetic
 from liquidoracle.data.errors import NotAvailableOffline
-from liquidoracle.data.polymarket import LIST_STATUSES, PAGE_LIMIT
-from liquidoracle.records import ActivityRow, ListedPosition, Market, Read, SampleWallet
+from liquidoracle.data.polymarket import LIST_STATUSES, MARKET_ROW_CAP, PAGE_LIMIT
+from liquidoracle.records import ActivityRow, FunnelMarket, ListedPosition, Market, MarketHolder, Read, SampleWallet
 
 # Folders that hold Sample Wallet files, relative to the repository folder: the real Wallets
 # (Story 2.6, written by `build-sample`) and the Synthetic Wallets.
@@ -24,7 +29,7 @@ REAL_DIR = Path("sample_data") / "real"
 SAMPLE_DIRS = (REAL_DIR, synthetic.SMALL_DIR, synthetic.COIN_FLIPPER_DIR)
 # Files next to the Wallets that are not Wallets: the Synthetic Wallets' hand answers, and the real
 # Wallets' Cut-off Date and sources.
-NOT_WALLET_FILES = frozenset({"expected.json", "dataset.json"})
+NOT_WALLET_FILES = frozenset({"expected.json", "dataset.json", synthetic.FUNNEL_FILE})
 ADDRESS = re.compile(r"0x[0-9a-f]{40}")  # FR-1: a proxy-wallet address, lower case
 
 
@@ -40,10 +45,16 @@ def sample_files(root: Path) -> list[Path]:
     return files
 
 
+def sample_funnel(root: Path) -> Path:
+    """The Sample Dataset's volume list under the repository folder `root` (Story 4.6)."""
+    return root / synthetic.SMALL_DIR / synthetic.FUNNEL_FILE
+
+
 @dataclass(frozen=True, slots=True)
 class _Index:
     wallets: dict[str, Path]  # address -> file
-    markets: dict[str, Path]  # condition_id -> file
+    markets: dict[str, Path]  # condition_id -> the first file holding it
+    holders: dict[str, list[Path]]  # condition_id -> every file holding it (a Market's holder lists)
 
 
 class OfflineClient:
@@ -53,14 +64,22 @@ class OfflineClient:
     changed, so Sample files written after the app started (by `load-sample`) are found (Story 1.7).
     """
 
-    def __init__(self, files: Sequence[Path], *, list_files: Callable[[], Sequence[Path]] | None = None) -> None:
+    def __init__(
+        self,
+        files: Sequence[Path],
+        *,
+        list_files: Callable[[], Sequence[Path]] | None = None,
+        funnel: Path | None = None,
+    ) -> None:
         self._files = tuple(files)
         self._list_files = list_files
+        self._funnel = funnel  # the volume list; None or a missing file: no Market set (Story 4.6)
         self._index: _Index | None = None
         self._cached: tuple[Path, SampleWallet, dict[str, Market]] | None = None
         self._lock = threading.Lock()
         self._memory: dict[str, SampleWallet] = {}
         self._memory_markets: dict[str, Market] = {}
+        self._holder_rows: dict[str, tuple[MarketHolder, ...]] = {}
 
     @classmethod
     def in_memory(cls, wallets: Sequence[SampleWallet], markets: Iterable[Market] = ()) -> OfflineClient:
@@ -87,7 +106,9 @@ class OfflineClient:
         )
 
     def addresses(self) -> tuple[str, ...]:
-        """Every Sample Wallet's address, in file order. Offline only: `load-sample` and the Sample list."""
+        """Every Sample Wallet's address, in file order. Offline only: `load-sample`, the Sample list and an
+        offline Scan's N, so files written since the start (a `load-sample` run) count too (Story 4.6 review)."""
+        self._refresh()
         return tuple(self._memory) + tuple(self._get_index().wallets)
 
     def positions_list(
@@ -180,6 +201,64 @@ class OfflineClient:
             found.update((c, markets[c]) for c in ids)
         return tuple(found[c] for c in wanted)
 
+    def funnel_markets(self, closed_from: int, closed_until: int, count: int) -> tuple[FunnelMarket, ...]:
+        """Up to `count` resolved Markets of the volume list whose `closed_time` is in [closed_from, closed_until),
+        the highest volume first, ties by condition id: the live client's rule (AD-7, AD-21)."""
+        if count < 1:
+            raise ValueError(f"count must be 1 or more, not {count}")
+        if closed_from >= closed_until:
+            raise ValueError("the window must end after it starts")
+        volumes = self._volumes()
+        found = [
+            FunnelMarket(market, volumes[market.condition_id])
+            for market in (self.markets(volumes) if volumes else ())
+            if market.resolved and market.closed_time is not None and closed_from <= market.closed_time < closed_until
+        ]
+        found.sort(key=lambda entry: (-entry.volume, entry.market.condition_id))
+        return tuple(found[:count])
+
+    def market_holders(self, condition_id: str, status: str) -> Read[MarketHolder]:
+        """One of a Market's positions lists, CLOSED or OPEN, oldest first by last event (AD-9).
+
+        One row per Sample Wallet's positions-list row on that Market, its numbers derived from that
+        Wallet's own trades (`holder_rows`). A list over `MARKET_ROW_CAP` rows is partial, as live.
+        """
+        if status not in LIST_STATUSES:
+            raise ValueError(f"status must be CLOSED or OPEN, not {status!r}")
+        rows = tuple(row for row in self._holders(condition_id) if row.status == status)
+        if len(rows) >= MARKET_ROW_CAP:
+            return Read(rows[:MARKET_ROW_CAP], False)
+        return Read(rows, True)
+
+    def _volumes(self) -> dict[str, float]:
+        if self._funnel is None or not self._funnel.is_file():
+            return {}
+        return sample_json.read_funnel(self._funnel)
+
+    def _holders(self, condition_id: str) -> tuple[MarketHolder, ...]:
+        """Every Sample Wallet's holder rows on one Market, worked out once and kept (both lists use them).
+
+        Files written since the start are looked for first (a `load-sample` run clears what was kept). Each
+        holder's file is read and dropped in turn, so about 1,000 coin-flippers are never in memory at once.
+        """
+        self._refresh()
+        with self._lock:
+            kept = self._holder_rows.get(condition_id)
+        if kept is not None:
+            return kept
+        keyed = [
+            item
+            for wallet in self._memory.values() if any(m.condition_id == condition_id for m in wallet.markets)
+            for item in holder_rows(wallet, condition_id)
+        ]
+        for path in self._get_index().holders.get(condition_id, ()):
+            keyed.extend(holder_rows(sample_json.read_wallet(path), condition_id))
+        keyed.sort(key=lambda item: (item[1], item[0].wallet, item[0].token_id))
+        rows = tuple(row for row, _ in keyed)
+        with self._lock:
+            self._holder_rows[condition_id] = rows
+        return rows
+
     def _wallet(self, wallet: str) -> SampleWallet:
         address = wallet.strip().lower()
         if address in self._memory:
@@ -209,6 +288,7 @@ class OfflineClient:
             if files != self._files:
                 self._files = files
                 self._index = None
+                self._holder_rows.clear()
             return True
 
     def _get_index(self) -> _Index:
@@ -218,9 +298,46 @@ class OfflineClient:
             return self._index
 
 
+def holder_rows(wallet: SampleWallet, condition_id: str) -> list[tuple[MarketHolder, int]]:
+    """The Wallet's rows in one Market's holder lists, each with its last event time (AD-9, AD-21).
+
+    Derived from the Wallet's own trades: `avg_price` = cash paid / shares bought; a CLOSED row's
+    `realized_pnl` = sells - avg x shares sold, plus (outcome price - avg) x shares held when the held
+    shares were redeemed; an OPEN row's `current_size` = shares held. Only the Scan's pre-filter reads
+    these numbers, never a Position (AD-10).
+
+    Only TRADE rows count, enough for the Synthetic Wallets; a Wallet that got tokens by a split, merge or
+    conversion gets wrong numbers here. Story 4.7 must check this before real Wallets are holders.
+    """
+    market = next((m for m in wallet.markets if m.condition_id == condition_id), None)
+    rows = []
+    for listed in wallet.positions:
+        if listed.condition_id != condition_id:
+            continue
+        trades = [a for a in wallet.activity if a.type == "TRADE" and a.token_id == listed.token_id]
+        bought = sum(a.size for a in trades if a.side == "BUY")
+        cost = sum(a.usdc_size for a in trades if a.side == "BUY")
+        sold = sum(a.size for a in trades if a.side == "SELL")
+        proceeds = sum(a.usdc_size for a in trades if a.side == "SELL")
+        avg = cost / bought if bought > 0 else 0.0
+        held = max(bought - sold, 0.0)
+        realized = proceeds - avg * sold
+        current = 0.0
+        if listed.status == "OPEN":
+            current = held
+        elif held > 0 and market is not None and listed.token_id in market.token_ids:
+            realized += held * (market.outcome_prices[market.token_ids.index(listed.token_id)] - avg)
+        rows.append((
+            MarketHolder(wallet.address, listed.token_id, listed.status, round(realized, 6), round(current, 6), round(avg, 6)),
+            listed.last_event_at,
+        ))
+    return rows
+
+
 def _build_index(files: Sequence[Path]) -> _Index:
     wallets: dict[str, Path] = {}
     markets: dict[str, Path] = {}
+    holders: dict[str, list[Path]] = {}
     for path in files:
         address, condition_ids = sample_json.read_ids(path)
         if not ADDRESS.fullmatch(address):
@@ -230,4 +347,5 @@ def _build_index(files: Sequence[Path]) -> _Index:
         wallets[address] = path
         for condition_id in condition_ids:
             markets.setdefault(condition_id, path)
-    return _Index(wallets, markets)
+            holders.setdefault(condition_id, []).append(path)
+    return _Index(wallets, markets, holders)
