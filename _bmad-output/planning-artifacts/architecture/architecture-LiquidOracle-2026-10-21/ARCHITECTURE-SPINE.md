@@ -135,7 +135,7 @@ Arrows are the only allowed imports. `core` imports only `records`, the standard
   - Before part = the latest 2,000 Resolved Positions before the cut-off, by resolution time. After part = the first 2,000 after it, by first-buy time. A lookup with no cut-off = the latest 2,000 overall. `[ASSUMPTION: 2,000]`
   - One client function implements this: `positions_near(wallet, cutoff, side, limit)`. It lives in `data/window.py` and runs on any client's three raw reads (positions list, activity rows, Markets), so the live client and `OfflineClient` take the same path (AD-13; Story 2.2).
   - The cap applies first, then exclusions (AD-11). A Market whose Positions straddle the 2,000th place is left out of the window whole, so the window never splits a Market (AD-20 couples its sides) and never exceeds 2,000 (Story 2.2).
-  - When the cap applies, the Verdict card says the result rests on a window: "latest 2,000" for the before part and lookups, "first 2,000" for the after part. A `scan_whole` result (AD-22) says it rests on both windows, and that Positions bought before the cut-off and resolved after it are in neither.
+  - When the cap applies, the Verdict card says the result rests on a window: "latest 2,000" for the before part and lookups, "first 2,000" for the after part. A `scan_whole` result (AD-22) says it rests on both windows, and that Positions bought before the cut-off and resolved after it are in neither: "Based on two windows around the Cut-off Date: up to the latest 2,000 bets resolved before it and up to the first 2,000 bought after it. Bets bought before the date and resolved after it are in neither." (Edvard, 2026-11-26, Story 4.5). Two exceptions (Edvard, 2026-11-26, Story 4.5 review): when the after part could not be read, "Based on the latest 2,000 bets resolved before the Cut-off Date; the bets bought after it could not be read."; when nothing was read, no window line.
 
 ### AD-9 — Scan candidates come only from complete Market reads, sorted by time [ADOPTED]
 
@@ -297,7 +297,7 @@ Arrows are the only allowed imports. `core` imports only `records`, the standard
   3. **Shortlist.** 3 × N candidates `[ASSUMPTION]` by a cheap pre-filter on their Market-anchored rows: Σ CLOSED `realized_pnl` + Σ OPEN (resolved value − cost), so unredeemed losers count. The Scan page says the shortlist number is approximate.
   4. **Ranking.** A full fetch of the shortlist, ranked by Real PnL from the AD-10 sources, keeps the top N (default 200).
 
-  The Scan page states the population tested ("Markets resolved in the 90 days before the Cut-off Date, top 100 by volume"), "N of 100 Markets used", the shortlist size, and the Wallets not fully read (AD-9).
+  The Scan page states the population tested ("Markets resolved in the 90 days before the Cut-off Date, top 100 by volume"), "N of 100 Markets used", the shortlist size, and the Wallets not fully read (AD-9), as the line "Shortlist of about 600 by a quick profit estimate · 4 Wallets not fully read" (Edvard, 2026-11-26, Story 4.5).
 
 ### AD-22 — Every result records the Position set it was computed on
 

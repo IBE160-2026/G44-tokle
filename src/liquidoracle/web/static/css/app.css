@@ -133,7 +133,7 @@ main:focus { outline: none; }
 .brand-mark { width: 32px; height: 32px; flex: none; color: var(--accent); }
 .mainnav { display: flex; flex-wrap: wrap; gap: var(--space-2) var(--space-6); }
 .mainnav a { color: var(--ink-muted); text-decoration: none; padding: 6px 0; border-bottom: 2px solid transparent; }
-.mainnav a[aria-current="page"] { color: var(--accent); font-weight: 600; border-bottom-color: var(--accent); }
+.mainnav a[aria-current] { color: var(--accent); font-weight: 600; border-bottom-color: var(--accent); }
 .bar-tools { margin-left: auto; display: flex; align-items: center; gap: var(--space-3); }
 .offline-pill {
   display: inline-block; padding: 7px var(--space-4); border-radius: var(--rounded-full);
@@ -426,7 +426,7 @@ main:has(.verdict-card) { padding-top: var(--space-7); }
 @media (hover: hover) {
   .brand:hover { color: var(--accent); }
   .mainnav a:hover { color: var(--ink); border-bottom-color: var(--border-strong); }
-  .mainnav a[aria-current="page"]:hover { color: var(--accent); border-bottom-color: var(--accent); }
+  .mainnav a[aria-current]:hover { color: var(--accent); border-bottom-color: var(--accent); }
   .theme-toggle:hover { background: var(--neutral-tint); border-color: var(--border-strong); transform: translateY(-1px); box-shadow: var(--lift-shadow); }
   .icon-button:hover { color: var(--ink); background: var(--neutral-tint); border-color: var(--border); transform: translateY(-1px); box-shadow: var(--lift-shadow); }
   .icon-button.is-copied:hover { color: var(--accent); background: var(--accent-tint); border-color: var(--accent-tint); }
@@ -436,7 +436,7 @@ main:has(.verdict-card) { padding-top: var(--space-7); }
 }
 .brand:focus-visible { color: var(--accent); }
 .mainnav a:focus-visible { color: var(--ink); border-bottom-color: var(--border-strong); }
-.mainnav a[aria-current="page"]:focus-visible { color: var(--accent); border-bottom-color: var(--accent); }
+.mainnav a[aria-current]:focus-visible { color: var(--accent); border-bottom-color: var(--accent); }
 .theme-toggle:focus-visible { background: var(--neutral-tint); border-color: var(--border-strong); transform: translateY(-1px); box-shadow: var(--lift-shadow); }
 .icon-button:focus-visible { color: var(--ink); background: var(--neutral-tint); border-color: var(--border); transform: translateY(-1px); box-shadow: var(--lift-shadow); }
 .icon-button.is-copied:focus-visible { color: var(--accent); background: var(--accent-tint); border-color: var(--accent-tint); }
@@ -509,6 +509,77 @@ h1.checking { font-size: 28px; line-height: 1.25; }
 @media (forced-colors: active) and (hover: hover) { .btn-secondary:hover { border-color: Highlight; } }
 @media (prefers-reduced-motion: reduce) { .btn-secondary { transition: none; } }
 
+/* Watchlist and the Verdict opened from it (UX-DR33, UX-DR34, UX-DR37; Story 4.5) */
+.mono { font-family: var(--mono); }
+.back-line { margin: 0 0 var(--space-3); font-size: 15px; }
+.back-link { text-decoration: underline transparent; text-underline-offset: 3px; transition: text-decoration-color var(--quick); }
+@media (hover: hover) { .back-link:hover { text-decoration-color: currentColor; } }
+.back-link:focus-visible { text-decoration-color: currentColor; }
+.scan-head { display: grid; grid-template-columns: minmax(0, 1fr) minmax(280px, 380px); gap: var(--space-5) var(--space-7); align-items: start; }
+@media (max-width: 899px) { .scan-head { grid-template-columns: minmax(0, 1fr); } }  /* after the rule it overrides */
+.scan-line { margin: var(--space-2) 0 0; font-size: 15px; color: var(--ink-muted); }
+.partial-markets { margin-top: var(--space-3); font-size: 15px; }
+.partial-markets summary { display: inline-block; text-align: left; }  /* not the chart card's right-hand one */
+.partial-markets ul { margin: var(--space-2) 0 0; padding-left: 1.25em; color: var(--ink-muted); }
+.partial-markets code { color: var(--ink); }
+.scan-summary {
+  margin: 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); padding: var(--space-4) 0;
+  background: var(--surface-raised); border: 1px solid var(--border); border-radius: var(--rounded-lg); box-shadow: var(--card-shadow);
+}
+.scan-summary > div { padding: 0 var(--space-4); }
+.scan-summary > div + div { border-left: 1px solid var(--border); }
+.scan-summary dt { font-size: 13px; font-weight: 600; color: var(--ink-muted); }
+.scan-summary dd { margin: var(--space-1) 0 0; font: 600 22px/1.25 var(--serif-display); font-variant-numeric: tabular-nums; }
+.scan-tabs { display: flex; gap: var(--space-5); margin-top: var(--space-6); border-bottom: 1px solid var(--border); }
+.scan-tabs a {
+  margin-bottom: -1px; padding: var(--space-2) 0; border-bottom: 3px solid transparent;
+  color: var(--ink-muted); font-weight: 600; text-decoration: none;
+}
+.scan-tabs a[aria-current="page"] { color: var(--accent); border-bottom-color: var(--accent); }
+.watch-table thead th { background: var(--neutral-tint); padding: var(--space-2) var(--space-3); }
+.watch-table td { padding-left: var(--space-3); }
+.watch-table tbody tr { position: relative; }  /* the address link's ::after covers its row (whole-row click) */
+.row-link { font-family: var(--mono); text-decoration: underline transparent; text-underline-offset: 3px; }
+.row-link::after { content: ""; position: absolute; inset: 0; }
+@media (hover: hover) {  /* the link's ::after covers the row, so pointing anywhere on it hovers the link */
+  .watch-table tbody tr:has(.row-link:hover) { background: var(--accent-tint-soft); }
+  .row-link:hover { text-decoration-color: currentColor; }
+}
+.watch-table tbody tr:has(.row-link:focus-visible) { background: var(--accent-tint-soft); }
+.row-link:focus-visible { text-decoration-color: currentColor; }
+.verdict-pill {
+  display: inline-flex; align-items: center; gap: var(--space-2); padding: 3px 10px;
+  border-radius: var(--rounded-sm); background: var(--accent-tint-soft); font-size: 14px; font-weight: 600;
+}
+.pill-dots { display: inline-flex; gap: 3px; }
+.pill-dot { width: 12px; height: 12px; border-radius: 50%; border: 3px solid var(--dot-empty); }
+.pill-dot.is-filled { background: var(--accent); border-color: var(--accent); }
+.watch-table:has(.tag-tip) .wallet-cell { min-width: 24rem; }  /* room for the tooltip, so no column moves when it opens */
+.tag-tip { position: relative; z-index: 1; display: inline-block; margin-left: var(--space-2); vertical-align: top; }  /* above the row link */
+.tag-tip .info-tag { cursor: default; background: transparent; font-family: inherit; line-height: inherit; }  /* a button that only describes */
+/* The tooltip opens in the row's flow, under the tag: placed over the table it would be cut off by the
+   table's scroll box, which clips in both directions. The row grows while it shows. */
+.tooltip {
+  display: none; position: relative; width: 16rem; margin-top: 6px;
+  padding: var(--space-2) var(--space-3); border: 1px solid transparent; border-radius: var(--rounded-sm);
+  background: var(--ink); color: var(--surface-raised); box-shadow: var(--lift-shadow);
+  font-size: 13px; font-weight: 400; line-height: 1.45; white-space: normal;
+}
+.tooltip::before { content: ""; position: absolute; left: 0; right: 0; bottom: 100%; height: 8px; }  /* bridges the gap, so the pointer can move onto it */
+@media (hover: hover) { .info-tag:hover + .tooltip, .tooltip:hover { display: block; } }  /* WCAG 1.4.13: hoverable */
+.info-tag:focus-visible + .tooltip, .tooltip:focus-visible { display: block; }
+.info-tag:focus + .tooltip { display: block; }  /* a tap gives focus without :focus-visible: touch users read it too */
+.stats-tag { margin: var(--space-2) 0 0; }
+.stats-tag .tag-tip { margin-left: 0; }
+.tag-tip.is-dismissed .tooltip { display: none; }  /* Esc (tag-tip.js, WCAG 1.4.13) */
+@media (forced-colors: active) {
+  .pill-dot.is-filled { forced-color-adjust: none; background: CanvasText; border-color: CanvasText; }
+  .pill-dot { border-color: CanvasText; }
+  .tooltip { border-color: CanvasText; }
+  .scan-tabs a[aria-current="page"] { border-bottom-color: Highlight; }
+}
+@media (prefers-reduced-motion: reduce) { .back-link { transition: none; } }
+
 /* Phone sizes and the smallest screens (UX-DR10, DESIGN.md Smaller screens; Story 3.4). The chart's own
    639 and 399 px rules sit with the chart above. */
 @media (max-width: 639px) {
@@ -530,4 +601,7 @@ h1.checking { font-size: 28px; line-height: 1.25; }
 }
 @media (max-width: 399px) {
   .verdict { font-size: 34px; }
+  .scan-summary { grid-template-columns: minmax(0, 1fr); padding: 0 var(--space-4); }
+  .scan-summary > div { padding: var(--space-3) 0; }
+  .scan-summary > div + div { border-left: 0; border-top: 1px solid var(--border); }
 }

@@ -311,18 +311,25 @@ class Lookup:
         return WalletPage(outcome, address, short_address(address), card, notice, job_id, stored_from, chart, notes)
 
     def _verdict(self, address: str, stored: StoredResult) -> WalletPage:
-        result = stored.result
-        enough = result.p_value is not None
-        card = VerdictCard(
-            verdict=result.verdict.value,
-            filled_dots=FILLED_DOTS[result.verdict],
-            odds_line=phrases.odds_sentence(result.p_value) if enough else phrases.not_enough_data(result.tested_count),
-            bets=phrases.count(result.tested_count),
-            bets_word=phrases.resolved_bets_word(result.tested_count),
-            real_pnl=phrases.money(result.real_pnl),
-            stored=phrases.stored_at(stored.stored_at),
-        )
-        return self._page(
-            Outcome.VERDICT, address, card=card, chart=luck_chart(result) if enough else None, notes=honesty_notes(stored)
-        )
+        return verdict_page(address, stored)
+
+
+def verdict_page(address: str, stored: StoredResult) -> WalletPage:
+    """The Verdict page of one stored result: card, chart and honesty notes (FR-8 to FR-11). A lookup and a
+    Verdict opened from a Scan's Watchlist (Story 4.5) both come through here, so they read alike."""
+    result = stored.result
+    enough = result.p_value is not None
+    card = VerdictCard(
+        verdict=result.verdict.value,
+        filled_dots=FILLED_DOTS[result.verdict],
+        odds_line=phrases.odds_sentence(result.p_value) if enough else phrases.not_enough_data(result.tested_count),
+        bets=phrases.count(result.tested_count),
+        bets_word=phrases.resolved_bets_word(result.tested_count),
+        real_pnl=phrases.money(result.real_pnl),
+        stored=phrases.stored_at(stored.stored_at),
+    )
+    return WalletPage(
+        Outcome.VERDICT, address, short_address(address), card,
+        chart=luck_chart(result) if enough else None, notes=honesty_notes(stored),
+    )
 

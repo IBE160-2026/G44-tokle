@@ -5,6 +5,7 @@ The FR-8 examples are copied from the PRD and the epics, not computed from the c
 
 from __future__ import annotations
 
+import re
 from pathlib import Path
 
 import numpy as np
@@ -489,7 +490,73 @@ def test_fr11_window_and_computed_on_lines():
     assert phrases.computed_on("lookup", 1, capped=False, seed=7) == "Computed on 1 bet · Seed 7"
     assert phrases.computed_on("lookup", 0, capped=False, seed=44) == "Computed on no bets · Seed 44"
     with pytest.raises(ValueError):
-        phrases.computed_on("scan_whole", 10, capped=False, seed=44)
+        phrases.computed_on("scan_before", 10, capped=False, seed=44)  # no page shows it yet (Epic 5)
+
+
+# --- Story 4.5: the Watchlist's luck sentence, tab-title date and Scan honesty lines -----------------------
+
+
+@pytest.mark.parametrize(
+    ("tested", "number"),
+    [(200, "2"), (150, "2"), (149, "1"), (100, "1"), (249, "2"), (250, "3"), (1_000, "10"), (12_345, "123")],
+)
+def test_fr16_minimum_luck_passes(tested, number):
+    """FR-16, PRD Glossary (Edvard, 2026-11-26): Wallets with a Verdict x 0.01, a whole number (halves up, so 1.5 is
+    "2" and 2.5 is "3"), with "with a Verdict" naming what was counted."""
+    assert phrases.luck_passes(tested) == (
+        f"At least about {number} of the {phrases.count(tested)} Wallets with a Verdict would pass by luck alone, "
+        "probably more, because these Wallets were picked for high profit."
+    )
+
+
+@pytest.mark.parametrize(("tested", "wallets"), [(99, "99 Wallets"), (37, "37 Wallets"), (1, "1 Wallet")])
+def test_fr16_minimum_luck_passes_below_100_reads_as_a_rate(tested, wallets):
+    """FR-16, AD-25 (Edvard, 2026-11-26: small numbers read the way a person says them): below 100 Wallets the floor
+    is under 1, so the sentence gives the rate and what it means, never "0.4 of the 37"."""
+    sentence = phrases.luck_passes(tested)
+    assert sentence == (
+        "About 1 in 100 Wallets would pass by luck alone, probably more, because these Wallets were picked for high "
+        f"profit. With only {wallets} with a Verdict, even one passing could be luck."
+    )
+    assert not re.search(r"\d\.\d", sentence)
+
+
+@pytest.mark.parametrize("bad", [-1, 1.5, True, "200"])
+def test_fr16_minimum_luck_passes_refuses_a_bad_count(bad):
+    """FR-16, AD-25: a count that is not a whole number of at least 0 is refused, never phrased."""
+    with pytest.raises(ValueError):
+        phrases.luck_passes(bad)
+
+
+def test_ux_dr8_the_tab_title_date():
+    """UX-DR8, EXPERIENCE.md page titles: the Watchlist tab names its Cut-off Date short ("1 Jul 2025")."""
+    from datetime import date
+
+    assert phrases.short_date(date(2025, 7, 1)) == "1 Jul 2025"
+    assert phrases.short_date(date(1960, 1, 31)) == "31 Jan 1960"
+
+
+def test_fr11_a_scans_window_and_computed_on_lines():
+    """FR-11, AD-8, AD-22 (Edvard, 2026-11-26): a Scan's result names both windows and its Cut-off Date."""
+    from datetime import date
+
+    assert phrases.SCAN_WINDOW_LINE == (
+        "Based on two windows around the Cut-off Date: up to the latest 2,000 bets resolved before it and up to the "
+        "first 2,000 bought after it. Bets bought before the date and resolved after it are in neither."
+    )
+    day = date(2025, 7, 1)
+    assert phrases.computed_on("scan_whole", 1_234, capped=True, seed=44, cutoff=day) == (
+        "Computed on 1,234 bets around the Cut-off Date 1 July 2025 · Seed 44"
+    )
+    assert phrases.computed_on("scan_whole", 1, capped=False, seed=7, cutoff=day) == (
+        "Computed on 1 bet around the Cut-off Date 1 July 2025 · Seed 7"
+    )
+    assert phrases.computed_on("scan_whole", 0, capped=False, seed=44, cutoff=day).startswith("Computed on no bets around")
+    with pytest.raises(ValueError):
+        phrases.computed_on("scan_whole", 10, capped=False, seed=44)  # a Scan's line needs its date
+    assert phrases.SCAN_BEFORE_ONLY_LINE == (  # the after part refused (Edvard, 2026-11-26, Story 4.5 review)
+        "Based on the latest 2,000 bets resolved before the Cut-off Date; the bets bought after it could not be read."
+    )
 
 
 # --- Story 4.4: the Scans page's dates and the rough time estimate (UX-DR30, UX-DR31) -------------

@@ -11,7 +11,7 @@ from pathlib import Path
 
 import pytest
 
-from liquidoracle.core import skilltest
+from liquidoracle.core import phrases, skilltest
 from liquidoracle.core.positions import build_positions
 from liquidoracle.data import synthetic
 from liquidoracle.data.offline import REAL_DIR, OfflineClient
@@ -224,3 +224,34 @@ def test_fr11_a_capped_window_names_what_the_cap_counted() -> None:
     assert notes.window == "Based on the latest 2 bets; older results are not included."
     assert notes.computed_on == "Computed on the latest 2 bets · Seed 44"
     assert honesty_notes(replace(stored, capped=False)).computed_on == "Computed on all 3 bets · Seed 44"
+
+
+def test_fr11_a_scan_result_always_shows_both_windows() -> None:
+    """FR-11, AD-8 (Edvard, 2026-11-26, Story 4.5): a `scan_whole` result shows the two-window line even when no part
+    was capped, and its last line names the Cut-off Date; a lookup's notes are unchanged."""
+    from datetime import date
+
+    position_set = PositionSet(tested=(bet(0, price=0.5, won=True), bet(1, price=0.5, won=False)), slivers=(), left_out=())
+    result = skilltest.skill_test(position_set, seed=SEED, unit_id="planted", scope="scan_whole")
+    scan_result = StoredResult(result, 0, position_set, False, 2, cutoff=date(2025, 7, 1), sides=("before", "after"))
+    notes = honesty_notes(scan_result)
+    assert notes.window == phrases.SCAN_WINDOW_LINE
+    assert notes.computed_on == "Computed on 2 bets around the Cut-off Date 1 July 2025 · Seed 44"
+    lookup = honesty_notes(stored_from(position_set))
+    assert lookup.window == "" and lookup.computed_on == "Computed on all 2 bets · Seed 44"
+
+
+def test_fr11_a_scan_result_names_only_the_windows_read() -> None:
+    """FR-11, AD-8 (Edvard, 2026-11-26, Story 4.5 review): with the after part refused the line names the before
+    window alone and says the after part could not be read; with nothing read there is no window line."""
+    from dataclasses import replace as changed
+    from datetime import date
+
+    position_set = PositionSet(tested=(bet(0, price=0.5, won=True),), slivers=(), left_out=())
+    result = skilltest.skill_test(position_set, seed=SEED, unit_id="planted", scope="scan_whole")
+    both = StoredResult(result, 0, position_set, False, 1, cutoff=date(2025, 7, 1), sides=("before", "after"))
+    assert honesty_notes(changed(both, sides=("before",))).window == phrases.SCAN_BEFORE_ONLY_LINE == (
+        "Based on the latest 2,000 bets resolved before the Cut-off Date; the bets bought after it could not be read."
+    )
+    nothing = honesty_notes(changed(both, sides=()))
+    assert nothing.window == "" and nothing.computed_on.startswith("Computed on ")

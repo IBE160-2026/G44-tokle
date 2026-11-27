@@ -166,7 +166,8 @@ def every_page(loaded_lookup: Lookup, offline: FlaskClient, tmp_path_factory: py
     keep("500", broken.test_client().get("/"))
 
     clock = Clock()
-    store = Store(tmp_path_factory.mktemp("live") / "live.db", clock=clock)
+    live_db = tmp_path_factory.mktemp("live") / "live.db"
+    store = Store(live_db, clock=clock)
     web = create_app(Settings(offline=False), Lookup(None, store, seed=SEED, jobs=Jobs(store))).test_client()
     fetch_wallet(OfflineClient(sample_files(root)), store, SHARP)  # a stored snapshot, made old below
     clock.now += 2 * FRESH_FOR
@@ -181,6 +182,15 @@ def every_page(loaded_lookup: Lookup, offline: FlaskClient, tmp_path_factory: py
     keep("Scans warning", web.post("/scans", data={"cutoff": recent, "wallets": "200"}))
     web.post("/scans", data={"cutoff": "2025-07-01", "wallets": "200"})
     keep("Scans running", web.get("/scans"))
+    from test_watchlist import Row, hand_scan  # noqa: PLC0415  (a finished Scan's rows, Story 4.5)
+
+    thin = "0x" + "4" * 40
+    full = hand_scan(live_db, [Row("0x" + "5" * 40, unread=True), Row(thin, verdict="Not enough data", p_value=None,
+                                                                         tested=0)],
+                     markets=(("0x" + "a" * 64, 9e6, "used"), ("0x" + "b" * 64, 8e6, "partial")))
+    keep("Watchlist", web.get(f"/scans/{full}/watchlist"))
+    keep("Watchlist empty", web.get(f"/scans/{hand_scan(live_db, [Row(thin, verdict='No evidence of skill')])}/watchlist"))
+    keep("Verdict from a Scan", web.get(f"/scans/{full}/wallet/{thin}"))
     assert "Show stored data from" in pages["Unavailable with stored data"][1]
     assert "Show stored data from" not in pages["Unavailable"][1]
     yield pages
@@ -198,6 +208,8 @@ EVERY_PAGE = {
     "404": (404, "Page not found"), "405": (404, "Page not found"),
     "Scans offline": (200, "Scans"), "Scans": (200, "Scans"), "Scans errors": (400, "Scans"),
     "Scans warning": (200, "Scans"), "Scans running": (200, "Scans"),
+    "Watchlist": (200, "Scan of 2 Wallets"), "Watchlist empty": (200, "Scan of 1 Wallet"),
+    "Verdict from a Scan": (200, "Verdict: Not enough data"),
 }
 
 

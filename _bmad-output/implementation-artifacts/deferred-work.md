@@ -86,6 +86,7 @@ Findings and goals set aside by `bmad-build`, each with where it came from.
 - source_spec: `_bmad-output/implementation-artifacts/spec-3-3-the-honesty-notes.md`
   summary: The honesty notes' window and computed-on lines exist only for the `lookup` scope; the after part's "first 2,000" line and the Watchlist's two-window line (FR-11, epics Story 3.3 AC) are not built, and `phrases.computed_on` refuses any other scope.
   evidence: Story 3.3 review (blind hunter). No after part or Watchlist result exists before Epic 4 (scan scopes) and Epic 5 (Hold-up), so there is nothing to show yet; build the wording with the first story that stores a `scan_whole`, `scan_before` or `holdup_after` result.
+  resolved: partly, Story 4.5 (Edvard, 2026-11-26): a Verdict opened from a Scan (`scan_whole`) always shows the two-window line and a Scan computed-on line (PRD FR-11, AD-8, EXPERIENCE.md honesty notes row). The after part's "first 2,000" line is still open, for Epic 5's Hold-up Test (the first page showing a `holdup_after` result).
 - source_spec: `_bmad-output/implementation-artifacts/spec-3-4-theme-copy-and-finish.md`
   summary: No browser test clicks the copy button on a Verdict that `progress.js` swapped in after a live lookup, the case the page-wide click listener in `copy-address.js` was built for.
   evidence: Story 3.4 review (verification gap, blind hunter). The browser tests open only Offline Mode pages; a live job needs a fake Polymarket in the browser fixture, which Story 3.5's `progress.js` tests build anyway. Added to the Story 3.5 note in epics.md.

@@ -21,6 +21,8 @@ from liquidoracle.services.lookup import (
 )
 from liquidoracle.services import scans_page as scans_page_module
 from liquidoracle.services.scans_page import ScansPage, ScansView, Submitted
+from liquidoracle.services import watchlist as watchlist_module
+from liquidoracle.services.watchlist import Watchlists
 from liquidoracle.settings import Settings
 
 
@@ -40,6 +42,9 @@ def create_app(settings: Settings, lookup: Lookup, scans: ScansPage | None = Non
             built.append(ScansPage(lookup.store, jobs=lookup.jobs, seed=settings.seed,
                                    rate=settings.polymarket_requests_per_second))
         return built[0]
+
+    def watchlists() -> Watchlists:
+        return Watchlists(lookup.store)  # read-only and stateless: one per request is enough
 
     def scans_html(view: ScansView, status: int = 200) -> tuple[str, int]:
         return render_template(
@@ -139,6 +144,28 @@ def create_app(settings: Settings, lookup: Lookup, scans: ScansPage | None = Non
         reply = jsonify(text=scans_page().estimate(request.args.get("wallets", "")))
         reply.headers["Cache-Control"] = "no-store"
         return reply
+
+    @app.get("/scans/<int:scan_id>/watchlist")
+    def watchlist(scan_id: int) -> str | tuple[str, int]:
+        """A finished Scan's Watchlist (FR-16, UX-DR33, UX-DR34). An unknown or unfinished Scan is *Page not found*."""
+        view = watchlists().view(scan_id)
+        if view is None:
+            return not_found()
+        return render_template("watchlist.html", view=view, words=watchlist_module)
+
+    @app.get("/scans/<int:scan_id>/wallet/<path:raw>")
+    def scan_wallet(scan_id: int, raw: str) -> str | Response | tuple[str, int]:
+        """A Verdict page opened from a Scan: that Scan's `scan_whole` result, with a back link (UX-DR37, AD-22)."""
+        if not ADDRESS.fullmatch(raw):
+            return not_found()
+        if raw != raw.lower():
+            return redirect(url_for("scan_wallet", scan_id=scan_id, raw=raw.lower()), code=301)
+        found = watchlists().verdict(scan_id, raw)
+        if found is None:
+            return not_found()
+        return render_template(
+            "verdict.html", page=found.page, back=found.back, back_url=url_for("watchlist", scan_id=scan_id), tag=found.tag
+        )
 
     @app.errorhandler(403)
     def refused(error: object) -> tuple[str, int]:

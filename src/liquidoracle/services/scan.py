@@ -45,6 +45,7 @@ from liquidoracle.records import (
     ListedPosition,
     Market,
     MarketHolder,
+    PositionSet,
     RankedWallet,
     ScanFunnel,
 )
@@ -364,21 +365,30 @@ def scan_results(
     both = before_only + ([] if after is None else [as_of_part(after, as_of)])
     results = []
     for scope, used in ((SCAN_BEFORE, before_only), (SCAN_WHOLE, both)):
-        unread = tuple(row for part in used for row in part.not_fully_read())
-        position_set = build_positions(
-            tuple(row for part in used for row in part.activity),
-            {m.condition_id: m for part in used for m in part.markets},
-            listed=tuple(row for part in used for row in part.positions),
-            not_fully_read=unread,
-        )
+        position_set = parts_position_set(used)
         result = skill_test(position_set, seed=seed, unit_id=wallet.wallet, scope=scope)
-        flagged = wallet.not_fully_read or bool(unread) or (scope == SCAN_WHOLE and refused_after)
+        unread = any(part.not_fully_read() for part in used)
+        flagged = wallet.not_fully_read or unread or (scope == SCAN_WHOLE and refused_after)
         results.append(ScanResult(
             wallet.wallet, scope, result.verdict.value, result.p_value, result.tested_count, result.real_pnl, flagged,
             None if before is None else before.fetch_id,
             None if scope == SCAN_BEFORE or after is None else after.fetch_id,
         ))
     return results[0], results[1]
+
+
+def parts_position_set(parts: Sequence[Snapshot]) -> PositionSet:
+    """The Position set of a Wallet's parts taken together, already cut to the Scan's as-of time (AD-11, AD-22).
+
+    The two parts never share a Market (AD-7), so their rows are simply put together. The Watchlist's
+    Verdict page (Story 4.5) calls this too, so it tests exactly what `scan_results` tested.
+    """
+    return build_positions(
+        tuple(row for part in parts for row in part.activity),
+        {m.condition_id: m for part in parts for m in part.markets},
+        listed=tuple(row for part in parts for row in part.positions),
+        not_fully_read=tuple(row for part in parts for row in part.not_fully_read()),
+    )
 
 
 def as_of_part(part: Snapshot, as_of: int | None) -> Snapshot:

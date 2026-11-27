@@ -1,10 +1,12 @@
 {% extends "base.html" %}
 {% block title %}Verdict · {{ page.short_address }} · LiquidOracle{% endblock %}
+{% block nav_scans_current %}{% if back %} aria-current="true"{% endif %}{% endblock %}
 {% block content %}
     {% set card = page.card %}
     <section class="verdict-card" aria-labelledby="verdict-heading">
       <div class="verdict-head">
         <div>
+          {% if back %}<p class="back-line"><a class="back-link" href="{{ back_url }}"><span aria-hidden="true">← </span>{{ back }}</a></p>{% endif %}
           <p class="eyebrow">Wallet analysis</p>
           {% if card.filled_dots is none %}
           <h1 class="verdict verdict-none" id="verdict-heading"><span class="visually-hidden">Verdict: </span>{{ card.verdict }}</h1>
@@ -42,6 +44,15 @@
           <p class="label">Stats</p>
           <p class="line"><strong>{{ card.bets }}</strong> {{ card.bets_word }}<span class="sep" aria-hidden="true">·</span><span class="visually-hidden">, </span>Real PnL <strong>{{ card.real_pnl }}</strong></p>
           <p class="stored">{{ card.stored }}</p>
+          {% if tag %}
+          {# A Verdict opened from a flagged Watchlist row keeps its tag (Story 4.5 review): the same words and tooltip. #}
+          <p class="stats-tag">
+            <span class="tag-tip">
+              <button class="info-tag" type="button" aria-describedby="verdict-tip">{{ tag[0] }}</button>
+              <span class="tooltip" role="tooltip" id="verdict-tip">{{ tag[1] }}</span>
+            </span>
+          </p>
+          {% endif %}
         </div>
         {% if page.notes and page.notes.exit_warning %}
         {# FR-11, UX-DR15: beside the stats, inside the Verdict card, never in the Verdict hero. #}
@@ -53,6 +64,7 @@
       </div>
     </section>
     <script src="{{ url_for('static', filename='js/copy-address.js') }}" defer></script>
+    {% if tag %}<script src="{{ url_for('static', filename='js/tag-tip.js') }}" defer></script>{% endif %}
     {% if page.chart %}
     {% set chart = page.chart %}
     {# The chart card (FR-9, UX-DR24 to UX-DR27): every number and word comes from services/chart.py.

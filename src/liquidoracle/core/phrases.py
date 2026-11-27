@@ -371,9 +371,25 @@ def window_line(window_size: int) -> str:
     return f"Based on the latest {count(n)} {'bet' if n == 1 else 'bets'}; older results are not included."
 
 
-def computed_on(scope: str, window_size: int, *, capped: bool, seed: int) -> str:
+SCAN_WINDOW_LINE = (  # FR-11, AD-8: always shown for a Scan's `scan_whole` result (Edvard, 2026-11-26, Story 4.5)
+    "Based on two windows around the Cut-off Date: up to the latest 2,000 bets resolved before it and up to the "
+    "first 2,000 bought after it. Bets bought before the date and resolved after it are in neither."
+)
+SCAN_BEFORE_ONLY_LINE = (  # FR-11: a Scan result whose after part Polymarket refused (Edvard, 2026-11-26, Story 4.5 review)
+    "Based on the latest 2,000 bets resolved before the Cut-off Date; the bets bought after it could not be read."
+)
+
+
+def computed_on(scope: str, window_size: int, *, capped: bool, seed: int, cutoff: date | None = None) -> str:
     """The last honesty line (FR-11, AD-22): the set the result was computed on and its Seed, "Computed on the
-    latest 2,000 bets · Seed 44". Only the `lookup` scope exists before Epic 4."""
+    latest 2,000 bets · Seed 44" for a lookup, "Computed on 1,234 bets around the Cut-off Date 1 July 2025 ·
+    Seed 44" for a Scan's `scan_whole` result, which needs `cutoff` (Story 4.5). Other scopes have no wording yet."""
+    if scope == "scan_whole":
+        if cutoff is None:
+            raise ValueError("a Scan's computed-on line needs its Cut-off Date")
+        n = _whole(window_size, "count")
+        bets = "no bets" if n == 0 else f"{count(n)} {'bet' if n == 1 else 'bets'}"
+        return f"Computed on {bets} around the Cut-off Date {long_date(cutoff)} · Seed {_whole(seed, 'Seed')}"
     if scope != "lookup":
         raise ValueError(f"no wording for the scope {scope!r} yet")
     n = _whole(window_size, "count")
@@ -416,6 +432,34 @@ _LONG_MONTHS = (
 def long_date(day: date) -> str:
     """A Cut-off Date as the Scan pages write it (EXPERIENCE.md, Story 4.4): "1 July 2025"."""
     return f"{day.day} {_LONG_MONTHS[day.month - 1]} {day.year}"
+
+
+def short_date(day: date) -> str:
+    """A Cut-off Date in a tab title (EXPERIENCE.md page titles, Story 4.5): "1 Jul 2025"."""
+    return f"{day.day} {_MONTHS[day.month - 1]} {day.year}"
+
+
+def luck_passes(tested: int) -> str:
+    """The Minimum Luck Passes sentence (FR-16, PRD Glossary; Story 4.5): Wallets tested x 0.01, where only
+    Wallets that got a Verdict count (Edvard, 2026-11-26), and the sentence says so.
+
+    "At least about 2 of the 200 Wallets with a Verdict would pass by luck alone, probably more, because
+    these Wallets were picked for high profit." The number is whole, halves rounded up ("about 2 of the 150").
+    Below 100 Wallets that number would be under 1, which no one says ("0.4 of the 37"), so the sentence
+    gives the rate and what it means instead: "About 1 in 100 Wallets would pass by luck alone, probably
+    more, because these Wallets were picked for high profit. With only 37 Wallets with a Verdict, even one
+    passing could be luck." (Edvard, 2026-11-26: small numbers read the way a person says them.)
+    """
+    n = _whole(tested, "count")
+    reason = "probably more, because these Wallets were picked for high profit."
+    if n < 100:
+        wallets = "Wallet" if n == 1 else "Wallets"
+        return (
+            f"About 1 in 100 Wallets would pass by luck alone, {reason} "
+            f"With only {count(n)} {wallets} with a Verdict, even one passing could be luck."
+        )
+    floor = int((Decimal(n) / 100).quantize(_ONE, rounding=ROUND_HALF_UP))
+    return f"At least about {floor:,} of the {count(n)} Wallets with a Verdict would pass by luck alone, {reason}"
 
 
 def run_date(epoch_seconds: int, tz: tzinfo | None = None) -> str:

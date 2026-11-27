@@ -20,7 +20,10 @@ AVOIDED = (
     "copy this", "follow", "recommended", "winner", "best", "top", "safe", "proven",
     "sure thing", "beat the market", "genius", "smart money",
 )
-ALLOWED = ("top Wallets by profit",)  # the factual Scan definition (EXPERIENCE.md)
+ALLOWED = (  # factual Scan definitions, not praise
+    "top Wallets by profit",  # EXPERIENCE.md
+    "top {markets} by volume",  # the Market set, AD-21 ("top 100 by volume"; Story 4.5)
+)
 WORDS = re.compile(r"\b(" + "|".join(re.escape(w) for w in BANNED + AVOIDED) + r")\b", re.IGNORECASE)
 
 
