@@ -115,3 +115,6 @@ Findings and goals set aside by `bmad-build`, each with where it came from.
 - source_spec: `_bmad-output/implementation-artifacts/spec-4-6-offline-scan-with-synthetic-wallets.md`
   summary: EXPERIENCE.md open question 2 (the Sample Dataset's default Cut-off Date) still reads as unsettled; it was settled on 2026-10-23 (1 July 2025).
   evidence: Found by the Story 4.6 review (BH10); pre-existing, not caused by 4.6; a one-line doc correction with a UX memlog entry.
+- source_spec: `_bmad-output/implementation-artifacts/spec-4-7-the-real-wallets-around-the-cut-off-date.md`
+  summary: The offline Scan list shows 1,018 Wallets while its Watchlist says "Scan of 1,012": N counts every Sample Wallet, including the four small Synthetic Wallets with no anchor bets and the two lookup-only real Wallets.
+  evidence: Found by the Story 4.7 review (BH6); pre-existing since Story 4.6 (1,018 vs 1,004), whose frozen spec set N to the number of Sample Wallets; the fix (N = the Wallets the funnel can find, or a line explaining the gap) changes the Scans page.
