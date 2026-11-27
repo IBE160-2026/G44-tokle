@@ -16,7 +16,7 @@ from liquidoracle.core import phrases
 from liquidoracle.core.skilltest import skill_test
 from liquidoracle.data.store import SCAN_WHOLE, Scan, ScanResult, ScanStep, Snapshot, Store
 from liquidoracle.data.window import cutoff_day
-from liquidoracle.records import Verdict
+from liquidoracle.records import HOLDUP_GROUPS, Verdict
 from liquidoracle.services import scan as scan_module
 from liquidoracle.services.fetch import StoredResult
 from liquidoracle.services.lookup import FILLED_DOTS, WalletPage, short_address, verdict_page
@@ -28,7 +28,9 @@ EMPTY = ("No Wallet in this Scan was rated ", Verdict.SKILLED.value, ".")  # the
 NOT_FULLY_READ = "Not fully read"  # EXPERIENCE.md *Wallet not fully read*
 NOT_FULLY_READ_TIP = "Polymarket's data for this Wallet could not be read in full; the unread bets are left out."
 ODDS_HEADER = "Odds (with no edge)"
-TAB_WATCHLIST = "Watchlist"  # the Scan tabs; Epics 5 and 6 add Hold-up Test and Copy Test
+TAB_WATCHLIST = "Watchlist"  # the Scan tabs (UX-DR33); Epic 6 adds Copy Test
+TAB_HOLDUP = "Hold-up Test"
+PAGE_WATCHLIST, PAGE_HOLDUP = "watchlist", "hold_up"  # the pages' names, which the web layer gives its routes
 SUMMARY_LABELS = ("Wallets scanned", f"Rated {Verdict.SKILLED.value}", "Scan run")  # DESIGN.md Scan header
 PARTIAL = "not used: partial"  # AD-9, EXPERIENCE.md *Market not used*
 # AD-21, FR-16: the population tested, filled with the Scan's own numbers
@@ -44,8 +46,16 @@ class PartialMarket:
 
 
 @dataclass(frozen=True, slots=True)
+class ScanTab:
+    """One Scan tab (UX-DR33): a plain link to one of the Scan's pages."""
+
+    label: str
+    page: str  # PAGE_WATCHLIST or PAGE_HOLDUP
+
+
+@dataclass(frozen=True, slots=True)
 class ScanHeader:
-    """The Scan header and summary card shared by the Scan pages (UX-DR33, AD-21)."""
+    """The Scan header, summary card and tabs shared by the Scan pages (UX-DR33, AD-21)."""
 
     scan_id: int
     cutoff: str  # "1 July 2025"
@@ -56,6 +66,9 @@ class ScanHeader:
     summary: tuple[tuple[str, str], ...]  # (label, figure) x 3
     partial_title: str  # "3 Markets not used: partial"; "" when every Market was used
     partial: tuple[PartialMarket, ...]
+    eyebrow: str = EYEBROW
+    # Watchlist, then Hold-up Test when the Scan has its stored Hold-up result (none before Story 5.1)
+    tabs: tuple[ScanTab, ...] = ()
 
 
 @dataclass(frozen=True, slots=True)
@@ -98,18 +111,15 @@ class Watchlists:
 
     def view(self, scan_id: int) -> WatchlistView | None:
         """The Watchlist of a finished Scan, or None for an unknown or unfinished Scan (its results are never shown)."""
-        scan = self._finished(scan_id)
+        scan = finished_scan(self._store, scan_id)
         if scan is None:
             return None
         whole = _whole_results(self._store.scan_results(scan_id))
-        skilled = sorted(
-            (r for r in whole if r.verdict == Verdict.SKILLED.value and r.p_value is not None),
-            key=lambda r: (r.p_value, -r.real_pnl, r.wallet),
-        )
+        skilled = sorted(_skilled(whole), key=lambda r: (r.p_value, -r.real_pnl, r.wallet))
         with_verdict = sum(1 for r in whole if r.p_value is not None)  # Edvard, 2026-11-26: only these count
         day = cutoff_day(scan.cutoff)
         return WatchlistView(
-            header=self._header(scan, whole, len(skilled)),
+            header=scan_header(self._store, scan, whole),
             title=f"{TAB_WATCHLIST} · {phrases.short_date(day)} · LiquidOracle",
             luck=phrases.luck_passes(with_verdict) if with_verdict else "",
             rows=tuple(_row(r) for r in skilled),
@@ -118,7 +128,7 @@ class Watchlists:
     def verdict(self, scan_id: int, address: str) -> ScanVerdict | None:
         """The Verdict page of a Wallet of a finished Scan: its `scan_whole` result recomputed from the frozen
         snapshots (AD-19, AD-22). None when the Scan, the Wallet's result or a frozen snapshot is missing."""
-        scan = self._finished(scan_id)
+        scan = finished_scan(self._store, scan_id)
         if scan is None:
             return None
         found = next((r for r in _whole_results(self._store.scan_results(scan_id)) if r.wallet == address), None)
@@ -138,47 +148,62 @@ class Watchlists:
         tag = (NOT_FULLY_READ, NOT_FULLY_READ_TIP) if found.not_fully_read else None
         return ScanVerdict(verdict_page(address, stored), f"Back to Watchlist (Cut-off Date {cutoff})", tag)
 
-    def _finished(self, scan_id: int) -> Scan | None:
-        scan = self._store.scan(scan_id)
-        return scan if scan is not None and scan.step is ScanStep.DONE else None
 
-    def _header(self, scan: Scan, whole: list[ScanResult], skilled: int) -> ScanHeader:
-        day = cutoff_day(scan.cutoff)
-        cutoff = phrases.long_date(day)
-        run = phrases.run_date(scan.as_of)
-        markets = self._store.scan_markets(scan.scan_id)
-        partial = [m for m in markets if m.state == "partial"]
-        used = sum(1 for m in markets if m.state == "used")
-        records = self._store.resolved_markets([m.condition_id for m in partial])
-        shortlist = len(self._store.scan_wallets(scan.scan_id))
-        unread = sum(1 for r in whole if r.not_fully_read)
-        n = len(whole)
-        return ScanHeader(
-            scan_id=scan.scan_id,
-            cutoff=cutoff,
-            title=f"Scan of {phrases.count(n)} {_wallets(n)}",
-            lede=f"Cut-off Date {cutoff} · run {run}",
-            population=(
-                POPULATION.format(days=scan_module.MARKET_DAYS, markets=scan_module.MARKET_COUNT)
-                + f" · {phrases.of_total(used, len(markets))} Markets used · Seed {scan.seed}"
-            ),
-            shortlist=(
-                f"Shortlist of about {phrases.count(shortlist)} by a quick profit estimate · "
-                f"{phrases.count(unread)} {_wallets(unread)} not fully read"
-            ),
-            summary=tuple(zip(SUMMARY_LABELS, (phrases.count(n), phrases.count(skilled), run), strict=True)),
-            partial_title=(
-                f"{phrases.count(len(partial))} {'Market' if len(partial) == 1 else 'Markets'} {PARTIAL}"
-                if partial else ""
-            ),
-            partial=tuple(
-                PartialMarket(
-                    short_address(m.condition_id),
-                    _details(m.volume, records[m.condition_id].closed_time if m.condition_id in records else None),
-                )
-                for m in partial
-            ),
-        )
+def finished_scan(store: Store, scan_id: int) -> Scan | None:
+    """The Scan when it is finished, else None: an unfinished Scan's results are never shown (AD-5)."""
+    scan = store.scan(scan_id)
+    return scan if scan is not None and scan.step is ScanStep.DONE else None
+
+
+def whole_results(store: Store, scan_id: int) -> list[ScanResult]:
+    """The Scan's stored `scan_whole` results, the ones its header counts."""
+    return _whole_results(store.scan_results(scan_id))
+
+
+def scan_header(store: Store, scan: Scan, whole: list[ScanResult]) -> ScanHeader:
+    """The header every page of a finished Scan shows (UX-DR33, AD-21), with the tabs the Scan has: the
+    Hold-up Test tab only when its two group results are stored (Story 5.2)."""
+    day = cutoff_day(scan.cutoff)
+    cutoff = phrases.long_date(day)
+    run = phrases.run_date(scan.as_of)
+    markets = store.scan_markets(scan.scan_id)
+    partial = [m for m in markets if m.state == "partial"]
+    used = sum(1 for m in markets if m.state == "used")
+    records = store.resolved_markets([m.condition_id for m in partial])
+    shortlist = len(store.scan_wallets(scan.scan_id))
+    unread = sum(1 for r in whole if r.not_fully_read)
+    skilled = len(_skilled(whole))
+    n = len(whole)
+    tabs = [ScanTab(TAB_WATCHLIST, PAGE_WATCHLIST)]
+    if len(store.group_results(scan.scan_id)) == len(HOLDUP_GROUPS):
+        tabs.append(ScanTab(TAB_HOLDUP, PAGE_HOLDUP))
+    return ScanHeader(
+        scan_id=scan.scan_id,
+        cutoff=cutoff,
+        title=f"Scan of {phrases.count(n)} {_wallets(n)}",
+        lede=f"Cut-off Date {cutoff} · run {run}",
+        population=(
+            POPULATION.format(days=scan_module.MARKET_DAYS, markets=scan_module.MARKET_COUNT)
+            + f" · {phrases.of_total(used, len(markets))} Markets used · Seed {scan.seed}"
+        ),
+        shortlist=(
+            f"Shortlist of about {phrases.count(shortlist)} by a quick profit estimate · "
+            f"{phrases.count(unread)} {_wallets(unread)} not fully read"
+        ),
+        summary=tuple(zip(SUMMARY_LABELS, (phrases.count(n), phrases.count(skilled), run), strict=True)),
+        partial_title=(
+            f"{phrases.count(len(partial))} {'Market' if len(partial) == 1 else 'Markets'} {PARTIAL}"
+            if partial else ""
+        ),
+        partial=tuple(
+            PartialMarket(
+                short_address(m.condition_id),
+                _details(m.volume, records[m.condition_id].closed_time if m.condition_id in records else None),
+            )
+            for m in partial
+        ),
+        tabs=tuple(tabs),
+    )
 
 
 def scan_whole_result(address: str, parts: list[Snapshot], *, scan: Scan) -> StoredResult:
@@ -206,6 +231,11 @@ def watchlist_label(size: int, cutoff: str) -> str:
 
 def _whole_results(results: tuple[ScanResult, ...]) -> list[ScanResult]:
     return [r for r in results if r.scope == SCAN_WHOLE]
+
+
+def _skilled(whole: list[ScanResult]) -> list[ScanResult]:
+    """The results on the Watchlist: the one rule behind its rows and the header's count (FR-16)."""
+    return [r for r in whole if r.verdict == Verdict.SKILLED.value and r.p_value is not None]
 
 
 def _row(result: ScanResult) -> WatchlistRow:

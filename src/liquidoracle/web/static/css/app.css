@@ -554,6 +554,8 @@ h1.checking { font-size: 28px; line-height: 1.25; }
 .pill-dots { display: inline-flex; gap: 3px; }
 .pill-dot { width: 12px; height: 12px; border-radius: 50%; border: 3px solid var(--dot-empty); }
 .pill-dot.is-filled { background: var(--accent); border-color: var(--accent); }
+.verdict-pill.is-neutral { background: var(--neutral-tint); }  /* No evidence of skill (DESIGN.md Verdict pill) */
+.verdict-pill.is-none { background: transparent; border: 1px dashed var(--border-strong); color: var(--ink-muted); }  /* Not enough data */
 .watch-table:has(.tag-tip) .wallet-cell { min-width: 24rem; }  /* room for the tooltip, so no column moves when it opens */
 .tag-tip { position: relative; z-index: 1; display: inline-block; margin-left: var(--space-2); vertical-align: top; }  /* above the row link */
 .tag-tip .info-tag { cursor: default; background: transparent; font-family: inherit; line-height: inherit; }  /* a button that only describes */
@@ -575,10 +577,32 @@ h1.checking { font-size: 28px; line-height: 1.25; }
 @media (forced-colors: active) {
   .pill-dot.is-filled { forced-color-adjust: none; background: CanvasText; border-color: CanvasText; }
   .pill-dot { border-color: CanvasText; }
+  .verdict-pill { border: 1px solid CanvasText; }  /* the tint is gone: an outline keeps the pill's shape */
+  .verdict-pill.is-none { border-style: dashed; }
   .tooltip { border-color: CanvasText; }
   .scan-tabs a[aria-current="page"] { border-bottom-color: Highlight; }
 }
 @media (prefers-reduced-motion: reduce) { .back-link { transition: none; } }
+
+/* Hold-up Test page (FR-17, UX-DR35; Story 5.2): the two group cards, side by side from 900 px. */
+.group-warning { margin-top: 28px; }
+.group-cards { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: var(--space-5); }
+@media (max-width: 899px) { .group-cards { grid-template-columns: minmax(0, 1fr); } }  /* after the rule it overrides */
+/* Side by side: room for two lines in both cards, so their rows line up (3.2em where a browser has no `lh` unit). */
+@media (min-width: 900px) { .group-who { min-height: 3.2em; min-height: 2lh; } }
+.group-verdict { margin: var(--space-3) 0 0; }
+.group-odds { margin: var(--space-3) 0 0; color: var(--ink-muted); }
+/* Two columns while each has room for a nine-digit amount on one line, else one, never three: a number never runs
+   out of its cell. A column is at least 11.5rem and at least just under half the card. */
+.group-figures {
+  margin: var(--space-4) 0 0; display: grid; column-gap: var(--space-5);
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, max(11.5rem, calc(50% - var(--space-5)))), 1fr));
+}
+.group-figures > div { display: flex; flex-direction: column; padding: var(--space-3) 0; border-top: 1px solid var(--border); }
+.group-figures dt { font-size: 13px; font-weight: 600; color: var(--ink-muted); }
+.group-figures dd { margin: auto 0 0; padding-top: var(--space-1); /* auto: two numbers in a row line up when one label wraps */ font: 600 22px/1.25 var(--serif-display); font-variant-numeric: tabular-nums; white-space: nowrap; }  /* a negative amount never splits after its minus sign */
+.figure-rule { font-weight: 400; }
+.group-note { margin: var(--space-5) 0 0; font-size: 15px; color: var(--ink-muted); }
 
 /* Phone sizes and the smallest screens (UX-DR10, DESIGN.md Smaller screens; Story 3.4). The chart's own
    639 and 399 px rules sit with the chart above. */

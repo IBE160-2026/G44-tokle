@@ -10,6 +10,7 @@ from dataclasses import asdict
 
 from flask import Flask, Response, abort, jsonify, redirect, render_template, request, url_for
 
+from liquidoracle.services.holdup import HoldUps
 from liquidoracle.services.lookup import (
     ADDRESS,
     FETCHING_LINE,
@@ -152,6 +153,15 @@ def create_app(settings: Settings, lookup: Lookup, scans: ScansPage | None = Non
         if view is None:
             return not_found()
         return render_template("watchlist.html", view=view, words=watchlist_module)
+
+    @app.get("/scans/<int:scan_id>/hold-up")
+    def hold_up(scan_id: int) -> str | tuple[str, int]:
+        """A finished Scan's Hold-up Test (FR-17, UX-DR35): its two stored group results. *Page not found* for an
+        unknown or unfinished Scan, and for one finished before the Hold-up Test existed (Story 5.1)."""
+        view = HoldUps(lookup.store).view(scan_id)  # read-only and stateless, like the Watchlist's service
+        if view is None:
+            return not_found()
+        return render_template("holdup.html", view=view)
 
     @app.get("/scans/<int:scan_id>/wallet/<path:raw>")
     def scan_wallet(scan_id: int, raw: str) -> str | Response | tuple[str, int]:

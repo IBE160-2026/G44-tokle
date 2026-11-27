@@ -3,33 +3,7 @@
 {% block nav_scans_current %} aria-current="true"{% endblock %}
 {% block content %}
     {% set h = view.header %}
-    {# The Scan header (UX-DR33, AD-21): title and ledes on the left, the Scan summary card on the right.
-       Every word comes finished from services/watchlist.py. #}
-    <div class="scan-head">
-      <div>
-        <p class="eyebrow">{{ words.EYEBROW }}</p>
-        <h1>{{ h.title }}</h1>
-        <p class="lede">{{ h.lede }}</p>
-        <p class="scan-line">{{ h.population }}</p>
-        <p class="scan-line">{{ h.shortlist }}</p>
-        {% if h.partial %}
-        <details class="about partial-markets">
-          <summary>{{ h.partial_title }}</summary>
-          <ul>
-            {% for market in h.partial %}<li><code>{{ market.short_id }}</code> · {{ market.details }}</li>{% endfor %}
-          </ul>
-        </details>
-        {% endif %}
-      </div>
-      <dl class="scan-summary">
-        {% for label, figure in h.summary %}<div><dt>{{ label }}</dt><dd>{{ figure }}</dd></div>{% endfor %}
-      </dl>
-    </div>
-
-    {# The Scan tabs: plain links, not an ARIA tab list. Epics 5 and 6 add Hold-up Test and Copy Test. #}
-    <nav class="scan-tabs" aria-label="Scan">
-      <a href="{{ url_for('watchlist', scan_id=h.scan_id) }}" aria-current="page">{{ words.TAB_WATCHLIST }}</a>
-    </nav>
+    {% include "scan_head.html" %}
 
     {% if view.luck %}<div class="info-box"><p>{{ view.luck }}</p></div>{% endif %}
 

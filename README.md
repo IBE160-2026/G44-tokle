@@ -6,7 +6,7 @@ The app only reads public data. It never places orders, holds keys or touches a 
 
 Course project in **IBE160 Programmering med KI** at Høgskolen i Molde, autumn 2026. Group G44: Edvard Tokle.
 
-> **Status: stage 1 done (25 November 2026).** Every stage 1 feature works, offline and live, and all tests pass. Next is stage 2 (plan: [`_bmad-output/planning-artifacts/epics.md`](_bmad-output/planning-artifacts/epics.md)).
+> **Status: stage 1 done (25 November 2026), and the stage 2 minimum done (27 November 2026).** Every stage 1 feature works, offline and live. Of stage 2, the Scan and the Hold-up Test work offline on the Sample Dataset; a live Hold-up run and the Copy Test are not done yet (plan: [`_bmad-output/planning-artifacts/epics.md`](_bmad-output/planning-artifacts/epics.md)). All tests pass.
 
 What stage 1 does (FR-1 to FR-14 in the PRD):
 
@@ -18,7 +18,12 @@ What stage 1 does (FR-1 to FR-14 in the PRD):
 - Run with no network in Offline Mode (FR-14) on the committed Sample Dataset: 10 real Polymarket Wallets (FR-12) and the Synthetic Wallets, made-up Wallets whose right answers are known (FR-13).
 - Work in the dark or light theme, by keyboard, without JavaScript, and on screens from 320 px wide.
 
-Stage 2 so far (FR-16, in progress): *Scan wallets* in the top bar starts a Scan of the top Wallets by profit made before a Cut-off Date you choose, shows its progress, and can resume one that was stopped. When a Scan has finished, its number in the Watchlist column of *Your Scans* opens its Watchlist: the Wallets rated *Skilled (high confidence)*, sorted by p-value, and how many would pass by luck alone. Click a Wallet there to see its Verdict for that Scan. In Offline Mode, *Start Scan* scans the Sample Dataset with its Cut-off Date, 1 July 2025: it takes about a minute and puts at least the sharp trader, steady sharp, forecaster and speed trader on the Watchlist, next to the few coin-flippers that pass by luck alone (Story 4.6). It also scans 8 of the 10 real Wallets, found through the same Markets they were first picked from (Story 4.7); 0xd218e4 and 0x63d43b are left out, see below.
+Stage 2 so far (FR-16 and FR-17; the Copy Test, FR-18, is not built):
+
+- **Scan** (FR-16): *Scan wallets* in the top bar starts a Scan of the top Wallets by profit made before a Cut-off Date you choose, shows its progress, and can resume one that was stopped.
+- **Watchlist** (FR-16): when a Scan has finished, its number in the Watchlist column of *Your Scans* opens its Watchlist: the Wallets rated *Skilled (high confidence)*, sorted by p-value, and how many would pass by luck alone. Click a Wallet there to see its Verdict for that Scan.
+- **Hold-up Test** (FR-17): next to the Watchlist, a finished Scan has a *Hold-up Test* tab. It tests the Wallets that passed before the Cut-off Date again, as one group, on the bets they made after it, beside a Comparison Group of the Wallets that did not pass. What it shows on the Sample Dataset, and what that can and cannot tell you, is under *The Hold-up Test on the Sample Dataset* below.
+- **In Offline Mode**, *Start Scan* scans the Sample Dataset with its Cut-off Date, 1 July 2025. It takes about a minute and puts at least the sharp trader, steady sharp, forecaster and speed trader on the Watchlist, next to the few coin-flippers that pass by luck alone (Story 4.6). It also scans 8 of the 10 real Wallets, found through the same Markets they were first picked from (Story 4.7); 0xd218e4 and 0x63d43b are left out, see *Where the real Sample Wallets come from*.
 
 How the success metrics were checked: [`docs/stage-1-check.md`](docs/stage-1-check.md). The accessibility check: [`docs/accessibility-check.md`](docs/accessibility-check.md).
 
@@ -87,6 +92,27 @@ For the offline Scan (Story 4.7), the same command also stores 8 of the real Wal
 
 `uv run liquidoracle make-synthetic` rebuilds the Synthetic Wallets: made-up Wallets whose correct answers are known in advance, used to check the Skill Test. Run it from the repository folder. It rewrites the eight small Wallets and the anchor Markets' volume list (`funnel-markets.json`, what lets an offline Scan find its Wallets) in `sample_data/synthetic/` (committed; the output is identical every time, so `git status` stays clean) and writes 1,000 coin-flipper Wallets (about 100 MB) to `instance/synthetic/coin-flippers/`, which is never committed. The generator can also make 1,000 lucky-streak Wallets: coin-flippers that keep betting after the Cut-off Date at fair odds. They exist only to check the Hold-up Test (the ones that happened to pass before the date must show no skill after it), so they are never written to disk or loaded into the app; the tests build them straight from the generator. You don't need this command to run the app or the tests.
 
+## The Hold-up Test on the Sample Dataset
+
+The Hold-up Test asks whether the Wallets that passed before the Cut-off Date kept it up afterwards. To see it, start the app in Offline Mode, open *Scan wallets*, press *Start Scan*, wait about a minute, click the Scan's number in the Watchlist column and then the *Hold-up Test* tab. With the default Seed (44) the Scan of the Sample Dataset gives this result, written here as it came out (27 November 2026; the tests check every number in the table):
+
+| Group | Verdict on the bets after the date | A trader with no edge would do this well | Resolved bets counted | Real PnL | Wallets in the group | Wallets dropped | Wallets not fully read |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| Before-Cut-off Passers | *Skilled (high confidence)* | fewer than 1 time in 10,000 | 300 | $6,000 | 10 | 7 | 0 |
+| Comparison Group | *No evidence of skill* | more than half the time | 409 | −$19,217 | 999 | 996 | 0 |
+
+The Passers are the Wallets rated *Skilled (high confidence)* on their bets before the date. The Comparison Group is the Wallets rated *Likely skilled* or *No evidence of skill* on the same bets. A Wallet is dropped when it has fewer than 10 resolved bets after the date; each Wallet's bets after the date are capped at its first 2,000.
+
+What this result can and cannot tell you:
+
+- **It is not a finding about real traders.** No real Wallet is among the Passers: none was rated *Skilled (high confidence)* before the date. The 10 Passers are the sharp trader, steady sharp, forecaster, speed trader and 6 coin-flippers that passed by luck. Only three of them have bets after the date and are tested, and all three (steady sharp, forecaster, speed trader) are made-up Wallets built to keep winning. So "the skill held up" shows only that the test finds skill that was put there. In Offline Mode the page says so above the cards, and a test fails if a real Wallet ever becomes a Passer.
+- **Only 8 real Wallets, and they were picked.** They were chosen for the Sample Dataset, so this is not a full Scan of Polymarket. 0xd218e4 and 0x63d43b stay outside the offline Scan (see *Where the real Sample Wallets come from* above). Three of the 8 had *Not enough data* before the date and are in neither group; the other 5 are in the Comparison Group.
+- **The Comparison Group's result rests on 3 real Wallets.** Two of its 5 real Wallets are dropped (9 and 4 bets after the date), and 307 of its 409 bets come from one Wallet, 0xd3a6e5. It says little about Wallets in general.
+- **Why the page shows a warning.** The 1,000 coin-flippers have no bets after the Cut-off Date (their last bets resolve in June 2025), so all 1,000 are dropped: 6 of them are Passers and 994 are in the Comparison Group. With the sharp trader and the two real Wallets that are dropped too, that makes 7 of the 10 Passers (70%) against 996 of the 999 Wallets in the Comparison Group. The page then warns that more Wallets were dropped in one group than in the other. The warning is right, because those Wallets did stop betting. The rule is not changed to hide it (decision log, 27 November 2026), and in Offline Mode the page gives this reason under the warning.
+- **A limit of testing a group as one.** Bets in the same Market are replayed together, so Wallets holding the same bet do not count as separate evidence. Two Wallets on opposite sides of one Market each keep their own price as their chance of winning, though, so when the two prices add up to more than 1, some replays let both win.
+
+A Hold-up Test on a live Scan of real Wallets (Story 5.3 in the plan) has not been run.
+
 ## Settings and keys
 
 Settings come from three places. A command-line flag wins over `.env`, and `.env` wins over the default.
@@ -124,7 +150,7 @@ The browser tests in `tests/browser/` open the real pages in the Chrome or Edge 
 uv run pytest tests/browser
 ```
 
-- **What they cover:** the copy button; that no page scrolls sideways at 320, 360, 600 and 900 px; that buttons do not move when your system is set to reduce motion; the Windows High Contrast (forced colours) rules; `chart.js` (`test_chart_script.py`: the chart's keys, the tooltip, the marker's highlight, the build-up, and the chart without the script); `progress.js` (`test_progress_script.py`: a live lookup polling, swapping in the Verdict or the matching message page, and giving up after 30 failed polls in a row); and the accessibility checklist (`test_checklist.py`: the 12 items walked with the keyboard only, reading the role, name, state and reading order a screen reader is given, plus every page with JavaScript off). What the checklist found, failures included, and what it cannot prove are in [`docs/accessibility-check.md`](docs/accessibility-check.md).
+- **What they cover:** the copy button; that no page scrolls sideways at 320, 360, 600 and 900 px; that buttons do not move when your system is set to reduce motion; the Windows High Contrast (forced colours) rules; `chart.js` (`test_chart_script.py`: the chart's keys, the tooltip, the marker's highlight, the build-up, and the chart without the script); `progress.js` (`test_progress_script.py`: a live lookup polling, swapping in the Verdict or the matching message page, and giving up after 30 failed polls in a row); the Hold-up Test page (`test_holdup_cards.py`: the two group cards side by side only from 900 px, the Scan tabs by keyboard, and what a screen reader is given); and the accessibility checklist (`test_checklist.py`: the 12 items walked with the keyboard only, reading the role, name, state and reading order a screen reader is given, plus every page with JavaScript off). What the checklist found, failures included, and what it cannot prove are in [`docs/accessibility-check.md`](docs/accessibility-check.md).
 - **What they need:** Google Chrome or Microsoft Edge. Playwright for Python drives it; it is a test-only package that `uv sync` installs (about 40 MB, with its own small Node.js helper inside), and no browser is downloaded. Without Chrome or Edge the tests are skipped and the test summary says why; on GitHub Actions (where `CI` is set) a browser that cannot start fails the run instead, so a green check means they ran.
 - **No network:** they start the app on 127.0.0.1 only, and any request a page makes to anywhere else is blocked and fails the test. The live-lookup tests run the app with its real job queue and worker in front of a stand-in Polymarket that serves the Synthetic Wallets from files.
 - **Time:** each live-lookup test takes a few seconds; the slowest ones move the page's clock through 30 or more failed polls.

@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+{% block title %}{{ view.title }}{% endblock %}
+{% block nav_scans_current %} aria-current="true"{% endblock %}
+{% block content %}
+    {% set h = view.header %}
+    {% include "scan_head.html" %}
+
+    {# FR-17: the dropped-share warning stands above both cards. #}
+    {% if view.warning %}
+    <div class="warning group-warning" role="note">
+      {% include "warning.svg.html" %}
+      <p><span class="visually-hidden">Warning: </span>{{ view.warning }}</p>
+    </div>
+    {% endif %}
+    {# Offline Mode only (Edvard, 2026-11-27): the tested Passers are made-up Wallets, and why the warning
+       shows on the Sample Dataset. `offline` is the value that shows the Offline pill (AD-13). #}
+    {% if offline and view.offline_notes %}
+    <div class="info-box" role="note" id="offline-note">
+      <p>{{ view.offline_notes | join(" ") }}</p>
+    </div>
+    {% endif %}
+
+    {# The two group cards (UX-DR35): every word and number comes finished from services/holdup.py. #}
+    <div class="group-cards">
+      {% for card in view.cards %}
+      <section class="card group-card" aria-labelledby="group-{{ card.key }}">
+        <h2 id="group-{{ card.key }}">{{ card.title }}</h2>
+        <p class="sub group-who">{% for part, italic in card.who %}{% if italic %}<em>{{ part }}</em>{% else %}{{ part }}{% endif %}{% endfor %}</p>
+        {% if card.empty %}
+        <p class="empty-note">{{ card.empty[0] }}{% if card.empty[1] %}<em>{{ card.empty[1] }}</em>{% endif %}{{ card.empty[2] }}</p>
+        {% else %}
+        <p class="group-verdict">
+          <span class="verdict-pill{% if card.tone %} {{ card.tone }}{% endif %}">
+            {% if card.filled_dots is not none %}<span class="pill-dots" aria-hidden="true">{% for i in range(3) %}<span class="pill-dot{% if i < card.filled_dots %} is-filled{% endif %}"></span>{% endfor %}</span>{% endif %}
+            <span><span class="visually-hidden">Verdict: </span>{{ card.verdict }}</span>
+          </span>
+        </p>
+        <p class="group-odds">{{ card.odds_line }}</p>
+        <dl class="group-figures">
+          {% for figure in card.figures %}
+          <div><dt>{{ figure.label }}{% if figure.rule %} <span class="figure-rule">{{ figure.rule }}</span>{% endif %}</dt><dd>{{ figure.value }}</dd></div>
+          {% endfor %}
+        </dl>
+        {% endif %}
+      </section>
+      {% endfor %}
+    </div>
+
+    <p class="group-note">{{ view.note }}</p>
+    <p class="computed-on">{{ view.seed }}</p>
+{% endblock %}
