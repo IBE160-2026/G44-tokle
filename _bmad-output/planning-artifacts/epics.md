@@ -22,7 +22,7 @@ Requirement IDs are the PRD's own (FR-1 to FR-24; FR-15 keeps its old number and
 - Stage 1 must stand alone as a working app and never slips. If time runs short, work is cut from stage 3 first, never from stage 1.
 - Checkpoint 20 November: if stage 1 is not done by then, stage 3 is dropped entirely and the time goes to stages 1 and 2. The targets below finish stage 1 on 23 November, so this rule applies unless stage 1 finishes early (2026-11-05). **Applied on 20 November:** stage 1 was not done, and Edvard **parked stage 3, not deleted it**: Epics 7 and 8 stay here and are picked back up if all of stage 2 (Epics 4 to 6, the Copy Test included) is done before the code freeze on 1 December (Edvard, 2026-11-20).
 - Inside Epic 1, only the visual polish of Story 1.7 moves later (dark theme, hover states, responsive details), staying inside stage 1; Story 1.5 stays before 1.7 because the card needs its phrases, and Story 1.4's checks are never cut (Edvard, 2026-10-24, after the final validation).
-- **Stage 2 minimum** (PRD §6.1; Edvard, 2026-11-18): Epics 4 and 5 passing their checks offline on the Sample Dataset, closed by Story 5.2 with the 10 real Sample Wallets' Hold-up result in the README. Story 5.3 (a live Hold-up run) and Epic 6 (Copy Test) come on top if time allows; whatever is not reached is stated in the README with the reason.
+- **Stage 2 minimum** (PRD §6.1; Edvard, 2026-11-18): Epics 4 and 5 passing their checks offline on the Sample Dataset, closed by Story 5.2 with the Hold-up result of the 8 real Sample Wallets in the offline Scan in the README (0xd218e4 and 0x63d43b stay outside it, Story 4.7). Story 5.3 (a live Hold-up run) and Epic 6 (Copy Test) come on top if time allows; whatever is not reached is stated in the README with the reason.
 - Inside stage 3, Epic 8 slips before Epic 7. A partial stage 3 is fine; whatever is left out is stated in the README and logged with the reason. Because stage 3 can stop after any story, each stage 3 story ends with all tests passing and the README updated (NFR-12).
 - Edvard's five Domain definitions and 50 blind hand labels (Story 7.2's first step) are done early, in the Epic 1 week, and committed before any labeller runs on those Markets (Edvard, 2026-10-24).
 
@@ -998,7 +998,7 @@ So that I can check the Scan without the network.
 Split out of Story 4.6 while planning it (Edvard, 2026-11-27): rebuilding the real Wallets' data is a separate job from the offline Scan, and Story 5.2 needs it, so it comes right after 4.6 and before Epic 5.
 
 As the examiner,
-I want the 10 real Sample Wallets' bets before and after the default Cut-off Date in the Sample Dataset,
+I want the real Sample Wallets' bets before and after the default Cut-off Date in the Sample Dataset,
 So that the offline Scan and Hold-up Test can use real Wallets without the network.
 
 **Acceptance Criteria:**
@@ -1007,7 +1007,11 @@ So that the offline Scan and Hold-up Test can use real Wallets without the netwo
 **When** the build-sample script runs
 **Then** the build-sample script from Story 2.6 is extended to write the real Wallets' before and after windows around 1 July 2025 with Story 4.1's rules, and re-run on the capture zip (AD-14).
 
-Open items, decided when this story is planned: whether and how the offline Scan finds the real Wallets (the Sample Dataset stores no Gamma volumes; Story 5.2 reports their Hold-up result from an offline Scan); keeping the committed Sample Dataset under 50 MB with both windows added; 0xd218e4 and 0x63d43b, whose capture holds trades only from May 2025, so their before part may come out entirely "not fully read".
+**Given** Offline Mode and the default Cut-off Date
+**When** a Scan of the Sample Dataset runs
+**Then** it finds the 8 real Wallets in the Scan through the capture's own funnel list and their holder rows as Polymarket listed them, and the build stops if any of those rows could hold information from after the Cut-off Date (AD-14, AD-21).
+
+Open items, decided while planning (Edvard, 2026-11-27, the AI's recommendations): 0xd218e4 and 0x63d43b, whose capture holds activity only from May 2025, stay lookup-only and outside the offline Scan (their before part would read as wholly "not fully read", and both windows would add an estimated 60 to 130 MB); the other 8 are in it. The offline Scan finds them through the capture's funnel list (Gamma volumes) with the holder rows copied as Polymarket listed them; Edvard added the check that nothing in those rows comes from after the Cut-off Date. The 50 MB limit stays.
 
 ## Epic 5: Does the skill last? Hold-up Test
 
@@ -1070,7 +1074,7 @@ So that I can judge the comparison myself.
 
 **Given** an offline Scan of the Sample Dataset with the default Cut-off Date
 **When** this story is done
-**Then** the Hold-up result that covers the 10 real Sample Wallets is written into the README whichever way it comes out, with its limits: only 10 Wallets, picked for the Sample Dataset, not a full Scan (PRD §6.1; Edvard, 2026-11-18)
+**Then** the Hold-up result that covers the 8 real Sample Wallets in the offline Scan is written into the README whichever way it comes out, with its limits: only 8 Wallets (0xd218e4 and 0x63d43b stay outside the Scan, Story 4.7), picked for the Sample Dataset, not a full Scan (PRD §6.1; Edvard, 2026-11-18)
 **And** the stage 2 minimum is closed: all tests pass in CI on the three systems and the README covers the Scan and the Hold-up Test (PRD §6.1, NFR-12).
 
 ### Story 5.3: Hold-up Test on a live Scan

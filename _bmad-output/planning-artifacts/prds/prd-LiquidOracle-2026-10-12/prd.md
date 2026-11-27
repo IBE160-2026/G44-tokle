@@ -377,7 +377,7 @@ Checks:
 - **Stage 1 (MVP, must be finished first):** FR-1 to FR-14. A complete, tested app that gives a whole-wallet Verdict and runs offline.
 - **Stage 2:** FR-16 to FR-18, built in three milestones, each done when its checks pass and the README is updated:
   - **2a Scan and Watchlist** (FR-16): FR-16's checks pass, including the offline Scan of the Sample Dataset that puts the four expected Synthetic Wallets on the Watchlist.
-  - **2b Hold-up Test** (FR-17): FR-17's checks pass, and the README reports the offline Hold-up result for the 10 real Sample Wallets whichever way it comes out, with its limits (only 10 Wallets, picked for the Sample Dataset, not a full Scan).
+  - **2b Hold-up Test** (FR-17): FR-17's checks pass, and the README reports the offline Hold-up result for the 8 real Sample Wallets in the offline Scan whichever way it comes out, with its limits (only 8 Wallets, picked for the Sample Dataset, not a full Scan; 0xd218e4 and 0x63d43b stay outside it because their capture holds activity only from May 2025, decision log 2026-11-27).
   - **2c Copy Test** (FR-18a to FR-18c): their checks pass.
   - **Minimum (good enough): 2a + 2b, offline.** Everything they need runs on the Sample Dataset. The Copy Test (2c) and a live real-data Scan (SM-5) come on top if time allows; whatever is not reached is stated in the README with the reason.
 - **Stage 3:** FR-15 and FR-19 to FR-24 (Mock LLM Mode, Domains, Flags, Explanations). Trimmed first if time runs short. **Parked, not deleted** (Edvard, 2026-11-20): stage 1 was not done by the 20 November checkpoint, so stage 3 is not started now; it is picked back up if all of stage 2, the Copy Test (2c) included, is done before the code freeze on 1 December.

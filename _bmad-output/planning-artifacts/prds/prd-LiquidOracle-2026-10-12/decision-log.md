@@ -2,6 +2,12 @@
 
 Why the PRD says what it says. The PRD itself keeps only the requirements (`prd.md`); this file keeps the reasons, dates and earlier wording that used to sit inside it. The full audit trail of the BMAD workflow, one line per decision, is `.memlog.md` in this folder; git history has every earlier version of `prd.md`.
 
+## 2026-11-27: the real Wallets in the offline Scan, settled while planning Story 4.7
+
+Measured on the capture before planning: 8 of the 10 real Wallets need almost no extra data for their before and after parts, because their lookup window already covers both sides. 0xd218e4 and 0x63d43b do not: their capture holds activity only from May 2025, so their before part would read as wholly "not fully read", and holding both their windows would add an estimated 60 to 130 MB (over the 50 MB limit) and need a large fetch. **Decision (Edvard, 2026-11-27, the AI's recommendation):** those two stay lookup-only Sample Wallets, outside the offline Scan, and Story 5.2's README result covers the 8 real Wallets in the Scan. They would land in neither Hold-up group anyway (rejected: both in full with a higher limit; their after part only, which no Hold-up group would use).
+
+The offline Scan finds the 8 through the capture's own funnel list (the top 100 Markets of the 90 days before 1 July 2025 by Gamma volume, from which they were picked on 21 October), stored by `build-sample` with those Wallets' rows on each Market. **Decision (Edvard, 2026-11-27, the AI's recommendation, with his condition):** the rows are copied as Polymarket listed them, not worked out from the Wallets' trades (wrong wherever a capture did not read all trades); Edvard added that nothing in them may come from after the Cut-off Date, so the build stops unless every Market resolved before it with a final price of exactly 0 or 1 and the Wallet has no trade, split, merge or conversion in it from then on. Only redemptions may come later, and they pay at an outcome already known.
+
 ## 2026-11-27: the offline Scan, settled while planning Story 4.6
 
 Story 4.6 held two separate jobs: the offline Scan with the Synthetic Wallets, and rebuilding the 10 real Wallets' data around the Cut-off Date. The AI recommended splitting them and putting the second in the deferred-work list. **Decision (Edvard, 2026-11-27, changing where the second part goes):** split, but the real Wallets' part becomes its own Story 4.7, right after 4.6 and before Epic 5, so it is not forgotten; Story 5.2 needs it.
