@@ -71,7 +71,7 @@ def test_committed_volume_list_equals_fresh_output(tmp_path: Path) -> None:
     synthetic.write_small(tmp_path)
     fresh = (tmp_path / synthetic.SMALL_DIR / synthetic.FUNNEL_FILE).read_bytes()
     assert (SYNTHETIC_DIR / synthetic.FUNNEL_FILE).read_bytes() == fresh
-    assert sample_json.read_funnel(SYNTHETIC_DIR / synthetic.FUNNEL_FILE) == synthetic.funnel_volumes()
+    assert sample_json.read_funnel(SYNTHETIC_DIR / synthetic.FUNNEL_FILE) == sample_json.FunnelFile(synthetic.funnel_volumes(), {})
 
 
 BANNED_IMPORTS = ("random", "numpy", "os", "secrets", "time", "liquidoracle.settings")

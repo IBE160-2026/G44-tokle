@@ -10,6 +10,12 @@ only what that window read (the trim, by script and never by hand), writes it wi
 serializer, reads the file back through `OfflineClient`, and refuses to finish unless the window is
 identical. Where the capture's activity reads stopped is stored in each file, so a read past it is
 cut short offline and the normal "not fully read" rule applies (AD-7, AD-11).
+
+Story 4.7 adds the before and after parts around the default Cut-off Date for the Wallets in the
+offline Scan: each file keeps what all three walks read and must replay all three. The build also
+writes the real volume list from the capture's own funnel (the Markets the Wallets were picked
+from, with their rows as Polymarket listed them), and stops if any of those rows could hold
+something from after the Cut-off Date (Edvard, 2026-11-27).
 """
 
 from __future__ import annotations
@@ -22,11 +28,11 @@ import zipfile
 from collections import Counter
 from collections.abc import Callable, Iterable, Mapping, Sequence
 from dataclasses import asdict, dataclass, field
-from datetime import UTC, datetime
+from datetime import UTC, date, datetime
 from pathlib import Path
 from typing import Any
 
-from liquidoracle.data import sample_json
+from liquidoracle.data import sample_json, synthetic
 from liquidoracle.data.errors import NotAvailableOffline
 from liquidoracle.data.offline import OfflineClient
 from liquidoracle.data.polymarket import (
@@ -34,9 +40,10 @@ from liquidoracle.data.polymarket import (
     parse_activity_row,
     parse_listed_position,
     parse_market,
+    parse_time,
 )
-from liquidoracle.data.window import positions_near
-from liquidoracle.records import ActivityRow, ListedPosition, Market, Read, SampleWallet, Window
+from liquidoracle.data.window import cutoff_at, positions_near
+from liquidoracle.records import ActivityRow, ListedPosition, Market, MarketHolder, Read, SampleWallet, Window
 
 CAPTURE_NAME = "sample-capture-cutoff-2025-07-01.zip"
 ADDITIONS_NAME = "sample-additions-2026-11-23.json"
@@ -61,6 +68,21 @@ PICK = (
     "0x0915962b4c6bc4505e7434a0de815a596a6667c3",
     "0x29306ddc4724e24a23bf1c8679aa034376ea9dcb",
 )
+# Kept out of the offline Scan, with only their lookup window (Edvard, 2026-11-27, Story 4.7): the capture
+# holds their activity only from May 2025, so their before part would read as wholly "not fully read", and
+# both windows would add an estimated 60 to 130 MB.
+LOOKUP_ONLY = {
+    "0xd218e474776403a330142299f7796e8ba32eb5c9": "activity captured only from 29 May 2025",
+    "0x63d43bbb87f85af03b8f2f9e2fad7b54334fa2f1": "activity captured only from 9 May 2025",
+}
+SIDES: tuple[str | None, ...] = (None, "before", "after")  # the lookup window, then Story 4.1's two parts
+# The capture's own Scan funnel (21 Oct 2026, AD-21): the top 100 Markets by Gamma volume resolved in the
+# 90 days before the Cut-off Date, and each Market's CLOSED and OPEN holder rows (spike/sample_pick.py).
+FUNNEL_LIST = "sample/funnel_markets_20250701.json"
+MARKET_LIST = "sample/market_{}.json"  # the condition id's first 18 characters
+FUNNEL_FILE = synthetic.FUNNEL_FILE  # the real volume list, next to the real Wallets
+# Rows that change what a Wallet holds in a Market; only a redemption may come after the Cut-off Date.
+HOLDING_TYPES = frozenset({"TRADE", "SPLIT", "MERGE", "CONVERSION"})
 # The capture read CLOSED lists oldest first and stopped at this many rows: 0xd218e4's newest
 # Positions are missing, so its newest CLOSED pages come from the additions file (Edvard, 2026-11-23).
 CAPTURE_CLOSED_CAP = 60_000
@@ -74,6 +96,15 @@ GAMMA_KEYS = (
 
 class BuildError(Exception):
     """The build cannot go on; the message says why. Nothing is left half written in `sample_data/`."""
+
+
+def sides_of(address: str) -> tuple[str | None, ...]:
+    """The windows a Wallet's file must replay: all three, or the lookup window for a lookup-only Wallet."""
+    return SIDES[:1] if address in LOOKUP_ONLY else SIDES
+
+
+def _cutoff_day() -> date:
+    return date.fromisoformat(CUTOFF)
 
 
 # --- inputs ---------------------------------------------------------------------------------------
@@ -118,6 +149,7 @@ class Captured:
     activity: tuple[ActivityRow, ...]
     activity_from: int | None
     activity_until: int | None
+    combos: tuple[tuple[str, int], ...] = ()  # combo rows (dropped from `activity`, AD-10): Market and time
 
 
 def read_capture(zip_path: Path, pick: Sequence[str]) -> dict[str, Captured]:
@@ -136,6 +168,9 @@ def _captured(archive: zipfile.ZipFile, address: str) -> Captured:
     before = json.loads(archive.read(folder + "activity_before.json"))  # newest first, up to the cut-off
     after = json.loads(archive.read(folder + "activity_after.json"))  # oldest first, from the cut-off
     rows = [parse_activity_row(raw) for raw in reversed(before["rows"])] + [parse_activity_row(raw) for raw in after["rows"]]
+    combos = tuple(
+        sorted((str(raw.get("condition_id")), raw["timestamp"]) for raw in (*before["rows"], *after["rows"]) if raw.get("is_combo") is True)
+    )
     activity = tuple(sorted((row for row in rows if row is not None), key=lambda row: row.timestamp))
     # A capped newest-first read may hold only part of its oldest second; a capped oldest-first read
     # only part of its newest. So the first whole second is one after the oldest row read, and
@@ -156,6 +191,7 @@ def _captured(archive: zipfile.ZipFile, address: str) -> Captured:
         activity=activity,
         activity_from=activity_from,
         activity_until=activity_until,
+        combos=combos,
     )
 
 
@@ -214,8 +250,9 @@ def fetch_additions(
 ) -> Path:
     """Fetches what the capture lacks (network, read-only) into the additions file next to the zip.
 
-    Each Wallet's window is walked as the build will walk it; every Market it asks Gamma about and
-    0xd218e4's CLOSED pages are fetched once. Records already in the file are never asked again.
+    Each Wallet's windows are walked as the build will walk them (Story 4.7: also the before and after
+    parts); every Market they ask Gamma about and 0xd218e4's CLOSED pages are fetched once. Records already
+    in the file are never asked again.
     """
     checked(zip_path)
     captured = read_capture(zip_path, pick)
@@ -227,8 +264,10 @@ def fetch_additions(
         additions = Additions(fetched_on=datetime.now(UTC).date().isoformat())
     for address in pick:
         client = _FetchingClient(captured[address], live, additions)
-        window = positions_near(client, address)
-        log(f"{address}: window of {len(window.positions):,} Positions; Gamma records so far {len(additions.gamma):,}")
+        for side in sides_of(address):
+            window = positions_near(client, address, None if side is None else _cutoff_day(), side)
+            log(f"{address}: {side or 'lookup'} window of {len(window.positions):,} Positions; "
+                f"Gamma records so far {len(additions.gamma):,}")
         write_additions(path, additions)  # after each Wallet, so a stop keeps what was fetched
     return path
 
@@ -297,10 +336,13 @@ class Built:
     window_positions: int
     activity_read_until: int | None
     file_bytes: int
+    parts: tuple[tuple[str, int], ...] = ()  # Positions in the before and after parts (Story 4.7); none if lookup-only
 
 
 def build(zip_path: Path, root: Path, *, pick: Sequence[str] = PICK, log: Callable[[str], None] = print) -> list[Built]:
-    """Writes `sample_data/real/` from the capture and the additions file. No network (AD-14)."""
+    """Writes `sample_data/real/` from the capture and the additions file. No network (AD-14).
+
+    The Wallets' files, `dataset.json`, and the real volume list with its holder rows (Story 4.7)."""
     capture_sha = checked(zip_path)
     additions_path = zip_path.with_name(ADDITIONS_NAME)
     if not additions_path.is_file():
@@ -320,7 +362,10 @@ def build(zip_path: Path, root: Path, *, pick: Sequence[str] = PICK, log: Callab
     staging.mkdir(parents=True)
     try:
         built = [_written(captured[address], additions, markets, staging, log) for address in pick]
-        dataset = _dataset(zip_path, capture_sha, additions_path, additions_sha, additions, captured, pick, built)
+        funnel = real_funnel(zip_path, captured, markets, [a for a in pick if a not in LOOKUP_ONLY], staging)
+        sample_json.write_funnel(staging / FUNNEL_FILE, funnel.volumes, funnel.holders)
+        log(f"real volume list: {len(funnel.volumes)} Markets, {sum(map(len, funnel.holders.values()))} holder rows")
+        dataset = _dataset(zip_path, capture_sha, additions_path, additions_sha, additions, captured, pick, built, funnel)
         (staging / DATASET_FILE).write_bytes((json.dumps(dataset, indent=1, sort_keys=True) + "\n").encode("utf-8"))
         out = root / REAL_DIR
         out.mkdir(parents=True, exist_ok=True)
@@ -336,19 +381,26 @@ def build(zip_path: Path, root: Path, *, pick: Sequence[str] = PICK, log: Callab
 def _written(
     captured: Captured, additions: Additions, markets: Mapping[str, Market], folder: Path, log: Callable[[str], None]
 ) -> Built:
-    """One Wallet's trimmed file in `folder`, kept only if it replays the window of the whole capture."""
-    wallet, window = _trimmed(captured, additions, markets)
+    """One Wallet's trimmed file in `folder`, kept only if it replays each window of the whole capture."""
+    wallet, windows = _trimmed(captured, additions, markets, sides_of(captured.address))
     path = folder / f"{captured.address}.json"
     sample_json.write_wallet(path, wallet, compact=True)
-    try:
-        replay = positions_near(OfflineClient([path]), captured.address)
-    except LookupError as error:  # NotAvailableOffline, NoPolymarketHistory: the file cannot replay at all
-        raise BuildError(f"{captured.address}: the written file cannot be read back ({error})") from None
-    if replay != window:
-        raise BuildError(f"{captured.address}: the written file gives another window than the capture; nothing kept")
+    for side, window in windows.items():
+        name = side or "lookup"
+        try:
+            replay = positions_near(OfflineClient([path]), captured.address, None if side is None else _cutoff_day(), side)
+        except LookupError as error:  # NotAvailableOffline, NoPolymarketHistory: the file cannot replay at all
+            raise BuildError(f"{captured.address}: the written file cannot replay its {name} window ({error})") from None
+        if replay != window:
+            raise BuildError(
+                f"{captured.address}: the written file gives another {name} window than the capture; nothing kept"
+            )
     size = path.stat().st_size
-    log(f"{captured.address}: {len(window.positions):,} Positions in the window, file {size / 1e6:.1f} MB")
-    return Built(captured.address, path, len(window.positions), window.activity_read_until, size)
+    lookup = windows[None]
+    parts = tuple((side, len(window.positions)) for side, window in windows.items() if side is not None)
+    shown = "".join(f", {side} part {count:,}" for side, count in parts)
+    log(f"{captured.address}: {len(lookup.positions):,} Positions in the window{shown}, file {size / 1e6:.1f} MB")
+    return Built(captured.address, path, len(lookup.positions), lookup.activity_read_until, size, parts)
 
 
 def _dataset(
@@ -360,11 +412,23 @@ def _dataset(
     captured: Mapping[str, Captured],
     pick: Sequence[str],
     built: Sequence[Built],
+    funnel: sample_json.FunnelFile,
 ) -> dict[str, Any]:
-    """dataset.json: the Cut-off Date, both sources with their SHA-256, and the build's checks (FR-12)."""
+    """dataset.json: the Cut-off Date, both sources with their SHA-256, and the build's checks (FR-12).
+
+    Story 4.7: the Positions in each Wallet's before and after parts, the Wallets kept to their lookup
+    window with the reason, and where the real volume list came from with its counts."""
     return {
         "cutoff": CUTOFF,
         "wallets": list(pick),
+        "parts": {item.address: dict(item.parts) for item in built if item.parts},
+        "lookup_only": {address: LOOKUP_ONLY[address] for address in pick if address in LOOKUP_ONLY},
+        "funnel": {
+            "source": f"{FUNNEL_LIST} and sample/market_*.json in {zip_path.name}",
+            "file": FUNNEL_FILE,
+            "markets": len(funnel.volumes),
+            "holder_rows": sum(map(len, funnel.holders.values())),
+        },
         "capture": {"file": zip_path.name, "sha256": capture_sha},
         "additions": {"file": additions_path.name, "sha256": additions_sha, "fetched_on": additions.fetched_on},
         "built_by": f"uv run liquidoracle build-sample <folder>/{zip_path.name}",
@@ -394,8 +458,93 @@ def _outcomes(raw: Mapping[str, Any]) -> list[str] | None:
         return None
 
 
+def real_funnel(
+    zip_path: Path,
+    captured: Mapping[str, Captured],
+    markets: Mapping[str, Market],
+    scan: Sequence[str],
+    folder: Path,
+) -> sample_json.FunnelFile:
+    """The real volume list: each completely read funnel Market a Wallet in `scan` holds, its Gamma volume,
+    and those Wallets' rows on it as Polymarket listed them, in list order (AD-14, AD-21; Story 4.7).
+
+    The capture's rows give no token: it is the one whose final price equals the row's, which a resolved
+    Market makes exactly one (AD-7). A partial Market gives no candidates (AD-9), so it is left out. Every
+    listed Market must be in a written file of `folder`, so `OfflineClient` can serve it.
+    """
+    with zipfile.ZipFile(zip_path) as archive:
+        names = set(archive.namelist())
+        if FUNNEL_LIST not in names:
+            raise BuildError(f"{zip_path.name} has no {FUNNEL_LIST}: the real Wallets cannot be put in the offline Scan")
+        funnel = json.loads(archive.read(FUNNEL_LIST))
+        prefixes = Counter(entry["conditionId"][:18] for entry in funnel)
+        shared = sorted(prefix for prefix, count in prefixes.items() if count > 1)
+        if shared:
+            raise BuildError(f"two funnel Markets share the list name {MARKET_LIST.format(shared[0])}; cannot tell their lists apart")
+        lists = {
+            entry["conditionId"]: json.loads(archive.read(name))
+            for entry in funnel
+            if (name := MARKET_LIST.format(entry["conditionId"][:18])) in names
+        }
+    wanted = set(scan)
+    volumes: dict[str, float] = {}
+    holders: dict[str, tuple[MarketHolder, ...]] = {}
+    for entry in funnel:
+        condition_id = entry["conditionId"]
+        listed = lists.get(condition_id)
+        if listed is None or listed["partial"]:
+            continue
+        rows = [row for row in listed["rows"] if row[0] in wanted]
+        if not rows:
+            continue
+        market = markets.get(condition_id)
+        if market is None:
+            raise BuildError(f"Gamma has no record of funnel Market {condition_id}")
+        holders[condition_id] = tuple(
+            _holder(row, market, parse_time(entry["closedTime"]), captured[row[0]]) for row in rows
+        )
+        volumes[condition_id] = float(entry["volumeNum"])
+    served = {c for path in folder.glob("0x*.json") for c in sample_json.read_ids(path)[1]}
+    missing = sorted(set(volumes) - served)
+    if missing:
+        raise BuildError(f"funnel Market {missing[0]} is in no written file, so the offline Scan could not read it")
+    return sample_json.FunnelFile(volumes, holders)
+
+
+def _holder(row: Sequence[Any], market: Market, funnel_closed: int, captured: Captured) -> MarketHolder:
+    """One captured holder row `[wallet, status, realized_pnl, current_size, final_price, avg_price]`, checked so
+    nothing in it comes from after the Cut-off Date (Edvard, 2026-11-27): the Market resolved before it (by Gamma
+    and by the funnel list) with a final price of exactly 0 or 1; the capture read the Wallet's activity from the
+    earlier of its resolution and the Cut-off Date on; and in that time the Wallet made no trade, split, merge,
+    combo trade, or conversion in the Market's negative-risk event. Only a redemption may come later: it pays at
+    an outcome already known before the Cut-off Date, so it adds nothing a Scan on that date could not know
+    (the row may read CLOSED where it read OPEN then, as a live Scan reads it today)."""
+    wallet, status, realized_pnl, current_size, final_price, avg_price = row
+    cut = cutoff_at(_cutoff_day())
+    where = f"{wallet} in funnel Market {market.condition_id}"
+    if not market.resolved or market.closed_time is None or max(market.closed_time, funnel_closed) >= cut:
+        raise BuildError(f"{where}: the Market did not resolve before the Cut-off Date; refusing to peek")
+    if final_price not in (0, 1) or final_price not in market.outcome_prices:
+        raise BuildError(f"{where}: final price {final_price} is not the Market's 0 or 1; refusing to peek")
+    late = min(market.closed_time, funnel_closed, cut)
+    if captured.activity_until is not None or (captured.activity_from is not None and captured.activity_from > late):
+        raise BuildError(f"{where}: the capture did not read every activity row from {late} on; refusing to peek")
+    # A conversion is about the whole negative-risk event, so its row carries the event's id (AD-10).
+    ids = {market.condition_id} | ({market.neg_risk_id} if market.neg_risk_id else set())
+    for activity in captured.activity:
+        if activity.condition_id in ids and activity.type in HOLDING_TYPES and activity.timestamp >= late:
+            raise BuildError(f"{where}: a {activity.type} row at {activity.timestamp} is not before {late}; refusing to peek")
+    for condition_id, timestamp in captured.combos:
+        if condition_id in ids and timestamp >= late:
+            raise BuildError(f"{where}: a combo row at {timestamp} is not before {late}; refusing to peek")
+    token = market.token_ids[market.outcome_prices.index(float(final_price))]
+    if token not in {listed.token_id for listed in (*captured.open_rows, *captured.closed_rows)}:
+        raise BuildError(f"{where}: token {token} is on none of the Wallet's positions lists")
+    return MarketHolder(wallet, token, status, float(realized_pnl), float(current_size), float(avg_price))
+
+
 class _Recorder:
-    """Passes the window's reads through and keeps what they returned (the trim's input)."""
+    """Passes the windows' reads through and keeps what they returned (the trim's input)."""
 
     def __init__(self, client: OfflineClient) -> None:
         self._client = client
@@ -419,51 +568,65 @@ class _Recorder:
         return self._client.markets(condition_ids)
 
 
-def _trimmed(captured: Captured, additions: Additions, markets: Mapping[str, Market]) -> tuple[SampleWallet, Window]:
-    """The window over the whole capture, and the smallest Sample Wallet that gives the same window.
+def _trimmed(
+    captured: Captured, additions: Additions, markets: Mapping[str, Market], sides: Sequence[str | None] = (None,)
+) -> tuple[SampleWallet, dict[str | None, Window]]:
+    """Each window over the whole capture, and the smallest Sample Wallet that gives the same windows.
 
-    Kept: every CLOSED row the walk read; the OPEN rows of Markets up to the window's first left-out
-    Market in the cap order (older ones cannot change which Markets fit, AD-8); the Markets of kept
-    rows; the activity rows the window keeps, and when the read was cut short also its last row, so
-    the replay stops in the same second.
+    Kept, for the lookup window: every CLOSED row the walk read; the OPEN rows of Markets up to the window's
+    first left-out Market in the cap order (older ones cannot change which Markets fit, AD-8). For the before
+    and after parts (Story 4.7): every row their walks read. Then the Markets of kept rows, and the activity
+    rows each window keeps, plus the last row of a read cut short so the replay stops in the same second.
+    Rows keep the order the reads gave them, so a lookup-only Wallet's file is the same as before Story 4.7.
     """
     full = _full_wallet(captured, additions)
-    recorder = _Recorder(OfflineClient.in_memory([full], markets.values()))
-    try:
-        window = positions_near(recorder, captured.address)
-    except NotAvailableOffline as error:
-        # Live, such a Market is simply outside the window; a file could not serve it offline.
-        raise BuildError(f"{captured.address}: Gamma has no record of a Market the window reads ({error})") from None
+    client = OfflineClient.in_memory([full], markets.values())
+    windows: dict[str | None, Window] = {}
+    open_kept: set[int] = set()  # ids of the full capture's row objects, which every read hands out
+    closed_kept: set[int] = set()
+    activity_kept: set[int] = set()
+    read_ends: list[int] = []
+    for side in sides:
+        recorder = _Recorder(client)
+        try:
+            window = positions_near(recorder, captured.address, None if side is None else _cutoff_day(), side)
+        except NotAvailableOffline as error:
+            # Live, such a Market is simply outside the window; a file could not serve it offline.
+            raise BuildError(f"{captured.address}: Gamma has no record of a Market the window reads ({error})") from None
+        windows[side] = window
+        if side is None:
+            kept_markets = _cap_prefix(window, (*recorder.open_rows, *recorder.closed_rows), markets)
+            open_kept.update(id(row) for row in recorder.open_rows if row.condition_id in kept_markets)
+        else:
+            open_kept.update(map(id, recorder.open_rows))
+        closed_kept.update(map(id, recorder.closed_rows))
+        read = recorder.activity
+        if read is not None:
+            wanted = Counter(window.activity)
+            for i, row in enumerate(read.rows):
+                if wanted[row] > 0 or (not read.complete and i == len(read.rows) - 1):
+                    wanted[row] -= 1
+                    activity_kept.add(id(row))
+            if not read.complete and read.rows:
+                read_ends.append(read.rows[-1].timestamp)
 
-    kept_markets = _cap_prefix(window, (*recorder.open_rows, *recorder.closed_rows), markets)
-    open_rows = tuple(row for row in recorder.open_rows if row.condition_id in kept_markets)
-    positions = open_rows + recorder.closed_rows
+    # The OPEN list's own order, then CLOSED newest first (the order the walks read them, ties in file order).
+    open_rows = tuple(row for row in full.positions if row.status == "OPEN" and id(row) in open_kept)
+    closed = sorted((row for row in full.positions if row.status == "CLOSED"), key=lambda row: row.last_event_at, reverse=True)
+    positions = open_rows + tuple(row for row in closed if id(row) in closed_kept)
     market_ids = sorted({row.condition_id for row in positions})
-
-    read = recorder.activity
-    activity: tuple[ActivityRow, ...] = ()
-    activity_until = captured.activity_until
-    if read is not None:
-        wanted = Counter(window.activity)
-        kept: list[ActivityRow] = []
-        for i, row in enumerate(read.rows):
-            last_of_short_read = not read.complete and i == len(read.rows) - 1
-            if wanted[row] > 0 or last_of_short_read:
-                wanted[row] -= 1
-                kept.append(row)
-        activity = tuple(kept)
-        if not read.complete and read.rows:
-            activity_until = read.rows[-1].timestamp
     wallet = SampleWallet(
         address=captured.address,
         name=name_of(captured.address),
-        activity=activity,
+        activity=tuple(row for row in full.activity if id(row) in activity_kept),
         positions=positions,
         markets=tuple(markets[c] for c in market_ids),
         activity_from=captured.activity_from,
-        activity_until=activity_until,
+        # The earliest second a read was cut short in; the replay check refuses a file where that cuts
+        # another window's read shorter than the capture did.
+        activity_until=min(read_ends) if read_ends else captured.activity_until,
     )
-    return wallet, window
+    return wallet, windows
 
 
 def _cap_prefix(window: Window, rows: Sequence[ListedPosition], markets: Mapping[str, Market]) -> set[str]:

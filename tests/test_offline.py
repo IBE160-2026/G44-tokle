@@ -9,6 +9,7 @@ job queue and worker -> the Watchlist (FR-16).
 from __future__ import annotations
 
 import json
+import shutil
 from collections.abc import Iterator
 from dataclasses import replace
 from datetime import date
@@ -20,9 +21,9 @@ import liquidoracle.__main__ as cli
 from liquidoracle.data import offline as offline_module
 from liquidoracle.core.positions import build_positions
 from liquidoracle.core.skilltest import skill_test
-from liquidoracle.data import sample_json, synthetic
+from liquidoracle.data import real_sample, sample_json, synthetic
 from liquidoracle.data.errors import NotAvailableOffline
-from liquidoracle.data.offline import OfflineClient, holder_rows, sample_files, sample_funnel
+from liquidoracle.data.offline import OfflineClient, holder_rows, sample_files, sample_funnels
 from liquidoracle.data.polymarket import PolymarketClient
 from liquidoracle.data.store import LIVE_DB, OFFLINE_DB, Store
 from liquidoracle.data.window import cutoff_at
@@ -332,7 +333,7 @@ DAY = 86_400
 
 
 def funnel_client(root: Path) -> OfflineClient:
-    return OfflineClient(sample_files(root), funnel=sample_funnel(root))
+    return OfflineClient(sample_files(root), funnels=sample_funnels(root))
 
 
 def test_ad21_offline_market_set_is_the_anchors_by_volume(sample_root: Path) -> None:
@@ -354,7 +355,7 @@ def test_ad21_offline_market_set_is_the_anchors_by_volume(sample_root: Path) -> 
 def test_ad21_offline_market_set_without_a_volume_list_is_empty(sample_root: Path) -> None:
     """AD-21: a client with no volume list (or a missing file) has no Market set, so a Scan finds no candidates."""
     assert OfflineClient(sample_files(sample_root)).funnel_markets(0, 2**40, 100) == ()
-    assert OfflineClient(sample_files(sample_root), funnel=sample_root / "missing.json").funnel_markets(0, 2**40, 100) == ()
+    assert OfflineClient(sample_files(sample_root), funnels=(sample_root / "missing.json",)).funnel_markets(0, 2**40, 100) == ()
     with pytest.raises(ValueError, match="count"):
         funnel_client(sample_root).funnel_markets(0, 1, 0)
     with pytest.raises(ValueError, match="window"):
@@ -499,9 +500,118 @@ def test_ad14_offline_scan_finds_coin_flippers_written_after_the_start(tmp_path:
     "not loaded" page says to run it then). The Scan's N and the anchor holder lists then include them,
     also after both were first read without them."""
     synthetic.write_small(tmp_path)
-    client = OfflineClient(sample_files(tmp_path), list_files=lambda: sample_files(tmp_path), funnel=sample_funnel(tmp_path))
+    client = OfflineClient(sample_files(tmp_path), list_files=lambda: sample_files(tmp_path), funnels=sample_funnels(tmp_path))
     assert len(client.addresses()) == len(synthetic.SMALL_NAMES)
     assert len(client.market_holders(ANCHOR_IDS[0], "CLOSED").rows) == len(synthetic.WATCHLIST_NAMES)
     synthetic.write_coin_flippers(tmp_path, 5)
     assert len(client.market_holders(ANCHOR_IDS[0], "CLOSED").rows) == len(synthetic.WATCHLIST_NAMES) + 5
     assert len(client.addresses()) == len(synthetic.SMALL_NAMES) + 5
+
+
+# --- The real Wallets in the offline Scan (Story 4.7; AD-9, AD-14, AD-21) ------------------------
+
+REAL_FUNNEL = REPO / offline_module.REAL_DIR / synthetic.FUNNEL_FILE
+SCAN_REAL = [a for a in real_sample.PICK if a not in real_sample.LOOKUP_ONLY]
+
+
+def committed_files() -> list[Path]:
+    """The committed Sample Wallets (the real ones and the small Synthetic ones), no coin-flippers."""
+    real = sorted((REPO / offline_module.REAL_DIR).glob("0x*.json"))
+    small = sorted(p for p in (REPO / synthetic.SMALL_DIR).glob("*.json") if p.name not in offline_module.NOT_WALLET_FILES)
+    return real + small
+
+
+def test_ad9_real_funnel_markets_list_the_stored_rows() -> None:
+    """AD-9, AD-21 (Story 4.7): a real funnel Market's holder lists are the rows stored as Polymarket listed them,
+    in list order, nothing derived from the real files; only the 8 Wallets in the Scan hold rows."""
+    stored = sample_json.read_funnel(REAL_FUNNEL)
+    assert len(stored.volumes) == 50 and sum(map(len, stored.holders.values())) == 65
+    client = OfflineClient(committed_files(), funnels=sample_funnels(REPO))
+    for condition_id, rows in stored.holders.items():
+        for status in ("CLOSED", "OPEN"):
+            assert client.market_holders(condition_id, status) == Read(tuple(r for r in rows if r.status == status), True)
+    assert {row.wallet for rows in stored.holders.values() for row in rows} == set(SCAN_REAL)
+
+
+def test_ad21_committed_real_rows_hold_nothing_from_after_the_cutoff() -> None:
+    """AD-21 (Edvard's no-peeking check, on the committed files): every real funnel Market resolved before the Cut-off
+    Date, is served by a committed file, and each holder's token is one it lists, with a final price of exactly 0 or 1.
+    The committed files keep only the activity their windows read, so this cannot see every late row: the build's own
+    check, run on the whole capture (`test_real_sample.py`), is the guard; this re-checks the rows that were kept."""
+    stored = sample_json.read_funnel(REAL_FUNNEL)
+    wallets = {a: sample_json.read_wallet(REPO / offline_module.REAL_DIR / f"{a}.json") for a in SCAN_REAL}
+    markets = {m.condition_id: m for w in wallets.values() for m in w.markets}
+    for condition_id, rows in stored.holders.items():
+        market = markets[condition_id]
+        assert market.resolved and market.closed_time is not None and market.closed_time < DEFAULT_CUT
+        late = min(market.closed_time, DEFAULT_CUT)
+        for row in rows:
+            wallet = wallets[row.wallet]
+            assert row.token_id in {p.token_id for p in wallet.positions}
+            assert market.outcome_prices[market.token_ids.index(row.token_id)] in (0.0, 1.0)
+            assert not [a for a in wallet.activity if a.condition_id == condition_id
+                        and a.type in real_sample.HOLDING_TYPES and a.timestamp >= late]
+
+
+def test_ad14_offline_scan_finds_the_eight_real_wallets(tmp_path: Path) -> None:
+    """AD-14, AD-21 (Story 4.7, matrix "Offline Scan" and "Heavy two"): an offline Scan of the committed Sample
+    Wallets with the default Cut-off Date uses the 3 anchors and the 50 real funnel Markets, finds the 8 real
+    Wallets in the Scan and the four, never 0xd218e4 or 0x63d43b, gives each real candidate its before part's
+    result, and still puts the four on the Watchlist."""
+    client = OfflineClient(committed_files(), funnels=sample_funnels(REPO))
+    db = Store(tmp_path / OFFLINE_DB)
+    try:
+        jobs = Jobs(db)
+        jobs.start_scan(date(2025, 7, 1), len(client.addresses()), seed=SEED)
+        assert Worker(client, jobs).run_once()
+        (scan,) = db.scans()
+        assert scan.step.value == "done"
+        markets = db.scan_markets(scan.scan_id)
+        assert len(markets) == 53 and all(m.state == "used" for m in markets)
+        four = {synthetic.address_of(n) for n in synthetic.WATCHLIST_NAMES}
+        assert set(db.scan_candidates(scan.scan_id)) == set(SCAN_REAL) | four
+        before = {r.wallet for r in db.scan_results(scan.scan_id) if r.scope == "scan_before"}
+        assert set(SCAN_REAL) <= before
+        view = Watchlists(db).view(scan.scan_id)
+        assert view is not None and four <= {row.address for row in view.rows}
+        assert view.header.title == "Scan of 12 Wallets"  # with the 1,000 coin-flippers, 1,012 (spec, checked by hand)
+    finally:
+        db.close()
+
+
+def test_ad13_offline_sources_read_both_volume_lists(tmp_path: Path) -> None:
+    """AD-13, AD-14 (review of Story 4.7): `open_sources` gives the offline client both volume lists, so the real
+    funnel Markets reach the Scan: the 3 anchors and the 50 real Markets."""
+    shutil.copytree(REPO / offline_module.REAL_DIR, tmp_path / offline_module.REAL_DIR)
+    synthetic.write_small(tmp_path)
+    sources = cli.open_sources(Settings(offline=True), tmp_path)
+    try:
+        assert len(sources.client.funnel_markets(DEFAULT_CUT - 90 * DAY, DEFAULT_CUT, 100)) == 53
+    finally:
+        sources.store.close()
+
+
+def test_ad14_a_market_on_two_volume_lists_is_refused(tmp_path: Path) -> None:
+    """AD-14 (Story 4.7): the two volume lists are merged; a Market on both is an error, so neither silently wins."""
+    first, second = tmp_path / "a" / "funnel-markets.json", tmp_path / "b" / "funnel-markets.json"
+    sample_json.write_funnel(first, {ANCHOR_IDS[0]: 1.0})
+    sample_json.write_funnel(second, {ANCHOR_IDS[0]: 2.0}, {})
+    with pytest.raises(ValueError, match="also on another volume list"):
+        OfflineClient((), funnels=(first, second)).funnel_markets(0, 2**40, 100)
+
+
+@pytest.mark.parametrize(
+    ("document", "match"),
+    [
+        ({"volumes": {}, "holders": {"0xab": []}}, "no volume"),
+        ({"volumes": {"0xab": 1.0}, "holders": {"0xab": [{"wallet": "0x1"}]}}, "holder row keys"),
+        ({"volumes": {"0xab": 1.0}, "extra": 1}, "keys"),
+    ],
+)
+def test_ad14_volume_list_is_read_strictly(document: dict, match: str, tmp_path: Path) -> None:
+    """AD-14: a volume list with holder rows for a Market it does not list, a malformed holder row or an unknown key
+    is a ValueError naming the file, never a silent default."""
+    path = tmp_path / "funnel-markets.json"
+    path.write_text(json.dumps(document), encoding="utf-8")
+    with pytest.raises(ValueError, match=match):
+        sample_json.read_funnel(path)
