@@ -67,13 +67,13 @@ def test_ux_dr30_the_estimate_follows_the_number(make: MakePage) -> None:
     """UX-DR30: scans.js updates the rough estimate as the Number of Wallets changes, and hides it for a number not allowed."""
     page = make()
     estimate = page.locator("#wallets-estimate")
-    expect(estimate).to_have_text("Rough estimate: about 2 hours at 5 requests per second")
+    expect(estimate).to_have_text("Rough estimate: about 2.5 hours at 5 requests per second")
     page.fill("#wallets", "10")
     expect(estimate).to_have_text("Rough estimate: about 10 minutes at 5 requests per second", timeout=WAIT)
     page.fill("#wallets", "5000")
     expect(estimate).to_be_hidden(timeout=WAIT)
     page.fill("#wallets", "500")
-    expect(estimate).to_have_text("Rough estimate: about 4.5 hours at 5 requests per second", timeout=WAIT)
+    expect(estimate).to_have_text("Rough estimate: about 6 hours at 5 requests per second", timeout=WAIT)
 
 
 def test_ux_dr30_the_warning_shows_when_a_recent_date_is_chosen_and_one_submit_starts(

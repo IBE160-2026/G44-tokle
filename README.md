@@ -6,7 +6,7 @@ The app only reads public data. It never places orders, holds keys or touches a 
 
 Course project in **IBE160 Programmering med KI** at Høgskolen i Molde, autumn 2026. Group G44: Edvard Tokle.
 
-> **Status: stage 1 done (25 November 2026), and the stage 2 minimum done (27 November 2026).** Every stage 1 feature works, offline and live. Of stage 2, the Scan and the Hold-up Test work offline on the Sample Dataset, and the Hold-up Test has been run on a live Scan of 200 real Wallets (27 November 2026, after a 10-Wallet trial; result under *The Hold-up Test on a live Scan* below); the Copy Test is not done yet (plan: [`_bmad-output/planning-artifacts/epics.md`](_bmad-output/planning-artifacts/epics.md)). All tests pass.
+> **Status: stage 1 done (25 November 2026), and the stage 2 minimum done (27 November 2026).** Every stage 1 feature works, offline and live. Of stage 2, the Scan and the Hold-up Test work offline on the Sample Dataset, and the Hold-up Test has been run on a live Scan of 200 real Wallets (27 November 2026, after a 10-Wallet trial; result under *The Hold-up Test on a live Scan* below); the Copy Test is being built: a Scan now works out and stores its per-Wallet numbers, but its luck check and its page are not built yet, so the app shows nothing of it (plan: [`_bmad-output/planning-artifacts/epics.md`](_bmad-output/planning-artifacts/epics.md)). All tests pass.
 
 What stage 1 does (FR-1 to FR-14 in the PRD):
 
@@ -18,12 +18,13 @@ What stage 1 does (FR-1 to FR-14 in the PRD):
 - Run with no network in Offline Mode (FR-14) on the committed Sample Dataset: 10 real Polymarket Wallets (FR-12) and the Synthetic Wallets, made-up Wallets whose right answers are known (FR-13).
 - Work in the dark or light theme, by keyboard, without JavaScript, and on screens from 320 px wide.
 
-Stage 2 so far (FR-16 and FR-17; the Copy Test, FR-18, is not built):
+Stage 2 so far (FR-16, FR-17 and the first part of the Copy Test, FR-18a; its luck check, FR-18b, and its page are not built):
 
 - **Scan** (FR-16): *Scan wallets* in the top bar starts a Scan of the top Wallets by profit made before a Cut-off Date you choose, shows its progress, and can resume one that was stopped.
 - **Watchlist** (FR-16): when a Scan has finished, its number in the Watchlist column of *Your Scans* opens its Watchlist: the Wallets rated *Skilled (high confidence)*, sorted by p-value, and how many would pass by luck alone. Click a Wallet there to see its Verdict for that Scan.
 - **Hold-up Test** (FR-17): next to the Watchlist, a finished Scan has a *Hold-up Test* tab. It tests the Wallets that passed before the Cut-off Date again, as one group, on the bets they made after it, beside a Comparison Group of the Wallets that did not pass. What it shows on the Sample Dataset, and what that can and cannot tell you, is under *The Hold-up Test on the Sample Dataset* below. What it showed on a live Scan of 200 real Wallets is under *The Hold-up Test on a live Scan*.
 - **In Offline Mode**, *Start Scan* scans the Sample Dataset with its Cut-off Date, 1 July 2025. It takes about a minute and puts at least the sharp trader, steady sharp, forecaster and speed trader on the Watchlist, next to the few coin-flippers that pass by luck alone (Story 4.6). It also scans 8 of the 10 real Wallets, found through the same Markets they were first picked from (Story 4.7); 0xd218e4 and 0x63d43b are left out, see *Where the real Sample Wallets come from*.
+- **Copy Test, first part** (FR-18a, Story 6.2): as its last step a Scan now works out what a follower would have made by copying each Wallet's buys 1, 5 or 30 minutes late, on the bets made after the Cut-off Date. Nothing of it is on a page yet. What it does and where its limits are is under *The Copy Test so far* below.
 
 How the success metrics were checked: [`docs/stage-1-check.md`](docs/stage-1-check.md). The accessibility check: [`docs/accessibility-check.md`](docs/accessibility-check.md).
 
@@ -141,9 +142,27 @@ What this result can and cannot tell you:
 - **The Wallets were picked for profit, from a limited pool.** They are the best 200 of the 599 shortlisted in 77 large Markets, and many of them made little. Wallets that made their money in the 23 Markets left out can be missing, and so can the very largest Wallets, which the app could not read in full. This is not a sample of all Polymarket traders.
 - **Most of the 200 could not be tested.** 129 of them had fewer than 30 resolved bets before the date that the test could count, so they got *Not enough data* and are in neither group. The result says nothing about them.
 - **Some Wallets were cut short.** A Wallet's bets before the date are capped at the latest 2,000 (8 of the 200 reached that, 1 Passer among them) and its bets after the date at the first 2,000. 4 Wallets in the two groups were not fully read (1 Passer, 3 in the Comparison Group).
-- **"Skilled" means "unlikely to be luck at the prices paid".** It does not say why a Wallet wins (see "What this test can't see" on every Verdict card), it does not say the Wallet will keep winning, and it does not say that copying it would have made money: that is the Copy Test (FR-18), which is not built. It is not financial advice.
+- **"Skilled" means "unlikely to be luck at the prices paid".** It does not say why a Wallet wins (see "What this test can't see" on every Verdict card), it does not say the Wallet will keep winning, and it does not say that copying it would have made money: that is the Copy Test (FR-18), which is not finished: no page shows it yet (see *The Copy Test so far*). It is not financial advice.
 
 To run a Scan like it yourself, start the app with `uv run liquidoracle run` and keep that terminal open, open *Scan wallets*, set the Cut-off Date to 1 July 2025 (the number of Wallets is already 200) and press *Start Scan*. Expect hours, and about 1.1 GB of disk for `instance/live.db`. If Polymarket stops answering, the Scan stops, and *Resume Scan* on the same page carries on. Do not trust the page's time estimate: it said about 10 minutes for the trial that took 2 hours 20 minutes, and then, going by that trial, about 25 hours for the Scan that took 2 hours 44 minutes. Polymarket's data changes, so your numbers will not match these exactly. The Scan above is kept in the author's `instance/live.db`, which is never committed; a copy with a SHA-256 checksum is kept outside the repository.
+
+## The Copy Test so far
+
+The Copy Test asks whether a skilled Wallet is worth following when you always arrive late. It is on paper only: the app never trades. Story 6.2 built the per-Wallet part (FR-18a). The check that says whether the result could be luck (the Random Group Check, FR-18b) and the page are the next stories, so today the numbers are stored and not shown.
+
+- **What a Scan does now.** After the Hold-up Test it runs a Copy phase. For each Wallet it takes the bets made after the Cut-off Date (all of them up to 100, else 100 drawn with the Seed, the same every time), asks Polymarket for the one-minute price history around each buy, and works out what a follower buying 1, 5 or 30 minutes later would have made. The progress bar says "Copy Test: 1,200 of 18,000 prices".
+- **Who is priced.** Every Wallet that passed before the Cut-off Date, and every other Wallet of the Scan with at least 10 tested bets after it. The rest could never be in the group the luck check draws from, so no prices are fetched for them.
+- **The follower's price.** The recorded price one delay after the buy, plus half a cent because the recorded price is the midpoint between buyers and sellers, never more than 1, plus the Market's fee. A bet bought in several fills is copied fill by fill. If any of its fills has no recorded price at a delay (nothing recorded in the two minutes before), the whole bet is left out of that delay and counted.
+- **Time.** The form's rough estimate counts about 50 price requests per Wallet, so a Scan of 200 Wallets is about half an hour longer than before. Prices are kept for good, so a Scan that stops while fetching them resumes without asking for a stored price again.
+- **If the Copy phase itself goes wrong.** When Polymarket stops answering, the Scan stops and can be resumed, as in every phase. Any other error in this last phase is written to the log and the Scan still finishes, with its Watchlist and Hold-up Test and without a Copy Test, so a long Scan is not lost at its last step.
+- **A Scan that finished before this existed** (the live Scan above) keeps everything it has. The code can run the Copy phase for it alone, from the data it stored, without reading any Wallet again. Nothing in the app starts that yet: the button comes with the Copy Test page, and until then only the tests do. It was tried by hand on a copy of the live database: the change to the new layout kept every row, and one real Wallet's 32 later bets were priced with 36 requests in 7 seconds (the counts are in [`docs/ai-logs/2026-11-28-story-6-2.md`](docs/ai-logs/2026-11-28-story-6-2.md); the copy is not in the repository).
+
+**Limits to know about:**
+
+- **The fee is today's rate.** The follower's fee uses the rate Polymarket lists for the Market today. Polymarket has changed rates, so a follower back then may have paid another fee.
+- **The half cent is an allowance, not a measurement** for each Market: it comes from large liquid Markets, thin ones may cost more, and the follower's own effect on the price is ignored. So the follower's profit is an upper bound.
+- **Offline, most bets have no prices yet.** In the Sample Dataset only the forecaster and the speed trader have price history around the buys they made after the Cut-off Date, so only they get numbers: a follower of the speed trader has lost a little at every delay, a follower of the forecaster is still in profit at 30 minutes. The real Sample Wallets' prices are added in a later story; until then their bets are counted as left out, never priced at a guess.
+- **The maths was checked against a calculation made without the app.** A separate AI helper, given only the PRD and a hand-made set of three bets, worked out the follower's profit step by step; the app's numbers equal its numbers to the cent (`tests/reference/follower-pnl-*`, `tests/test_reference_follower.py`). That covers the arithmetic. In the set every buy has a price at exactly each delay, so the rules for a missing or older price are checked only by tests written with the app.
 
 ## Settings and keys
 

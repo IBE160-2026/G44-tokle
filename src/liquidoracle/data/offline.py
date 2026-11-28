@@ -251,7 +251,7 @@ class OfflineClient:
         """The Sample Dataset's price points of one outcome token in [start, end], oldest first (AD-14, AD-24).
 
         The points are served as stored, one per second at most; a token with no stored points gives none,
-        as live when Polymarket has no price, so its buys are left out and counted (FR-18c). A request the
+        as live when Polymarket has no price, so its buys' Positions are left out and counted (FR-18c). A request the
         live client refuses as a bug (a token id that is not a number, a window over 14 days or ending before
         it starts) is refused here too. Two files that give one token two prices for the same second are an error.
         """

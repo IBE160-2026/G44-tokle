@@ -2,7 +2,9 @@
 
 A lookup that needs a fetch is a `job` row. `Jobs.queue_lookup` inserts it (or joins the Wallet's
 open job) and wakes the worker; the page then polls the job's progress. A Scan is a `scan` row
-and a job (`Jobs.start_scan`); Resume adds a new job for the same Scan (`Jobs.resume_scan`). The
+and a job (`Jobs.start_scan`); Resume adds a new job for the same Scan (`Jobs.resume_scan`). A
+finished Scan that has no Copy Test gets one from a job of its own kind (`Jobs.start_copy_test`,
+Story 6.2), which runs only the Copy phase. The
 `Worker` is one daemon thread, started only by `liquidoracle run` (AD-23), that claims one queued
 job at a time with an atomic update. Between two units of a Scan's work it runs every waiting
 lookup first.
@@ -12,14 +14,15 @@ from __future__ import annotations
 
 import logging
 import threading
+from collections.abc import Callable
 from datetime import date
 
-from liquidoracle.data.client import FunnelClient
+from liquidoracle.data.client import ScanClient
 from liquidoracle.data.errors import NoPolymarketHistory, PolymarketUnavailable
-from liquidoracle.data.store import LOOKUP, NO_HISTORY, SCAN, Job, JobStatus, Store
+from liquidoracle.data.store import COPY_TEST, LOOKUP, NO_HISTORY, SCAN, Job, JobStatus, Store
 from liquidoracle.data.window import cutoff_at
 from liquidoracle.services.fetch import fetch_wallet
-from liquidoracle.services.scan import RANKING, STARTING, run_scan
+from liquidoracle.services.scan import COPY, COPY_MESSAGE, RANKING, STARTING, run_copy_test, run_scan
 
 log = logging.getLogger(__name__)
 
@@ -67,6 +70,18 @@ class Jobs:
             self.wake()
         return job_id
 
+    def start_copy_test(self, scan_id: int) -> int | None:
+        """A Copy Test job for a finished Scan that has none (Edvard, 2026-11-28; AD-5), and wake the worker.
+
+        None when it may not start: the Scan is unknown, not finished, rebuilt or already has a Copy
+        Test, or a Scan or Copy Test job is queued or running. After a stopped or interrupted Copy
+        Test job, calling this again goes on from the stored prices.
+        """
+        job_id = self.store.queue_copy_test(scan_id, phase=COPY, message=COPY_MESSAGE)
+        if job_id is not None:
+            self.wake()
+        return job_id
+
     def wake(self) -> None:
         """Wake the worker if it is waiting."""
         self._wake.set()
@@ -80,7 +95,7 @@ class Jobs:
 class Worker:
     """The one worker thread (AD-5). Tests call `run_once` directly instead of starting the thread."""
 
-    def __init__(self, client: FunnelClient, jobs: Jobs) -> None:
+    def __init__(self, client: ScanClient, jobs: Jobs) -> None:
         self._client = client
         self._jobs = jobs
         self._store = jobs.store
@@ -117,7 +132,9 @@ class Worker:
 
     def _run(self, job: Job) -> None:
         if job.kind == SCAN and job.scan_id is not None:
-            self._run_scan(job, job.scan_id)
+            self._run_scan_job(job, job.scan_id, run_scan, "Scan")
+        elif job.kind == COPY_TEST and job.scan_id is not None:
+            self._run_scan_job(job, job.scan_id, run_copy_test, "Copy Test of Scan")
         elif job.kind == LOOKUP and job.wallet is not None:
             self._run_lookup(job, job.wallet)
         else:
@@ -129,15 +146,17 @@ class Worker:
         while (job := self._store.claim_next_lookup()) is not None:
             self._run(job)
 
-    def _run_scan(self, job: Job, scan_id: int) -> None:
-        """One run of a Scan (Story 4.3): `stopped` keeps its progress so the page can say how far it got."""
+    def _run_scan_job(self, job: Job, scan_id: int, work: Callable[..., None], what: str) -> None:
+        """One run of a Scan (`run_scan`, Story 4.3) or of its Copy phase alone (`run_copy_test`, Story 6.2);
+        `work` is one of those two and `what` names it in the log.
+        `stopped` keeps its progress so the page can say how far it got."""
         try:
-            run_scan(self._client, self._store, scan_id, job_id=job.id, between=self.run_waiting_lookups)
+            work(self._client, self._store, scan_id, job_id=job.id, between=self.run_waiting_lookups)
         except PolymarketUnavailable as error:
-            log.warning("Scan %d stopped: %s", scan_id, error)
+            log.warning("%s %d stopped: %s", what, scan_id, error)
             self._store.finish_job(job.id, JobStatus.STOPPED, message=FINISHED[JobStatus.STOPPED], keep_progress=True)
         except Exception:  # a bug, or a database that broke: logged, never shown raw; no Resume (AD-5)
-            log.exception("Scan %d failed", scan_id)
+            log.exception("%s %d failed", what, scan_id)
             self._store.finish_job(job.id, JobStatus.FAILED, message=FINISHED[JobStatus.FAILED], keep_progress=True)
         else:
             self._store.finish_job(job.id, JobStatus.DONE, message=FINISHED[JobStatus.DONE])

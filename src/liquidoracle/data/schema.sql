@@ -73,7 +73,8 @@ CREATE TABLE market (
 CREATE INDEX market_by_neg_risk ON market (neg_risk_id);
 
 -- Background work (AD-5): one row per lookup that needs a fetch (Story 2.5) and per run of a Scan (Story 4.3;
--- kind 'scan', wallet NULL, scan_id set: Resume adds a new row for the same Scan).
+-- kind 'scan', wallet NULL, scan_id set: Resume adds a new row for the same Scan). Kind 'copy' (Story 6.2) runs
+-- only the Copy phase, for a Scan that was finished without a Copy Test.
 -- status: queued, running, done, interrupted, stopped, failed. result: 'no_history' when a finished
 -- lookup found no Polymarket history (nothing is stored then). done, total, phase and message are the
 -- progress JSON of GET /jobs/<id>/progress.
@@ -99,6 +100,8 @@ CREATE INDEX job_by_scan ON job (scan_id, id);
 -- step is how far it got: created, markets (the Market set is stored), shortlisted, ranked (top N marked),
 -- done (every phase finished). candidate_count counts the Wallets in the used Markets, set with the shortlist.
 -- data_rebuilt is 1 when a schema change could not keep its snapshots: it cannot resume (AD-6).
+-- copied_at is when its Copy Test results were stored (Story 6.2); NULL for a Scan with no Copy Test, which is
+-- how a Scan finished before version 9 comes out of the schema change.
 CREATE TABLE scan (
     scan_id         INTEGER PRIMARY KEY AUTOINCREMENT,
     cutoff          INTEGER NOT NULL,
@@ -107,7 +110,8 @@ CREATE TABLE scan (
     as_of           INTEGER NOT NULL,
     step            TEXT    NOT NULL,
     candidate_count INTEGER,
-    data_rebuilt    INTEGER NOT NULL DEFAULT 0
+    data_rebuilt    INTEGER NOT NULL DEFAULT 0,
+    copied_at       INTEGER
 );
 
 -- The Scan's Market set in volume order (AD-21). state is NULL until both lists are read, then 'used' or
@@ -185,6 +189,38 @@ CREATE TABLE group_result (
     dropped        INTEGER NOT NULL,
     not_fully_read INTEGER NOT NULL,
     PRIMARY KEY (scan_id, scope, group_name)
+);
+
+-- A Scan's Copy Test, one row per priced Wallet (FR-18a, AD-22): every Before-Cut-off Passer and every other
+-- top-N Wallet with at least the Minimum After-bets. after_positions is M, the tested Positions of its after
+-- part as the Scan froze it; sampled is N, its Copy Sample ("priced N of M"), drawn with the Scan's Seed.
+-- not_fully_read: its before or after part was not fully read (AD-9).
+CREATE TABLE copy_sample (
+    scan_id         INTEGER NOT NULL REFERENCES scan (scan_id) ON DELETE CASCADE,
+    wallet          TEXT    NOT NULL,
+    cutoff          INTEGER NOT NULL,
+    seed            INTEGER NOT NULL,
+    after_positions INTEGER NOT NULL,
+    sampled         INTEGER NOT NULL CHECK (sampled BETWEEN 0 AND after_positions),
+    not_fully_read  INTEGER NOT NULL,
+    PRIMARY KEY (scan_id, wallet)
+);
+
+-- That Wallet's result at one Copy Delay (seconds: 60, 300, 1800). priced are the Copy Sample Positions whose
+-- every buy fill has a recorded price one delay later; left_out the others, which are in none of the sums.
+-- follower_pnl and spent are the Follower PnL and the money the follower spent (Spread Allowance and Follower
+-- Fee included); the Follower Return is their ratio. own_pnl is the Wallet's own Real PnL on the priced Positions.
+CREATE TABLE copy_result (
+    scan_id      INTEGER NOT NULL,
+    wallet       TEXT    NOT NULL,
+    delay        INTEGER NOT NULL CHECK (delay > 0),
+    priced       INTEGER NOT NULL CHECK (priced >= 0),
+    left_out     INTEGER NOT NULL CHECK (left_out >= 0),
+    follower_pnl REAL    NOT NULL,
+    spent        REAL    NOT NULL CHECK (spent >= 0),
+    own_pnl      REAL    NOT NULL,
+    PRIMARY KEY (scan_id, wallet, delay),
+    FOREIGN KEY (scan_id, wallet) REFERENCES copy_sample (scan_id, wallet) ON DELETE CASCADE
 );
 
 -- Price history for the Copy Test (FR-18c, AD-24): the one-minute price points of one outcome token, kept for

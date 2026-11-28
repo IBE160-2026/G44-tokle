@@ -63,3 +63,7 @@ class PriceClient(Protocol):
         """The one-minute price points of one outcome token in [start, end], oldest first, never a coarser
         grain; the window is at most 14 days (AD-14, AD-24)."""
         ...
+
+
+class ScanClient(FunnelClient, PriceClient, Protocol):
+    """What a whole Scan needs, its Copy phase included (AD-5): the worker's client. Both clients are one."""

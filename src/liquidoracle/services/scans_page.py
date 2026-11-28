@@ -21,7 +21,7 @@ from enum import StrEnum
 from liquidoracle.core import phrases
 from liquidoracle.data.polymarket import GAMMA_LIST_PAGES
 from liquidoracle.data.real_sample import CUTOFF as SAMPLE_CUTOFF
-from liquidoracle.data.store import Job, JobStatus, Scan, ScanStep, Store
+from liquidoracle.data.store import COPY_TEST, Job, JobStatus, Scan, ScanStep, Store
 from liquidoracle.data.window import cutoff_day
 from liquidoracle.records import Verdict
 from liquidoracle.services.jobs import FINISHED, Jobs
@@ -48,6 +48,9 @@ RUNNING_TITLE = "Scan · LiquidOracle"  # after "84/200 · " while a Scan runs (
 # The rough time estimate (UX-DR30): the requests a Scan plans today, at the set pace (Edvard, 2026-11-26).
 MARKET_REQUESTS = 15  # [ASSUMPTION] typical pages for one Market's two holder lists (at most 30)
 PART_REQUESTS = 40  # [ASSUMPTION] typical requests for one Wallet part: positions pages, Gamma batches, activity pages
+# [ASSUMPTION] price requests per Wallet in the Copy phase (Story 6.2): the live Scan of 200 Wallets had at most
+# 9,644 Copy Sample Positions, at about one request per token (measured 2026-11-28).
+COPY_REQUESTS = 50
 _DAY = timedelta(days=1)
 _WHOLE = re.compile(r"\d{1,9}")
 _ISO_DAY = re.compile(r"\d{4}-\d{2}-\d{2}")
@@ -176,14 +179,31 @@ class ScansPage:
         planned = planned_requests(number)
         for scan in self._store.scans():  # newest first: the last finished Scan whose time is known
             finished = scan.step is ScanStep.DONE and not scan.data_rebuilt
-            seconds = self._store.scan_seconds(scan.scan_id) if finished else None
+            seconds, copy = self._pace(scan) if finished else (None, False)
             if seconds:
-                time = phrases.rough_time(planned * seconds / planned_requests(scan.size))
+                time = phrases.rough_time(planned * seconds / planned_requests(scan.size, copy=copy))
                 return f"Rough estimate: {time}, based on your last Scan"
         unit = "request" if self._rate == 1 else "requests"
         return f"Rough estimate: {phrases.rough_time(planned / self._rate)} at {self._rate:g} {unit} per second"
 
     # --- helpers ---------------------------------------------------------------------------------
+
+    def _pace(self, scan: Scan) -> tuple[int | None, bool]:
+        """A finished Scan's known time in seconds, and whether that time covers its price requests.
+
+        The Scan's own runs always count. Its Copy Test jobs (Story 6.2) count only once it has its Copy
+        Test and their time is known: a stopped or failed attempt on a Scan that still has none, or one
+        the app was closed on, leaves the Scan's own time as it was, measured without the price requests.
+        """
+        own = self._store.scan_seconds(scan.scan_id)
+        if not own or not scan.copied:
+            return own, False
+        later = self._store.scan_seconds(scan.scan_id, kind=COPY_TEST)
+        if later is None:
+            return own, False
+        if later:
+            return own + later, True
+        return own, True  # no Copy Test job: the Scan ran the Copy phase itself
 
     def _today(self) -> date:
         return datetime.fromtimestamp(self._store.now(), UTC).date()
@@ -246,10 +266,12 @@ def status_text(scan: Scan) -> str:
     return "Failed"  # failed, or a job marked done on a Scan that never finished
 
 
-def planned_requests(size: int) -> int:
+def planned_requests(size: int, *, copy: bool = True) -> int:
     """The requests a Scan of `size` Wallets plans today (Edvard, 2026-11-26): the Gamma list, the Market
-    reads, 3 x N before parts and N after parts. Epic 6 adds the Copy Sample prices with its phase."""
-    return GAMMA_LIST_PAGES + MARKET_COUNT * MARKET_REQUESTS + (SHORTLIST_FACTOR + 1) * size * PART_REQUESTS
+    reads, 3 x N before parts, N after parts and the Copy phase's price requests (Story 6.2). `copy` False
+    leaves the price requests out: what a Scan without a Copy Test did."""
+    planned = GAMMA_LIST_PAGES + MARKET_COUNT * MARKET_REQUESTS + (SHORTLIST_FACTOR + 1) * size * PART_REQUESTS
+    return planned + (size * COPY_REQUESTS if copy else 0)
 
 
 def _check_size(text: str) -> tuple[int | None, str | None]:

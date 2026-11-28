@@ -377,6 +377,53 @@ class GroupResult:
 
 
 @dataclass(frozen=True, slots=True)
+class FollowerResult:
+    """One Wallet's Copy Test numbers at one Copy Delay, over its Copy Sample (FR-18a).
+
+    `delay` is the Copy Delay in seconds. `priced` are the Copy Sample Positions whose every buy fill
+    has a recorded price one delay later; `left_out` the others, which are in none of the sums.
+    `follower_pnl` and `spent` are the Glossary's Follower PnL and the money the follower spent, Spread
+    Allowance and Follower Fee included. `own_pnl` is the Wallet's own Real PnL on the priced Positions,
+    so the two are compared on the same bets.
+    """
+
+    delay: int
+    priced: int
+    left_out: int
+    follower_pnl: float
+    spent: float
+    own_pnl: float
+
+    @property
+    def follower_return(self) -> float | None:
+        """Follower PnL per dollar spent (Glossary); None when nothing was priced, so nothing was spent."""
+        return self.follower_pnl / self.spent if self.spent > 0 else None
+
+
+@dataclass(frozen=True, slots=True)
+class CopyResult:
+    """One priced Wallet's Copy Test result in a Scan (FR-18a, AD-22).
+
+    `after_positions` is M, the tested Positions of its after part; `sampled` is N, its Copy Sample
+    ("priced N of M"). `not_fully_read`: its before or after part was not fully read (AD-9).
+    `delays` holds one `FollowerResult` per Copy Delay, shortest first.
+    """
+
+    wallet: str
+    after_positions: int
+    sampled: int
+    not_fully_read: bool
+    delays: tuple[FollowerResult, ...]
+
+    def at(self, delay: int) -> FollowerResult:
+        """The result at one Copy Delay (in seconds)."""
+        for result in self.delays:
+            if result.delay == delay:
+                return result
+        raise KeyError(f"no result at a Copy Delay of {delay} seconds")
+
+
+@dataclass(frozen=True, slots=True)
 class Read[T]:
     """The rows of one list read from Polymarket, and whether every page was read (AD-3).
 
