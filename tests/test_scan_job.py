@@ -37,6 +37,7 @@ from test_scan import (
 from liquidoracle.core import funnel
 from liquidoracle.data import store as store_module
 from liquidoracle.data import synthetic
+from liquidoracle.data.polymarket import PROBE_TOKEN
 from liquidoracle.data.store import (
     AFTER,
     BEFORE,
@@ -211,7 +212,8 @@ def test_ad22_a_top_wallet_with_nothing_read_is_tested_on_nothing_and_stays_flag
 
 def test_ad5_progress_names_each_step(rig: Rig, monkeypatch: pytest.MonkeyPatch) -> None:
     """AD-5, EXPERIENCE.md: the progress JSON carries the phase and names the step: Reading Markets, Fetching
-    Wallets, Ranking, "N of M Wallets checked", then the Hold-up Test (Story 5.1)."""
+    Wallets, Ranking, "N of M Wallets checked", the Hold-up Test (Story 5.1), then the Copy Test with one step
+    per price request (Story 6.2, matrix "A new Scan")."""
     seen: list[tuple[str, int, int, str]] = []
     original = rig.store.update_progress
 
@@ -228,8 +230,12 @@ def test_ad5_progress_names_each_step(rig: Rig, monkeypatch: pytest.MonkeyPatch)
     assert ("ranking", 0, 8, "Fetching Wallets: 0 of 8") in seen and ("ranking", 7, 8, "Fetching Wallets: 7 of 8") in seen
     assert ("ranking", 1, 1, "Ranking") in seen
     assert ("skill_tests", 0, 3, "0 of 3 Wallets checked") in seen
-    assert seen[-3:] == [
-        ("skill_tests", 3, 3, "3 of 3 Wallets checked"), ("holdup", 0, 1, "Hold-up Test"), ("holdup", 1, 1, "Hold-up Test"),
+    checked = seen.index(("skill_tests", 3, 3, "3 of 3 Wallets checked"))
+    requests = sum(1 for c in rig.transport.calls if c.url.endswith("/prices-history") and c.query["market"] != PROBE_TOKEN)
+    assert requests > 0
+    assert seen[checked + 1:] == [
+        ("holdup", 0, 1, "Hold-up Test"), ("holdup", 1, 1, "Hold-up Test"), ("copy", 0, 0, "Copy Test"),
+        *(("copy", i, requests, f"Copy Test: {i} of {requests} prices") for i in range(requests + 1)),
     ]
 
 
@@ -476,6 +482,13 @@ def finished_scan_file(tmp_path: Path) -> tuple[Path, int, list[tuple[Any, ...]]
         rig.store.close()
 
 
+def without_copy_test(old: sqlite3.Connection) -> None:
+    """Turn a file's schema back to before Story 6.2: no Copy Test tables and no `scan.copied_at`."""
+    old.execute("DROP TABLE copy_result")
+    old.execute("DROP TABLE copy_sample")
+    old.execute("ALTER TABLE scan DROP COLUMN copied_at")
+
+
 def test_ad6_a_schema_change_keeps_scans_results_and_their_snapshots(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
@@ -561,23 +574,25 @@ def test_ad6_a_scan_finished_before_price_history_is_kept_whole(
     old = sqlite3.connect(path)
     groups = old.execute("SELECT * FROM group_result ORDER BY group_name").fetchall()
     rows = old.execute("SELECT COUNT(*) FROM activity_row WHERE fetch_id IN (SELECT after_fetch_id FROM scan_wallet)").fetchone()
-    with old:  # what Story 5.1's schema was: this one without the price tables
+    with old:  # what Story 5.1's schema was: this one without the price tables and without a Copy Test
         old.execute("DROP TABLE price_window")
         old.execute("DROP TABLE price_point")
+        without_copy_test(old)
         old.execute("PRAGMA user_version = 7")
     old.close()
-    assert len(groups) == 2 and store_module.SCHEMA_VERSION == 8
+    assert len(groups) == 2 and store_module.SCHEMA_VERSION == 9
     with caplog.at_level(logging.WARNING, logger="liquidoracle.data.store"):
         db = Store(path)
     try:
         # The change is announced, since it takes about a minute on a large file; a new file says nothing.
-        assert "from database version 7 to 8 and keeping its Scans" in caplog.text
+        assert "from database version 7 to 9 and keeping its Scans" in caplog.text
         caplog.clear()
         Store(tmp_path / "fresh.db").close()
         assert "keeping its Scans" not in caplog.text
-        assert db._connection().execute("PRAGMA user_version").fetchone() == (8,)
+        assert db._connection().execute("PRAGMA user_version").fetchone() == (9,)
         scan = db.scan(scan_id)
         assert scan is not None and scan.step is ScanStep.DONE and not scan.data_rebuilt
+        assert not scan.copied and db.copy_results(scan_id) == ()
         assert scan.job is not None and scan.job.status is JobStatus.DONE
         assert results_without_ids(db, scan_id) == results
         assert {w.wallet: (w.before_fetch_id, w.after_fetch_id) for w in db.scan_wallets(scan_id)} == frozen
@@ -591,6 +606,118 @@ def test_ad6_a_scan_finished_before_price_history_is_kept_whole(
         assert db.price_windows("1") == () and db.prices("1") == ()
         db.save_prices("1", ((100, 200),), (PricePoint("1", 150, 0.5),), "clob")  # and prices can be stored in it
         assert db.prices("1") == (PricePoint("1", 150, 0.5),)
+    finally:
+        db.close()
+
+
+def test_ad6_a_scan_finished_before_the_copy_test_is_kept_and_can_get_one(tmp_path: Path) -> None:
+    """AD-6, AD-5 (Story 6.2, matrix "Version 8 file with a finished Scan"; Edvard, 2026-11-28): a version 8 file
+    has stored prices but no Copy Test tables. Opened by this version, its finished Scan is still `done`, not
+    `data_rebuilt` and has no Copy Test; its results, Hold-up rows, frozen snapshots and stored prices are as
+    before. A Copy Test job then gives it one, asking Polymarket for prices only."""
+    path, scan_id, results, frozen = finished_scan_file(tmp_path)
+    old = sqlite3.connect(path)
+    groups = old.execute("SELECT * FROM group_result ORDER BY group_name").fetchall()
+    windows = old.execute("SELECT * FROM price_window ORDER BY token_id, start_at").fetchall()
+    points = old.execute("SELECT * FROM price_point ORDER BY token_id, t").fetchall()
+    with old:  # what Story 6.1's schema was
+        without_copy_test(old)
+        old.execute("PRAGMA user_version = 8")
+    old.close()
+    assert windows and store_module.SCHEMA_VERSION == 9
+    rig = rig_for(path)
+    try:
+        db = rig.store
+        connection = db._connection()
+        assert connection.execute("PRAGMA user_version").fetchone() == (9,)
+        scan = db.scan(scan_id)
+        assert scan is not None and scan.step is ScanStep.DONE and not scan.data_rebuilt
+        assert not scan.copied and db.copy_results(scan_id) == ()
+        assert results_without_ids(db, scan_id) == results
+        assert {w.wallet: (w.before_fetch_id, w.after_fetch_id) for w in db.scan_wallets(scan_id)} == frozen
+        assert connection.execute("SELECT * FROM group_result ORDER BY group_name").fetchall() == groups
+        assert connection.execute("SELECT * FROM price_window ORDER BY token_id, start_at").fetchall() == windows
+        assert connection.execute("SELECT * FROM price_point ORDER BY token_id, t").fetchall() == points
+
+        with db._write() as raw:  # as for a Scan from before any price was fetched: the job must ask for them
+            raw.execute("DELETE FROM price_point")
+            raw.execute("DELETE FROM price_window")
+        job_id = rig.jobs.start_copy_test(scan_id)
+        assert job_id is not None and rig.worker.run_once()
+        assert db.job(job_id).status is JobStatus.DONE and db.scan(scan_id).copied
+        asked = [call for call in rig.transport.calls if call.query["market"] != PROBE_TOKEN]
+        assert len(asked) == len(windows) > 0 and db.copy_results(scan_id)
+        assert all(call.url.endswith("/prices-history") for call in rig.transport.calls)  # prices and nothing else
+        assert connection.execute("SELECT * FROM price_window ORDER BY token_id, start_at").fetchall() == windows
+        assert results_without_ids(db, scan_id) == results
+    finally:
+        rig.store.close()
+
+
+def test_fr18a_the_copy_phase_prices_a_real_wallet_through_the_live_client(tmp_path: Path) -> None:
+    """FR-18a, AD-24 (Story 6.2 review): with the live client, a Scan's Copy phase asks the old price route for the
+    sampled buys' windows and prices the Positions Polymarket has a price for. Here Polymarket has prices for one
+    token only: that Position is priced at every delay, and every other one is left out and counted."""
+    plain = rig_for(tmp_path / "plain.db")
+    try:
+        scan_id, _ = start(plain)
+        plain.worker.run_once()
+        assert all(r.priced == 0 for copy in plain.store.copy_results(scan_id) for r in copy.delays)
+        chosen = next(w for w in scan_module.copy_wallets(plain.store, scan_id) if w.sample)
+        (key, rows), *_ = chosen.fills.items()
+    finally:
+        plain.store.close()
+    server = scenario()
+    server.prices[key[1]] = [(row.timestamp + m * 60, 0.25) for row in rows for m in range(-2, 33)]
+    rig = rig_for(tmp_path / "priced.db", server)
+    try:
+        scan_id, _ = start(rig)
+        rig.worker.run_once()
+        result = next(copy for copy in rig.store.copy_results(scan_id) if copy.wallet == chosen.wallet)
+        assert [(r.priced, r.left_out) for r in result.delays] == [(1, result.sampled - 1)] * 3
+        assert all(r.spent > 0 and r.follower_return is not None for r in result.delays)
+        assert {p.price for p in rig.store.prices(key[1])} == {0.25}
+        routes = rig.store._connection().execute("SELECT DISTINCT route FROM price_window").fetchall()
+        assert routes == [("clob",)]
+    finally:
+        rig.store.close()
+
+
+def test_ad5_an_outage_of_the_price_route_stops_the_scan_in_the_copy_phase(tmp_path: Path) -> None:
+    """AD-5, AD-3 (Story 6.2 review): with the live client, the price route answering 503 on every try stops the
+    Scan in the Copy phase with nothing stored for that request; the Scan is not finished. When Polymarket is back,
+    Resume finishes it with the same results as a run with no outage."""
+    rig = rig_for(tmp_path / "scan.db")
+    try:
+        rig.server.price_answer = status(503)
+        scan_id, job_id = start(rig)
+        rig.worker.run_once()
+        job = rig.store.job(job_id)
+        assert (job.status, job.phase, job.done) == (JobStatus.STOPPED, "copy", 0) and job.total > 0
+        assert rig.store.scan(scan_id).step is ScanStep.RANKED and not rig.store.scan(scan_id).copied
+        assert rig.store._connection().execute("SELECT COUNT(*) FROM price_window").fetchone() == (0,)
+        rig.server.price_answer = None
+        assert rig.jobs.resume_scan(scan_id) is not None and rig.worker.run_once()
+        assert rig.store.scan(scan_id).step is ScanStep.DONE and rig.store.scan(scan_id).copied
+        assert results_without_ids(rig.store, scan_id) == uninterrupted(tmp_path)
+    finally:
+        rig.store.close()
+
+
+def test_ad6_a_schema_change_keeps_the_copy_test(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """AD-6, AD-22 (Story 6.2): a later schema change keeps a Scan's Copy rows and the time it got them."""
+    path, scan_id, results, _ = finished_scan_file(tmp_path)
+    db = Store(path)
+    copies, copied_at = db.copy_results(scan_id), db.scan(scan_id).copied_at
+    db.close()
+    assert copies and copied_at is not None
+    monkeypatch.setattr(store_module, "SCHEMA_VERSION", NEXT_VERSION)
+    monkeypatch.setattr(store_module, "SCHEMA_FILE", next_version_schema(tmp_path, "note TEXT"))
+    db = Store(path)
+    try:
+        assert db._connection().execute("PRAGMA user_version").fetchone() == (NEXT_VERSION,)
+        assert db.copy_results(scan_id) == copies and db.scan(scan_id).copied_at == copied_at
+        assert results_without_ids(db, scan_id) == results and not db.scan(scan_id).data_rebuilt
     finally:
         db.close()
 

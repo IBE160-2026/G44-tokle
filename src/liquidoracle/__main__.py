@@ -16,7 +16,7 @@ from collections.abc import Callable
 from dataclasses import dataclass
 from pathlib import Path
 
-from liquidoracle.data.client import FunnelClient
+from liquidoracle.data.client import ScanClient
 from liquidoracle.data.store import LIVE_DB, OFFLINE_DB, Store, StoreError
 from liquidoracle.services.jobs import Jobs
 from liquidoracle.settings import Settings, SettingsError, load_settings
@@ -192,7 +192,7 @@ class Sources:
     A live run's lookups are jobs, and only the worker uses its client.
     """
 
-    client: FunnelClient
+    client: ScanClient
     store: Store
     jobs: Jobs
     sample_size: Callable[[], int] | None = None

@@ -10,9 +10,17 @@ storing each Market and each Wallet as it finishes, so Resume carries on from wh
 never reads a finished Market or Wallet again. Between two units of work (one Market, one Wallet)
 it calls `between`, where the worker runs any waiting lookup (AD-5).
 
-The last phase, `holdup` (Story 5.1), forms the Hold-up Test's two groups from the stored
-`scan_before` results and tests each group's pooled after part (`core/holdup`, FR-17). Its two
-results are stored in the transaction that finishes the Scan.
+The `holdup` phase (Story 5.1) forms the Hold-up Test's two groups from the stored
+`scan_before` results and tests each group's pooled after part (`core/holdup`, FR-17).
+
+The last phase, `copy` (Story 6.2), prices what a late follower would have made (`core/copytest`,
+FR-18a): it draws each priced Wallet's Copy Sample from its frozen after part, fetches the price
+windows those buys still need, one request per unit of work (`services/prices`), and computes the
+Follower PnL at each Copy Delay. The Hold-up and Copy results are stored in the transaction that
+finishes the Scan, so a Scan that stops while fetching prices is not finished and resumes like any
+other. An unexpected error in the Copy phase is logged and the Scan finishes without a Copy Test
+(Edvard, 2026-11-28). `run_copy_test` runs that phase alone for a Scan that was finished without a Copy Test
+(Edvard, 2026-11-28): it reads only what the Scan froze and changes none of its other results.
 """
 
 from __future__ import annotations
@@ -24,11 +32,17 @@ from dataclasses import dataclass
 from datetime import date
 from typing import Protocol
 
-from liquidoracle.core import funnel, holdup, phrases
+from liquidoracle.core import copytest, funnel, holdup, phrases
 from liquidoracle.core.positions import build_positions
+from liquidoracle.core.prices import fill_windows, pack
 from liquidoracle.core.skilltest import real_pnl, skill_test
-from liquidoracle.data.client import FunnelClient, WalletClient
-from liquidoracle.data.errors import NoPolymarketHistory, PolymarketBadRequest, ProtocolContractAddress
+from liquidoracle.data.client import FunnelClient, PriceClient, ScanClient, WalletClient
+from liquidoracle.data.errors import (
+    NoPolymarketHistory,
+    PolymarketBadRequest,
+    PolymarketUnavailable,
+    ProtocolContractAddress,
+)
 from liquidoracle.data.store import (
     AFTER,
     BEFORE,
@@ -43,18 +57,23 @@ from liquidoracle.data.store import (
 )
 from liquidoracle.data.window import WINDOW_LIMIT, cutoff_at, cutoff_day, positions_near
 from liquidoracle.records import (
+    PASSERS,
     ActivityRow,
     Candidate,
+    CopyResult,
     FunnelMarket,
     GroupResult,
     ListedPosition,
     Market,
     MarketHolder,
+    Position,
     PositionSet,
+    PricePoint,
     RankedWallet,
     ScanFunnel,
     Verdict,
 )
+from liquidoracle.services import prices
 from liquidoracle.services.fetch import FRESH_FOR, fetch_wallet
 
 log = logging.getLogger(__name__)
@@ -195,10 +214,12 @@ def run_funnel(client: FunnelClient, cutoff: date, size: int = DEFAULT_SIZE) -> 
 # --- the Scan as a resumable job (Story 4.3) ------------------------------------------------------
 
 RANKING, SKILL_TESTS = "ranking", "skill_tests"  # AD-5's first two phases
-HOLDUP = "holdup"  # AD-5: the Hold-up Test phase (Story 5.1); Epic 6 adds the Copy Test
+HOLDUP = "holdup"  # AD-5: the Hold-up Test phase (Story 5.1)
+COPY = "copy"  # AD-5: the Copy Test phase, the last one (Story 6.2)
 STARTING = "Reading Markets"  # the progress message before the Market set is known (EXPERIENCE.md)
 RANKING_MESSAGE = "Ranking"
 HOLDUP_MESSAGE = "Hold-up Test"  # EXPERIENCE.md, Scan progress bar
+COPY_MESSAGE = "Copy Test"  # while the Copy Samples are drawn, before the price requests are counted
 
 
 def reading_markets(done: int, total: int) -> str:
@@ -213,8 +234,13 @@ def wallets_checked(done: int, total: int) -> str:
     return f"{phrases.of_total(done, total)} Wallets checked"
 
 
+def copy_prices(done: int, total: int) -> str:
+    """EXPERIENCE.md, Scan progress bar: "Copy Test: 1,200 of 18,000 prices" (one price request each)."""
+    return f"Copy Test: {phrases.of_total(done, total)} prices"
+
+
 def run_scan(
-    client: FunnelClient, store: Store, scan_id: int, *, job_id: int, between: Callable[[], None] = lambda: None
+    client: ScanClient, store: Store, scan_id: int, *, job_id: int, between: Callable[[], None] = lambda: None
 ) -> None:
     """Run one Scan's job from wherever its stored state says it got to, until every phase is done (AD-5, FR-16).
 
@@ -251,8 +277,9 @@ def run_scan(
         _test_top(client, store, scan_id, day, scan.seed, scan.as_of, progress, between)
         progress(HOLDUP, 0, 1, HOLDUP_MESSAGE)
         groups = hold_up_scan(store, scan_id, between)
-        progress(HOLDUP, 1, 1, HOLDUP_MESSAGE)  # before the Scan is finished: nothing may fail after that
-        store.finish_scan(scan_id, groups)
+        progress(HOLDUP, 1, 1, HOLDUP_MESSAGE)
+        copies = _copy_or_none(client, store, scan_id, progress, between)  # its last progress write is before the finish
+        store.finish_scan(scan_id, groups, copies)  # nothing may fail after this
 
 
 def _read_markets(
@@ -381,6 +408,146 @@ def hold_up_members(
         members.append(holdup.Member(result.wallet, verdict, parts_position_set(parts), result.wallet in flagged))
         between()
     return members
+
+
+# --- the Copy phase (FR-18a, AD-5; Story 6.2) -----------------------------------------------------
+
+
+@dataclass(frozen=True, slots=True)
+class CopyWallet:
+    """A priced Wallet as the Copy phase holds it: its Copy Sample with those Positions' buy fills and
+    Markets. The rest of its after part is not kept, so a large Scan's phase stays small in memory."""
+
+    wallet: str
+    after_positions: int  # M: the tested Positions of its after part
+    sample: tuple[Position, ...]
+    fills: dict[tuple[str, str], tuple[ActivityRow, ...]]
+    markets: dict[str, Market]
+    not_fully_read: bool
+
+
+def copy_wallets(store: Store, scan_id: int, between: Callable[[], None] = lambda: None) -> list[CopyWallet]:
+    """The Scan's priced Wallets in address order (AD-15), each with its Copy Sample (FR-18a).
+
+    Priced are the Before-Cut-off Passers and every other tested Wallet with at least the Minimum
+    After-bets after Positions (`copytest.is_priced`). The Passers come from the stored `scan_before`
+    results, like the Hold-up Test's. Each after part is the snapshot frozen to the Scan, cut to its
+    as-of time (AD-19) and built by the one builder (AD-11); nothing is fetched. `between()` runs
+    after each Wallet read.
+    """
+    scan = store.scan(scan_id)
+    if scan is None:
+        raise ValueError(f"no Scan {scan_id}")
+    results = store.scan_results(scan_id)
+    passers = {
+        r.wallet for r in results if r.scope == SCAN_BEFORE and holdup.group_of(Verdict(r.verdict)) == PASSERS
+    }
+    flagged = {r.wallet for r in results if r.not_fully_read}  # its before or after part was not fully read
+    tested = {r.wallet for r in results}
+    after_ids = {w.wallet: w.after_fetch_id for w in store.scan_wallets(scan_id) if w.wallet in tested}
+    wallets = []
+    for wallet in sorted(after_ids):
+        fetch_id = after_ids[wallet]
+        part = None if fetch_id is None else as_of_part(_snapshot(store, fetch_id), scan.as_of)
+        position_set = parts_position_set([] if part is None else [part])
+        if part is not None and copytest.is_priced(wallet in passers, position_set.tested_count):
+            sample = copytest.copy_sample(position_set.tested, seed=scan.seed, wallet=wallet)
+            in_sample = {position.condition_id for position in sample}
+            wallets.append(CopyWallet(
+                wallet, position_set.tested_count, sample, copytest.buy_fills(sample, part.activity),
+                {m.condition_id: m for m in part.markets if m.condition_id in in_sample}, wallet in flagged,
+            ))
+        elif wallet in passers:  # a Passer with no after part is still shown: "priced 0 of 0" (FR-18a)
+            wallets.append(CopyWallet(wallet, 0, (), {}, {}, wallet in flagged))
+        between()
+    return wallets
+
+
+def copy_scan(
+    client: PriceClient,
+    store: Store,
+    scan_id: int,
+    progress: Callable[..., None],
+    between: Callable[[], None] = lambda: None,
+) -> tuple[CopyResult, ...]:
+    """The Scan's Copy phase (FR-18a, AD-5): each priced Wallet's result at every Copy Delay.
+
+    Draws the Copy Samples, makes the price requests their buys still need (one request is one unit
+    of work, `between()` after each), then computes from the stored prices. A window that is already
+    stored is not asked for again (AD-4), so a resumed run goes on where it stopped and the result
+    depends only on stored data and the Seed. `PolymarketUnavailable` goes up from a price request:
+    nothing is stored for it and the job stops with Resume.
+    """
+    progress(COPY, 0, 0, COPY_MESSAGE)
+    wallets = copy_wallets(store, scan_id, between)
+    times: dict[str, set[int]] = {}
+    for wallet in wallets:
+        for token_id, fill_times in copytest.fill_times(wallet.fills).items():
+            times.setdefault(token_id, set()).update(fill_times)
+    requests = [request for token_id in sorted(times) for request in prices.plan(store, token_id, times[token_id])]
+    # The count the bar shows is every request the samples need; those already stored count as done.
+    total = max(len(requests), sum(len(pack(fill_windows(times[token_id]))) for token_id in times))
+    done = total - len(requests)
+    for i, request in enumerate(requests, start=done):
+        progress(COPY, i, total, copy_prices(i, total))
+        prices.fetch(client, store, request)
+        between()
+    if total:
+        progress(COPY, total, total, copy_prices(total, total))
+    stored: dict[str, tuple[PricePoint, ...]] = {}
+
+    def points_of(token_id: str) -> tuple[PricePoint, ...]:
+        if token_id not in stored:
+            stored[token_id] = store.prices(token_id)
+        return stored[token_id]
+
+    return tuple(
+        copytest.copy_result(
+            w.wallet, w.after_positions, w.sample, w.fills, w.markets, points_of, not_fully_read=w.not_fully_read
+        )
+        for w in wallets
+    )
+
+
+def _copy_or_none(
+    client: PriceClient, store: Store, scan_id: int, progress: Callable[..., None], between: Callable[[], None]
+) -> tuple[CopyResult, ...] | None:
+    """A new Scan's Copy phase; None when it met an unexpected error (Edvard, 2026-11-28, after the review).
+
+    The Copy phase is the Scan's last, and the one that reads data the app has seen least of. A bug in
+    it must not cost a Scan whose Watchlist and Hold-up results are already worked out: the error is
+    logged, the Scan finishes without a Copy Test, and a Copy Test job can give it one later. An outage
+    is not such an error: `PolymarketUnavailable` goes up, the job stops and Resume goes on.
+    """
+    try:
+        return copy_scan(client, store, scan_id, progress, between)
+    except PolymarketUnavailable:
+        raise
+    except Exception:
+        log.exception("the Copy phase of Scan %d failed; the Scan is finished without a Copy Test", scan_id)
+        return None
+
+
+def run_copy_test(
+    client: PriceClient, store: Store, scan_id: int, *, job_id: int, between: Callable[[], None] = lambda: None
+) -> None:
+    """Run only the Copy phase for a Scan that was finished without a Copy Test (Edvard, 2026-11-28; AD-5).
+
+    No Wallet, Market or holder list is fetched: the phase reads the snapshots the Scan froze (AD-19)
+    and fetches prices by token. The Scan's other results are not touched; it only gains its Copy
+    rows. Errors propagate like a Scan's: `PolymarketUnavailable` stops the job, and a new Copy Test
+    job then goes on from the stored prices.
+    """
+    scan = store.scan(scan_id)
+    if scan is None:
+        raise ValueError(f"no Scan {scan_id}")
+    if scan.step is not ScanStep.DONE or scan.data_rebuilt or scan.copied:
+        raise ValueError(f"Scan {scan_id} is not a finished Scan without a Copy Test")
+
+    def progress(phase: str, done: int, total: int, message: str) -> None:
+        store.update_progress(job_id, phase=phase, done=done, total=total, message=message)
+
+    store.save_copy_test(scan_id, copy_scan(client, store, scan_id, progress, between))
 
 
 def fetch_part(client: WalletClient, store: Store, wallet: str, day: date, side: str) -> int:

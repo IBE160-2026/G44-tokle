@@ -71,9 +71,10 @@ class Rig:
         elif status is not JobStatus.RUNNING:
             self.store.finish_job(job.id, status, message=message, keep_progress=True)
 
-    def finish(self, scan_id: int, verdicts: tuple[str, ...] = ()) -> None:
+    def finish(self, scan_id: int, verdicts: tuple[str, ...] = (), *, copied: bool = True) -> None:
+        """Finish the Scan; `copied` False leaves it without a Copy Test, like a Scan from before Story 6.2."""
         self.end(scan_id, JobStatus.DONE)
-        self.sql("UPDATE scan SET step = 'done' WHERE scan_id = ?", scan_id)
+        self.sql("UPDATE scan SET step = 'done', copied_at = ? WHERE scan_id = ?", NOW if copied else None, scan_id)
         for i, verdict in enumerate(verdicts):
             for scope in ("scan_whole", "scan_before"):
                 self.sql(
@@ -104,7 +105,7 @@ def test_ux_dr30_a_new_page_has_the_blank_form_the_estimate_and_the_empty_state(
     """UX-DR30, UX-DR4: a new Scans page has the blank form (200 Wallets), the rough estimate and the empty state."""
     view = rig.page.view()
     assert (view.form.cutoff, view.form.size, view.form.today) == ("", "200", "2026-11-26")
-    assert view.form.estimate == "Rough estimate: about 2 hours at 5 requests per second"  # EXPERIENCE.md's example
+    assert view.form.estimate == "Rough estimate: about 2.5 hours at 5 requests per second"  # EXPERIENCE.md's example
     assert not view.form.blocked and not view.form.read_only
     assert view.rows == () and view.empty == sp.NO_SCANS and view.running is None
     assert view.title == "Scans · LiquidOracle"
@@ -268,10 +269,13 @@ def test_ad5_resume_queues_a_new_job_for_the_same_scan(rig: Rig) -> None:
 
 
 def test_ux_dr30_the_estimate_counts_what_a_scan_plans_today(rig: Rig) -> None:
-    """UX-DR30 (Edvard, 2026-11-26): the estimate counts the Gamma list, 100 Markets and 4 x N Wallet parts at the set pace."""
-    assert sp.planned_requests(200) == 50 + 100 * sp.MARKET_REQUESTS + 4 * 200 * sp.PART_REQUESTS
+    """UX-DR30 (Edvard, 2026-11-26; Story 6.2): the estimate counts the Gamma list, 100 Markets, 4 x N Wallet parts
+    and the Copy phase's price requests, 50 per Wallet, at the set pace."""
+    without = 50 + 100 * sp.MARKET_REQUESTS + 4 * 200 * sp.PART_REQUESTS
+    assert sp.planned_requests(200, copy=False) == without and sp.COPY_REQUESTS == 50
+    assert sp.planned_requests(200) == without + 200 * sp.COPY_REQUESTS == 43_550
     assert rig.page.estimate("10") == "Rough estimate: about 10 minutes at 5 requests per second"
-    assert rig.page.estimate("500") == "Rough estimate: about 4.5 hours at 5 requests per second"
+    assert rig.page.estimate("500") == "Rough estimate: about 6 hours at 5 requests per second"
     assert rig.page.estimate("9") is None and rig.page.estimate("x") is None
     one = ScansPage(rig.store, jobs=rig.jobs, seed=SEED, rate=1.0)
     assert one.estimate("10").endswith("at 1 request per second")
@@ -283,7 +287,66 @@ def test_ux_dr30_the_estimate_is_recalibrated_from_the_last_finished_scan(rig: R
     rig.clock.now += sp.planned_requests(100)  # one second per planned request: half the set pace
     rig.finish(scan_id)
     assert rig.store.scan_seconds(scan_id) == sp.planned_requests(100)
-    assert rig.page.estimate("200") == "Rough estimate: about 9.5 hours, based on your last Scan"
+    assert rig.page.estimate("200") == "Rough estimate: about 12 hours, based on your last Scan"
+
+
+def test_ux_dr30_a_last_scan_without_a_copy_test_is_calibrated_without_the_price_requests(rig: Rig) -> None:
+    """UX-DR30 (Story 6.2): a Scan that finished without a Copy Test took its time without the price requests, so
+    its pace is its time over the requests it made; the new Scan's estimate still counts its own price requests.
+    At one second per request that is the same 12 hours for 200 Wallets; counting price requests the old Scan
+    never made would say 9.5."""
+    scan_id = rig.start(size="100")
+    rig.clock.now += sp.planned_requests(100, copy=False)  # one second per request it made
+    rig.finish(scan_id, copied=False)
+    assert not rig.store.scan(scan_id).copied
+    assert rig.page.estimate("200") == "Rough estimate: about 12 hours, based on your last Scan"
+
+
+def copy_test_job(rig: Rig, scan_id: int, seconds: int, status: JobStatus) -> None:
+    """A Copy Test job for the Scan that runs for `seconds` and ends as `status`."""
+    job_id = rig.jobs.start_copy_test(scan_id)
+    assert job_id is not None and rig.store.claim_job(job_id)
+    rig.clock.now += seconds
+    if status is JobStatus.INTERRUPTED:
+        rig.store.interrupt_running_jobs()
+    else:
+        rig.store.finish_job(job_id, status, message="x", keep_progress=True)
+
+
+def test_ux_dr30_a_copy_test_job_that_gave_no_copy_test_does_not_change_the_pace(rig: Rig) -> None:
+    """UX-DR30 (Story 6.2 review): a Copy Test job that stopped or failed, or that the app was closed on, leaves a
+    Scan without a Copy Test, so its time is not part of the Scan's pace: the estimate stays what the Scan's own
+    run gives, and an interrupted Copy Test job does not make the Scan's own time unknown."""
+    scan_id = rig.start(size="100")
+    own = sp.planned_requests(100, copy=False)
+    rig.clock.now += own  # one second per request the Scan made
+    rig.finish(scan_id, copied=False)
+    twelve = "Rough estimate: about 12 hours, based on your last Scan"
+    assert rig.page.estimate("200") == twelve
+    for status in (JobStatus.STOPPED, JobStatus.FAILED, JobStatus.INTERRUPTED):
+        copy_test_job(rig, scan_id, 30_000, status)
+        assert rig.page.estimate("200") == twelve, status
+    assert rig.store.scan_seconds(scan_id) == own and rig.store.scan_seconds(scan_id, kind="copy") is None
+    # Even once the Scan has its Copy Test: with an interrupted Copy Test job their time is not known, so the
+    # pace is still the Scan's own run, measured without the price requests.
+    rig.sql("UPDATE scan SET copied_at = ? WHERE scan_id = ?", NOW, scan_id)
+    assert rig.page.estimate("200") == twelve
+
+
+def test_ux_dr30_a_finished_copy_test_jobs_time_joins_the_scans_pace(rig: Rig) -> None:
+    """UX-DR30 (Story 6.2 review): when a Scan got its Copy Test from its own job, the pace is the Scan's run plus
+    its Copy Test jobs (a stopped one and the one that finished) over all the requests, price requests included."""
+    scan_id = rig.start(size="100")
+    own = sp.planned_requests(100, copy=False)
+    rig.clock.now += own
+    rig.finish(scan_id, copied=False)
+    copy_test_job(rig, scan_id, 4_000, JobStatus.STOPPED)
+    copy_test_job(rig, scan_id, 6_000, JobStatus.DONE)  # 10,000 s for 5,000 price requests: slower than the Scan
+    rig.sql("UPDATE scan SET copied_at = ? WHERE scan_id = ?", NOW, scan_id)
+    assert rig.store.scan_seconds(scan_id, kind="copy") == 10_000
+    expected = phrases.rough_time(sp.planned_requests(200) * (own + 10_000) / sp.planned_requests(100))
+    assert expected == "about 15 hours"
+    assert rig.page.estimate("200") == f"Rough estimate: {expected}, based on your last Scan"
 
 
 def test_an_interrupted_run_makes_the_scan_time_unknown(rig: Rig) -> None:
@@ -296,7 +359,7 @@ def test_an_interrupted_run_makes_the_scan_time_unknown(rig: Rig) -> None:
     assert rig.store.scan_seconds(scan_id) is None
     assert rig.page.resume(scan_id)
     rig.finish(scan_id)
-    assert rig.page.estimate("200") == "Rough estimate: about 2 hours at 5 requests per second"
+    assert rig.page.estimate("200") == "Rough estimate: about 2.5 hours at 5 requests per second"
 
 
 def test_ux_dr30_recalibration_follows_the_newest_usable_scan_and_adds_up_resumes(rig: Rig) -> None:
@@ -412,7 +475,7 @@ def test_ux_dr30_the_scans_page_and_its_nav_link(web: FlaskClient) -> None:
     assert "<title>Scans · LiquidOracle</title>" in html
     assert re.search(r'<a href="/scans" aria-current="page">Scan wallets</a>', html)
     assert sp.NO_SCANS in html and 'name="wallets" type="number" value="200"' in html
-    assert "Rough estimate: about 2 hours at 5 requests per second" in html
+    assert "Rough estimate: about 2.5 hours at 5 requests per second" in html
     assert 'id="cutoff-warning" role="note" hidden' in html
     assert 'max="2026-11-25"' in html  # the latest day allowed: today is not in the past
     home = page_text(web.get("/"))

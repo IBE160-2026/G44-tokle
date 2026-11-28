@@ -36,7 +36,7 @@ def fetch(client: PriceClient, store: Store, request: PriceRequest) -> str:
 
     Only the points inside the request's short windows are stored (AD-14). A request Polymarket
     refuses is stored with no points and the route `refused`, so one odd token does not end a long
-    run: its buys are left out and counted, like any buy with no price (FR-18c). When Polymarket
+    run: its buys' Positions are left out and counted, like any buy with no price (FR-18c). When Polymarket
     does not answer, `PolymarketUnavailable` goes up and nothing is stored, so a Resume asks again.
     """
     try:

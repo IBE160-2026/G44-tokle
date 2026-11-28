@@ -13,7 +13,14 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
-from liquidoracle.data.polymarket import Response, TransportConnectionError, TransportTimeout
+from liquidoracle.data.polymarket import (
+    PROBE_END,
+    PROBE_START,
+    PROBE_TOKEN,
+    Response,
+    TransportConnectionError,
+    TransportTimeout,
+)
 
 TIMEOUT = "timeout"  # script entry: the transport raises TransportTimeout
 NO_CONNECTION = "no connection"  # script entry: the transport raises TransportConnectionError
@@ -184,6 +191,10 @@ class FakeScan:
       `holder_answers[(condition_id, status)]` answers every such request instead (TIMEOUT or a Response).
     - A Wallet's lists and activity (`user=`): that Wallet's `FakePolymarket`; `refuse[address]`
       answers instead (a 400, say); any other address has no history (empty lists).
+    - Price history (the old CLOB route, `/prices-history`, Story 6.2's Copy phase): the route check's own
+      request gets one-minute points, so the client stays on this route; any other token gets its
+      `prices[token_id]` ((time, price) pairs) inside the asked window, none when it has none.
+      `price_answer` answers every such request instead (TIMEOUT or a Response).
     """
 
     def __init__(self, wallets: Sequence[str] = ()) -> None:
@@ -196,6 +207,8 @@ class FakeScan:
         self.holders: dict[tuple[str, str], list[dict[str, Any]]] = {}
         self.holder_answers: dict[tuple[str, str], Response | str] = {}
         self.refuse: dict[str, Response] = {}
+        self.prices: dict[str, list[tuple[int, float]]] = {}
+        self.price_answer: Response | str | None = None
 
     def __call__(self, url: str, params: list[tuple[str, str]]) -> Response:
         query = dict(params)
@@ -227,6 +240,16 @@ class FakeScan:
                 return self.wallets[user](url, params)
             assert url.endswith("/v2/positions"), "a Wallet with no positions has no activity to read"
             return page([])
+        if url.endswith("/prices-history"):
+            if query["market"] == PROBE_TOKEN:
+                return ok({"history": [{"t": t, "p": 0.5} for t in range(PROBE_START + 6, PROBE_END, 60)]})
+            if self.price_answer == TIMEOUT:
+                raise TransportTimeout("fake timeout")
+            if isinstance(self.price_answer, Response):
+                return self.price_answer
+            start, end = int(query["startTs"]), int(query["endTs"])
+            points = self.prices.get(query["market"], [])
+            return ok({"history": [{"t": t, "p": price} for t, price in points if start <= t <= end]})
         raise AssertionError(f"unexpected request {url}")
 
     def _funnel_page(self, query: dict[str, str]) -> Response:

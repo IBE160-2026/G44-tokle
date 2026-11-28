@@ -722,7 +722,7 @@ def test_ad5_a_waiting_lookup_can_run_between_two_wallets_of_the_holdup_phase(tm
 
 def test_ad5_the_progress_names_the_holdup_test(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     """AD-5, UX-DR32: after the Skill Tests the progress JSON carries the phase `holdup` and the step "Hold-up
-    Test", and that is the Scan's last step."""
+    Test"; only the Copy phase comes after it (Story 6.2)."""
     seen: list[tuple[str, int, int, str]] = []
     original = Store.update_progress
 
@@ -734,7 +734,8 @@ def test_ad5_the_progress_names_the_holdup_test(tmp_path: Path, monkeypatch: pyt
     db, _, _ = planted_scan(tmp_path, the_cast())
     db.close()
     checked = seen.index(("skill_tests", 6, 6, "6 of 6 Wallets checked"))
-    assert seen[checked + 1:] == [("holdup", 0, 1, "Hold-up Test"), ("holdup", 1, 1, "Hold-up Test")]
+    assert seen[checked + 1:checked + 3] == [("holdup", 0, 1, "Hold-up Test"), ("holdup", 1, 1, "Hold-up Test")]
+    assert {phase for phase, *_ in seen[checked + 3:]} == {"copy"}
 
 
 def test_ad5_a_bad_pool_fails_the_scan_and_stores_nothing(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
@@ -769,13 +770,13 @@ def test_ad22_the_group_rows_and_the_done_step_are_one_transaction(tmp_path: Pat
         others = counts(1, 0, "others")
         for wrong in ([], [passers], [passers, passers], [passers, others], [passers, comparison, comparison]):
             with pytest.raises(ValueError, match="once each"):
-                db.finish_scan(scan_id, wrong)
+                db.finish_scan(scan_id, wrong, [])
         assert db.scan(scan_id).step is ScanStep.RANKED and db.group_results(scan_id) == ()
         with pytest.raises(ValueError, match="not at step"):
-            db.finish_scan(early, [passers, comparison])
+            db.finish_scan(early, [passers, comparison], [])
         assert db.scan(early).step is ScanStep.SHORTLISTED and db.group_results(early) == ()
         with pytest.raises(ValueError, match="no Scan"):
-            db.finish_scan(blocked + 1, [passers, comparison])
+            db.finish_scan(blocked + 1, [passers, comparison], [])
 
         with db._write() as raw:  # a row that should not be there: the insert fails after the step has moved
             raw.execute(
@@ -784,14 +785,14 @@ def test_ad22_the_group_rows_and_the_done_step_are_one_transaction(tmp_path: Pat
                 (blocked, HOLDUP_AFTER, holdup.COMPARISON, NOT_ENOUGH.value),
             )
         with pytest.raises(sqlite3.IntegrityError):
-            db.finish_scan(blocked, [passers, comparison])
+            db.finish_scan(blocked, [passers, comparison], [])
         assert db.scan(blocked).step is ScanStep.RANKED  # rolled back with the failed insert
         assert [r.group for r in db.group_results(blocked)] == [holdup.COMPARISON]
 
-        db.finish_scan(scan_id, [comparison, passers])
+        db.finish_scan(scan_id, [comparison, passers], [])
         assert db.scan(scan_id).step is ScanStep.DONE and db.group_results(scan_id) == (passers, comparison)
         with pytest.raises(ValueError, match="not at step"):
-            db.finish_scan(scan_id, [passers, comparison])
+            db.finish_scan(scan_id, [passers, comparison], [])
         assert db.group_results(scan_id) == (passers, comparison)
     finally:
         db.close()

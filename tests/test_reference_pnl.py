@@ -55,6 +55,9 @@ SOURCES = {
     "0x0915962b4c6bc4505e7434a0de815a596a6667c3": SCRIPT,
 }
 
+# The Follower PnL reference's script (FR-18a, Story 6.2): re-run and compared in `test_reference_follower.py`.
+FOLLOWER_SCRIPT = "follower-pnl-calc.py"
+
 # Each reference script, the Wallets it was run on (in the order it takes them) and the
 # files it writes per Wallet.
 SCRIPTS = {
@@ -165,7 +168,7 @@ def test_one_of_the_three_paid_fees() -> None:
 def test_every_reference_script_imports_only_the_standard_library() -> None:
     """FR-4, Story 2.7: no reference script imports `liquidoracle` or any library outside Python itself."""
     scripts = sorted(REFERENCE.glob("*.py"))
-    assert {p.name for p in scripts} == set(SCRIPTS)
+    assert {p.name for p in scripts} == set(SCRIPTS) | {FOLLOWER_SCRIPT}
     problems = [p for path in scripts for p in stdlib_violations(path.name, path.read_text(encoding="utf-8"))]
     assert problems == []
 

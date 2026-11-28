@@ -14,7 +14,9 @@ never reads a Scan's part or the reverse (Story 4.3). Jobs (AD-5, Story 2.5) are
 claims with one atomic update. A Scan (Story 4.3) is stored step by step as it runs, so Resume
 continues from what is stored; its snapshots are never deleted, and a schema change keeps them.
 Price history (Story 6.1) is stored by token: the windows that were asked and their one-minute
-points, kept for good and at every schema change (AD-4, AD-24).
+points, kept for good and at every schema change (AD-4, AD-24). A Scan's Copy Test results
+(Story 6.2) are rows per priced Wallet and Copy Delay; a new Scan gets them in the transaction that
+finishes it, a Scan that was already finished from a job of kind `copy`.
 """
 
 from __future__ import annotations
@@ -37,6 +39,8 @@ from liquidoracle.records import (
     PRICE_ROUTES,
     ActivityRow,
     Candidate,
+    CopyResult,
+    FollowerResult,
     FunnelMarket,
     GroupResult,
     ListedPosition,
@@ -49,8 +53,9 @@ from liquidoracle.records import (
 log = logging.getLogger(__name__)
 
 # 2: the Wallet window (Story 2.2); 3: Market events (Story 2.4); 4: jobs (Story 2.5); 5: window_capped (Story 3.3);
-# 6: Scans and the snapshot key (Story 4.3); 7: Hold-up group results (Story 5.1); 8: price history (Story 6.1)
-SCHEMA_VERSION = 8
+# 6: Scans and the snapshot key (Story 4.3); 7: Hold-up group results (Story 5.1); 8: price history (Story 6.1);
+# 9: Copy Test results (Story 6.2)
+SCHEMA_VERSION = 9
 FIRST_KEEPING_VERSION = 6  # AD-6: from this version on, a schema change keeps the Scans (Story 4.3)
 BUSY_TIMEOUT_SECONDS = 5.0  # [ASSUMPTION] AD-6: long enough for the worker's short writes
 SCHEMA_FILE = Path(__file__).with_name("schema.sql")
@@ -102,6 +107,8 @@ class JobStatus(StrEnum):
 
 LOOKUP = "lookup"  # a lookup that needs a fetch (Story 2.5)
 SCAN = "scan"  # one run of a Scan (Story 4.3)
+COPY_TEST = "copy"  # the Copy phase alone, for a Scan that was finished without a Copy Test (Story 6.2)
+_SCAN_KINDS = (SCAN, COPY_TEST)  # the jobs that work on a Scan: one of them is queued or running at a time
 NO_HISTORY = "no_history"  # a finished lookup's result when Polymarket has no positions for the address
 _OPEN = (JobStatus.QUEUED.value, JobStatus.RUNNING.value)
 _RESUMABLE = (JobStatus.STOPPED, JobStatus.INTERRUPTED)  # AD-5: a failed Scan has no Resume
@@ -132,13 +139,17 @@ class WalletOutcome(StrEnum):
 
 # AD-6: the tables a schema change copies into the new schema, in this order. The other rows of the job,
 # snapshot, row and market tables are dropped; every other table is rebuilt empty.
-_SCAN_TABLES = ("scan", "scan_market", "scan_candidate", "scan_wallet", "scan_result", "group_result")
+_SCAN_TABLES = (
+    "scan", "scan_market", "scan_candidate", "scan_wallet", "scan_result", "group_result", "copy_sample", "copy_result",
+)
 _SNAPSHOT_TABLES = ("snapshot", "listed_position", "activity_row", "market")
 _PRICE_TABLES = ("price_window", "price_point")  # AD-24: stored prices never expire; copied whole
 KEPT_TABLES = (*_SCAN_TABLES, "job", *_SNAPSHOT_TABLES, *_PRICE_TABLES)
 # Kept tables an older file may lack: `group_result` came with version 7, so a version 6 file's Scans are
-# kept without Hold-up rows (Story 5.1); the price tables came with version 8 (Story 6.1).
-_ADDED_LATER = frozenset({"group_result", *_PRICE_TABLES})
+# kept without Hold-up rows (Story 5.1); the price tables came with version 8 (Story 6.1) and the Copy Test
+# tables with version 9 (Story 6.2), so an older file's Scans are kept without a Copy Test.
+_COPY_TABLES = ("copy_sample", "copy_result")
+_ADDED_LATER = frozenset({"group_result", *_PRICE_TABLES, *_COPY_TABLES})
 _FROZEN_IDS = (
     "SELECT before_fetch_id FROM scan_wallet WHERE before_fetch_id IS NOT NULL"
     " UNION SELECT after_fetch_id FROM scan_wallet WHERE after_fetch_id IS NOT NULL"
@@ -168,7 +179,8 @@ class Job:
 @dataclass(frozen=True, slots=True)
 class Scan:
     """One Scan row (FR-16, AD-19). `cutoff` is 00:00 UTC epoch, `as_of` when it was created.
-    `job` is its latest job (Resume adds one), whose status is the Scan's."""
+    `job` is its latest job (Resume or a Copy Test job adds one), whose status is the Scan's.
+    `copied_at` is when its Copy Test results were stored; None for a Scan that has no Copy Test (Story 6.2)."""
 
     scan_id: int
     cutoff: int
@@ -179,6 +191,12 @@ class Scan:
     candidate_count: int | None
     data_rebuilt: bool
     job: Job | None
+    copied_at: int | None = None
+
+    @property
+    def copied(self) -> bool:
+        """Does the Scan have a Copy Test (also one in which no Wallet was priced)?"""
+        return self.copied_at is not None
 
 
 @dataclass(frozen=True, slots=True)
@@ -569,16 +587,13 @@ class Store:
     def scan(self, scan_id: int) -> Scan | None:
         """One Scan with its latest job, or None."""
         db = self._connection()
-        row = db.execute(
-            "SELECT scan_id, cutoff, size, seed, as_of, step, candidate_count, data_rebuilt FROM scan WHERE scan_id = ?",
-            (scan_id,),
-        ).fetchone()
+        row = db.execute(f"SELECT {_SCAN_COLUMNS} FROM scan WHERE scan_id = ?", (scan_id,)).fetchone()
         if row is None:
             return None
         job = db.execute(
             f"SELECT {_JOB_COLUMNS} FROM job WHERE scan_id = ? ORDER BY id DESC LIMIT 1", (scan_id,)
         ).fetchone()
-        return Scan(*row[:5], ScanStep(row[5]), row[6], bool(row[7]), None if job is None else _job(job))
+        return _scan(row, None if job is None else _job(job))
 
     def scans(self) -> tuple[Scan, ...]:
         """Every Scan with its latest job, newest first: the Scan list (FR-16, UX-DR31; Story 4.4)."""
@@ -588,23 +603,21 @@ class Store:
         ))
         latest = {job.scan_id: job for job in jobs}
         return tuple(
-            Scan(*row[:5], ScanStep(row[5]), row[6], bool(row[7]), latest.get(int(row[0])))
-            for row in db.execute(
-                "SELECT scan_id, cutoff, size, seed, as_of, step, candidate_count, data_rebuilt FROM scan"
-                " ORDER BY scan_id DESC"
-            )
+            _scan(row, latest.get(int(row[0])))
+            for row in db.execute(f"SELECT {_SCAN_COLUMNS} FROM scan ORDER BY scan_id DESC")
         )
 
-    def scan_seconds(self, scan_id: int) -> int | None:
-        """How long the Scan's jobs took, from queued to finished, added up over Resumes (Story 4.4's estimate).
+    def scan_seconds(self, scan_id: int, kind: str = SCAN) -> int | None:
+        """How long the Scan's jobs of one kind took, from queued to finished, added up over Resumes (Story 4.4's
+        estimate): its own runs (`scan`), or its Copy Test jobs (`copy`, Story 6.2); 0 when it has none.
 
         None when a run was interrupted: its end is stamped when the app next starts, not when it closed,
-        so the Scan's time is not known (Story 4.4 review).
+        so that time is not known (Story 4.4 review).
         """
         total, interrupted = self._connection().execute(
             "SELECT COALESCE(SUM(finished_at - created_at), 0), COALESCE(SUM(status = ?), 0) FROM job"
-            " WHERE scan_id = ? AND finished_at IS NOT NULL",
-            (JobStatus.INTERRUPTED.value, scan_id),
+            " WHERE scan_id = ? AND kind = ? AND finished_at IS NOT NULL",
+            (JobStatus.INTERRUPTED.value, scan_id, kind),
         ).fetchone()
         return None if interrupted else int(total)
 
@@ -740,10 +753,14 @@ class Store:
             "SELECT DISTINCT wallet FROM scan_result WHERE scan_id = ?", (scan_id,)
         )}
 
-    def finish_scan(self, scan_id: int, groups: Sequence[GroupResult]) -> None:
-        """Every phase is done: the Scan's two Hold-up group results are stored and it moves to `done`, in one
-        transaction, so a Scan finished from this version on always has both (AD-5, AD-22, FR-17). Only a Scan
-        kept from a file older than version 7 is `done` without them."""
+    def finish_scan(
+        self, scan_id: int, groups: Sequence[GroupResult], copies: Sequence[CopyResult] | None
+    ) -> None:
+        """Every phase is done: the Scan's two Hold-up group results and its Copy Test results are stored and it
+        moves to `done`, in one transaction (AD-5, AD-22, FR-17, FR-18a). `copies` None finishes it without a
+        Copy Test: its Copy phase met an unexpected error (Edvard, 2026-11-28), and it gets one later from
+        `save_copy_test`, like a Scan kept from a file older than version 9. An empty `copies` is a Copy Test
+        in which no Wallet was priced. A Scan kept from before version 7 is `done` without Hold-up rows."""
         if sorted(g.group for g in groups) != sorted(HOLDUP_GROUPS):
             raise ValueError("a Scan finishes with the Passers' and the Comparison Group's results, once each")
         with self._write() as db:
@@ -751,6 +768,8 @@ class Store:
             if scan is None:
                 raise ValueError(f"no Scan {scan_id}")
             self._advance(db, scan_id, ScanStep.RANKED, ScanStep.DONE)  # first: a Scan at another step is refused
+            if copies is not None:
+                self._insert_copies(db, scan_id, scan[0], scan[1], copies)
             db.executemany(
                 "INSERT INTO group_result (scan_id, scope, group_name, cutoff, seed, verdict, p_value, tested_count,"
                 " real_pnl, wallets, dropped, not_fully_read) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
@@ -773,6 +792,81 @@ class Store:
             )
         }
         return tuple(stored[group] for group in HOLDUP_GROUPS if group in stored)
+
+    # --- Copy Test results (FR-18a, AD-5, AD-22; Story 6.2) ---------------------------------------
+
+    def queue_copy_test(self, scan_id: int, *, phase: str, message: str) -> int | None:
+        """A queued job of kind `copy` for a finished Scan that has no Copy Test (AD-5), or None when it may
+        not start: the Scan is unknown, not finished, rebuilt (no frozen snapshots, AD-6) or already has a
+        Copy Test, or a Scan or Copy Test job is queued or running."""
+        with self._write() as db:
+            scan = db.execute(
+                "SELECT step, data_rebuilt, copied_at FROM scan WHERE scan_id = ?", (scan_id,)
+            ).fetchone()
+            if scan is None or scan[0] != ScanStep.DONE.value or scan[1] or scan[2] is not None:
+                return None
+            if self._open_scan_job(db) is not None:
+                return None
+            return self._insert_scan_job(db, scan_id, phase=phase, message=message, kind=COPY_TEST)
+
+    def save_copy_test(self, scan_id: int, copies: Sequence[CopyResult]) -> None:
+        """Store the Copy Test results of a Scan that was finished without them and mark it as having a Copy
+        Test, in one transaction. Nothing else about the Scan changes. Refused for a Scan that is not finished
+        (it gets them from `finish_scan`), was rebuilt, or already has a Copy Test."""
+        with self._write() as db:
+            scan = db.execute(
+                "SELECT cutoff, seed, step, data_rebuilt, copied_at FROM scan WHERE scan_id = ?", (scan_id,)
+            ).fetchone()
+            if scan is None:
+                raise ValueError(f"no Scan {scan_id}")
+            if scan[2] != ScanStep.DONE.value or scan[3] or scan[4] is not None:
+                raise ValueError(f"Scan {scan_id} is not a finished Scan without a Copy Test")
+            self._insert_copies(db, scan_id, scan[0], scan[1], copies)
+
+    def copy_results(self, scan_id: int) -> tuple[CopyResult, ...]:
+        """The Scan's stored Copy Test results, by Wallet, each with its Copy Delays shortest first (AD-22);
+        none for a Scan with no Copy Test, or one in which no Wallet was priced (`Scan.copied` tells them apart)."""
+        db = self._connection()
+        delays: dict[str, list[FollowerResult]] = {}
+        for wallet, delay, priced, left_out, follower_pnl, spent, own_pnl in db.execute(
+            "SELECT wallet, delay, priced, left_out, follower_pnl, spent, own_pnl FROM copy_result"
+            " WHERE scan_id = ? ORDER BY wallet, delay",
+            (scan_id,),
+        ):
+            delays.setdefault(wallet, []).append(FollowerResult(delay, priced, left_out, follower_pnl, spent, own_pnl))
+        return tuple(
+            CopyResult(wallet, after_positions, sampled, bool(unread), tuple(delays.get(wallet, ())))
+            for wallet, after_positions, sampled, unread in db.execute(
+                "SELECT wallet, after_positions, sampled, not_fully_read FROM copy_sample WHERE scan_id = ? ORDER BY wallet",
+                (scan_id,),
+            )
+        )
+
+    def _insert_copies(
+        self, db: sqlite3.Connection, scan_id: int, cutoff: int, seed: int, copies: Sequence[CopyResult]
+    ) -> None:
+        """The Copy rows of one Scan and its `copied_at`, inside the caller's transaction."""
+        wallets = [copy.wallet for copy in copies]
+        if len(set(wallets)) != len(wallets):
+            raise ValueError("a Wallet is in the Copy Test results twice")
+        for copy in copies:
+            seconds = [result.delay for result in copy.delays]
+            if len(set(seconds)) != len(seconds):
+                raise ValueError(f"{copy.wallet} has two results for one Copy Delay")
+        db.executemany(
+            "INSERT INTO copy_sample (scan_id, wallet, cutoff, seed, after_positions, sampled, not_fully_read)"
+            " VALUES (?, ?, ?, ?, ?, ?, ?)",
+            ((scan_id, c.wallet, cutoff, seed, c.after_positions, c.sampled, int(c.not_fully_read)) for c in copies),
+        )
+        db.executemany(
+            "INSERT INTO copy_result (scan_id, wallet, delay, priced, left_out, follower_pnl, spent, own_pnl)"
+            " VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+            (
+                (scan_id, c.wallet, r.delay, r.priced, r.left_out, r.follower_pnl, r.spent, r.own_pnl)
+                for c in copies for r in c.delays
+            ),
+        )
+        db.execute("UPDATE scan SET copied_at = ? WHERE scan_id = ?", (self._now(), scan_id))
 
     # --- price history (AD-24, Story 6.1) -------------------------------------------------------
 
@@ -841,14 +935,18 @@ class Store:
 
     @staticmethod
     def _open_scan_job(db: sqlite3.Connection) -> int | None:
-        row = db.execute("SELECT id FROM job WHERE kind = ? AND status IN (?, ?) LIMIT 1", (SCAN, *_OPEN)).fetchone()
+        row = db.execute(
+            "SELECT id FROM job WHERE kind IN (?, ?) AND status IN (?, ?) LIMIT 1", (*_SCAN_KINDS, *_OPEN)
+        ).fetchone()
         return None if row is None else int(row[0])
 
-    def _insert_scan_job(self, db: sqlite3.Connection, scan_id: int, *, phase: str, message: str) -> int:
+    def _insert_scan_job(
+        self, db: sqlite3.Connection, scan_id: int, *, phase: str, message: str, kind: str = SCAN
+    ) -> int:
         return int(db.execute(
             "INSERT INTO job (kind, scan_id, status, phase, done, total, message, created_at)"
             " VALUES (?, ?, ?, ?, 0, 0, ?, ?)",
-            (SCAN, scan_id, JobStatus.QUEUED.value, phase, message, self._now()),
+            (kind, scan_id, JobStatus.QUEUED.value, phase, message, self._now()),
         ).lastrowid)
 
     def close(self) -> None:
@@ -1072,6 +1170,11 @@ def _statements(script: str) -> Iterator[str]:
 
 
 _JOB_COLUMNS = "id, kind, wallet, status, phase, done, total, message, result, created_at, finished_at, scan_id"
+_SCAN_COLUMNS = "scan_id, cutoff, size, seed, as_of, step, candidate_count, data_rebuilt, copied_at"
+
+
+def _scan(row: tuple, job: Job | None) -> Scan:
+    return Scan(*row[:5], ScanStep(row[5]), row[6], bool(row[7]), job, row[8])
 
 
 def _job(row: tuple) -> Job:

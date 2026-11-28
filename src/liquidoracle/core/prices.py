@@ -28,8 +28,8 @@ Span = tuple[int, int]  # [start, end] in epoch seconds, both ends included
 def price_at(points: Sequence[PricePoint], t: int) -> float | None:
     """The price of one outcome at time `t`: the last point at or before `t`, if at most `MAX_AGE` old (AD-24).
 
-    `points` are one token's points, oldest first. None when there is no such point: the buy is then
-    left out of that Copy Delay and counted (FR-18a, FR-18c).
+    `points` are one token's points, oldest first. None when there is no such point: the buy's whole
+    Position is then left out of that Copy Delay and counted (FR-18a, FR-18c; Edvard, 2026-11-28).
     """
     at = bisect_right(points, t, key=lambda point: point.t)
     if at == 0:
