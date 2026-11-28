@@ -10,7 +10,7 @@ from __future__ import annotations
 from collections.abc import Callable, Iterable
 from typing import Protocol
 
-from liquidoracle.records import ActivityRow, FunnelMarket, ListedPosition, Market, MarketHolder, Read
+from liquidoracle.records import ActivityRow, FunnelMarket, ListedPosition, Market, MarketHolder, PriceRead, Read
 
 
 class WalletClient(Protocol):
@@ -52,4 +52,14 @@ class FunnelClient(WalletClient, Protocol):
 
     def funnel_markets(self, closed_from: int, closed_until: int, count: int) -> tuple[FunnelMarket, ...]:
         """Up to `count` resolved Markets closed in [closed_from, closed_until), highest volume first (AD-21)."""
+        ...
+
+
+class PriceClient(Protocol):
+    """A client that can read price history (AD-24): `PolymarketClient`, and `OfflineClient` with the
+    Sample Dataset's stored points (Story 6.1)."""
+
+    def price_history(self, token_id: str, start: int, end: int) -> PriceRead:
+        """The one-minute price points of one outcome token in [start, end], oldest first, never a coarser
+        grain; the window is at most 14 days (AD-14, AD-24)."""
         ...

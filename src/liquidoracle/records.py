@@ -94,6 +94,51 @@ class PricePoint:
     price: float
 
 
+# AD-24: where a price answer came from. `refused` marks a window Polymarket refused: it is stored with no points.
+ROUTE_CLOB, ROUTE_V2, ROUTE_SAMPLE, ROUTE_REFUSED = "clob", "v2", "sample", "refused"
+PRICE_ROUTES = (ROUTE_CLOB, ROUTE_V2, ROUTE_SAMPLE, ROUTE_REFUSED)
+# AD-14: the longest window one price request may cover; Polymarket refuses longer ones (spike, Q3).
+PRICE_REQUEST_SPAN = 14 * 86_400
+
+
+@dataclass(frozen=True, slots=True)
+class PriceRead:
+    """The one-minute price points of one outcome inside one asked window, oldest first, one per second at
+    most, and the route that answered (AD-24). No points means Polymarket has no one-minute price there."""
+
+    points: tuple[PricePoint, ...]
+    route: str
+
+
+@dataclass(frozen=True, slots=True)
+class PriceRequest:
+    """One price request still to make (AD-14): the short windows of one token it covers, oldest first.
+    The request asks for [`start`, `end`], at most `PRICE_REQUEST_SPAN` long; only the points inside
+    `windows` are kept."""
+
+    token_id: str
+    windows: tuple[tuple[int, int], ...]
+
+    def __post_init__(self) -> None:
+        if not self.windows:
+            raise ValueError("a price request covers at least one window")
+        last_end = None
+        for start, end in self.windows:
+            if end < start or (last_end is not None and start <= last_end):
+                raise ValueError("a price request's windows are in time order and do not overlap")
+            last_end = end
+        if self.end - self.start > PRICE_REQUEST_SPAN:
+            raise ValueError(f"a price request covers at most {PRICE_REQUEST_SPAN} seconds")
+
+    @property
+    def start(self) -> int:
+        return self.windows[0][0]
+
+    @property
+    def end(self) -> int:
+        return self.windows[-1][1]
+
+
 @dataclass(frozen=True, slots=True)
 class ListedPosition:
     """One row of a Wallet's positions lists (AD-10: which Positions exist, shares bought).

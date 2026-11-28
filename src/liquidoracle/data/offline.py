@@ -4,6 +4,9 @@ It reads the Sample Dataset's JSON files with `sample_json` and returns the same
 the live client returns. Anything outside the Sample Dataset raises `NotAvailableOffline`. It
 never opens a network connection.
 
+It is also a `PriceClient` (Story 6.1): `price_history` serves the price points stored in the Wallet
+files, so the Copy Test prices offline by the same rule as live (AD-24).
+
 It is also a `FunnelClient` (Story 4.6), so the Scan runs offline on the live path: the Market set
 comes from the Sample Dataset's two volume lists (`funnel-markets.json`): the synthetic anchor
 Markets, whose holder rows are derived from the Synthetic Wallets' own trades as Polymarket derives
@@ -22,7 +25,19 @@ from pathlib import Path
 from liquidoracle.data import sample_json, synthetic
 from liquidoracle.data.errors import NotAvailableOffline
 from liquidoracle.data.polymarket import LIST_STATUSES, MARKET_ROW_CAP, PAGE_LIMIT
-from liquidoracle.records import ActivityRow, FunnelMarket, ListedPosition, Market, MarketHolder, Read, SampleWallet
+from liquidoracle.records import (
+    PRICE_REQUEST_SPAN,
+    ROUTE_SAMPLE,
+    ActivityRow,
+    FunnelMarket,
+    ListedPosition,
+    Market,
+    MarketHolder,
+    PricePoint,
+    PriceRead,
+    Read,
+    SampleWallet,
+)
 
 # Folders that hold Sample Wallet files, relative to the repository folder: the real Wallets
 # (Story 2.6, written by `build-sample`) and the Synthetic Wallets.
@@ -32,6 +47,7 @@ SAMPLE_DIRS = (REAL_DIR, synthetic.SMALL_DIR, synthetic.COIN_FLIPPER_DIR)
 # Wallets' Cut-off Date and sources.
 NOT_WALLET_FILES = frozenset({"expected.json", "dataset.json", synthetic.FUNNEL_FILE})
 ADDRESS = re.compile(r"0x[0-9a-f]{40}")  # FR-1: a proxy-wallet address, lower case
+TOKEN = re.compile(r"[0-9]{1,100}")  # an outcome token id: a decimal number, as the live client checks it
 
 
 def sample_files(root: Path) -> list[Path]:
@@ -57,6 +73,7 @@ class _Index:
     wallets: dict[str, Path]  # address -> file
     markets: dict[str, Path]  # condition_id -> the first file holding it
     holders: dict[str, list[Path]]  # condition_id -> every file holding it (a Market's holder lists)
+    prices: dict[str, list[Path]]  # token_id -> every file holding price points of it (Story 6.1)
 
 
 class OfflineClient:
@@ -230,6 +247,36 @@ class OfflineClient:
             return Read(rows[:MARKET_ROW_CAP], False)
         return Read(rows, True)
 
+    def price_history(self, token_id: str, start: int, end: int) -> PriceRead:
+        """The Sample Dataset's price points of one outcome token in [start, end], oldest first (AD-14, AD-24).
+
+        The points are served as stored, one per second at most; a token with no stored points gives none,
+        as live when Polymarket has no price, so its buys are left out and counted (FR-18c). A request the
+        live client refuses as a bug (a token id that is not a number, a window over 14 days or ending before
+        it starts) is refused here too. Two files that give one token two prices for the same second are an error.
+        """
+        if not isinstance(token_id, str) or not TOKEN.fullmatch(token_id):
+            raise ValueError(f"not an outcome token id: {token_id!r}")
+        if any(isinstance(value, bool) or not isinstance(value, int) for value in (start, end)):
+            raise ValueError("start and end are whole epoch seconds")
+        if end < start:
+            raise ValueError("the window must not end before it starts")
+        if end - start > PRICE_REQUEST_SPAN:
+            raise ValueError(f"one price request covers at most {PRICE_REQUEST_SPAN} seconds, not {end - start}")
+        paths = self._get_index().prices.get(token_id)
+        if paths is None and self._refresh():  # a file written since the start (as for a Wallet or a Market)
+            paths = self._get_index().prices.get(token_id)
+        wallets = [wallet for wallet in self._memory.values() if wallet.prices]
+        wallets += [self._read(path)[0] for path in paths or ()]
+        found: dict[int, PricePoint] = {}
+        for wallet in wallets:
+            for point in wallet.prices:
+                if point.token_id != token_id or not start <= point.t <= end:
+                    continue
+                if found.setdefault(point.t, point).price != point.price:
+                    raise ValueError(f"the Sample Dataset gives token {token_id} two prices at {point.t}")
+        return PriceRead(tuple(found[t] for t in sorted(found)), ROUTE_SAMPLE)
+
     def _funnel(self) -> sample_json.FunnelFile:
         """The volume lists merged; a Market on two lists is an error, so no list silently wins."""
         volumes: dict[str, float] = {}
@@ -357,8 +404,9 @@ def _build_index(files: Sequence[Path]) -> _Index:
     wallets: dict[str, Path] = {}
     markets: dict[str, Path] = {}
     holders: dict[str, list[Path]] = {}
+    prices: dict[str, list[Path]] = {}
     for path in files:
-        address, condition_ids = sample_json.read_ids(path)
+        address, condition_ids, priced = sample_json.read_ids(path)
         if not ADDRESS.fullmatch(address):
             raise ValueError(f"{path}: the address {address!r} is not 0x and 40 lower-case hex characters (FR-1)")
         if address in wallets:
@@ -367,4 +415,6 @@ def _build_index(files: Sequence[Path]) -> _Index:
         for condition_id in condition_ids:
             markets.setdefault(condition_id, path)
             holders.setdefault(condition_id, []).append(path)
-    return _Index(wallets, markets, holders)
+        for token_id in priced:
+            prices.setdefault(token_id, []).append(path)
+    return _Index(wallets, markets, holders, prices)

@@ -78,6 +78,8 @@ Without `--offline` the app reads Polymarket's public data (no key, no account, 
 
 Live data is stored in `instance/live.db` (never committed). Looking up the same Wallet again within 24 hours uses the stored data and makes no network call; the card's "Data stored …" line says when it was fetched. If Polymarket does not answer, the page says so and offers the Wallet's older stored data, if there is any. An address that never traded on Polymarket gets "No Polymarket history found".
 
+After an update of the app, the first start may convert `instance/live.db` to a new layout and say so in the terminal. Stored Scans are kept. With a large Scan in the file this takes about a minute per GB, and the file can end up about twice as large, because the kept data is copied; if the conversion cannot finish (a full disk, say), the file is left as it was.
+
 ### Where the real Sample Wallets come from
 
 The 10 real Wallets in `sample_data/real/` were built by one command from a raw capture of Polymarket's public data (23 October 2026, about 175 MB) that is **not in the repository**: it is kept outside it, with a SHA-256 file to prove it has not changed. The capture holds no market records (Gamma) and only the oldest 60,000 closed positions of one very large Wallet, so those were fetched once on 23 November 2026, read-only, into an additions file kept next to the capture with its own SHA-256 file. The command checks both files, runs the app's own rules on each Wallet, keeps only the rows those rules read, and checks that each written file gives exactly the same result. Running it twice gives identical files; nothing in `sample_data/` is edited by hand.

@@ -98,7 +98,15 @@ def gamma_market(condition_id: str, **extra: object) -> dict[str, object]:
         f"{DATA_API}/trades",
         f"{DATA_API}/v1/positions",
         "http://data-api.polymarket.com/v2/positions",  # not HTTPS
-        "https://clob.polymarket.com/prices-history",  # another host (Epic 6 adds price history)
+        "https://clob.polymarket.com/order",  # the CLOB host takes orders: only its price history passes (AD-24)
+        "https://clob.polymarket.com/orders",
+        "https://clob.polymarket.com/book",
+        "https://clob.polymarket.com/prices-history/",
+        "https://clob.polymarket.com/v2/prices-history",
+        "https://clob.polymarket.com/",
+        "http://clob.polymarket.com/prices-history",
+        "https://clob.polymarket.com/prices-history?market=1",
+        "https://clob.polymarket.com.evil.example/prices-history",
         "https://example.com/v2/positions",
         "https://data-api.polymarket.com.evil.example/v2/positions",
         f"{DATA_API}/v2/positions?user=x",  # parameters go through `params`, never the URL
@@ -118,9 +126,18 @@ def test_url_guard_runs_before_sending() -> None:
     assert transport.calls == []
 
 
-@pytest.mark.parametrize("url", [f"{DATA_API}/v2/positions", f"{DATA_API}/v2/activity", f"{GAMMA_API}/markets"])
+@pytest.mark.parametrize(
+    "url",
+    [
+        f"{DATA_API}/v2/positions",
+        f"{DATA_API}/v2/activity",
+        f"{DATA_API}/v2/prices-history",
+        f"{GAMMA_API}/markets",
+        "https://clob.polymarket.com/prices-history",  # the one CLOB path (AD-24, Story 6.1)
+    ],
+)
 def test_url_guard_allows_v2_and_gamma(url: str) -> None:
-    """AD-2: the routes the client uses pass."""
+    """AD-2, AD-24: the routes the client uses pass: Data API v2, Gamma and the CLOB host's price history."""
     check_url(url)
 
 

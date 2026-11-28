@@ -274,7 +274,7 @@ Checks:
 - 7 coin-flipper Passers holding the same side of the same 40 Markets get p < 0.05 in at most 7% of 1,000 runs.
 
 #### FR-18: Copy Test (milestone 2c)
-For each Before-Cut-off Passer, the Copy Test shows what a follower copying its buys late would have made (FR-18a), and checks the Passers as a group against random picks from the same Scan (FR-18b), on recorded prices (FR-18c). The page shows the Random Group Check first, then the per-Wallet numbers.
+For each Before-Cut-off Passer, the Copy Test shows what a follower copying its buys late would have made (FR-18a), and checks the Passers as a group against random picks from the same Scan (FR-18b), on recorded prices (FR-18c). The page shows the Random Group Check first, then the per-Wallet numbers. A Scan that finished without a Copy Test can get one afterwards from a "Run Copy Test" button, on the data the Scan stored; the app never starts it by itself (Edvard, 2026-11-28).
 
 ##### FR-18a: Follower PnL and Follower Return
 For each Before-Cut-off Passer, over its Copy Sample, the system shows Follower PnL and Follower Return at each Copy Delay next to the Wallet's own Real PnL over the same Positions.

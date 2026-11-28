@@ -52,12 +52,13 @@ def test_connection_uses_wal_busy_timeout_and_foreign_keys(store: Store) -> None
 
 
 def test_new_file_gets_the_schema_and_its_version(store: Store) -> None:
-    """AD-6: schema.sql creates the four fetched-data tables, the job table, Story 4.3's five scan tables and
-    Story 5.1's Hold-up group results, and user_version records the schema."""
+    """AD-6: schema.sql creates the four fetched-data tables, the job table, Story 4.3's five scan tables,
+    Story 5.1's Hold-up group results and Story 6.1's two price tables (AD-24), and user_version records the schema."""
     tables = {name for (name,) in raw(store, "SELECT name FROM sqlite_master WHERE type='table'")}
     assert tables - {"sqlite_sequence"} == {
         "snapshot", "listed_position", "activity_row", "market", "job",
         "scan", "scan_market", "scan_candidate", "scan_wallet", "scan_result", "group_result",
+        "price_window", "price_point",
     }
     assert raw(store, "PRAGMA user_version") == [(SCHEMA_VERSION,)]
 
@@ -428,7 +429,7 @@ def test_an_older_database_is_rebuilt_and_takes_a_window_snapshot(tmp_path: Path
     old.close()
     db = Store(path)
     try:
-        assert raw(db, "PRAGMA user_version") == [(SCHEMA_VERSION,)] and SCHEMA_VERSION == 7
+        assert raw(db, "PRAGMA user_version") == [(SCHEMA_VERSION,)] and SCHEMA_VERSION == 8
         assert db.latest_snapshot("w") is None and db.resolved_markets(["0xold"]) == {}
         write(db)
         snapshot = db.latest_snapshot(WALLET)

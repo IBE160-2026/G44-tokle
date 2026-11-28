@@ -1110,6 +1110,8 @@ How it went (2026-11-27, written up 2026-11-28): the trial Scan of 10 Wallets to
 
 The user sees Follower PnL and Follower Return at 1, 5 and 30 minutes and the Random Group Check; a Copy Test on real data is run and reported (SM-5). Stage 2 is done. Beyond the stage 2 minimum (PRD §6.1). If the epic runs late, Story 6.4's table polish slips first; Story 6.6 may run after 1 December, because it is running the app and writing up, not new code; the checks in Stories 6.2 and 6.3 are never cut (Edvard, 2026-10-24). The old price route is checked daily by a scheduled workflow, and a 50-Wallet insurance pool was captured in advance (spine AD-24, PRD FR-18c).
 
+A finished Scan can get its Copy Test afterwards (Edvard, 2026-11-28): the live Scan of Story 5.3 is not to be redone. A finished Scan that has no Copy Test shows a "Run Copy Test" button, which queues a job for that Scan that runs only the Copy phase on the snapshots the Scan froze; the app never starts it by itself (rejected: starting it automatically when the app finds such a Scan, because the user should decide when about 10,000 price requests start). A new Scan runs the Copy Test as its last phase. The button and the phase are built in Stories 6.2 to 6.4; Story 6.1 keeps prices by token, not by Scan, and proves on a duplicate of the real database that the schema change keeps the Scan.
+
 ### Story 6.1: Price history
 
 As a user,
@@ -1132,6 +1134,20 @@ So that the Copy Test can price what a late follower would have paid.
 **When** this story is done
 **Then** its classes and the client's one-minute test agree (the same 40-point and 90-second rule), so a "coarse" or "gone" alert means the client would also stop using the old route.
 
+**Given** an answered price request (added with the story's planning and review, 2026-11-28)
+**When** it is stored
+**Then** only a definitive answer is stored: an outage, an unreadable answer or a block stores nothing and stops the job with Resume, and a request refused for itself is stored as a window with no points (AD-3, AD-24)
+**And** a stored window is never asked for again, each stored window names its route, and stored prices and every Scan with its frozen snapshots are kept at a schema change (AD-4, AD-6, AD-19).
+
+Decided while planning (2026-11-28; the AI's choices unless Edvard is named):
+- Measured the same day: the old route still gives one-minute points (60 for the check's hour, 19,615 for a 14-day window). The replacement route is `data-api.polymarket.com/v2/prices-history` with `token_id`, `start`, `end` and `bucket_seconds`; each row carries `timestamp`, `price` and `resolution_seconds`; it refuses `market=` with 400 and gives an empty list for July 2025. So if the old route goes, a Scan with the default Cut-off Date gets no prices and Story 6.6 falls back to the insurance pool, as planned.
+- How the client knows the old route still gives one-minute prices: before using it it sends the daily check's own request and classifies the answer by the check's rule, and sends it again after an hour or 200 price requests, whichever comes first (an answer of 0 or 1 points proves nothing about the grain, and a whole Copy phase fits inside an hour). Any class but one-minute sends it to the replacement route. The old route is left only on that rule: an answer of two or more points with a median gap above 90 seconds, or a 404 or 410, only makes the client send the check's request again (unless it was sent in the last minute). If the check then fails, the answer is not used and the replacement route is asked; if it still passes, a thin answer is used as it is and a 404 is a refusal of that one request. Found by the story's own tests and its review: otherwise one odd token would send every later token to a route that has no old prices, and their empty answers would be stored for good. A test runs the workflow's own script and the client's rule on the same answers.
+- On the replacement route, rows whose `resolution_seconds` is above 60 are dropped.
+- Only a definitive answer is stored. When Polymarket does not answer, answers something the client cannot read (also on the check's request), or does not let the client in (401, 403, 407, 451: a block, not an answer about a token), nothing is stored and the job stops with Resume, as for every other read. A request Polymarket refuses for itself (400, or a 404 while the route is fine) is stored as a window with no points, so one odd token does not end a long run. Each asked window is its own stored row and names the route it came from (`clob`, `v2`, `sample` or `refused`), so a later, wider request never relabels an earlier answer.
+- The URL guard lets the CLOB host through for the path `/prices-history` only, so nothing else on the trading host can be called.
+- The store's schema rises to version 8 with two price tables, both kept at every later schema change. Before the app is started on the live database with the new code, a duplicate of the kept copy is converted and checked against the README's numbers (Edvard, 2026-11-28: the Copy Test must run on the Scan that exists). Done 2026-11-28: about a minute, every Scan row identical, the file about twice as large. After the review: only a snapshot the new schema refuses marks a Scan "data rebuilt"; any other failure during the copy (a full disk) rolls the whole change back and leaves the file as it was.
+- The Scan phase that fetches the prices, and the Copy Sample that says which buys need one, are Story 6.2.
+
 ### Story 6.2: Follower PnL
 
 As a user,
@@ -1151,6 +1167,10 @@ So that I can tell forecasters from speed traders.
 **Given** the Synthetic Wallets from Epic 4
 **When** they are copied
 **Then** the speed trader has Follower PnL ≤ 0 at 5 minutes and the forecaster Follower PnL > 0 at 30 minutes (FR-18a).
+
+**Given** a Scan that finished before it had a Copy Test (Edvard, 2026-11-28: the live Scan of Story 5.3 is not redone)
+**When** a Copy Test job is queued for it
+**Then** only the Copy phase runs, on the snapshots the Scan froze and with prices fetched by token (Story 6.1); no Wallet is fetched again, the Scan's other results do not change, and a stop can be resumed (AD-5, AD-19).
 
 **Given** a hand-made set of three Positions in a Market with a fee, including a Position bought in more than one fill
 **When** a fresh AI helper works out its Follower PnL and Follower Return step by step, given only the PRD and the set's data and never the app's code, including the Spread Allowance (same rule as FR-4: its calculation is committed before the test compares it)
@@ -1193,6 +1213,10 @@ So that I do not mistake a single lucky Wallet for evidence.
 **When** it renders
 **Then** it shows Follower PnL and Follower Return at 1, 5 and 30 minutes next to the Wallet's own Real PnL on the same Positions, the 1- and 30-minute columns tagged "Extra information", the caption "These per-Wallet numbers are not luck-checked. Only the Random Group Check above is.", "priced N of M" per Wallet, positions left out per delay, and "Follower PnL ignores the spread and the follower's own price impact, so it is an upper bound." with the Spread Allowance's limits (FR-18a, UX-DR36)
 **And** a Wallet opens its Verdict page with "← Back to Copy Test (Cut-off Date …)" (UX-DR37), and the page shows the Seed (FR-11); the table polish is what slips first.
+
+**Given** a finished Scan that has no Copy Test (Edvard, 2026-11-28)
+**When** the user looks at it
+**Then** a "Run Copy Test" button starts the Copy Test for that Scan; the app never starts it by itself. To settle when this story is planned: where the button sits (the Scan list, the Copy Test tab, or both), what it shows while another job runs, a second click, Offline Mode, and a Scan whose data was rebuilt (no frozen snapshots: no Copy Test).
 
 ### Story 6.5: Copy windows in the Sample Dataset
 
