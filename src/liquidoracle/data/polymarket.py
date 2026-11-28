@@ -1,7 +1,8 @@
 """The one Polymarket client: read-only, polite, typed (AD-2, AD-3, NFR-6, NFR-11).
 
-Only this module talks to Polymarket. It sends GET requests to Data API v2 and Gamma, with no
-keys, and refuses every other URL before anything is sent (Data API v1 retired on 2026-10-24).
+Only this module talks to Polymarket. It sends GET requests to Data API v2 and Gamma, and to one
+path of the CLOB host, its recorded price history (AD-24, Story 6.1), with no keys, and refuses
+every other URL before anything is sent (Data API v1 retired on 2026-10-24).
 Every request, retries included, waits its turn at one locked rate limiter. Failures follow the
 one retry policy of AD-3 and end as typed errors from `data/errors.py`. Replies are turned into
 `records` types here, so nothing above `data/` sees raw JSON.
@@ -28,15 +29,55 @@ from urllib.parse import urlsplit
 import requests
 
 from liquidoracle.data.errors import PolymarketBadRequest, PolymarketUnavailable, ProtocolContractAddress
-from liquidoracle.records import ActivityRow, FunnelMarket, ListedPosition, Market, MarketHolder, Read
+from liquidoracle.records import (
+    PRICE_REQUEST_SPAN,
+    ROUTE_CLOB,
+    ROUTE_V2,
+    ActivityRow,
+    FunnelMarket,
+    ListedPosition,
+    Market,
+    MarketHolder,
+    PricePoint,
+    PriceRead,
+    Read,
+)
 from liquidoracle.settings import MAX_REQUESTS_PER_SECOND
 
 log = logging.getLogger(__name__)
 
 DATA_API = "https://data-api.polymarket.com"
 GAMMA_API = "https://gamma-api.polymarket.com"
-_ALLOWED_HOSTS = {urlsplit(DATA_API).netloc, urlsplit(GAMMA_API).netloc}
+CLOB_API = "https://clob.polymarket.com"
+CLOB_PRICES_PATH = "/prices-history"  # AD-2, AD-24: the one path of the CLOB host the client may call
+_ALLOWED_HOSTS = {urlsplit(DATA_API).netloc, urlsplit(GAMMA_API).netloc, urlsplit(CLOB_API).netloc}
 _GAMMA_HOST = urlsplit(GAMMA_API).netloc
+_CLOB_HOST = urlsplit(CLOB_API).netloc
+
+# AD-24: the old price route is used while it still gives one-minute points. That is decided by the daily
+# route check's own request and rule (.github/workflows/price-route-check.yml): its token and hour must give
+# at least 40 points with a median gap of at most 90 seconds. A test runs the workflow's script and
+# `route_class` on the same answers, so an alert from the workflow means this client leaves the old route too.
+PROBE_TOKEN = "101508092941909893140840077696210540144992151979805105899965366713466670269947"
+PROBE_START, PROBE_END = 1_751_385_600, 1_751_389_200  # one hour on 1 July 2025
+ONE_MINUTE_POINTS = 40
+ONE_MINUTE_GAP = 90  # seconds
+# The check's classes, with "gone-<status>" for an answer that is not 200.
+ONE_MINUTE, COARSE, EMPTY, UNREACHABLE = "one-minute", "coarse", "empty", "unreachable"
+PROBE_EVERY = 3600.0  # [ASSUMPTION] seconds the old route is used before the check's request is sent again
+# [ASSUMPTION] ... or this many price requests to it, whichever comes first: an answer of 0 or 1 points proves
+# nothing about the grain, so at 5 requests a second a change is noticed within about a minute, not an hour.
+PROBE_REQUESTS = 200
+# [ASSUMPTION] seconds a check's answer settles a doubt (a thin answer, a 404) without being asked again, so a
+# run of thin tokens does not double its requests.
+PROBE_TRUSTED = 60.0
+# A refusal with one of these is Polymarket not letting the client in (a block, a sign-in wall), not an answer
+# about a token or a route: nothing may be stored on it, so it stops the job like an outage (AD-3, AD-24).
+BLOCKED_STATUS = frozenset({401, 403, 407, 451})
+PRICE_BUCKET = 60  # seconds: the grain asked of the replacement route, always sent (AD-24)
+PRICE_PAGE = 10_000  # rows per page of the replacement route (its own default, measured 2026-11-28)
+GONE_STATUS = frozenset({404, 410})  # a price request answered like this means the old route is gone
+_TOKEN = re.compile(r"[0-9]{1,100}")  # an outcome token id: a decimal number
 
 # No keys and no auth headers; a generic name, nothing about the user (AD-2).
 HEADERS = {"User-Agent": "liquidoracle/0.1 (student project)", "Accept": "application/json"}
@@ -188,6 +229,11 @@ class PolymarketClient:
         self._limiter = RateLimiter(requests_per_second, clock=clock, sleep=sleep)
         self._sleep = sleep
         self._wall_clock = wall_clock  # for a Retry-After given as a date
+        self._clock = clock
+        # AD-24: the old price route's class as last checked, and when (monotonic); None before the first check.
+        self._old_route: tuple[str, float] | None = None
+        self._since_probe = 0  # price requests sent to the old route since that check
+        self._price_lock = threading.Lock()
 
     # The three reads ------------------------------------------------------------------------
 
@@ -360,6 +406,121 @@ class PolymarketClient:
         ordered = sorted(found.values(), key=lambda entry: (-entry.volume, entry.market.condition_id))
         return tuple(ordered[:count])
 
+    # Price history (Story 6.1) ------------------------------------------------------------------
+
+    def price_history(self, token_id: str, start: int, end: int) -> PriceRead:
+        """The one-minute price points of one outcome token in [start, end], oldest first (FR-18c, AD-24).
+
+        The old CLOB route is asked at `fidelity=1` while the daily check's request still gets one-minute
+        points from it (asked before the first use and again after `PROBE_EVERY` seconds); otherwise the
+        replacement route is asked with `bucket_seconds=60` sent explicitly, and its rows of a coarser
+        resolution are dropped. The old route is left only on the check's own rule: an answer of two
+        or more points whose median gap is above `ONE_MINUTE_GAP` (it looks coarse), or a 404 or 410
+        (it looks gone), makes the client send the check's request again, unless it was sent in the
+        last `PROBE_TRUSTED` seconds. If the check no longer gets one-minute points, the answer is
+        not used and the replacement is asked. If it still does, the route is fine: a thin answer is
+        used as it is (its points are still minute points, and `price_at` never uses one older than
+        2 minutes), and a 404 is a refusal of this request. Otherwise one odd token would send every
+        later token to a route that has no old prices. No points means there is no one-minute price.
+
+        Raises `PolymarketUnavailable` when Polymarket does not answer, answers something the client
+        cannot read, or does not let the client in (`BLOCKED_STATUS`): nothing may then be stored as
+        "no price". Raises `PolymarketBadRequest` when it refuses this one request.
+        """
+        if not isinstance(token_id, str) or not _TOKEN.fullmatch(token_id):
+            raise ValueError(f"not an outcome token id: {token_id!r}")
+        if any(isinstance(value, bool) or not isinstance(value, int) for value in (start, end)):
+            raise ValueError("start and end are whole epoch seconds")
+        if end < start:
+            raise ValueError("the window must not end before it starts")
+        if end - start > PRICE_REQUEST_SPAN:
+            raise ValueError(f"one price request covers at most {PRICE_REQUEST_SPAN} seconds, not {end - start}")
+        try:
+            return self._price_history(token_id, start, end)
+        except PolymarketBadRequest as error:
+            if error.status in BLOCKED_STATUS:
+                raise PolymarketUnavailable(f"Polymarket did not let the price request in ({error.status})") from error
+            raise
+
+    def _price_history(self, token_id: str, start: int, end: int) -> PriceRead:
+        if self._old_route_class() == ONE_MINUTE:
+            try:
+                points = self._clob_prices(token_id, start, end)
+            except PolymarketBadRequest as error:
+                if error.status not in GONE_STATUS or self._old_route_class(doubt=True) == ONE_MINUTE:
+                    raise  # the route is fine (or this is no "gone" answer): Polymarket refuses this request
+            else:
+                if one_minute_grain([point.t for point in points]) or self._old_route_class(doubt=True) == ONE_MINUTE:
+                    return PriceRead(points, ROUTE_CLOB)
+        return PriceRead(self._v2_prices(token_id, start, end), ROUTE_V2)
+
+    def _old_route_class(self, *, doubt: bool = False) -> str:
+        """The old route's class by the daily check's request (AD-24).
+
+        The last answer is reused for `PROBE_EVERY` seconds and `PROBE_REQUESTS` price requests; with a
+        `doubt` (an answer that looks coarse or gone) only for `PROBE_TRUSTED` seconds. An answer the
+        client cannot read as the check's shape is never a class: it raises, like any unreadable answer.
+        """
+        with self._price_lock:
+            known, since = self._old_route, self._since_probe
+        if known is not None:
+            age = self._clock() - known[1]
+            if age < PROBE_TRUSTED if doubt else (age < PROBE_EVERY and since < PROBE_REQUESTS):
+                return known[0]
+        params = [("market", PROBE_TOKEN), ("startTs", str(PROBE_START)), ("endTs", str(PROBE_END)), ("fidelity", "1")]
+        try:
+            document = self._get_json(CLOB_API + CLOB_PRICES_PATH, params)
+        except PolymarketBadRequest as error:
+            if error.status in BLOCKED_STATUS:
+                raise  # not an answer about the route: `price_history` turns it into an outage
+            return self._set_old_route(route_class(error.status, ()))
+        if not isinstance(document, dict) or not isinstance(document.get("history"), list):
+            raise _unreadable(CLOB_PRICES_PATH, "expected an object with a history list")
+        times = [_parse(lambda raw: _whole(raw, "t"), raw, CLOB_PRICES_PATH) for raw in document["history"]]
+        return self._set_old_route(route_class(200, times))
+
+    def _set_old_route(self, found: str) -> str:
+        with self._price_lock:
+            before = self._old_route
+            self._old_route = (found, self._clock())
+            self._since_probe = 0
+        if found != ONE_MINUTE and (before is None or before[0] != found):
+            log.warning(
+                "Polymarket's old price route is %r, not one-minute: asking the replacement route, which keeps"
+                " one-minute prices for about a week only (AD-24)", found,
+            )
+        return found
+
+    def _clob_prices(self, token_id: str, start: int, end: int) -> tuple[PricePoint, ...]:
+        params = [("market", token_id), ("startTs", str(start)), ("endTs", str(end)), ("fidelity", "1")]
+        with self._price_lock:
+            self._since_probe += 1
+        document = self._get_json(CLOB_API + CLOB_PRICES_PATH, params)
+        if not isinstance(document, dict) or not isinstance(document.get("history"), list):
+            raise _unreadable(CLOB_PRICES_PATH, "expected an object with a history list")
+        rows = [_parse(lambda raw: _price_point(raw, token_id, "t", "p"), raw, CLOB_PRICES_PATH) for raw in document["history"]]
+        return _in_order(rows, start, end)
+
+    def _v2_prices(self, token_id: str, start: int, end: int) -> tuple[PricePoint, ...]:
+        params = [("token_id", token_id), ("start", str(start)), ("end", str(end)), ("bucket_seconds", str(PRICE_BUCKET))]
+        coarse: list[int] = []
+
+        def parse(raw: Mapping[str, Any]) -> PricePoint | None:
+            if _whole(raw, "resolution_seconds") > PRICE_BUCKET:
+                coarse.append(1)
+                return None
+            return _price_point(raw, token_id, "timestamp", "price")
+
+        try:
+            read = self._walk(f"{DATA_API}/v2/prices-history", params, PRICE_PAGE, parse)
+        except _PageTimedOut as error:
+            raise PolymarketUnavailable(str(error)) from error
+        if not read.complete:  # a partly read window must never be stored as the whole answer
+            raise PolymarketUnavailable("Polymarket's price history could not be read to the end")
+        if coarse:
+            log.warning("dropped %d price points coarser than one minute for token %s (AD-24)", len(coarse), token_id)
+        return _in_order(read.rows, start, end)
+
     # Paging -----------------------------------------------------------------------------------
 
     def _walk(
@@ -502,12 +663,58 @@ class PolymarketClient:
 
 
 def check_url(url: str) -> None:
-    """AD-2: only HTTPS to Data API v2 or Gamma. Anything else is a bug and is refused before sending."""
+    """AD-2: only HTTPS to Data API v2, Gamma, or the CLOB host's price history. Anything else is a bug and is
+    refused before sending. The CLOB host also takes orders, so exactly one of its paths passes (AD-24)."""
     parts = urlsplit(url)
     if parts.scheme != "https" or parts.netloc not in _ALLOWED_HOSTS or parts.query or parts.fragment:
-        raise ValueError(f"refused URL (not Data API v2 or Gamma): {url}")
-    if parts.netloc != _GAMMA_HOST and not parts.path.startswith("/v2/"):
+        raise ValueError(f"refused URL (not Data API v2, Gamma or the price history): {url}")
+    if parts.netloc == _CLOB_HOST:
+        if parts.path != CLOB_PRICES_PATH:
+            raise ValueError(f"refused URL (only the price history is read from the CLOB host): {url}")
+    elif parts.netloc != _GAMMA_HOST and not parts.path.startswith("/v2/"):
         raise ValueError(f"refused URL (Data API v1 is not used): {url}")
+
+
+def route_class(status: int, times: Sequence[int]) -> str:
+    """The daily route check's class for one answer to its request (AD-24): `one-minute`, `coarse`,
+    `empty`, `gone-<status>`, or `unreachable` for a 5xx. `times` are the answer's point times. The same
+    rule as the workflow's script for these; the client itself never classes a 5xx, it retries it and
+    then raises `PolymarketUnavailable`."""
+    if status >= 500:
+        return UNREACHABLE
+    if status != 200:
+        return f"gone-{status}"
+    ordered = sorted(times)
+    if not ordered:
+        return EMPTY
+    gaps = sorted(later - earlier for earlier, later in zip(ordered, ordered[1:], strict=False))
+    if len(ordered) >= ONE_MINUTE_POINTS and gaps[len(gaps) // 2] <= ONE_MINUTE_GAP:
+        return ONE_MINUTE
+    return COARSE
+
+
+def one_minute_grain(times: Sequence[int]) -> bool:
+    """Whether an answer's points are one-minute apart: a median gap of at most `ONE_MINUTE_GAP` (AD-24).
+
+    Fewer than two points prove nothing either way and pass; the check's own request covers that case.
+    """
+    ordered = sorted(times)
+    gaps = sorted(later - earlier for earlier, later in zip(ordered, ordered[1:], strict=False))
+    return not gaps or gaps[len(gaps) // 2] <= ONE_MINUTE_GAP
+
+
+def _price_point(raw: Mapping[str, Any], token_id: str, time_key: str, price_key: str) -> PricePoint:
+    """One price row of either route: a whole second and a price from 0 to 1."""
+    price = _number(raw, price_key)
+    if not 0.0 <= price <= 1.0:
+        raise ValueError(f"{price_key} is not between 0 and 1")
+    return PricePoint(token_id, _whole(raw, time_key), price)
+
+
+def _in_order(points: Iterable[PricePoint], start: int, end: int) -> tuple[PricePoint, ...]:
+    """The points inside [start, end], oldest first, one per second (the last one given for it)."""
+    by_time = {point.t: point for point in points if start <= point.t <= end}
+    return tuple(by_time[t] for t in sorted(by_time))
 
 
 def _check_wallet(wallet: str) -> None:

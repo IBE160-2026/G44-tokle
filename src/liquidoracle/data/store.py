@@ -13,12 +13,16 @@ window" (AD-4): a snapshot's key is its Wallet, window limit, Cut-off Date and s
 never reads a Scan's part or the reverse (Story 4.3). Jobs (AD-5, Story 2.5) are rows the worker
 claims with one atomic update. A Scan (Story 4.3) is stored step by step as it runs, so Resume
 continues from what is stored; its snapshots are never deleted, and a schema change keeps them.
+Price history (Story 6.1) is stored by token: the windows that were asked and their one-minute
+points, kept for good and at every schema change (AD-4, AD-24).
 """
 
 from __future__ import annotations
 
 import json
+import logging
 import sqlite3
+from bisect import bisect_right
 import threading
 import time
 from collections.abc import Callable, Iterable, Iterator, Sequence
@@ -30,19 +34,23 @@ from pathlib import Path
 from liquidoracle.records import (
     HOLDUP_AFTER,  # AD-22: the scope of a Scan's Hold-up group results (FR-17)
     HOLDUP_GROUPS,
+    PRICE_ROUTES,
     ActivityRow,
     Candidate,
     FunnelMarket,
     GroupResult,
     ListedPosition,
     Market,
+    PricePoint,
     Verdict,
     unread_positions,
 )
 
+log = logging.getLogger(__name__)
+
 # 2: the Wallet window (Story 2.2); 3: Market events (Story 2.4); 4: jobs (Story 2.5); 5: window_capped (Story 3.3);
-# 6: Scans and the snapshot key (Story 4.3); 7: Hold-up group results (Story 5.1)
-SCHEMA_VERSION = 7
+# 6: Scans and the snapshot key (Story 4.3); 7: Hold-up group results (Story 5.1); 8: price history (Story 6.1)
+SCHEMA_VERSION = 8
 FIRST_KEEPING_VERSION = 6  # AD-6: from this version on, a schema change keeps the Scans (Story 4.3)
 BUSY_TIMEOUT_SECONDS = 5.0  # [ASSUMPTION] AD-6: long enough for the worker's short writes
 SCHEMA_FILE = Path(__file__).with_name("schema.sql")
@@ -126,10 +134,11 @@ class WalletOutcome(StrEnum):
 # snapshot, row and market tables are dropped; every other table is rebuilt empty.
 _SCAN_TABLES = ("scan", "scan_market", "scan_candidate", "scan_wallet", "scan_result", "group_result")
 _SNAPSHOT_TABLES = ("snapshot", "listed_position", "activity_row", "market")
-KEPT_TABLES = (*_SCAN_TABLES, "job", *_SNAPSHOT_TABLES)
+_PRICE_TABLES = ("price_window", "price_point")  # AD-24: stored prices never expire; copied whole
+KEPT_TABLES = (*_SCAN_TABLES, "job", *_SNAPSHOT_TABLES, *_PRICE_TABLES)
 # Kept tables an older file may lack: `group_result` came with version 7, so a version 6 file's Scans are
-# kept without Hold-up rows (Story 5.1).
-_ADDED_LATER = frozenset({"group_result"})
+# kept without Hold-up rows (Story 5.1); the price tables came with version 8 (Story 6.1).
+_ADDED_LATER = frozenset({"group_result", *_PRICE_TABLES})
 _FROZEN_IDS = (
     "SELECT before_fetch_id FROM scan_wallet WHERE before_fetch_id IS NOT NULL"
     " UNION SELECT after_fetch_id FROM scan_wallet WHERE after_fetch_id IS NOT NULL"
@@ -765,6 +774,63 @@ class Store:
         }
         return tuple(stored[group] for group in HOLDUP_GROUPS if group in stored)
 
+    # --- price history (AD-24, Story 6.1) -------------------------------------------------------
+
+    def save_prices(
+        self, token_id: str, windows: Sequence[tuple[int, int]], points: Sequence[PricePoint], route: str
+    ) -> None:
+        """Store one answered price request in one transaction: the windows it covered and the points in them.
+
+        Every point must be of `token_id` and lie inside one of `windows`, so nothing outside the short
+        windows is ever stored (AD-14). Each asked window keeps its own row with its route, so a later,
+        wider request never relabels an earlier answer; the same window asked again replaces its row.
+        Windows with no points are stored too: they were asked, and are never asked again (AD-4).
+        """
+        if route not in PRICE_ROUTES:
+            raise ValueError(f"unknown price route {route!r}")
+        if not windows or any(end < start for start, end in windows):
+            raise ValueError("a price request covers at least one window, each ending at or after its start")
+        ordered = sorted(windows)
+        starts = [start for start, _ in ordered]
+        reach = []  # the latest end among the windows up to each one, so overlapping windows are handled too
+        for _, end in ordered:
+            reach.append(end if not reach else max(reach[-1], end))
+        for point in points:
+            at = bisect_right(starts, point.t) - 1
+            if point.token_id != token_id or at < 0 or point.t > reach[at]:
+                raise ValueError(f"a price point of token {point.token_id} at {point.t} is outside the stored windows")
+        now = self._now()
+        with self._write() as db:
+            db.executemany(
+                "INSERT OR REPLACE INTO price_window (token_id, start_at, end_at, route, fetched_at) VALUES (?, ?, ?, ?, ?)",
+                ((token_id, start, end, route, now) for start, end in windows),
+            )
+            db.executemany(
+                "INSERT OR REPLACE INTO price_point (token_id, t, price) VALUES (?, ?, ?)",
+                ((token_id, point.t, point.price) for point in points),
+            )
+
+    def price_windows(self, token_id: str) -> tuple[tuple[int, int], ...]:
+        """The stored windows [start, end] of one token, oldest first: what need not be asked again (AD-4)."""
+        return tuple(
+            (start, end)
+            for start, end in self._connection().execute(
+                "SELECT start_at, end_at FROM price_window WHERE token_id = ? ORDER BY start_at, end_at", (token_id,)
+            )
+        )
+
+    def prices(self, token_id: str, start: int | None = None, end: int | None = None) -> tuple[PricePoint, ...]:
+        """The stored price points of one token, oldest first; with `start` and `end`, only those inside them."""
+        low = -(2**62) if start is None else start
+        high = 2**62 if end is None else end
+        return tuple(
+            PricePoint(token_id, t, price)
+            for t, price in self._connection().execute(
+                "SELECT t, price FROM price_point WHERE token_id = ? AND t BETWEEN ? AND ? ORDER BY t",
+                (token_id, low, high),
+            )
+        )
+
     @staticmethod
     def _advance(db: sqlite3.Connection, scan_id: int, current: ScanStep, following: ScanStep) -> None:
         cursor = db.execute(
@@ -834,7 +900,8 @@ class Store:
         The cache (lookup snapshots, Market records, lookup jobs) is dropped: a lookup or
         `load-sample` fetches it again. From version 6 on, the Scans are kept: the scan tables,
         scan jobs, every snapshot a Scan names with its rows, and those snapshots' and Market sets'
-        Market records are copied into the new tables by the columns both versions share. When the
+        Market records are copied into the new tables by the columns both versions share, and so
+        are all stored prices (Story 6.1). When the
         snapshots cannot be copied (a new column with no default, say), the Scans are kept without
         them and marked `data_rebuilt`: they cannot resume (Story 4.3).
         """
@@ -851,6 +918,11 @@ class Store:
                 "SELECT name FROM sqlite_master WHERE type = 'table' AND name NOT LIKE 'sqlite_%'"
             ).fetchall()]
             keep = version >= FIRST_KEEPING_VERSION and set(KEPT_TABLES) - _ADDED_LATER <= set(tables)
+            if keep:
+                log.warning(
+                    "Updating %s from database version %d to %d and keeping its Scans; a large file can take"
+                    " a few minutes", self.path, version, SCHEMA_VERSION,
+                )
             for name in tables:
                 if keep and name in KEPT_TABLES:
                     db.execute(f'ALTER TABLE "{name}" RENAME TO "old_{name}"')
@@ -936,14 +1008,19 @@ def _read_snapshot(db: sqlite3.Connection, fetch_id: int) -> Snapshot | None:
 def _copy_scans(db: sqlite3.Connection) -> None:
     """AD-6: copy the Scans from the renamed `old_*` tables into the new ones, by shared columns.
 
-    The scan tables and scan jobs must copy (a failure is a schema change that needs its own
-    migration, so it is raised). The frozen snapshots, their rows and their Market records copy
-    inside a savepoint; if that fails they are dropped and every Scan is marked `data_rebuilt`.
+    The scan tables, scan jobs and stored prices must copy (a failure is a schema change that needs
+    its own migration, so it is raised). The frozen snapshots, their rows and their Market records copy
+    inside a savepoint; if the new schema does not take them (a constraint fails) they are dropped and
+    every Scan is marked `data_rebuilt`. Any other failure there, a full disk for one, is raised instead:
+    the whole change is then rolled back and the file stays as it was, Scans and snapshots included
+    (Story 6.1 review: a 1 GB copy must never lose a live Scan's data over a disk error).
     """
     frozen = _FROZEN_IDS  # the scan tables are already copied
     for name in _SCAN_TABLES:
         _copy(db, name)
     _copy(db, "job", "WHERE scan_id IS NOT NULL")
+    for name in _PRICE_TABLES:
+        _copy(db, name)
     db.execute("SAVEPOINT snapshots")
     try:
         _copy(db, "snapshot", f"WHERE fetch_id IN ({frozen}) AND completed_at IS NOT NULL")
@@ -954,7 +1031,7 @@ def _copy_scans(db: sqlite3.Connection) -> None:
             " UNION SELECT condition_id FROM scan_market)"
             " OR neg_risk_id IN (SELECT condition_id FROM activity_row WHERE type = 'CONVERSION')"
         ))
-    except sqlite3.Error:
+    except sqlite3.IntegrityError:
         db.execute("ROLLBACK TO snapshots")
         db.execute("UPDATE scan SET data_rebuilt = 1")
     db.execute("RELEASE snapshots")

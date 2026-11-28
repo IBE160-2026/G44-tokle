@@ -1,7 +1,7 @@
 """Live smoke test of the Polymarket client (AD-2, AD-17). Never runs in CI or by default.
 
 Run it by hand, with the network on:  uv run pytest -m online --force-enable-socket tests/online
-It sends three GET requests (more if Polymarket is busy) to the public Data API, with no key.
+It sends a few GET requests (more if Polymarket is busy) to the public Data API, Gamma and the price history, with no key.
 """
 
 from __future__ import annotations
@@ -69,3 +69,23 @@ def test_funnel_markets_and_holders_for_the_sample_cut_off(request: pytest.Fixtu
         read = client.market_holders(SMALL_FUNNEL_MARKET, status)
         assert read.complete, f"the {status} list of a small Market did not read complete"
         assert all(row.status == status for row in read.rows)
+
+
+def test_price_history_of_the_route_checks_hour(request: pytest.FixtureRequest) -> None:
+    """AD-24, FR-18c, Story 6.1: the old price route still gives one-minute points for the daily check's token and
+    hour (1 July 2025), and the client returns them as the `clob` route; the replacement route answers the same
+    window in a shape the client can read (measured 2026-11-28: an empty list, it keeps one-minute prices for
+    about a week). Three requests: the check's request, the price request, and one to the replacement route. If the first part fails, the old route has changed: see spine AD-24 and Story 6.6."""
+    from liquidoracle.data.polymarket import PROBE_END, PROBE_START, PROBE_TOKEN
+    from liquidoracle.records import ROUTE_CLOB
+
+    assert request.node.get_closest_marker("online") is not None
+    client = PolymarketClient(1.0)
+    read = client.price_history(PROBE_TOKEN, PROBE_START, PROBE_END)
+    assert read.route == ROUTE_CLOB, "the old price route no longer gives one-minute points"
+    assert len(read.points) >= 40
+    times = [point.t for point in read.points]
+    assert times == sorted(times) and all(PROBE_START <= t <= PROBE_END for t in times)
+    assert all(0.0 <= point.price <= 1.0 for point in read.points)
+    replacement = client._v2_prices(PROBE_TOKEN, PROBE_START, PROBE_END)  # empty today; fine if it ever is not
+    assert all(PROBE_START <= point.t <= PROBE_END for point in replacement)

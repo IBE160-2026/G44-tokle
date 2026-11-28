@@ -114,8 +114,9 @@ def read_funnel(path: Path) -> FunnelFile:
         raise ValueError(f"{path}: {error}") from None
 
 
-def read_ids(path: Path) -> tuple[str, tuple[str, ...]]:
-    """The Wallet address and Market ids in one file, without building its records.
+def read_ids(path: Path) -> tuple[str, tuple[str, ...], tuple[str, ...]]:
+    """The Wallet address, the Market ids and the tokens that have price points in one file, without
+    building its records.
 
     Used by `data/offline.py` to index the Sample Dataset quickly; `read_wallet` still checks
     the whole file strictly when the Wallet is read.
@@ -125,7 +126,8 @@ def read_ids(path: Path) -> tuple[str, tuple[str, ...]]:
         _check_keys(document, WALLET_KEYS, "wallet")
         address = _str(document["address"])
         markets = tuple(_str(market["condition_id"]) for market in _list(document["markets"]))
-        return address, markets
+        priced = tuple(dict.fromkeys(_str(point["token_id"]) for point in _list(document["prices"])))
+        return address, markets, priced
     except (ValueError, KeyError, TypeError, AttributeError, UnicodeDecodeError) as error:
         raise ValueError(f"{path}: not a Sample Dataset Wallet file: {error}") from error
 

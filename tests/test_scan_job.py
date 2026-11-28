@@ -8,6 +8,7 @@ two of them partial, eight candidates, real Wallets cut from the capture). Tests
 from __future__ import annotations
 
 import dataclasses
+import logging
 import sqlite3
 from collections.abc import Iterator
 from pathlib import Path
@@ -49,7 +50,7 @@ from liquidoracle.data.store import (
     WalletOutcome,
 )
 from liquidoracle.data.window import WINDOW_LIMIT, cutoff_at
-from liquidoracle.records import Market, MarketHolder, SampleWallet, Verdict
+from liquidoracle.records import Market, MarketHolder, PricePoint, SampleWallet, Verdict
 from liquidoracle.services import scan as scan_module
 from liquidoracle.services.fetch import fetch_wallet
 from liquidoracle.services.jobs import FINISHED, Jobs, Worker
@@ -548,6 +549,104 @@ def test_ad6_a_scan_finished_before_the_holdup_test_is_kept_without_one(tmp_path
         assert rig.store.group_results(scan_id) == ()
     finally:
         rig.store.close()
+
+
+def test_ad6_a_scan_finished_before_price_history_is_kept_whole(
+    tmp_path: Path, caplog: pytest.LogCaptureFixture
+) -> None:
+    """AD-6, AD-24 (Story 6.1, matrix "Version 7 file with a finished Scan"): a version 7 file has no price tables.
+    Opened by this version, its finished Scan is still `done` and not `data_rebuilt`, its results, Hold-up rows and
+    frozen snapshots are as before, and the price tables are there and empty: the Copy Test can run on it."""
+    path, scan_id, results, frozen = finished_scan_file(tmp_path)
+    old = sqlite3.connect(path)
+    groups = old.execute("SELECT * FROM group_result ORDER BY group_name").fetchall()
+    rows = old.execute("SELECT COUNT(*) FROM activity_row WHERE fetch_id IN (SELECT after_fetch_id FROM scan_wallet)").fetchone()
+    with old:  # what Story 5.1's schema was: this one without the price tables
+        old.execute("DROP TABLE price_window")
+        old.execute("DROP TABLE price_point")
+        old.execute("PRAGMA user_version = 7")
+    old.close()
+    assert len(groups) == 2 and store_module.SCHEMA_VERSION == 8
+    with caplog.at_level(logging.WARNING, logger="liquidoracle.data.store"):
+        db = Store(path)
+    try:
+        # The change is announced, since it takes about a minute on a large file; a new file says nothing.
+        assert "from database version 7 to 8 and keeping its Scans" in caplog.text
+        caplog.clear()
+        Store(tmp_path / "fresh.db").close()
+        assert "keeping its Scans" not in caplog.text
+        assert db._connection().execute("PRAGMA user_version").fetchone() == (8,)
+        scan = db.scan(scan_id)
+        assert scan is not None and scan.step is ScanStep.DONE and not scan.data_rebuilt
+        assert scan.job is not None and scan.job.status is JobStatus.DONE
+        assert results_without_ids(db, scan_id) == results
+        assert {w.wallet: (w.before_fetch_id, w.after_fetch_id) for w in db.scan_wallets(scan_id)} == frozen
+        for before, after in frozen.values():
+            assert all(db.snapshot(fetch_id) is not None for fetch_id in (before, after) if fetch_id is not None)
+        connection = db._connection()
+        assert connection.execute("SELECT * FROM group_result ORDER BY group_name").fetchall() == groups
+        assert connection.execute(
+            "SELECT COUNT(*) FROM activity_row WHERE fetch_id IN (SELECT after_fetch_id FROM scan_wallet)"
+        ).fetchone() == rows
+        assert db.price_windows("1") == () and db.prices("1") == ()
+        db.save_prices("1", ((100, 200),), (PricePoint("1", 150, 0.5),), "clob")  # and prices can be stored in it
+        assert db.prices("1") == (PricePoint("1", 150, 0.5),)
+    finally:
+        db.close()
+
+
+def test_ad6_a_schema_change_keeps_the_stored_prices(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """AD-6, AD-4, AD-24 (Story 6.1): stored price windows and points never expire, so a later schema change
+    keeps all of them, the empty and refused windows too, beside the Scan."""
+    path, scan_id, results, _ = finished_scan_file(tmp_path)
+    db = Store(path)
+    db.save_prices("1", ((100, 200), (500, 600)), (PricePoint("1", 150, 0.5), PricePoint("1", 600, 0.25)), "clob")
+    db.save_prices("2", ((100, 200),), (), "refused")
+    windows = db._connection().execute("SELECT * FROM price_window ORDER BY token_id, start_at").fetchall()
+    db.close()
+    monkeypatch.setattr(store_module, "SCHEMA_VERSION", NEXT_VERSION)
+    monkeypatch.setattr(store_module, "SCHEMA_FILE", next_version_schema(tmp_path, "note TEXT"))
+    db = Store(path)
+    try:
+        assert db._connection().execute("PRAGMA user_version").fetchone() == (NEXT_VERSION,)
+        assert db._connection().execute("SELECT * FROM price_window ORDER BY token_id, start_at").fetchall() == windows
+        assert db.prices("1") == (PricePoint("1", 150, 0.5), PricePoint("1", 600, 0.25))
+        assert db.price_windows("2") == ((100, 200),) and db.prices("2") == ()
+        assert results_without_ids(db, scan_id) == results and not db.scan(scan_id).data_rebuilt
+    finally:
+        db.close()
+
+
+def test_ad6_a_disk_error_during_the_change_leaves_the_file_as_it_was(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """AD-6 (review, Story 6.1): only a snapshot the new schema refuses marks a Scan `data_rebuilt`. Any other
+    failure while the snapshots are copied, a full disk for one, is raised and the whole change rolled back: the
+    file keeps its old version, and opened again once the cause is gone, the Scan and its snapshots are all there."""
+    path, scan_id, results, frozen = finished_scan_file(tmp_path)
+    real_copy = store_module._copy
+
+    def full_disk(db: sqlite3.Connection, name: str, where: str = "") -> None:
+        if name == "activity_row":
+            raise sqlite3.OperationalError("database or disk is full")
+        real_copy(db, name, where)
+
+    with monkeypatch.context() as patched:
+        patched.setattr(store_module, "SCHEMA_VERSION", NEXT_VERSION)
+        patched.setattr(store_module, "SCHEMA_FILE", next_version_schema(tmp_path, "note TEXT"))
+        patched.setattr(store_module, "_copy", full_disk)
+        with pytest.raises(store_module.StoreError, match="disk is full"):
+            Store(path)
+    db = Store(path)  # the current version again: nothing was changed
+    try:
+        assert db._connection().execute("PRAGMA user_version").fetchone() == (store_module.SCHEMA_VERSION,)
+        scan = db.scan(scan_id)
+        assert scan is not None and scan.step is ScanStep.DONE and not scan.data_rebuilt
+        assert results_without_ids(db, scan_id) == results
+        assert all(db.snapshot(i) is not None for pair in frozen.values() for i in pair if i is not None)
+        assert db.latest_snapshot(SMALL) is not None  # even the lookup's cache is untouched
+    finally:
+        db.close()
 
 
 def test_ad6_snapshots_that_cannot_be_copied_mark_the_scan_data_rebuilt(

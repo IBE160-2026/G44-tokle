@@ -1,7 +1,8 @@
 -- The SQLite schema (AD-6). `data/store.py` runs it and sets PRAGMA user_version to
 -- store.SCHEMA_VERSION. Later stories add their tables here and raise the version. On a version mismatch the
--- cache is rebuilt, while the Scans (the scan tables and scan jobs), the snapshots they name and those snapshots'
--- Market records are copied into the new tables by their shared columns (store.KEPT_TABLES, Story 4.3).
+-- cache is rebuilt, while the Scans (the scan tables and scan jobs), the snapshots they name, those snapshots'
+-- Market records and all stored prices are copied into the new tables by their shared columns
+-- (store.KEPT_TABLES, Stories 4.3 and 6.1).
 
 -- One fetch of one Wallet's window (AD-7, AD-8, AD-19). Readers see it only once completed_at is set.
 -- activity_read_until is NULL when the activity read was complete; otherwise the time of the last
@@ -185,3 +186,26 @@ CREATE TABLE group_result (
     not_fully_read INTEGER NOT NULL,
     PRIMARY KEY (scan_id, scope, group_name)
 );
+
+-- Price history for the Copy Test (FR-18c, AD-24): the one-minute price points of one outcome token, kept for
+-- good (AD-4) and shared by every Scan and Wallet, because a price belongs to a token and a time only.
+-- A price_window row says that [start_at, end_at] was asked and answered, also when no point came back, so it is
+-- never asked again. route is where that answer came from: 'clob' (the old route), 'v2' (its replacement),
+-- 'sample' (the Sample Dataset) or 'refused' (Polymarket refused the request; no points). Each asked window keeps
+-- its own row, so a later, wider request never relabels an earlier answer.
+CREATE TABLE price_window (
+    token_id   TEXT    NOT NULL,
+    start_at   INTEGER NOT NULL,
+    end_at     INTEGER NOT NULL CHECK (end_at >= start_at),
+    route      TEXT    NOT NULL CHECK (route IN ('clob', 'v2', 'sample', 'refused')),
+    fetched_at INTEGER NOT NULL,
+    PRIMARY KEY (token_id, start_at, end_at)
+) WITHOUT ROWID;
+
+-- One price of one outcome token at one second, inside a stored window.
+CREATE TABLE price_point (
+    token_id TEXT    NOT NULL,
+    t        INTEGER NOT NULL,
+    price    REAL    NOT NULL CHECK (price BETWEEN 0 AND 1),
+    PRIMARY KEY (token_id, t)
+) WITHOUT ROWID;
