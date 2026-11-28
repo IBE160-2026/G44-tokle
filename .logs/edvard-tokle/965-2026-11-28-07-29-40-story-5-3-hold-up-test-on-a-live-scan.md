@@ -24,6 +24,7 @@ Edvard ba om å lese handoff, sette Story 5.2 til `done` (PR #47 var merget) og 
 - **Etter omstart:** Scannen står fortsatt i *Your Scans* med begge faner (sjekket 28.11 etter at Edvard hadde stoppet appen).
 - **Lukket fra issues-lista:** tiden på Hold-up-steget i en live Scan (ca. 10 s på 30 592 bets), og at «stage 2 minimum done» i README ventet på grønn CI (PR #47 er merget, main grønn på andre forsøk).
 - Refleksjonsnotatene (utenfor repoet) fikk fire punkter.
+- **Etter push (28.11, lagt til kl. 08:35):** Edvard åpnet og merget PR #48 med vanlig merge-commit (b7d0cfd); bbca83f ligger i `main`, så hashen README viser til gjelder fortsatt. CI: push-kjøringen for b672669 feilet først på macOS med Python 3.12 («Run the tests») og ble grønn da Edvard kjørte den på nytt; PR-kjøringen og mains kjøring etter merge var grønne på første forsøk. Merge-punktet på issues-lista er lukket.
 
 ### Åpne punkter
 - Tidsanslaget på Scans-siden bommet begge veier på ekte data (10 minutter for 2 t 20 min; så 25 timer for 2 t 44 min).
@@ -31,4 +32,5 @@ Edvard ba om å lese handoff, sette Story 5.2 til `done` (PR #47 var merget) og 
 - Kjent grense: de største Walletene på shortlisten ble ikke lest helt, endte på $0 og kom ikke med blant de 200 (står i README).
 - Andre tilfeldige macOS-feil 27.11 (mains kjøring for merge av PR #47, Python 3.12, «Run the tests»; grønn ved ny kjøring; testen er ukjent). Edvard: ikke fiks nå.
 - Story 6.6 må jobbe på et duplikat av databasekopien, ellers endres fila og SHA-256 stemmer ikke lenger. Wallet-delene i `instance/live.db` er eldre enn 24 timer fra 28.11 kveld og gjenbrukes ikke av en ny Scan.
-- PR-en for denne branchen må merges med vanlig merge-commit: README viser til commit bbca83f, og squash eller rebase endrer hashen.
+- PR-en for denne branchen må merges med vanlig merge-commit: README viser til commit bbca83f, og squash eller rebase endrer hashen. (Løst 28.11: merget med merge-commit.)
+- Tredje tilfeldige macOS-feil (28.11): push-kjøringen for b672669, macOS med Python 3.12, «Run the tests», grønn ved ny kjøring. Den andre feilen var også macOS med Python 3.12. Testen er fortsatt ukjent. AI-ens forslag: kopier FAILED-linjene fra loggen før neste nye kjøring.
