@@ -29,7 +29,7 @@
 # - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
 # - Retrospective appends its action items to action_items; the status view surfaces open ones
 generated: 11-05-2026 02:06
-last_updated: 11-28-2026 10:25
+last_updated: 11-28-2026 12:03
 project: LiquidOracle
 project_key: NOKEY
 tracking_system: file-system
@@ -82,7 +82,7 @@ development_status:
 
   epic-6: in-progress
   6-1-price-history: done
-  6-2-follower-pnl: in-progress
+  6-2-follower-pnl: review
   6-3-the-random-group-check: backlog
   6-4-the-copy-test-page: backlog
   6-5-copy-windows-in-the-sample-dataset: backlog
